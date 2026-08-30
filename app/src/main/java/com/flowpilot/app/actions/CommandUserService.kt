@@ -1,29 +1,47 @@
 package com.flowpilot.app.actions
 
-import android.os.ParcelFileDescriptor
+import android.content.Context
+import androidx.annotation.Keep
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.concurrent.TimeUnit
 
-/** Shizuku UserService process. Runs as shell (ADB backend) or root (root backend). */
-class CommandUserService : ICommandService.Stub() {
+@Keep
+class CommandUserService : ICommandService.Stub {
+    constructor() : super()
+    constructor(context: Context) : super()
+
     override fun run(command: String): String {
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
             val output = StringBuilder()
-            BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-                reader.forEachLine { output.appendLine(it) }
+            val inThread = Thread {
+                try {
+                    BufferedReader(InputStreamReader(process.inputStream)).use { r ->
+                        r.forEachLine { synchronized(output) { output.appendLine(it) } }
+                    }
+                } catch (_: Throwable) {}
             }
-            val error = BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
-                reader.readText()
+            val errThread = Thread {
+                try {
+                    BufferedReader(InputStreamReader(process.errorStream)).use { r ->
+                        r.forEachLine { synchronized(output) { output.appendLine(it) } }
+                    }
+                } catch (_: Throwable) {}
             }
-            if (error.isNotBlank()) output.append(error)
+            inThread.start()
+            errThread.start()
+
             val finished = process.waitFor(10, TimeUnit.SECONDS)
+            inThread.join(1000)
+            errThread.join(1000)
+
             if (!finished) {
                 process.destroyForcibly()
                 return "124\ncommand timed out"
             }
-            "${process.exitValue()}\n${output.toString().trim()}"
+            val text = synchronized(output) { output.toString().trim() }
+            "${process.exitValue()}\n$text"
         } catch (t: Throwable) {
             "125\n${t.message ?: t.javaClass.simpleName}"
         }

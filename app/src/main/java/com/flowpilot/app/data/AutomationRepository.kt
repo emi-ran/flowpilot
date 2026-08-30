@@ -25,6 +25,17 @@ class AutomationRepository(private val context: Context) {
     private val listSerializer = ListSerializer(Automation.serializer())
 
     private val key = stringPreferencesKey("rules")
+    private val engineKey = androidx.datastore.preferences.core.booleanPreferencesKey("engine_enabled")
+
+    val isEngineEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[engineKey] ?: true
+    }
+
+    suspend fun setEngineEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[engineKey] = enabled
+        }
+    }
 
     val automations: Flow<List<Automation>> = context.dataStore.data.map { prefs ->
         prefs[key]?.let { raw ->

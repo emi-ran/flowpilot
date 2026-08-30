@@ -50,7 +50,7 @@ class AutomationService : Service() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.notif_channel_engine),
-            NotificationManager.IMPORTANCE_LOW,
+            NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
             description = getString(R.string.notif_channel_engine_desc)
             setShowBadge(false)
@@ -82,7 +82,7 @@ class AutomationService : Service() {
         return builder
             .setContentTitle(getString(R.string.notif_engine_title))
             .setContentText(getString(R.string.notif_engine_text))
-            .setSmallIcon(android.R.drawable.ic_menu_manage)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pi)
             .setOngoing(true)
             .build()

@@ -18,15 +18,21 @@ class NfcExecutor(private val shell: ShizukuShellCompatible) : ActionExecutor {
         if (!shell.hasPermission()) {
             return ActionResult(false, "Shizuku permission not granted to FlowPilot")
         }
-        val target = when (action) {
-            ActionType.NFC_ON -> "on"
-            ActionType.NFC_OFF -> "off"
+        val (svcCmd, cmdNfc) = when (action) {
+            ActionType.NFC_ON -> ("svc nfc enable" to "cmd nfc on")
+            ActionType.NFC_OFF -> ("svc nfc disable" to "cmd nfc off")
             else -> return ActionResult(false, "Unsupported action for NFC")
         }
         return try {
-            val (code, out) = shell.run("cmd nfc $target")
-            if (code == 0) ActionResult(true, "NFC turned ${if (target == "on") "on" else "off"}")
-            else ActionResult(false, "cmd nfc failed (exit $code): $out")
+            val (code1, out1) = shell.run(svcCmd)
+            if (code1 == 0) {
+                return ActionResult(true, "NFC turned ${if (action == ActionType.NFC_ON) "on" else "off"}")
+            }
+            val (code2, out2) = shell.run(cmdNfc)
+            if (code2 == 0) {
+                return ActionResult(true, "NFC turned ${if (action == ActionType.NFC_ON) "on" else "off"}")
+            }
+            ActionResult(false, "NFC toggle failed ($out1; $out2)")
         } catch (t: Throwable) {
             ActionResult(false, t.message ?: t.javaClass.simpleName)
         }

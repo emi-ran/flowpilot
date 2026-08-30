@@ -22,7 +22,29 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
     @Volatile private var commandService: ICommandService? = null
     private val bindLock = Any()
 
-    fun init(context: Context) { appContext = context.applicationContext }
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+            commandService = ICommandService.Stub.asInterface(binder)
+        }
+        override fun onServiceDisconnected(name: ComponentName) {
+            commandService = null
+        }
+    }
+
+    fun init(context: Context) {
+        appContext = context.applicationContext
+        try {
+            Shizuku.addBinderReceivedListenerSticky {
+                if (hasPermission()) {
+                    ensureBound()
+                }
+            }
+            Shizuku.addBinderDeadListener {
+                commandService = null
+            }
+        } catch (_: Throwable) {}
+    }
+
     fun isShizukuAvailable(): Boolean = try { Shizuku.pingBinder() } catch (_: Throwable) { false }
     override fun isShizukuRunning(): Boolean = isShizukuAvailable()
     override fun hasPermission(): Boolean = isShizukuRunning() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
@@ -40,14 +62,37 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
         }
     } catch (_: Throwable) { false }
 
+    fun ensureBound() {
+        if (!isShizukuRunning() || !hasPermission() || commandService != null) return
+        try {
+            val args = Shizuku.UserServiceArgs(
+                ComponentName(BuildConfig.APPLICATION_ID, CommandUserService::class.java.name),
+            ).daemon(false).tag("flowpilot-command").version(BuildConfig.VERSION_CODE).debuggable(BuildConfig.DEBUG).processNameSuffix("command")
+            android.util.Log.d("ShizukuShell", "Calling Shizuku.bindUserService")
+            Shizuku.bindUserService(args, connection)
+        } catch (t: Throwable) {
+            android.util.Log.e("ShizukuShell", "ensureBound error: ${t.message}", t)
+        }
+    }
+
     override fun run(command: String): Pair<Int, String> {
-        if (!isShizukuRunning() || !hasPermission()) return -1 to "Shizuku permission unavailable"
+        if (!isShizukuRunning()) {
+            android.util.Log.w("ShizukuShell", "run: Shizuku not running")
+            return -1 to "Shizuku not running"
+        }
+        if (!hasPermission()) {
+            android.util.Log.w("ShizukuShell", "run: Shizuku permission not granted")
+            return -1 to "Shizuku permission not granted"
+        }
         val service = commandService ?: bindAndGetService() ?: return -1 to "Shizuku UserService unavailable"
         return try {
             val result = service.run(command)
             val newline = result.indexOf('\n')
-            if (newline < 0) (-1 to result) else (result.substring(0, newline).toIntOrNull() ?: -1) to result.substring(newline + 1)
+            val pair = if (newline < 0) (-1 to result) else (result.substring(0, newline).toIntOrNull() ?: -1) to result.substring(newline + 1)
+            android.util.Log.i("ShizukuShell", "Executed '$command' -> exitCode=${pair.first}, output='${pair.second}'")
+            pair
         } catch (t: Throwable) {
+            android.util.Log.e("ShizukuShell", "Command error: ${t.message}", t)
             commandService = null
             -1 to (t.message ?: t.javaClass.simpleName)
         }
@@ -56,21 +101,28 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
     private fun bindAndGetService(): ICommandService? = synchronized(bindLock) {
         commandService?.let { return@synchronized it }
         val latch = CountDownLatch(1)
-        val connection = object : ServiceConnection {
+        val conn = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+                android.util.Log.d("ShizukuShell", "UserService connected: $name")
                 commandService = ICommandService.Stub.asInterface(binder)
                 latch.countDown()
             }
-            override fun onServiceDisconnected(name: ComponentName) { commandService = null }
+            override fun onServiceDisconnected(name: ComponentName) {
+                android.util.Log.d("ShizukuShell", "UserService disconnected: $name")
+                commandService = null
+            }
         }
         try {
             val args = Shizuku.UserServiceArgs(
                 ComponentName(BuildConfig.APPLICATION_ID, CommandUserService::class.java.name),
-            ).daemon(false).tag("flowpilot-command").version(BuildConfig.VERSION_CODE).debuggable(BuildConfig.DEBUG)
-            Shizuku.bindUserService(args, connection)
-            latch.await(5, TimeUnit.SECONDS)
+            ).daemon(false).tag("flowpilot-command").version(BuildConfig.VERSION_CODE).debuggable(BuildConfig.DEBUG).processNameSuffix("command")
+            android.util.Log.d("ShizukuShell", "bindAndGetService: binding...")
+            Shizuku.bindUserService(args, conn)
+            val ok = latch.await(5, TimeUnit.SECONDS)
+            android.util.Log.d("ShizukuShell", "bindAndGetService: await result=$ok, service=${commandService != null}")
             commandService
-        } catch (_: Throwable) {
+        } catch (t: Throwable) {
+            android.util.Log.e("ShizukuShell", "bindAndGetService failed: ${t.message}", t)
             null
         }
     }

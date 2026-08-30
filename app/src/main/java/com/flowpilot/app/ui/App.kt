@@ -251,19 +251,39 @@ private fun Boolean?.orFalse() = this ?: false
     }
 }
 
+private data class AppDisplayItem(
+    val packageName: String,
+    val label: String,
+    val appInfo: ApplicationInfo,
+)
+
 @Composable private fun AppPicker(select: (String, String) -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
-    val apps = remember {
-        context.packageManager.getInstalledApplications(0)
-            .filter { context.packageManager.getLaunchIntentForPackage(it.packageName) != null }
-            .sortedBy { context.packageManager.getApplicationLabel(it).toString().lowercase() }
+    var apps by remember { mutableStateOf<List<AppDisplayItem>?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val pm = context.packageManager
+            val installed = pm.getInstalledApplications(0)
+            val launchable = installed
+                .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
+                .map { AppDisplayItem(it.packageName, pm.getApplicationLabel(it).toString(), it) }
+                .sortedBy { it.label.lowercase() }
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                apps = launchable
+                isLoading = false
+            }
+        }
     }
-    val filtered = remember(query) {
-        apps.filter { context.packageManager.getApplicationLabel(it).toString().contains(query, true) }
+
+    val filtered = remember(query, apps) {
+        val list = apps ?: emptyList()
+        if (query.isBlank()) list
+        else list.filter { it.label.contains(query, ignoreCase = true) || it.packageName.contains(query, ignoreCase = true) }
     }
-    // Real full-screen dialog window (like MacroDroid/Tasker app pickers):
-    // own window, dimmed background, back button closes it, closes on outside tap.
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true),
@@ -275,15 +295,47 @@ private fun Boolean?.orFalse() = this ?: false
                     navigationIcon = { IconButton(onDismiss) { Icon(Icons.Default.Close, null) } },
                 )
                 OutlinedTextField(
-                    query, { query = it },
-                    Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     label = { Text("Search") },
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Search, null) },
+                    enabled = !isLoading,
                 )
-                LazyColumn(Modifier.weight(1f)) {
-                    items(filtered, key = { it.packageName }) { app ->
-                        AppRow(app) { select(app.packageName, context.packageManager.getApplicationLabel(app).toString()) }
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().weight(1f),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                "Loading apps...",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                } else if (filtered.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().weight(1f),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "No apps found",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                } else {
+                    LazyColumn(Modifier.weight(1f)) {
+                        items(filtered, key = { it.packageName }) { app ->
+                            AppRow(app) { select(app.packageName, app.label) }
+                        }
                     }
                 }
             }
@@ -291,16 +343,47 @@ private fun Boolean?.orFalse() = this ?: false
     }
 }
 
-@Composable private fun AppRow(app: ApplicationInfo, onClick: () -> Unit) {
+@Composable private fun AppRow(app: AppDisplayItem, onClick: () -> Unit) {
     val context = LocalContext.current
-    val label = remember(app.packageName) { context.packageManager.getApplicationLabel(app).toString() }
-    val icon = remember(app.packageName) { app.loadIcon(context.packageManager) }
-    val bitmap = remember(app.packageName) { icon.toBitmap() }
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 10.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.size(36.dp))
+    var bitmap by remember(app.packageName) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+
+    LaunchedEffect(app.packageName) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val icon = app.appInfo.loadIcon(context.packageManager)
+                val bmp = icon.toBitmap().asImageBitmap()
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    bitmap = bmp
+                }
+            } catch (_: Throwable) {}
+        }
+    }
+
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (bitmap != null) {
+            Image(bitmap = bitmap!!, contentDescription = null, modifier = Modifier.size(36.dp))
+        } else {
+            Box(
+                Modifier.size(36.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Default.Apps,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(app.label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(app.packageName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
