@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -65,8 +66,9 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     Scaffold(
         bottomBar = { if (page == Page.HOME || page == Page.SETTINGS) BottomBar(page) { page = it } },
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { pad ->
-        Box(Modifier.padding(pad)) {
+        Box(Modifier.fillMaxSize().padding(bottom = pad.calculateBottomPadding())) {
             Crossfade(
                 targetState = page,
                 animationSpec = tween(150),
@@ -129,7 +131,7 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
         )
     }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+    Column(Modifier.fillMaxSize()) {
         TopAppBar(
             title = {
                 Text(
@@ -143,7 +145,7 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                         Icon(Icons.Default.Close, "Cancel selection")
                     }
                 } else {
-                    Icon(Icons.Default.Hub, null)
+                    Icon(Icons.Default.Hub, null, modifier = Modifier.padding(start = 16.dp))
                 }
             },
             actions = {
@@ -158,49 +160,56 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                     }
                 }
             },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
         )
 
-        Text("Make your phone react automatically", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
-        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Automation engine", style = MaterialTheme.typography.titleMedium)
-            FollowSwitch(engine, { if (it) vm.startEngine() else vm.stopEngine() })
-        }
-        Spacer(Modifier.height(12.dp))
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+            Text("Make your phone react automatically", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Automation engine", style = MaterialTheme.typography.titleMedium)
+                FollowSwitch(engine, { if (it) vm.startEngine() else vm.stopEngine() })
+            }
+            Spacer(Modifier.height(12.dp))
 
-        if (rules.isEmpty()) {
-            EmptyState(create)
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(rules, key = { it.rule.id }) { item ->
-                    val isSelected = item.rule.id in selectedRuleIds
-                    RuleCard(
-                        item = item,
-                        isSelected = isSelected,
-                        isSelectionMode = isSelectionMode,
-                        onClick = {
-                            if (isSelectionMode) {
+            if (rules.isEmpty()) {
+                EmptyState(create)
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(rules, key = { it.rule.id }) { item ->
+                        val isSelected = item.rule.id in selectedRuleIds
+                        RuleCard(
+                            item = item,
+                            isSelected = isSelected,
+                            isSelectionMode = isSelectionMode,
+                            onClick = {
+                                if (isSelectionMode) {
+                                    selectedRuleIds = if (isSelected) selectedRuleIds - item.rule.id else selectedRuleIds + item.rule.id
+                                } else {
+                                    detail(item.rule)
+                                }
+                            },
+                            onLongClick = {
                                 selectedRuleIds = if (isSelected) selectedRuleIds - item.rule.id else selectedRuleIds + item.rule.id
-                            } else {
-                                detail(item.rule)
-                            }
-                        },
-                        onLongClick = {
-                            selectedRuleIds = if (isSelected) selectedRuleIds - item.rule.id else selectedRuleIds + item.rule.id
-                        },
-                        enabled = { vm.setEnabled(item.rule.id, it) },
-                        onPermission = permissions,
-                    )
+                            },
+                            enabled = { vm.setEnabled(item.rule.id, it) },
+                            onPermission = permissions,
+                        )
+                    }
                 }
             }
-        }
 
-        Button(create, Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-            Icon(Icons.Default.Add, null)
-            Spacer(Modifier.width(8.dp))
-            Text("Create automation")
+            Button(
+                onClick = create,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+            ) {
+                Icon(Icons.Default.Add, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Create automation")
+            }
         }
     }
 }
@@ -210,7 +219,7 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
         Icon(Icons.Default.Bolt, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
         Text("No automations yet", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp))
         Text("Create a rule to make your phone react automatically", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
-        OutlinedButton(create) { Text("Create your first rule") }
+        OutlinedButton(create, shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)) { Text("Create your first rule") }
     }
 }
 
@@ -278,15 +287,20 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
 
 @Composable private fun SettingsScreen(vm: AppViewModel, permissions: () -> Unit) {
     val engine by vm.engineRunning.collectAsState()
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        TopAppBar(title = { Text("Settings", fontWeight = FontWeight.Bold) })
-        Text("Manage your FlowPilot preferences.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 20.dp))
-        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
-            SettingRow("Dark theme", Icons.Default.DarkMode, true) {}
-            SettingRow("Run on startup", Icons.Default.RocketLaunch, engine) { if (it) vm.startEngine() else vm.stopEngine() }
-            SettingRow("Advanced permissions", Icons.Default.AdminPanelSettings, null) { permissions() }
-            SettingRow("Backup / Restore", Icons.Default.CloudSync, null) {}
-            SettingRow("About", Icons.Default.Info, null) {}
+    Column(Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text("Settings", fontWeight = FontWeight.Bold) },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+        )
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+            Text("Manage your FlowPilot preferences.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 20.dp))
+            Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
+                SettingRow("Dark theme", Icons.Default.DarkMode, true) {}
+                SettingRow("Run on startup", Icons.Default.RocketLaunch, engine) { if (it) vm.startEngine() else vm.stopEngine() }
+                SettingRow("Advanced permissions", Icons.Default.AdminPanelSettings, null) { permissions() }
+                SettingRow("Backup / Restore", Icons.Default.CloudSync, null) {}
+                SettingRow("About", Icons.Default.Info, null) {}
+            }
         }
     }
 }
@@ -315,19 +329,32 @@ private fun Boolean?.orFalse() = this ?: false
     if (showTriggers) TriggerPicker(event, { event = it; showTriggers = false }) { showTriggers = false }
     if (showActions) ActionPicker(action, { action = it; showActions = false }) { showActions = false }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        TopAppBar(title = { Text("Create automation", fontWeight = FontWeight.Bold) })
-        Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        SelectionRow("Trigger", event.label) { showTriggers = true }
-        Spacer(Modifier.height(8.dp))
-        SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
-        Text("DO", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp))
-        SelectionRow("Action", action.label) { showActions = true }
-        OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth().padding(top = 20.dp), label = { Text("Name (optional)") }, singleLine = true)
-        Spacer(Modifier.weight(1f))
-        Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(done, Modifier.weight(1f)) { Text("Cancel") }
-            Button({ vm.addRule(name, event, pkg, appName, action); done() }, Modifier.weight(1f), enabled = pkg.isNotEmpty()) { Text("Save") }
+    Column(Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text("Create automation", fontWeight = FontWeight.Bold) },
+            navigationIcon = { IconButton(done) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+        )
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+            Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+            SelectionRow("Trigger", event.label) { showTriggers = true }
+            Spacer(Modifier.height(10.dp))
+            SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
+            Text("DO", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp, bottom = 8.dp))
+            SelectionRow("Action", action.label) { showActions = true }
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                label = { Text("Name (optional)") },
+                singleLine = true,
+            )
+            Spacer(Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(done, Modifier.weight(1f), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)) { Text("Cancel") }
+                Button({ vm.addRule(name, event, pkg, appName, action); done() }, Modifier.weight(1f), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), enabled = pkg.isNotEmpty()) { Text("Save") }
+            }
         }
     }
 }
@@ -371,9 +398,13 @@ private fun Boolean?.orFalse() = this ?: false
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                TopAppBar(title = { Text(title, fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onDismiss) { Icon(Icons.Default.Close, null) } })
-                LazyColumn(Modifier.weight(1f)) {
+            Column(Modifier.fillMaxSize()) {
+                TopAppBar(
+                    title = { Text(title, fontWeight = FontWeight.Bold) },
+                    navigationIcon = { IconButton(onDismiss) { Icon(Icons.Default.Close, null) } },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                )
+                LazyColumn(Modifier.weight(1f).padding(horizontal = 20.dp)) {
                     grouped.forEach { (cat, items) ->
                         item(key = "h-$cat") {
                             Text(cat.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 12.dp))
@@ -395,13 +426,24 @@ private fun Boolean?.orFalse() = this ?: false
 }
 
 @Composable private fun SelectionRow(title: String, sub: String, click: () -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable(onClick = click), colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = click),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge)
-                Text(sub, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    sub,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            Icon(Icons.Default.ChevronRight, null)
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -566,40 +608,46 @@ private data class AppDisplayItem(
 
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        TopAppBar(title = { Text("Setup FlowPilot") }, navigationIcon = { IconButton(back) { Icon(Icons.Default.ArrowBack, null) } })
-        Text("Some actions require additional system permissions.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 20.dp))
+    Column(Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text("Setup FlowPilot", fontWeight = FontWeight.Bold) },
+            navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+        )
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+            Text("Some actions require additional system permissions.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 20.dp))
 
-        PermissionCard("Usage Access", "Required to detect when apps open. Open system Settings and allow FlowPilot.", usage) {
-            context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        }
-        PermissionCard("Notifications", "Shows engine status while automation runs.", notif) {
-            notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        PermissionCard("Secure settings", "Required for Battery Saver actions. Grant with ADB or Shizuku.", write) {
-            if (shizuku == ShizukuState.READY) vm.grantSecureSettingsViaShizuku { vm.refreshPermissions() }
-            else showAdbDialog = true
-        }
-        PermissionCard(
-            "Shizuku",
-            "Required to toggle NFC. Install, start, then grant access.",
-            shizuku == ShizukuState.READY,
-            pillText = if (shizuku == ShizukuState.READY) "Available" else "Shizuku required",
-        ) {
-            when (shizuku) {
-                ShizukuState.NOT_INSTALLED -> context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://shizuku.rikka.app/download/")))
-                ShizukuState.NOT_RUNNING -> {
-                    val launch = context.packageManager.getLaunchIntentForPackage("moe.shizuku.xyz.manager")
-                    if (launch != null) context.startActivity(launch)
-                    else context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://shizuku.rikka.app/download/")))
-                }
-                ShizukuState.NOT_GRANTED -> vm.requestShizukuPermission()
-                ShizukuState.READY -> {}
+            PermissionCard("Usage Access", "Required to detect when apps open. Open system Settings and allow FlowPilot.", usage) {
+                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
             }
-        }
+            PermissionCard("Notifications", "Shows engine status while automation runs.", notif) {
+                notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            PermissionCard("Secure settings", "Required for Battery Saver actions. Grant with ADB or Shizuku.", write) {
+                if (shizuku == ShizukuState.READY) vm.grantSecureSettingsViaShizuku { vm.refreshPermissions() }
+                else showAdbDialog = true
+            }
+            PermissionCard(
+                "Shizuku",
+                "Required to toggle NFC. Install, start, then grant access.",
+                shizuku == ShizukuState.READY,
+                pillText = if (shizuku == ShizukuState.READY) "Available" else "Shizuku required",
+            ) {
+                when (shizuku) {
+                    ShizukuState.NOT_INSTALLED -> context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://shizuku.rikka.app/download/")))
+                    ShizukuState.NOT_RUNNING -> {
+                        val launch = context.packageManager.getLaunchIntentForPackage("moe.shizuku.xyz.manager")
+                        if (launch != null) context.startActivity(launch)
+                        else context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://shizuku.rikka.app/download/")))
+                    }
+                    ShizukuState.NOT_GRANTED -> vm.requestShizukuPermission()
+                    ShizukuState.READY -> {}
+                }
+            }
 
-        Spacer(Modifier.weight(1f))
-        Text("Tip: tap the status pill on an automation to jump here.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 16.dp))
+            Spacer(Modifier.weight(1f))
+            Text("Tip: tap the status pill on an automation to jump here.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 16.dp))
+        }
     }
 
     if (showAdbDialog) {
@@ -620,7 +668,7 @@ private data class AppDisplayItem(
                 CapabilityPill(if (granted) "Available" else pillText)
             }
             Text(desc, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp), style = MaterialTheme.typography.bodySmall)
-            if (!granted && action != null) Button(action, Modifier.align(Alignment.End)) { Text("Setup") }
+            if (!granted && action != null) Button(action, Modifier.align(Alignment.End), shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)) { Text("Setup") }
         }
     }
 }
@@ -660,54 +708,59 @@ private data class AppDisplayItem(
         )
     }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+    Column(Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Edit automation", fontWeight = FontWeight.Bold) },
-            navigationIcon = { IconButton(back) { Icon(Icons.Default.ArrowBack, null) } },
+            navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
             actions = {
                 IconButton({ showDeleteConfirm = true }) {
                     Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
                 }
             },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
         )
-        Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        SelectionRow("Trigger", event.label) { showTriggers = true }
-        Spacer(Modifier.height(8.dp))
-        SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+            Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+            SelectionRow("Trigger", event.label) { showTriggers = true }
+            Spacer(Modifier.height(10.dp))
+            SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
 
-        Text("DO", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp))
-        SelectionRow("Action", action.label) { showActions = true }
+            Text("DO", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp, bottom = 8.dp))
+            SelectionRow("Action", action.label) { showActions = true }
 
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-            label = { Text("Name") },
-            singleLine = true,
-        )
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                label = { Text("Name") },
+                singleLine = true,
+            )
 
-        Spacer(Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
 
-        Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(back, Modifier.weight(1f)) { Text("Cancel") }
-            Button(
-                onClick = {
-                    val finalName = name.ifBlank { "${appName.ifBlank { pkg }} · ${action.label}" }
-                    vm.updateRule(
-                        initialRule.copy(
-                            name = finalName,
-                            triggerEvent = event,
-                            appPackage = pkg,
-                            appName = appName,
-                            action = action,
+            Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(back, Modifier.weight(1f), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)) { Text("Cancel") }
+                Button(
+                    onClick = {
+                        val finalName = name.ifBlank { "${appName.ifBlank { pkg }} · ${action.label}" }
+                        vm.updateRule(
+                            initialRule.copy(
+                                name = finalName,
+                                triggerEvent = event,
+                                appPackage = pkg,
+                                appName = appName,
+                                action = action,
+                            )
                         )
-                    )
-                    back()
-                },
-                modifier = Modifier.weight(1f),
-                enabled = pkg.isNotEmpty(),
-            ) {
-                Text("Save changes")
+                        back()
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    enabled = pkg.isNotEmpty(),
+                ) {
+                    Text("Save changes")
+                }
             }
         }
     }
