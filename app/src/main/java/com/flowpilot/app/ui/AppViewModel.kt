@@ -121,8 +121,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun updateRule(rule: Automation) {
+        viewModelScope.launch {
+            repository.update(rule)
+            refreshPermissions()
+        }
+    }
+
     fun delete(id: String) {
         viewModelScope.launch { repository.delete(id) }
+    }
+
+    fun deleteMany(ids: Set<String>) {
+        viewModelScope.launch { repository.deleteMany(ids) }
     }
 
     fun startEngine() {
@@ -130,7 +141,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             repository.setEngineEnabled(true)
         }
         AutomationService.start(getApplication())
-        (engineRunning as MutableStateFlow).value = true
+        engineRunning.value = true
     }
 
     fun stopEngine() {

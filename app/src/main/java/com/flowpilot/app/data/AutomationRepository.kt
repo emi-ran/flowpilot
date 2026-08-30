@@ -96,6 +96,14 @@ class AutomationRepository(private val context: Context) {
         }
     }
 
+    suspend fun deleteMany(ids: Set<String>) {
+        if (ids.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            prefs[key] = json.encodeToString(listSerializer, current.filterNot { it.id in ids })
+        }
+    }
+
     private fun safeDecode(raw: String): List<Automation> = try {
         json.decodeFromString(listSerializer, raw)
     } catch (_: Exception) {

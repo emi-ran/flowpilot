@@ -1,4 +1,7 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+)
 
 package com.flowpilot.app.ui
 
@@ -9,8 +12,13 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,12 +67,18 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
         containerColor = MaterialTheme.colorScheme.background,
     ) { pad ->
         Box(Modifier.padding(pad)) {
-            when (page) {
-                Page.HOME -> HomeScreen(vm, { selected = it; page = Page.DETAIL }, { page = Page.CREATE }, { page = Page.SETTINGS }, { page = Page.PERMISSIONS })
-                Page.SETTINGS -> SettingsScreen(vm) { page = Page.PERMISSIONS }
-                Page.CREATE -> CreateScreen(vm) { page = Page.HOME }
-                Page.PERMISSIONS -> PermissionsScreen(vm) { page = Page.SETTINGS }
-                Page.DETAIL -> selected?.let { DetailScreen(vm, it) { page = Page.HOME } }
+            Crossfade(
+                targetState = page,
+                animationSpec = tween(150),
+                label = "PageNavigation",
+            ) { currentPage ->
+                when (currentPage) {
+                    Page.HOME -> HomeScreen(vm, { selected = it; page = Page.DETAIL }, { page = Page.CREATE }, { page = Page.SETTINGS }, { page = Page.PERMISSIONS })
+                    Page.SETTINGS -> SettingsScreen(vm) { page = Page.PERMISSIONS }
+                    Page.CREATE -> CreateScreen(vm) { page = Page.HOME }
+                    Page.PERMISSIONS -> PermissionsScreen(vm) { page = Page.SETTINGS }
+                    Page.DETAIL -> selected?.let { DetailScreen(vm, it) { page = Page.HOME } }
+                }
             }
         }
     }
@@ -76,24 +91,117 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     }
 }
 
-@Composable private fun HomeScreen(vm: AppViewModel, detail: (Automation) -> Unit, create: () -> Unit, settings: () -> Unit, permissions: () -> Unit) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable private fun HomeScreen(
+    vm: AppViewModel,
+    detail: (Automation) -> Unit,
+    create: () -> Unit,
+    settings: () -> Unit,
+    permissions: () -> Unit,
+) {
     val rules by vm.automations.collectAsState()
     val engine by vm.engineRunning.collectAsState()
+    var selectedRuleIds by remember { mutableStateOf(emptySet<String>()) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    val isSelectionMode = selectedRuleIds.isNotEmpty()
+
+    BackHandler(enabled = isSelectionMode) {
+        selectedRuleIds = emptySet()
+    }
+
+    if (showDeleteConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            title = { Text("Delete automations?") },
+            text = { Text("Are you sure you want to delete ${selectedRuleIds.size} automation(s)? This action cannot be undone.") },
+            confirmButton = {
+                TextButton({
+                    vm.deleteMany(selectedRuleIds)
+                    selectedRuleIds = emptySet()
+                    showDeleteConfirmDialog = false
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton({ showDeleteConfirmDialog = false }) { Text("Cancel") }
+            },
+        )
+    }
+
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        TopAppBar(title = { Text("Automations", fontWeight = FontWeight.Bold) }, navigationIcon = { Icon(Icons.Default.Hub, null) }, actions = { IconButton({}) { Icon(Icons.Default.Search, null) } })
-        Text("Make your phone react automatically", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        TopAppBar(
+            title = {
+                Text(
+                    if (isSelectionMode) "${selectedRuleIds.size} selected" else "Automations",
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            navigationIcon = {
+                if (isSelectionMode) {
+                    IconButton({ selectedRuleIds = emptySet() }) {
+                        Icon(Icons.Default.Close, "Cancel selection")
+                    }
+                } else {
+                    Icon(Icons.Default.Hub, null)
+                }
+            },
+            actions = {
+                if (isSelectionMode) {
+                    TextButton({
+                        selectedRuleIds = if (selectedRuleIds.size == rules.size) emptySet() else rules.map { it.rule.id }.toSet()
+                    }) {
+                        Text(if (selectedRuleIds.size == rules.size) "Deselect all" else "Select all")
+                    }
+                    IconButton({ showDeleteConfirmDialog = true }) {
+                        Icon(Icons.Default.Delete, "Delete selected", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+        )
+
+        Text("Make your phone react automatically", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
+        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Automation engine", style = MaterialTheme.typography.titleMedium)
             FollowSwitch(engine, { if (it) vm.startEngine() else vm.stopEngine() })
         }
-        Spacer(Modifier.height(16.dp))
-        if (rules.isEmpty()) EmptyState(create) else LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(rules, key = { it.rule.id }) { item ->
-                RuleCard(item, { detail(item.rule) }, { vm.setEnabled(item.rule.id, it) }, permissions)
+        Spacer(Modifier.height(12.dp))
+
+        if (rules.isEmpty()) {
+            EmptyState(create)
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(rules, key = { it.rule.id }) { item ->
+                    val isSelected = item.rule.id in selectedRuleIds
+                    RuleCard(
+                        item = item,
+                        isSelected = isSelected,
+                        isSelectionMode = isSelectionMode,
+                        onClick = {
+                            if (isSelectionMode) {
+                                selectedRuleIds = if (isSelected) selectedRuleIds - item.rule.id else selectedRuleIds + item.rule.id
+                            } else {
+                                detail(item.rule)
+                            }
+                        },
+                        onLongClick = {
+                            selectedRuleIds = if (isSelected) selectedRuleIds - item.rule.id else selectedRuleIds + item.rule.id
+                        },
+                        enabled = { vm.setEnabled(item.rule.id, it) },
+                        onPermission = permissions,
+                    )
+                }
             }
         }
-        Spacer(Modifier.weight(1f))
-        Button(create, Modifier.fillMaxWidth().padding(bottom = 12.dp)) { Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text("Create automation") }
+
+        Button(create, Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+            Icon(Icons.Default.Add, null)
+            Spacer(Modifier.width(8.dp))
+            Text("Create automation")
+        }
     }
 }
 
@@ -106,17 +214,64 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     }
 }
 
-@Composable private fun RuleCard(item: AutomationUI, open: () -> Unit, enabled: (Boolean) -> Unit, onPermission: () -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable(onClick = open), colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
+@Composable private fun RuleCard(
+    item: AutomationUI,
+    isSelected: Boolean,
+    isSelectionMode: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    enabled: (Boolean) -> Unit,
+    onPermission: () -> Unit,
+) {
+    val containerColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+        else MaterialTheme.colorScheme.surfaceContainer,
+        animationSpec = tween(150),
+        label = "cardColor",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.Transparent,
+        animationSpec = tween(150),
+        label = "cardBorder",
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                1.5.dp,
+                borderColor,
+                shape = CardDefaults.shape,
+            )
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
+        colors = CardDefaults.cardColors(containerColor),
+    ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(if (item.rule.triggerEvent == TriggerEvent.APP_OPENED) Icons.Default.Apps else Icons.Default.Close, null, Modifier.size(40.dp), tint = MaterialTheme.colorScheme.primary)
+            if (isSelectionMode) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onClick() },
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+            }
+            Icon(
+                if (item.rule.triggerEvent == TriggerEvent.APP_OPENED) Icons.Default.Apps else Icons.Default.Close,
+                null,
+                Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
             Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
                 Text(item.rule.name, style = MaterialTheme.typography.titleMedium)
                 Text("${item.rule.triggerEvent.label} → ${item.rule.action.label}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 Text(item.rule.appName.ifBlank { item.rule.appPackage }, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 CapabilityPill(item.capability.label, Modifier.padding(top = 6.dp), onClick = onPermission)
             }
-            FollowSwitch(item.rule.enabled, enabled)
+            if (!isSelectionMode) {
+                FollowSwitch(item.rule.enabled, enabled)
+            }
         }
     }
 }
@@ -470,25 +625,90 @@ private data class AppDisplayItem(
     }
 }
 
-@Composable private fun DetailScreen(vm: AppViewModel, rule: Automation, back: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        TopAppBar(title = { Text("Automation Detail") }, navigationIcon = { IconButton(back) { Icon(Icons.Default.ArrowBack, null) } })
-        Text("WHEN", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
-        InfoBlock(rule.triggerEvent.label, rule.appName.ifBlank { rule.appPackage })
-        Text("DO", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 20.dp))
-        InfoBlock(rule.action.label, "System action")
-        Spacer(Modifier.weight(1f))
-        Button({ vm.delete(rule.id); back() }, Modifier.fillMaxWidth().padding(bottom = 16.dp), colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)) {
-            Icon(Icons.Default.Delete, null); Spacer(Modifier.width(8.dp)); Text("Delete")
-        }
-    }
-}
+@Composable private fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
+    var event by remember(initialRule.id) { mutableStateOf(initialRule.triggerEvent) }
+    var action by remember(initialRule.id) { mutableStateOf(initialRule.action) }
+    var pkg by remember(initialRule.id) { mutableStateOf(initialRule.appPackage) }
+    var appName by remember(initialRule.id) { mutableStateOf(initialRule.appName) }
+    var name by remember(initialRule.id) { mutableStateOf(initialRule.name) }
+    var showApps by remember { mutableStateOf(false) }
+    var showTriggers by remember { mutableStateOf(false) }
+    var showActions by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
-@Composable private fun InfoBlock(title: String, sub: String) {
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
-        Column(Modifier.padding(16.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(sub, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (showApps) AppPicker({ p, n -> pkg = p; appName = n; showApps = false }) { showApps = false }
+    if (showTriggers) TriggerPicker(event, { event = it; showTriggers = false }) { showTriggers = false }
+    if (showActions) ActionPicker(action, { action = it; showActions = false }) { showActions = false }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete automation?") },
+            text = { Text("Are you sure you want to delete '${initialRule.name}'? This action cannot be undone.") },
+            confirmButton = {
+                TextButton({
+                    showDeleteConfirm = false
+                    vm.delete(initialRule.id)
+                    back()
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton({ showDeleteConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+        TopAppBar(
+            title = { Text("Edit automation", fontWeight = FontWeight.Bold) },
+            navigationIcon = { IconButton(back) { Icon(Icons.Default.ArrowBack, null) } },
+            actions = {
+                IconButton({ showDeleteConfirm = true }) {
+                    Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                }
+            },
+        )
+        Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SelectionRow("Trigger", event.label) { showTriggers = true }
+        Spacer(Modifier.height(8.dp))
+        SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
+
+        Text("DO", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp))
+        SelectionRow("Action", action.label) { showActions = true }
+
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+            label = { Text("Name") },
+            singleLine = true,
+        )
+
+        Spacer(Modifier.weight(1f))
+
+        Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(back, Modifier.weight(1f)) { Text("Cancel") }
+            Button(
+                onClick = {
+                    val finalName = name.ifBlank { "${appName.ifBlank { pkg }} · ${action.label}" }
+                    vm.updateRule(
+                        initialRule.copy(
+                            name = finalName,
+                            triggerEvent = event,
+                            appPackage = pkg,
+                            appName = appName,
+                            action = action,
+                        )
+                    )
+                    back()
+                },
+                modifier = Modifier.weight(1f),
+                enabled = pkg.isNotEmpty(),
+            ) {
+                Text("Save changes")
+            }
         }
     }
 }
