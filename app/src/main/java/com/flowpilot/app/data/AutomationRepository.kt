@@ -47,15 +47,23 @@ class AutomationRepository(private val context: Context) {
         } ?: emptyList()
     }
 
-    suspend fun add(name: String, triggerEvent: com.flowpilot.app.data.model.TriggerEvent,
-                    appPackage: String, appName: String, action: com.flowpilot.app.data.model.ActionType): Automation {
+    suspend fun add(
+        name: String,
+        triggerEvent: com.flowpilot.app.data.model.TriggerEvent,
+        appPackage: String,
+        appName: String,
+        actions: List<com.flowpilot.app.data.model.ActionType>,
+    ): Automation {
+        val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
+        val summary = actions.joinToString(" + ") { it.label }
         val rule = Automation(
             id = UUID.randomUUID().toString(),
-            name = name.ifBlank { "${appName.ifBlank { appPackage }} · ${action.label}" },
+            name = name.ifBlank { "${appName.ifBlank { appPackage }} · $summary" },
             triggerEvent = triggerEvent,
             appPackage = appPackage,
             appName = appName,
-            action = action,
+            action = primaryAction,
+            actions = actions,
             createdAt = System.currentTimeMillis(),
         )
         context.dataStore.edit { prefs ->

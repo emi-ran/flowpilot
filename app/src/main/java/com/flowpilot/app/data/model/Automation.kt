@@ -82,6 +82,13 @@ data class Automation(
     val appPackage: String,
     val appName: String = "",
     val action: ActionType = ActionType.NFC_ON,
+    val actions: List<ActionType> = emptyList(),
     val createdAt: Long,
     val lastTriggeredAt: Long = 0L,
-)
+) {
+    val effectiveActions: List<ActionType>
+        get() = if (actions.isNotEmpty()) actions else listOf(action)
+
+    val actionSummary: String
+        get() = effectiveActions.joinToString(" + ") { it.label }
+}

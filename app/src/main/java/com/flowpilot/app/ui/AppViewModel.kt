@@ -65,7 +65,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun remapRules(rules: List<Automation>) {
         automations.value = rules.sortedByDescending { it.createdAt }
-            .map { AutomationUI(it, capabilities.statusFor(it.action)) }
+            .map { rule ->
+                val statuses = rule.effectiveActions.map { capabilities.statusFor(it) }
+                val aggregate = when {
+                    statuses.any { it == CapabilityStatus.UNSUPPORTED } -> CapabilityStatus.UNSUPPORTED
+                    statuses.any { it == CapabilityStatus.SHIZUKU_REQUIRED } -> CapabilityStatus.SHIZUKU_REQUIRED
+                    statuses.any { it == CapabilityStatus.PERMISSION_REQUIRED } -> CapabilityStatus.PERMISSION_REQUIRED
+                    else -> CapabilityStatus.AVAILABLE
+                }
+                AutomationUI(rule, aggregate)
+            }
     }
 
     fun refreshPermissions() {
@@ -101,10 +110,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun addRule(name: String?, triggerEvent: com.flowpilot.app.data.model.TriggerEvent,
-                appPackage: String, appName: String, action: com.flowpilot.app.data.model.ActionType) {
+    fun addRule(
+        name: String?,
+        triggerEvent: com.flowpilot.app.data.model.TriggerEvent,
+        appPackage: String,
+        appName: String,
+        actions: List<com.flowpilot.app.data.model.ActionType>,
+    ) {
         viewModelScope.launch {
-            repository.add(name ?: "", triggerEvent, appPackage, appName, action)
+            repository.add(name ?: "", triggerEvent, appPackage, appName, actions)
             if (capabilities.hasUsageAccess()) {
                 startEngine()
             }

@@ -120,9 +120,15 @@ class AutomationEngine(context: Context) {
     private suspend fun executeAll(rules: List<com.flowpilot.app.data.model.Automation>) {
         for (rule in rules) {
             withContext(Dispatchers.IO) {
-                val result = dispatcher.execute(rule.action)
-                Log.i(TAG, "Rule '${rule.name}' action ${rule.action.name} result: success=${result.success}, msg=${result.message}")
-                if (result.success) {
+                var anySuccess = false
+                for (action in rule.effectiveActions) {
+                    val result = dispatcher.execute(action)
+                    Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")
+                    if (result.success) {
+                        anySuccess = true
+                    }
+                }
+                if (anySuccess) {
                     repository.patchLastTriggeredAt(rule.id, System.currentTimeMillis())
                 }
             }
