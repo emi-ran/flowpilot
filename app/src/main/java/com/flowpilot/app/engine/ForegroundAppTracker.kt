@@ -51,9 +51,6 @@ class ForegroundAppTracker(private val context: Context) {
                 event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
                 list.add(Transition(event.packageName, isForeground = true, timestamp = event.timeStamp))
                 lastKnownPackage = event.packageName
-            } else if (event.eventType == UsageEvents.Event.MOVE_TO_BACKGROUND ||
-                       event.eventType == UsageEvents.Event.ACTIVITY_PAUSED) {
-                list.add(Transition(event.packageName, isForeground = false, timestamp = event.timeStamp))
             }
         }
         if (maxTime > lastEventTime) {

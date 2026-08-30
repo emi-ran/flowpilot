@@ -35,7 +35,27 @@ class PowerSaverExecutor(
             ActionType.BATTERY_SAVER_OFF -> 0
             else -> return ActionResult(false, "Unsupported action for battery saver")
         }
-        // Path 1: direct write via WRITE_SECURE_SETTINGS (ADB-granted).
+
+        // Primary & most effective method: Shizuku executes `cmd power set-mode <0|1>`
+        // and updates system & global settings for AOSP and Xiaomi HyperOS.
+        if (shell.isShizukuRunning() && shell.hasPermission()) {
+            return try {
+                val (code, out) = shell.run("cmd power set-mode $target")
+                try { shell.run("settings put system POWER_SAVE_MODE_OPEN $target") } catch (_: Throwable) {}
+                try { shell.run("settings put global low_power $target") } catch (_: Throwable) {}
+                if (code == 0) {
+                    ActionResult(true, "Battery saver ${if (target == 1) "on" else "off"}")
+                } else {
+                    val (code2, out2) = shell.run("settings put global low_power $target")
+                    if (code2 == 0) ActionResult(true, "Battery saver ${if (target == 1) "on" else "off"}")
+                    else ActionResult(false, "Failed to toggle battery saver: $out / $out2")
+                }
+            } catch (t: Throwable) {
+                ActionResult(false, t.message ?: t.javaClass.simpleName)
+            }
+        }
+
+        // Fallback method: Direct write via WRITE_SECURE_SETTINGS (ADB-granted).
         if (hasWriteSecureSettings()) {
             return try {
                 val ok = Settings.Global.putInt(
@@ -49,19 +69,7 @@ class PowerSaverExecutor(
                 ActionResult(false, t.message ?: t.javaClass.simpleName)
             }
         }
-        // Path 2: Shizuku shell.
-        if (!shell.isShizukuRunning()) {
-            return ActionResult(false, "Battery saver needs WRITE_SECURE_SETTINGS (ADB) or Shizuku")
-        }
-        if (!shell.hasPermission()) {
-            return ActionResult(false, "Shizuku permission not granted to FlowPilot")
-        }
-        return try {
-            val (code, out) = shell.run("settings put global low_power $target")
-            if (code == 0) ActionResult(true, "Battery saver ${if (target == 1) "on" else "off"}")
-            else ActionResult(false, "settings put failed (exit $code): $out")
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
-        }
+
+        return ActionResult(false, "Battery saver needs Shizuku permission or WRITE_SECURE_SETTINGS")
     }
 }
