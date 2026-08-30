@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FlowPilot</string>
+    <string name="notif_channel_engine">Automation engine</string>
+    <string name="notif_channel_engine_desc">Keeps FlowPilot\'s automation engine running</string>
+    <string name="notif_engine_title">FlowPilot engine running</string>
+    <string name="notif_engine_text">Watching for app open/close events</string>
+    <string name="special_use_subtype">Detects foreground app changes and applies user-configured automations (NFC, battery saver).</string>
+</resources>

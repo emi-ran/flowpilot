@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Bolt glyph, centered, in the app's light-blue primary. -->
+    <path
+        android:fillColor="#8AB4F8"
+        android:pathData="M60,24 L36,58 L50,58 L46,84 L72,50 L56,50 Z" />
+</vector>

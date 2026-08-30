@@ -1,0 +1,38 @@
+package com.flowpilot.app.engine
+
+import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.TriggerEvent
+import com.google.common.truth.Truth.assertThat
+import org.junit.Test
+
+class RuleEvaluatorTest {
+    private fun rule(event: TriggerEvent = TriggerEvent.APP_OPENED) = Automation(
+        id = "1", name = "Wallet", appPackage = "wallet.pkg", appName = "Wallet",
+        triggerEvent = event, action = ActionType.NFC_ON, createdAt = 1L,
+    )
+
+    @Test fun opened_matches_only_same_package_and_event() {
+        val result = RuleEvaluator.evaluate(listOf(rule()), AppEvent.OPENED, "wallet.pkg", false)
+        assertThat(result.toExecute).containsExactly(rule())
+    }
+
+    @Test fun opened_is_suppressed_while_residency_lock_is_held() {
+        val result = RuleEvaluator.evaluate(listOf(rule()), AppEvent.OPENED, "wallet.pkg", true)
+        assertThat(result.toExecute).isEmpty()
+        assertThat(result.matched).hasSize(1)
+    }
+
+    @Test fun closed_rule_matches_close_event() {
+        val r = rule(TriggerEvent.APP_CLOSED)
+        val result = RuleEvaluator.evaluate(listOf(r), AppEvent.CLOSED, "wallet.pkg", false)
+        assertThat(result.toExecute).containsExactly(r)
+    }
+
+    @Test fun disabled_rule_never_matches() {
+        val r = rule().copy(enabled = false)
+        val result = RuleEvaluator.evaluate(listOf(r), AppEvent.OPENED, "wallet.pkg", false)
+        assertThat(result.toExecute).isEmpty()
+        assertThat(result.matched).isEmpty()
+    }
+}

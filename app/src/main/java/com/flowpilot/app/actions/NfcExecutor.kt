@@ -1,0 +1,34 @@
+package com.flowpilot.app.actions
+
+import com.flowpilot.app.data.model.ActionType
+
+/**
+ * Toggles NFC via Shizuku (`cmd nfc on/off`). Normal apps cannot toggle NFC on
+ * Android 10+; this is the honest root-free path. If Shizuku is unavailable the
+ * call reports failure rather than pretending it switched NFC.
+ */
+class NfcExecutor(private val shell: ShizukuShellCompatible) : ActionExecutor {
+
+    override val supportedTypes: Set<ActionType> = setOf(ActionType.NFC_ON, ActionType.NFC_OFF)
+
+    override fun execute(action: ActionType): ActionResult {
+        if (!shell.isShizukuRunning()) {
+            return ActionResult(false, "Shizuku not running — NFC can't be toggled")
+        }
+        if (!shell.hasPermission()) {
+            return ActionResult(false, "Shizuku permission not granted to FlowPilot")
+        }
+        val target = when (action) {
+            ActionType.NFC_ON -> "on"
+            ActionType.NFC_OFF -> "off"
+            else -> return ActionResult(false, "Unsupported action for NFC")
+        }
+        return try {
+            val (code, out) = shell.run("cmd nfc $target")
+            if (code == 0) ActionResult(true, "NFC turned ${if (target == "on") "on" else "off"}")
+            else ActionResult(false, "cmd nfc failed (exit $code): $out")
+        } catch (t: Throwable) {
+            ActionResult(false, t.message ?: t.javaClass.simpleName)
+        }
+    }
+}

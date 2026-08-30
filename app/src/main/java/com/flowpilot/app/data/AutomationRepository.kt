@@ -1,0 +1,93 @@
+package com.flowpilot.app.data
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.flowpilot.app.data.model.Automation
+import java.util.UUID
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "automations")
+
+/** Persists automation rules as JSON in a single DataStore preferences key. */
+class AutomationRepository(private val context: Context) {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+    private val listSerializer = ListSerializer(Automation.serializer())
+
+    private val key = stringPreferencesKey("rules")
+
+    val automations: Flow<List<Automation>> = context.dataStore.data.map { prefs ->
+        prefs[key]?.let { raw ->
+            try {
+                json.decodeFromString(listSerializer, raw)
+            } catch (_: Exception) {
+                emptyList()
+            }
+        } ?: emptyList()
+    }
+
+    suspend fun add(name: String, triggerEvent: com.flowpilot.app.data.model.TriggerEvent,
+                    appPackage: String, appName: String, action: com.flowpilot.app.data.model.ActionType): Automation {
+        val rule = Automation(
+            id = UUID.randomUUID().toString(),
+            name = name.ifBlank { "${appName.ifBlank { appPackage }} · ${action.label}" },
+            triggerEvent = triggerEvent,
+            appPackage = appPackage,
+            appName = appName,
+            action = action,
+            createdAt = System.currentTimeMillis(),
+        )
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
+            prefs[key] = json.encodeToString(listSerializer, current + rule)
+        }
+        return rule
+    }
+
+    suspend fun update(rule: Automation) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
+            val updated = current.map { if (it.id == rule.id) rule else it }
+            prefs[key] = json.encodeToString(listSerializer, updated)
+        }
+    }
+
+    suspend fun patchLastTriggeredAt(id: String, at: Long) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val updated = current.map { if (it.id == id) it.copy(lastTriggeredAt = at) else it }
+            prefs[key] = json.encodeToString(listSerializer, updated)
+        }
+    }
+
+    suspend fun setEnabled(id: String, enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val updated = current.map { if (it.id == id) it.copy(enabled = enabled) else it }
+            prefs[key] = json.encodeToString(listSerializer, updated)
+        }
+    }
+
+    suspend fun delete(id: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            prefs[key] = json.encodeToString(listSerializer, current.filterNot { it.id == id })
+        }
+    }
+
+    private fun safeDecode(raw: String): List<Automation> = try {
+        json.decodeFromString(listSerializer, raw)
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
