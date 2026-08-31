@@ -33,6 +33,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasWriteSecureSettings = MutableStateFlow(false)
     val hasNotifications = MutableStateFlow(false)
     val hasNotificationPolicy = MutableStateFlow(false)
+    val hasNotificationListener = MutableStateFlow(false)
+    val hasWifiPermissions = MutableStateFlow(false)
     val ignoresBatteryOptimizations = MutableStateFlow(false)
     val shizukuState = MutableStateFlow(ShizukuState.NOT_INSTALLED)
     val engineRunning = MutableStateFlow(false)
@@ -70,11 +72,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun remapRules(rules: List<Automation>) {
         automations.value = rules.sortedByDescending { it.createdAt }
             .map { rule ->
-                val statuses = rule.effectiveActions.map { capabilities.statusFor(it) }
+                val actionStatuses = rule.effectiveActions.map { capabilities.statusFor(it) }
+
+                // Check trigger/condition prerequisites for Wi-Fi and Notifications
+                val hasWifiTriggerOrCond = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.WIFI_CONNECTED ||
+                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.WIFI_DISCONNECTED ||
+                    rule.conditions.any { it.type == com.flowpilot.app.data.model.ConditionType.WIFI_CONNECTED || it.type == com.flowpilot.app.data.model.ConditionType.WIFI_DISCONNECTED }
+
+                val hasNotificationTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED
+
+                val triggerStatus = when {
+                    hasWifiTriggerOrCond && !capabilities.hasWifiPermissions() -> CapabilityStatus.PERMISSION_REQUIRED
+                    hasNotificationTrigger && !capabilities.hasNotificationListenerAccess() -> CapabilityStatus.PERMISSION_REQUIRED
+                    else -> CapabilityStatus.AVAILABLE
+                }
+
+                val allStatuses = actionStatuses + triggerStatus
+
                 val aggregate = when {
-                    statuses.any { it == CapabilityStatus.UNSUPPORTED } -> CapabilityStatus.UNSUPPORTED
-                    statuses.any { it == CapabilityStatus.SHIZUKU_REQUIRED } -> CapabilityStatus.SHIZUKU_REQUIRED
-                    statuses.any { it == CapabilityStatus.PERMISSION_REQUIRED } -> CapabilityStatus.PERMISSION_REQUIRED
+                    allStatuses.any { it == CapabilityStatus.UNSUPPORTED } -> CapabilityStatus.UNSUPPORTED
+                    allStatuses.any { it == CapabilityStatus.SHIZUKU_REQUIRED } -> CapabilityStatus.SHIZUKU_REQUIRED
+                    allStatuses.any { it == CapabilityStatus.PERMISSION_REQUIRED } -> CapabilityStatus.PERMISSION_REQUIRED
                     else -> CapabilityStatus.AVAILABLE
                 }
                 AutomationUI(rule, aggregate)
@@ -91,6 +109,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             app.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         } else true
         hasNotificationPolicy.value = c.hasNotificationPolicyAccess()
+        hasNotificationListener.value = c.hasNotificationListenerAccess()
+        hasWifiPermissions.value = c.hasWifiPermissions()
         ignoresBatteryOptimizations.value = c.isIgnoringBatteryOptimizations()
 
         if (engineRunning.value) {
@@ -126,6 +146,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         scheduledMinute: Int = 0,
         scheduledDays: Set<Int> = emptySet(),
         batteryLevel: Int = 50,
+        wifiSsid: String = "",
+        notificationAppPackage: String = "",
+        notificationAppName: String = "",
+        notificationKeyword: String = "",
+        conditions: List<com.flowpilot.app.data.model.RuleCondition> = emptyList(),
         notificationTitle: String = "FlowPilot",
         notificationBody: String = "Automation ran",
         vibrationPattern: com.flowpilot.app.data.model.VibrationPattern = com.flowpilot.app.data.model.VibrationPattern.PULSE,
@@ -151,7 +176,44 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         ruleId: String = UUID.randomUUID().toString(),
     ) {
         viewModelScope.launch {
-            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url, ttsText, ttsVoiceName, ttsSpeechRate, ttsAudioFileName, alarmHour, alarmMinute, alarmMessage, timerDurationSeconds, timerMessage, ruleId)
+            repository.add(
+                name = name ?: "",
+                triggerEvent = triggerEvent,
+                appPackage = appPackage,
+                appName = appName,
+                actions = actions,
+                scheduledMinute = scheduledMinute,
+                scheduledDays = scheduledDays,
+                batteryLevel = batteryLevel,
+                wifiSsid = wifiSsid,
+                notificationAppPackage = notificationAppPackage,
+                notificationAppName = notificationAppName,
+                notificationKeyword = notificationKeyword,
+                conditions = conditions,
+                notificationTitle = notificationTitle,
+                notificationBody = notificationBody,
+                vibrationPattern = vibrationPattern,
+                vibrationDurationMs = vibrationDurationMs,
+                vibrationAmplitude = vibrationAmplitude,
+                mediaVolumePercent = mediaVolumePercent,
+                soundPreset = soundPreset,
+                soundUri = soundUri,
+                soundName = soundName,
+                soundDurationMs = soundDurationMs,
+                launchPackage = launchPackage,
+                launchAppName = launchAppName,
+                url = url,
+                ttsText = ttsText,
+                ttsVoiceName = ttsVoiceName,
+                ttsSpeechRate = ttsSpeechRate,
+                ttsAudioFileName = ttsAudioFileName,
+                alarmHour = alarmHour,
+                alarmMinute = alarmMinute,
+                alarmMessage = alarmMessage,
+                timerDurationSeconds = timerDurationSeconds,
+                timerMessage = timerMessage,
+                id = ruleId,
+            )
             startEngine()
         }
     }

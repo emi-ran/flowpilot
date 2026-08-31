@@ -36,9 +36,10 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, or scheduled time -> one or more NFC on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Create alarm, Start timer, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), notification received (selected app + optional keyword), or scheduled time -> one or more NFC on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Create alarm, Start timer, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Rule conditions (AND semantics): battery below/above, charger connected/disconnected, screen on/off, Wi-Fi connected/disconnected. Rules execute only when trigger matches AND all configured conditions match current live state.
 - Installed launchable app picker with search, display name, package ID internally.
-- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, and Time; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, and NFC.
+- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, and NFC.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
 - Enable/disable switches.
@@ -101,7 +102,21 @@ Open FlowPilot -> Settings -> Advanced permissions -> Do Not Disturb access -> a
 
 Reason: Changing Do Not Disturb (`NotificationManager.setInterruptionFilter`) requires Android's user-grantable Notification Policy Access (`NotificationManager.isNotificationPolicyAccessGranted`). Standard `POST_NOTIFICATIONS` is insufficient.
 
-### 6. Battery Saver actions: ADB path
+### 6. Notification listener access
+
+Open FlowPilot -> Settings -> Advanced permissions -> Notification listener access -> allow FlowPilot.
+
+Reason: Detecting incoming notifications from selected applications requires Android's user-grantable NotificationListenerService access (`android.permission.BIND_NOTIFICATION_LISTENER_SERVICE`). FlowPilot uses this strictly to match user-configured package names and optional keywords without persisting or logging notification content.
+
+### 7. Wi-Fi, Nearby devices & Location permissions
+
+Open FlowPilot -> Settings -> Advanced permissions -> Wi-Fi & Location permissions -> allow FlowPilot.
+
+Reason: Android requires `ACCESS_FINE_LOCATION`, `ACCESS_WIFI_STATE`, and device Location enabled to identify connected Wi-Fi SSIDs for Wi-Fi triggers and live condition checks. Android 13+ also requires Nearby devices (`NEARBY_WIFI_DEVICES`) for on-demand nearby-network scans.
+
+Use a Wi-Fi trigger or Wi-Fi condition's scan icon / **Scan nearby** control to select an SSID from nearby scan results, or type it manually. Scans are user-initiated; Android throttles scan frequency and may return recently cached results. FlowPilot persists only the SSID selected for a rule, not scan-result history.
+
+### 8. Battery Saver actions: ADB path
 
 With USB debugging enabled and device connected:
 
@@ -117,7 +132,7 @@ adb shell dumpsys package com.flowpilot.app | grep WRITE_SECURE_SETTINGS
 
 This gives FlowPilot direct Battery Saver access. NFC still needs Shizuku.
 
-### 7. Shizuku path
+### 9. Shizuku path
 
 Install Shizuku from its official source:
 
@@ -150,6 +165,8 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 - Battery threshold rules do not need Usage Access. They react only when the level crosses selected threshold; a battery level already above or below threshold at engine startup does not trigger an action.
 - Show notification needs `POST_NOTIFICATIONS` on Android 13+. The action reports failure when permission is denied. Android/HyperOS channel settings can still suppress a heads-up banner.
 - Do Not Disturb on/off requires Notification Policy Access (`android.permission.ACCESS_NOTIFICATION_POLICY`). Normal notification permissions cannot change DND filter state.
+- Wi-Fi connected/disconnected triggers and Wi-Fi conditions require Location permission plus device Location enabled to read SSIDs. On Android 13+, nearby-network scanning also requires Nearby devices permission. FlowPilot derives SSID from Wi-Fi-specific `NetworkCallback` capabilities, so it continues to detect Wi-Fi while cellular data is the default network.
+- Notification-received triggers require Notification Listener access. Notification title/text is matched only in memory against the selected package and optional keyword; it is never persisted or logged. Notification post key/time dedupe prevents replaying the same post.
 - Create alarm dispatches `AlarmClock.ACTION_SET_ALARM` without `EXTRA_SKIP_UI`, allowing the system Clock app to present confirmation or UI as needed. Start timer dispatches `AlarmClock.ACTION_SET_TIMER` with `EXTRA_SKIP_UI = true` to request background timer start without opening the Clock app UI. Both actions start an activity from the foreground service with `FLAG_ACTIVITY_NEW_TASK` and are subject to Android and HyperOS background activity start policies.
 - Launch app requires an installed launchable target. Open URL accepts only absolute `http` or `https` URLs with a host. Both actions start a new activity from the foreground service and can be restricted by future Android or OEM background-activity-launch policies.
 - Custom Play sound files use Android's document picker and persist read access to the selected URI. Removing or moving access to that source makes the action report failure.
@@ -190,6 +207,9 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Speak text (offline TTS) builds, unit tests, and Xiaomi device smoke test passed.
 - Auto-rotate on/off (WRITE_SETTINGS) implementation builds and has unit coverage; ADB validation confirmed target device values (0 and 1), while FlowPilot app path device smoke test remains pending.
 - Clock create alarm and start timer passed Xiaomi 15T Pro / HyperOS 3 device smoke tests. Start timer uses `EXTRA_SKIP_UI = true` and starts its countdown without opening Clock UI.
+- Rule conditions, including AND matching of app, battery, charger, screen, and Wi-Fi state, passed Xiaomi 15T Pro / HyperOS 3 device smoke tests.
+- Notification-received trigger passed Xiaomi 15T Pro / HyperOS 3 device smoke tests with selected-app and keyword matching.
+- Wi-Fi connected/disconnected triggers passed Xiaomi 15T Pro / HyperOS 3 device smoke tests, including an SSID selected through the nearby-network picker while cellular remained the default network.
 - Do Not Disturb on/off (Notification Policy Access) implementation complete with unit tests; device smoke test remains pending.
 
 ## Next validation

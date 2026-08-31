@@ -29,8 +29,10 @@ import androidx.compose.material.icons.filled.DoNotDisturb
 import androidx.compose.material.icons.filled.DoNotDisturbOff
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.PowerOff
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -43,7 +45,10 @@ import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.StayCurrentLandscape
 import androidx.compose.material.icons.filled.StayCurrentPortrait
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -194,6 +199,46 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                         icon = Icons.Default.Schedule,
                         iconTint = Color(0xFFCE93D8),
                         keywords = listOf("time", "clock", "alarm", "schedule", "daily", "days", "cron", "minute"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = TriggerCategory.NETWORK.name,
+                label = TriggerCategory.NETWORK.label,
+                icon = Icons.Default.Wifi,
+                iconTint = Color(0xFF4FC3F7),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.WIFI_CONNECTED,
+                        title = TriggerEvent.WIFI_CONNECTED.label,
+                        subtitle = "When device connects to a configured Wi-Fi SSID",
+                        icon = Icons.Default.Wifi,
+                        iconTint = Color(0xFF4FC3F7),
+                        keywords = listOf("wifi", "wi-fi", "wireless", "network", "connect", "ssid", "wlan", "internet"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.WIFI_DISCONNECTED,
+                        title = TriggerEvent.WIFI_DISCONNECTED.label,
+                        subtitle = "When device disconnects from a configured Wi-Fi SSID",
+                        icon = Icons.Default.WifiOff,
+                        iconTint = Color(0xFF81D4FA),
+                        keywords = listOf("wifi", "wi-fi", "wireless", "network", "disconnect", "ssid", "wlan", "leave"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = TriggerCategory.NOTIFICATION.name,
+                label = TriggerCategory.NOTIFICATION.label,
+                icon = Icons.Default.NotificationsActive,
+                iconTint = Color(0xFFFFB74D),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.NOTIFICATION_RECEIVED,
+                        title = TriggerEvent.NOTIFICATION_RECEIVED.label,
+                        subtitle = "When a notification arrives from selected app (optional keyword)",
+                        icon = Icons.Default.NotificationsActive,
+                        iconTint = Color(0xFFFFB74D),
+                        keywords = listOf("notification", "alert", "message", "push", "keyword", "title", "text", "received"),
                     ),
                 ),
             ),

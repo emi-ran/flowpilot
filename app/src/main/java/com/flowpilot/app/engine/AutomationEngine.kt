@@ -25,6 +25,7 @@ class AutomationEngine(
     private val chargerTracker: ChargerStateTracker = ChargerStateTracker(context.applicationContext),
     private val batteryTracker: BatteryLevelTracker = BatteryLevelTracker(context.applicationContext),
     private val screenTracker: ScreenStateTracker = ScreenStateTracker(context.applicationContext),
+    private val wifiTracker: WifiStateTracker = WifiStateTracker(context.applicationContext),
 ) {
 
     private val appContext = context.applicationContext
@@ -48,15 +49,19 @@ class AutomationEngine(
         chargerTracker.start()
         batteryTracker.start()
         screenTracker.start()
+        wifiTracker.start()
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         job = scope.launch {
             while (isActive) {
                 try {
-                    poll()
-                    pollChargerEvents()
-                    pollBatteryTransitions()
-                    pollScreenEvents()
-                    pollSchedules()
+                    val liveState = getLiveSystemState()
+                    poll(liveState)
+                    pollChargerEvents(liveState)
+                    pollBatteryTransitions(liveState)
+                    pollScreenEvents(liveState)
+                    pollWifiTransitions(liveState)
+                    pollNotificationEvents(liveState)
+                    pollSchedules(liveState)
                 } catch (e: Exception) {
                     Log.w(TAG, "Exception during engine poll: ${e.message}")
                 }
@@ -73,9 +78,32 @@ class AutomationEngine(
         chargerTracker.stop()
         batteryTracker.stop()
         screenTracker.stop()
+        wifiTracker.stop()
     }
 
-    suspend fun poll() {
+    private fun getLiveSystemState(): LiveSystemState {
+        val batteryIntent = appContext.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+        val level = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val batteryPercent = if (level >= 0 && scale > 0) (level * 100) / scale else null
+
+        val plugged = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        val isChargerConnected = plugged != 0
+
+        val pm = appContext.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+        val isScreenOn = pm?.isInteractive
+
+        val connectedWifi = wifiTracker.getCurrentConnectedSsid()
+
+        return LiveSystemState(
+            batteryPercent = batteryPercent,
+            isChargerConnected = isChargerConnected,
+            isScreenOn = isScreenOn,
+            connectedWifiSsid = connectedWifi,
+        )
+    }
+
+    suspend fun poll(liveState: LiveSystemState = getLiveSystemState()) {
         val transitions = withContext(Dispatchers.IO) { tracker.queryNewTransitions() }
         if (transitions.isEmpty()) return
 
@@ -98,7 +126,7 @@ class AutomationEngine(
         val rules = repository.automations.first()
 
         stepOutput.closedPackage?.let { pkg ->
-            val result = RuleEvaluator.evaluate(rules, AppEvent.CLOSED, pkg, heldOpenLock = false)
+            val result = RuleEvaluator.evaluate(rules, AppEvent.CLOSED, pkg, heldOpenLock = false, liveState = liveState)
             if (result.toExecute.isNotEmpty()) {
                 Log.i(TAG, "Executing CLOSED rules for $pkg (${result.toExecute.size} rule(s))")
                 executeAll(result.toExecute)
@@ -106,7 +134,7 @@ class AutomationEngine(
         }
 
         stepOutput.openedPackage?.let { pkg ->
-            val result = RuleEvaluator.evaluate(rules, AppEvent.OPENED, pkg, heldOpenLock = false)
+            val result = RuleEvaluator.evaluate(rules, AppEvent.OPENED, pkg, heldOpenLock = false, liveState = liveState)
             if (result.toExecute.isNotEmpty()) {
                 Log.i(TAG, "Executing OPENED rules for $pkg (${result.toExecute.size} rule(s))")
                 executeAll(result.toExecute)
@@ -114,27 +142,26 @@ class AutomationEngine(
         }
     }
 
-    private suspend fun pollSchedules() {
+    private suspend fun pollSchedules(liveState: LiveSystemState) {
         val now = LocalDateTime.now()
         val occurrence = now.toLocalDate().toEpochDay() * 1440 + now.hour * 60 + now.minute
         val previous = lastScheduleOccurrence
         lastScheduleOccurrence = occurrence
         if (previous == null || previous == occurrence) return
 
-        val matches = ScheduleEvaluator.matchingRules(repository.automations.first(), now)
+        val matches = ScheduleEvaluator.matchingRules(repository.automations.first(), now, liveState)
         if (matches.isNotEmpty()) {
             Log.i(TAG, "Executing scheduled rules (${matches.size} rule(s))")
             executeAll(matches)
         }
     }
 
-    private suspend fun pollChargerEvents() {
+    private suspend fun pollChargerEvents(liveState: LiveSystemState) {
         val events = chargerTracker.drainEvents()
         if (events.isEmpty()) return
         val rules = repository.automations.first()
-        Log.i(TAG, "Loaded ${rules.size} rule(s) for foreground evaluation")
         for (event in events) {
-            val matches = RuleEvaluator.evaluateCharger(rules, event)
+            val matches = RuleEvaluator.evaluateCharger(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $event charger rules (${matches.size} rule(s))")
                 executeAll(matches)
@@ -142,12 +169,12 @@ class AutomationEngine(
         }
     }
 
-    private suspend fun pollBatteryTransitions() {
+    private suspend fun pollBatteryTransitions(liveState: LiveSystemState) {
         val transitions = batteryTracker.drainTransitions()
         if (transitions.isEmpty()) return
         val rules = repository.automations.first()
         for (transition in transitions) {
-            val matches = RuleEvaluator.evaluateBattery(rules, transition)
+            val matches = RuleEvaluator.evaluateBattery(rules, transition, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing battery threshold rules for ${transition.previous}% -> ${transition.current}% (${matches.size} rule(s))")
                 executeAll(matches)
@@ -155,14 +182,40 @@ class AutomationEngine(
         }
     }
 
-    private suspend fun pollScreenEvents() {
+    private suspend fun pollScreenEvents(liveState: LiveSystemState) {
         val events = screenTracker.drainEvents()
         if (events.isEmpty()) return
         val rules = repository.automations.first()
         for (event in events) {
-            val matches = RuleEvaluator.evaluateScreen(rules, event)
+            val matches = RuleEvaluator.evaluateScreen(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $event screen rules (${matches.size} rule(s))")
+                executeAll(matches)
+            }
+        }
+    }
+
+    private suspend fun pollWifiTransitions(liveState: LiveSystemState) {
+        val transitions = wifiTracker.drainTransitions()
+        if (transitions.isEmpty()) return
+        val rules = repository.automations.first()
+        for (transition in transitions) {
+            val matches = RuleEvaluator.evaluateWifi(rules, transition, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing Wi-Fi rules for ${transition.event} (${matches.size} rule(s))")
+                executeAll(matches)
+            }
+        }
+    }
+
+    private suspend fun pollNotificationEvents(liveState: LiveSystemState) {
+        val events = FlowPilotNotificationListener.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (event in events) {
+            val matches = RuleEvaluator.evaluateNotification(rules, event, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing notification rules for ${event.packageName} (${matches.size} rule(s))")
                 executeAll(matches)
             }
         }

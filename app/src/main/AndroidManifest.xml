@@ -24,6 +24,16 @@
     <!-- Normal permission for user-configured vibration actions. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Wi-Fi state, nearby devices (Android 13+), and fine location (required by Android 9+ to read Wi-Fi SSID / perform scans). -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission
+        android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
+
     <!-- Foreground service for the automation engine. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -88,6 +98,17 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- Notification listener service for notification received triggers. -->
+        <service
+            android:name=".engine.FlowPilotNotificationListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- Shizuku provider (needed so Shizuku can bind and grant binder access). -->
         <provider

@@ -5,6 +5,7 @@ package com.flowpilot.app.ui.screens
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,6 +41,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val write by vm.hasWriteSecureSettings.collectAsState()
     val notif by vm.hasNotifications.collectAsState()
     val notifPolicy by vm.hasNotificationPolicy.collectAsState()
+    val notifListener by vm.hasNotificationListener.collectAsState()
+    val wifiPerms by vm.hasWifiPermissions.collectAsState()
     val ignoresBatteryOptimizations by vm.ignoresBatteryOptimizations.collectAsState()
     val shizuku by vm.shizukuState.collectAsState()
     var showAdbDialog by remember { mutableStateOf(false) }
@@ -60,6 +63,7 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     }
 
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
+    val wifiLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vm.refreshPermissions() }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -77,6 +81,48 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
             }
             PermissionCard("Notifications", "Shows engine status while automation runs.", notif) {
                 notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            PermissionCard(
+                "Notification listener access",
+                "Allows FlowPilot to trigger automations when notifications arrive from selected apps.",
+                notifListener,
+            ) {
+                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                }
+            }
+            PermissionCard(
+                "Wi-Fi SSID & Location access",
+                "Android requires ACCESS_FINE_LOCATION permission, Wi-Fi permissions, and device Location enabled to identify connected Wi-Fi SSID and scan nearby networks for Wi-Fi triggers and conditions.",
+                wifiPerms,
+            ) {
+                val hasFine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val hasNearby = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.checkSelfPermission(Manifest.permission.NEARBY_WIFI_DEVICES) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                } else true
+
+                if (!hasFine || !hasNearby) {
+                    val list = mutableListOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_WIFI_STATE,
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        list.add(Manifest.permission.NEARBY_WIFI_DEVICES)
+                    }
+                    wifiLauncher.launch(list.toTypedArray())
+                } else {
+                    val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    try {
+                        context.startActivity(intent)
+                    } catch (_: Exception) {
+                        context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                    }
+                }
             }
             PermissionCard(
                 "Do Not Disturb access",

@@ -24,8 +24,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.content.Intent
+import android.provider.Settings
 import android.media.MediaMetadataRetriever
 import android.media.RingtoneManager
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.Tune
+import com.flowpilot.app.data.model.ConditionType
+import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.VibrationPattern
@@ -41,6 +47,7 @@ import com.flowpilot.app.ui.components.AppPicker
 import com.flowpilot.app.ui.components.SelectionRow
 import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
+import com.flowpilot.app.ui.components.WifiSsidPickerField
 
 @Composable
 fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
@@ -51,6 +58,12 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var scheduledMinute by remember { mutableIntStateOf(now.hour * 60 + now.minute) }
     var scheduledDays by remember { mutableStateOf(emptySet<Int>()) }
     var batteryLevel by remember { mutableIntStateOf(50) }
+    var wifiSsid by remember { mutableStateOf("") }
+    var notificationAppPackage by remember { mutableStateOf("") }
+    var notificationAppName by remember { mutableStateOf("") }
+    var notificationKeyword by remember { mutableStateOf("") }
+    var conditions by remember { mutableStateOf(emptyList<RuleCondition>()) }
+    var showConditionPicker by remember { mutableStateOf(false) }
     var notificationTitle by remember { mutableStateOf("FlowPilot") }
     var notificationBody by remember { mutableStateOf("Automation ran") }
     var vibrationPattern by remember { mutableStateOf(VibrationPattern.PULSE) }
@@ -97,13 +110,24 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var appName by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var showApps by remember { mutableStateOf(false) }
+    var showNotificationApps by remember { mutableStateOf(false) }
     var showLaunchApps by remember { mutableStateOf(false) }
     var showTriggers by remember { mutableStateOf(false) }
     var showActions by remember { mutableStateOf(false) }
 
     if (showApps) AppPicker({ p, n -> pkg = p; appName = n; showApps = false }) { showApps = false }
+    if (showNotificationApps) AppPicker({ p, n -> notificationAppPackage = p; notificationAppName = n; showNotificationApps = false }) { showNotificationApps = false }
     if (showLaunchApps) AppPicker({ p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }) { showLaunchApps = false }
     if (showTriggers) TriggerPicker(event, { event = it; showTriggers = false }) { showTriggers = false }
+    if (showConditionPicker) {
+        ConditionPickerDialog(
+            onAdd = { cond ->
+                conditions = conditions + cond
+                showConditionPicker = false
+            },
+            onDismiss = { showConditionPicker = false },
+        )
+    }
     if (showActions) {
         val currentSelected = editingActionIndex?.let { if (it < actions.size) actions[it] else null }
         ActionPicker(
@@ -165,7 +189,35 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 BatteryThresholdSettings(batteryLevel) { batteryLevel = it }
             } else if (event == TriggerEvent.APP_OPENED || event == TriggerEvent.APP_CLOSED) {
                 SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
+            } else if (event == TriggerEvent.WIFI_CONNECTED || event == TriggerEvent.WIFI_DISCONNECTED) {
+                WifiTriggerSettings(wifiSsid) { wifiSsid = it }
+            } else if (event == TriggerEvent.NOTIFICATION_RECEIVED) {
+                NotificationTriggerSettings(
+                    appPackage = notificationAppPackage,
+                    appName = notificationAppName,
+                    keyword = notificationKeyword,
+                    chooseApp = { showNotificationApps = true },
+                    setKeyword = { notificationKeyword = it },
+                )
             }
+
+            Text(
+                "CONDITIONS (optional, all must match)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
+            )
+
+            ConditionsSection(
+                conditions = conditions,
+                onAddCondition = { showConditionPicker = true },
+                onRemoveCondition = { index ->
+                    conditions = conditions.filterIndexed { i, _ -> i != index }
+                },
+                onUpdateCondition = { index, updated ->
+                    conditions = conditions.mapIndexed { i, c -> if (i == index) updated else c }
+                },
+            )
 
             Text(
                 "DO (${actions.size} action${if (actions.size > 1) "s" else ""})",
@@ -318,13 +370,51 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
-                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url, ttsText, ttsVoiceName, ttsSpeechRate, ttsAudioFileName, alarmHour, alarmMinute, alarmMessage, timerDurationSeconds, timerMessage, newRuleId)
+                        vm.addRule(
+                            name = name,
+                            triggerEvent = event,
+                            appPackage = pkg,
+                            appName = appName,
+                            actions = actions,
+                            scheduledMinute = scheduledMinute,
+                            scheduledDays = scheduledDays,
+                            batteryLevel = batteryLevel,
+                            wifiSsid = wifiSsid,
+                            notificationAppPackage = notificationAppPackage,
+                            notificationAppName = notificationAppName,
+                            notificationKeyword = notificationKeyword,
+                            conditions = conditions,
+                            notificationTitle = notificationTitle,
+                            notificationBody = notificationBody,
+                            vibrationPattern = vibrationPattern,
+                            vibrationDurationMs = vibrationDurationMs,
+                            vibrationAmplitude = vibrationAmplitude,
+                            mediaVolumePercent = mediaVolumePercent,
+                            soundPreset = soundPreset,
+                            soundUri = soundUri,
+                            soundName = soundName,
+                            soundDurationMs = soundDurationMs,
+                            launchPackage = launchPackage,
+                            launchAppName = launchAppName,
+                            url = url,
+                            ttsText = ttsText,
+                            ttsVoiceName = ttsVoiceName,
+                            ttsSpeechRate = ttsSpeechRate,
+                            ttsAudioFileName = ttsAudioFileName,
+                            alarmHour = alarmHour,
+                            alarmMinute = alarmMinute,
+                            alarmMessage = alarmMessage,
+                            timerDurationSeconds = timerDurationSeconds,
+                            timerMessage = timerMessage,
+                            ruleId = newRuleId,
+                        )
                         done()
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
                     enabled =
                         (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
+                            (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
@@ -336,6 +426,133 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun WifiTriggerSettings(
+    ssid: String,
+    setSsid: (String) -> Unit,
+) {
+    Text("Wi-Fi network", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    WifiSsidPickerField(
+        ssid = ssid,
+        onSsidChange = setSsid,
+    )
+}
+
+@Composable
+fun NotificationTriggerSettings(
+    appPackage: String,
+    appName: String,
+    keyword: String,
+    chooseApp: () -> Unit,
+    setKeyword: (String) -> Unit,
+) {
+    Text("App notification", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    SelectionRow(
+        if (appPackage.isEmpty()) "App" else appName,
+        if (appPackage.isEmpty()) "Choose app to listen to" else appPackage,
+        chooseApp,
+    )
+    OutlinedTextField(
+        value = keyword,
+        onValueChange = setKeyword,
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        label = { Text("Keyword filter (optional, case-insensitive)") },
+        singleLine = true,
+    )
+}
+
+@Composable
+fun ConditionsSection(
+    conditions: List<RuleCondition>,
+    onAddCondition: () -> Unit,
+    onRemoveCondition: (Int) -> Unit,
+    onUpdateCondition: (Int, RuleCondition) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        conditions.forEachIndexed { index, cond ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+            ) {
+                Column(Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(cond.type.label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        IconButton(
+                            onClick = { onRemoveCondition(index) },
+                            modifier = Modifier.size(28.dp),
+                        ) {
+                            Icon(Icons.Default.Close, "Remove condition", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                    if (cond.type == ConditionType.BATTERY_BELOW || cond.type == ConditionType.BATTERY_ABOVE) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                            Text("${cond.batteryLevel}%", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(44.dp))
+                            Slider(
+                                value = cond.batteryLevel.toFloat(),
+                                onValueChange = { onUpdateCondition(index, cond.copy(batteryLevel = it.toInt())) },
+                                valueRange = 1f..100f,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    } else if (cond.type == ConditionType.WIFI_CONNECTED || cond.type == ConditionType.WIFI_DISCONNECTED) {
+                        WifiSsidPickerField(
+                            ssid = cond.wifiSsid,
+                            onSsidChange = { onUpdateCondition(index, cond.copy(wifiSsid = it)) },
+                            label = "Wi-Fi SSID (empty for any)",
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    Spacer(Modifier.height(8.dp))
+
+    OutlinedButton(
+        onClick = onAddCondition,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Icon(Icons.Default.Add, null)
+        Spacer(Modifier.width(8.dp))
+        Text("Add condition")
+    }
+}
+
+@Composable
+fun ConditionPickerDialog(
+    onAdd: (RuleCondition) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add condition") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ConditionType.entries.forEach { type ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            onAdd(RuleCondition(type = type))
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    ) {
+                        Text(
+                            type.label,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
+    )
 }
 
 fun isWebUrl(value: String): Boolean {

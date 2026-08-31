@@ -71,6 +71,36 @@ class CapabilityManager(private val context: Context) {
         return nm?.isNotificationPolicyAccessGranted == true
     }
 
+    /** Has the app been granted Notification Listener access? */
+    fun hasNotificationListenerAccess(): Boolean {
+        val flat = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners") ?: return false
+        val myComponent = "${context.packageName}/${com.flowpilot.app.engine.FlowPilotNotificationListener::class.java.name}"
+        return flat.split(":").any { it.trim().equals(myComponent, ignoreCase = true) || it.trim().startsWith("${context.packageName}/") }
+    }
+
+    /** Has the app been granted Location / Wi-Fi permissions and is Location service enabled to read SSID? */
+    fun hasWifiPermissions(): Boolean {
+        val hasFine = context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val hasWifi = context.checkSelfPermission(android.Manifest.permission.ACCESS_WIFI_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager
+        val locationEnabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            lm?.isLocationEnabled == true
+        } else {
+            lm?.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) == true ||
+                lm?.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER) == true
+        }
+        return hasFine && hasWifi && locationEnabled
+    }
+
+    /** Has the app been granted permissions to perform Wi-Fi scanning (API 33+ NEARBY_WIFI_DEVICES + Location)? */
+    fun hasWifiScanPermissions(): Boolean {
+        val baseWifi = hasWifiPermissions()
+        val hasNearby = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.checkSelfPermission(android.Manifest.permission.NEARBY_WIFI_DEVICES) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else true
+        return baseWifi && hasNearby
+    }
+
     /** Does the device expose NFC hardware that can be toggled? */
     fun hasNfcHardware(): Boolean =
         context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC)
@@ -137,6 +167,13 @@ class CapabilityManager(private val context: Context) {
         context.startActivity(intent)
     }
 
+    /** open system Settings for Notification Listener special access */
+    fun openNotificationListenerSettings() {
+        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
     /** open system Settings for this app's battery optimization allowlist */
     fun openBatteryOptimizationSettings() {
         val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
@@ -155,6 +192,19 @@ class CapabilityManager(private val context: Context) {
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
+    }
+
+    /** open system Settings for Location */
+    fun openLocationSettings() {
+        val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            val fallback = Intent(Settings.ACTION_SETTINGS)
+            fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(fallback)
+        }
     }
 
     /** open this app's system app-info page */

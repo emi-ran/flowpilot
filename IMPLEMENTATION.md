@@ -7,10 +7,12 @@ minSdk 26, JDK 17.
 ## Feature set
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
-battery above | screen on | screen off | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on |
+battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | notification received] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [NFC on | NFC off | Battery Saver on |
 Battery Saver off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | create alarm | start timer | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
-UsageStatsManager and charger/battery transitions via Android broadcasts, evaluates enabled rules, executes
+UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
+
+Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request a one-shot nearby-network scan; scan results are transient, deduplicated, and never persisted. Android throttles scan frequency and may return cached results. The tracker reads SSID from Wi-Fi-specific `NetworkCallback` capabilities instead of `activeNetwork`, so Xiaomi can detect Wi-Fi transitions even when cellular remains the default data network.
 
 ## Capability matrix (verified against Android 16 / HyperOS constraints)
 
@@ -69,6 +71,8 @@ app/src/main/java/com/flowpilot/app/
     ChargerStateTracker.kt           power connected/disconnected broadcasts
     BatteryLevelTracker.kt           battery level transitions
     ScreenStateTracker.kt            screen on/off broadcasts
+    WifiStateTracker.kt              Wi-Fi NetworkCallback state + SSID transition reducer
+    FlowPilotNotificationListener.kt transient notification listener and dedupe
     AutomationService.kt             foreground service
     BootReceiver.kt                  restart on boot
   actions/
@@ -111,6 +115,16 @@ below to at-or-above an above-threshold. A level remaining beyond threshold cann
 
 ScreenStateTracker registers `ACTION_SCREEN_ON` and `ACTION_SCREEN_OFF` only while the engine runs,
 dedupes consecutive events, and does not read or replay current screen state when it starts.
+
+WifiStateTracker seeds the connected SSID at engine start without replaying it. Subsequent Wi-Fi-specific
+`NetworkCallback` capability changes emit deduplicated connected/disconnected transitions. It does not use
+the default network to derive an SSID because Xiaomi may retain cellular as default while Wi-Fi is connected.
+SSID scans are user-initiated only; their results remain transient. Location permission, device Location, and
+on Android 13+ Nearby devices access are required for reliable SSID reading/scanning.
+
+FlowPilotNotificationListener receives notification posts only after the user grants Notification Listener
+access. It creates an in-memory event with package, title, and text only long enough to match the selected
+package and optional keyword, dedupes by post key/time, and never persists or logs notification content.
 
 AutoRotateExecutor writes `Settings.System.ACCELEROMETER_ROTATION` to `1` (free rotation) or `0`
 (portrait lock), then reads back the value. It requires `android.permission.WRITE_SETTINGS` checked via

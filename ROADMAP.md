@@ -48,10 +48,17 @@ Do not bundle unrelated features. One feature family at a time.
 
 ### Phase 2 — Network/device context
 
-6. **Wi-Fi network state**
-   - Connected to selected SSID
-   - Disconnected from selected SSID
-7. **Bluetooth device state**
+6. **Wi-Fi network state** (complete; Xiaomi device smoke test passed)
+    - Connected to selected SSID
+    - Disconnected from selected SSID
+    - Manual SSID entry or user-initiated nearby-network picker; results remain transient and Android scan throttling can return cached results
+    - Wi-Fi callback uses transport-specific SSID data, including when cellular remains default data network
+7. **Notification received** (complete; Xiaomi device smoke test passed)
+   - Selected app package matching
+   - Optional case-insensitive title/text keyword filtering
+   - NotificationListenerService lifecycle and duplicate post suppression
+   - Zero content logging or persistence
+8. **Bluetooth device state**
    - Selected Bluetooth device connected/disconnected
 
 ## Planned Actions
@@ -141,7 +148,7 @@ Each must expose its required permission or Shizuku state. Do not show success u
 7. **Headset triggers**
    - Add wired and Bluetooth audio state one family at a time with startup baseline and duplicate-event tests.
 8. **Wi-Fi and Bluetooth device/context triggers**
-    - Add selected SSID/device persistence and unavailable-permission states.
+    - Add selected Bluetooth-device persistence and unavailable-permission states.
 9. **HyperOS 3 system controls**
     - One control at a time; device-state evidence required before marking complete.
 

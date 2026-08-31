@@ -77,7 +77,28 @@ enum class TriggerCategory(val label: String) {
     POWER("Power"),
     DISPLAY("Display"),
     TIME("Time"),
+    NETWORK("Network"),
+    NOTIFICATION("Notification"),
 }
+
+@Serializable
+enum class ConditionType(val label: String) {
+    BATTERY_BELOW("Battery below level"),
+    BATTERY_ABOVE("Battery above level"),
+    CHARGER_CONNECTED("Charger connected"),
+    CHARGER_DISCONNECTED("Charger disconnected"),
+    SCREEN_ON("Screen is on"),
+    SCREEN_OFF("Screen is off"),
+    WIFI_CONNECTED("Connected to Wi-Fi"),
+    WIFI_DISCONNECTED("Disconnected from Wi-Fi"),
+}
+
+@Serializable
+data class RuleCondition(
+    val type: ConditionType,
+    val batteryLevel: Int = 50,
+    val wifiSsid: String = "",
+)
 
 @Serializable
 enum class VibrationPattern(val label: String) {
@@ -115,7 +136,10 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     BATTERY_ABOVE("Battery above level", TriggerCategory.POWER),
     SCREEN_ON("Screen turned on", TriggerCategory.DISPLAY),
     SCREEN_OFF("Screen turned off", TriggerCategory.DISPLAY),
-    TIME_SCHEDULE("At scheduled time", TriggerCategory.TIME);
+    TIME_SCHEDULE("At scheduled time", TriggerCategory.TIME),
+    WIFI_CONNECTED("Connected to Wi-Fi", TriggerCategory.NETWORK),
+    WIFI_DISCONNECTED("Disconnected from Wi-Fi", TriggerCategory.NETWORK),
+    NOTIFICATION_RECEIVED("Notification received", TriggerCategory.NOTIFICATION);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }
@@ -141,11 +165,16 @@ data class Automation(
     val name: String,
     val enabled: Boolean = true,
     val triggerEvent: TriggerEvent = TriggerEvent.APP_OPENED,
-    val appPackage: String,
+    val appPackage: String = "",
     val appName: String = "",
     val scheduledMinute: Int = 0,
     val scheduledDays: Set<Int> = emptySet(),
     val batteryLevel: Int = 50,
+    val wifiSsid: String = "",
+    val notificationAppPackage: String = "",
+    val notificationAppName: String = "",
+    val notificationKeyword: String = "",
+    val conditions: List<RuleCondition> = emptyList(),
     val notificationTitle: String = "FlowPilot",
     val notificationBody: String = "Automation ran",
     val vibrationPattern: VibrationPattern = VibrationPattern.PULSE,

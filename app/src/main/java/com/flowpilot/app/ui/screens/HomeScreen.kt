@@ -221,6 +221,9 @@ private fun RuleCard(
                     TriggerEvent.SCREEN_ON,
                     TriggerEvent.SCREEN_OFF -> Icons.Default.Bolt
                     TriggerEvent.TIME_SCHEDULE -> Icons.Default.Bolt
+                    TriggerEvent.WIFI_CONNECTED,
+                    TriggerEvent.WIFI_DISCONNECTED -> Icons.Default.Bolt
+                    TriggerEvent.NOTIFICATION_RECEIVED -> Icons.Default.Bolt
                 },
                 null,
                 Modifier.size(40.dp),
@@ -232,6 +235,12 @@ private fun RuleCard(
                 val detail = when (item.rule.triggerEvent) {
                     TriggerEvent.BATTERY_BELOW,
                     TriggerEvent.BATTERY_ABOVE -> "Threshold: ${item.rule.batteryLevel}%"
+                    TriggerEvent.WIFI_CONNECTED,
+                    TriggerEvent.WIFI_DISCONNECTED -> if (item.rule.wifiSsid.isNotBlank()) "SSID: ${item.rule.wifiSsid}" else "Any Wi-Fi"
+                    TriggerEvent.NOTIFICATION_RECEIVED -> {
+                        val app = item.rule.notificationAppName.ifBlank { item.rule.notificationAppPackage }
+                        if (item.rule.notificationKeyword.isNotBlank()) "$app · Keyword: \"${item.rule.notificationKeyword}\"" else app
+                    }
                     else -> item.rule.appName.ifBlank { item.rule.appPackage }
                 }
                 if (detail.isNotBlank()) Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)

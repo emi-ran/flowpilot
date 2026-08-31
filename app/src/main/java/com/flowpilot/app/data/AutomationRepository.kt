@@ -57,6 +57,11 @@ class AutomationRepository(private val context: Context) {
         scheduledMinute: Int = 0,
         scheduledDays: Set<Int> = emptySet(),
         batteryLevel: Int = 50,
+        wifiSsid: String = "",
+        notificationAppPackage: String = "",
+        notificationAppName: String = "",
+        notificationKeyword: String = "",
+        conditions: List<com.flowpilot.app.data.model.RuleCondition> = emptyList(),
         notificationTitle: String = "FlowPilot",
         notificationBody: String = "Automation ran",
         vibrationPattern: com.flowpilot.app.data.model.VibrationPattern = com.flowpilot.app.data.model.VibrationPattern.PULSE,
@@ -95,6 +100,11 @@ class AutomationRepository(private val context: Context) {
                     com.flowpilot.app.data.model.TriggerEvent.BATTERY_BELOW,
                     com.flowpilot.app.data.model.TriggerEvent.BATTERY_ABOVE ->
                         "${triggerEvent.label} ${batteryLevel}% · $summary"
+                    com.flowpilot.app.data.model.TriggerEvent.WIFI_CONNECTED,
+                    com.flowpilot.app.data.model.TriggerEvent.WIFI_DISCONNECTED ->
+                        "${triggerEvent.label} ${wifiSsid.ifBlank { "Any Wi-Fi" }} · $summary"
+                    com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED ->
+                        "Notification (${notificationAppName.ifBlank { notificationAppPackage }}) · $summary"
                     else -> "${appName.ifBlank { appPackage }} · $summary"
                 }
             },
@@ -104,6 +114,11 @@ class AutomationRepository(private val context: Context) {
             scheduledMinute = scheduledMinute,
             scheduledDays = scheduledDays,
             batteryLevel = batteryLevel,
+            wifiSsid = wifiSsid,
+            notificationAppPackage = notificationAppPackage,
+            notificationAppName = notificationAppName,
+            notificationKeyword = notificationKeyword,
+            conditions = conditions,
             notificationTitle = notificationTitle,
             notificationBody = notificationBody,
             vibrationPattern = vibrationPattern,

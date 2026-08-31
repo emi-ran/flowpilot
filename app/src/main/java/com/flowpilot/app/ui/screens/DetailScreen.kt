@@ -25,6 +25,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.Tune
+import com.flowpilot.app.data.model.ConditionType
+import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
@@ -52,6 +56,12 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var scheduledMinute by remember(initialRule.id) { mutableIntStateOf(initialRule.scheduledMinute) }
     var scheduledDays by remember(initialRule.id) { mutableStateOf(initialRule.scheduledDays) }
     var batteryLevel by remember(initialRule.id) { mutableIntStateOf(initialRule.batteryLevel) }
+    var wifiSsid by remember(initialRule.id) { mutableStateOf(initialRule.wifiSsid) }
+    var notificationAppPackage by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppPackage) }
+    var notificationAppName by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppName) }
+    var notificationKeyword by remember(initialRule.id) { mutableStateOf(initialRule.notificationKeyword) }
+    var conditions by remember(initialRule.id) { mutableStateOf(initialRule.conditions) }
+    var showConditionPicker by remember { mutableStateOf(false) }
     var notificationTitle by remember(initialRule.id) { mutableStateOf(initialRule.notificationTitle) }
     var notificationBody by remember(initialRule.id) { mutableStateOf(initialRule.notificationBody) }
     var vibrationPattern by remember(initialRule.id) { mutableStateOf(initialRule.vibrationPattern) }
@@ -97,14 +107,25 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var appName by remember(initialRule.id) { mutableStateOf(initialRule.appName) }
     var name by remember(initialRule.id) { mutableStateOf(initialRule.name) }
     var showApps by remember { mutableStateOf(false) }
+    var showNotificationApps by remember { mutableStateOf(false) }
     var showLaunchApps by remember { mutableStateOf(false) }
     var showTriggers by remember { mutableStateOf(false) }
     var showActions by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     if (showApps) AppPicker({ p, n -> pkg = p; appName = n; showApps = false }) { showApps = false }
+    if (showNotificationApps) AppPicker({ p, n -> notificationAppPackage = p; notificationAppName = n; showNotificationApps = false }) { showNotificationApps = false }
     if (showLaunchApps) AppPicker({ p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }) { showLaunchApps = false }
     if (showTriggers) TriggerPicker(event, { event = it; showTriggers = false }) { showTriggers = false }
+    if (showConditionPicker) {
+        ConditionPickerDialog(
+            onAdd = { cond ->
+                conditions = conditions + cond
+                showConditionPicker = false
+            },
+            onDismiss = { showConditionPicker = false },
+        )
+    }
     if (showActions) {
         val currentSelected = editingActionIndex?.let { if (it < actions.size) actions[it] else null }
         ActionPicker(
@@ -206,7 +227,35 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 Slider(value = batteryLevel.toFloat(), onValueChange = { batteryLevel = it.toInt() }, valueRange = 1f..100f, steps = 0)
             } else if (event == TriggerEvent.APP_OPENED || event == TriggerEvent.APP_CLOSED) {
                 SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
+            } else if (event == TriggerEvent.WIFI_CONNECTED || event == TriggerEvent.WIFI_DISCONNECTED) {
+                WifiTriggerSettings(wifiSsid) { wifiSsid = it }
+            } else if (event == TriggerEvent.NOTIFICATION_RECEIVED) {
+                NotificationTriggerSettings(
+                    appPackage = notificationAppPackage,
+                    appName = notificationAppName,
+                    keyword = notificationKeyword,
+                    chooseApp = { showNotificationApps = true },
+                    setKeyword = { notificationKeyword = it },
+                )
             }
+
+            Text(
+                "CONDITIONS (optional, all must match)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
+            )
+
+            ConditionsSection(
+                conditions = conditions,
+                onAddCondition = { showConditionPicker = true },
+                onRemoveCondition = { index ->
+                    conditions = conditions.filterIndexed { i, _ -> i != index }
+                },
+                onUpdateCondition = { index, updated ->
+                    conditions = conditions.mapIndexed { i, c -> if (i == index) updated else c }
+                },
+            )
 
             Text(
                 "DO (${actions.size} action${if (actions.size > 1) "s" else ""})",
@@ -382,6 +431,9 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 TriggerEvent.CHARGER_DISCONNECTED -> "${event.label} · $summary"
                                 TriggerEvent.BATTERY_BELOW,
                                 TriggerEvent.BATTERY_ABOVE -> "${event.label} ${batteryLevel}% · $summary"
+                                TriggerEvent.WIFI_CONNECTED,
+                                TriggerEvent.WIFI_DISCONNECTED -> "${event.label} ${wifiSsid.ifBlank { "Any Wi-Fi" }} · $summary"
+                                TriggerEvent.NOTIFICATION_RECEIVED -> "Notification (${notificationAppName.ifBlank { notificationAppPackage }}) · $summary"
                                 else -> "${appName.ifBlank { pkg }} · $summary"
                             }
                         }
@@ -394,6 +446,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 scheduledMinute = scheduledMinute,
                                 scheduledDays = scheduledDays,
                                 batteryLevel = batteryLevel,
+                                wifiSsid = wifiSsid,
+                                notificationAppPackage = notificationAppPackage,
+                                notificationAppName = notificationAppName,
+                                notificationKeyword = notificationKeyword,
+                                conditions = conditions,
                                 notificationTitle = notificationTitle,
                                 notificationBody = notificationBody,
                                 vibrationPattern = vibrationPattern,
@@ -426,6 +483,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     shape = RoundedCornerShape(16.dp),
                     enabled =
                         (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
+                            (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
