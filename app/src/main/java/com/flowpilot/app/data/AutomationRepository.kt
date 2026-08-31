@@ -55,6 +55,7 @@ class AutomationRepository(private val context: Context) {
         actions: List<com.flowpilot.app.data.model.ActionType>,
         scheduledMinute: Int = 0,
         scheduledDays: Set<Int> = emptySet(),
+        batteryLevel: Int = 50,
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
         val summary = actions.joinToString(" + ") { it.label }
@@ -67,6 +68,9 @@ class AutomationRepository(private val context: Context) {
                     com.flowpilot.app.data.model.TriggerEvent.CHARGER_CONNECTED,
                     com.flowpilot.app.data.model.TriggerEvent.CHARGER_DISCONNECTED ->
                         "${triggerEvent.label} · $summary"
+                    com.flowpilot.app.data.model.TriggerEvent.BATTERY_BELOW,
+                    com.flowpilot.app.data.model.TriggerEvent.BATTERY_ABOVE ->
+                        "${triggerEvent.label} ${batteryLevel}% · $summary"
                     else -> "${appName.ifBlank { appPackage }} · $summary"
                 }
             },
@@ -75,6 +79,7 @@ class AutomationRepository(private val context: Context) {
             appName = appName,
             scheduledMinute = scheduledMinute,
             scheduledDays = scheduledDays,
+            batteryLevel = batteryLevel,
             action = primaryAction,
             actions = actions,
             createdAt = System.currentTimeMillis(),

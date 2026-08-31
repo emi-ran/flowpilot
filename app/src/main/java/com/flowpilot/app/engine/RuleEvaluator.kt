@@ -38,6 +38,16 @@ object RuleEvaluator {
         return rules.filter { it.enabled && it.triggerEvent == triggerEvent }
     }
 
+    fun evaluateBattery(rules: List<Automation>, transition: BatteryLevelTransition): List<Automation> =
+        rules.filter { rule ->
+            if (!rule.enabled) return@filter false
+            when (rule.triggerEvent) {
+                TriggerEvent.BATTERY_BELOW -> transition.previous > rule.batteryLevel && transition.current <= rule.batteryLevel
+                TriggerEvent.BATTERY_ABOVE -> transition.previous < rule.batteryLevel && transition.current >= rule.batteryLevel
+                else -> false
+            }
+        }
+
     fun evaluate(
         rules: List<Automation>,
         event: AppEvent,

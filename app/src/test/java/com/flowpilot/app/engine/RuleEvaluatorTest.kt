@@ -52,6 +52,23 @@ class RuleEvaluatorTest {
         assertThat(RuleEvaluator.evaluateCharger(listOf(rule), ChargerEvent.CONNECTED)).isEmpty()
     }
 
+    @Test fun battery_rules_match_only_when_threshold_is_crossed() {
+        val below = rule(TriggerEvent.BATTERY_BELOW).copy(appPackage = "", appName = "", batteryLevel = 20)
+        val above = rule(TriggerEvent.BATTERY_ABOVE).copy(id = "2", appPackage = "", appName = "", batteryLevel = 80)
+        val rules = listOf(below, above)
+
+        assertThat(RuleEvaluator.evaluateBattery(rules, BatteryLevelTransition(21, 20))).containsExactly(below)
+        assertThat(RuleEvaluator.evaluateBattery(rules, BatteryLevelTransition(20, 19))).isEmpty()
+        assertThat(RuleEvaluator.evaluateBattery(rules, BatteryLevelTransition(79, 80))).containsExactly(above)
+        assertThat(RuleEvaluator.evaluateBattery(rules, BatteryLevelTransition(80, 81))).isEmpty()
+    }
+
+    @Test fun disabled_battery_rule_never_matches() {
+        val rule = rule(TriggerEvent.BATTERY_BELOW).copy(enabled = false, appPackage = "", appName = "", batteryLevel = 20)
+
+        assertThat(RuleEvaluator.evaluateBattery(listOf(rule), BatteryLevelTransition(21, 20))).isEmpty()
+    }
+
     @Test fun multi_action_rule_preserved_and_effective_actions_evaluated() {
         val multiActionRule = Automation(
             id = "2",

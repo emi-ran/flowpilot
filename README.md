@@ -36,7 +36,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed or scheduled time -> one or more NFC on/off and Battery Saver on/off actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, or scheduled time -> one or more NFC on/off and Battery Saver on/off actions.
 - Installed launchable app picker with search, display name, package ID internally.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
@@ -45,6 +45,8 @@ Target / compile SDK: 36 (Android 16)
 - UsageStatsManager event polling every 500 ms.
 - App transition detection: one open event per foreground residency, one close event on transition.
 - Time schedules: daily, weekdays, or selected days; one execution per matching minute with no past-occurrence replay after engine start.
+- Charger triggers: connected/disconnected broadcasts while engine runs; duplicate state broadcasts are deduped and current charger state is not replayed after engine start.
+- Battery threshold triggers: below/above a selected percentage; only a crossing triggers an action and current level is seeded without replay after engine start.
 - Boot/app-update receiver restarts the engine only when Run engine on device startup is enabled.
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
 - Shizuku UserService AIDL command bridge. Commands run with Shizuku shell/root identity; app never claims success if the command failed.
@@ -118,6 +120,8 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 - Battery Saver is a protected global setting. `WRITE_SECURE_SETTINGS` gives FlowPilot direct access; Shizuku provides a supported fallback action path.
 - UsageStatsManager polling is Android-supported but not an instantaneous callback API. Event timing can vary by device and OEM, especially HyperOS.
 - Scheduled rules do not need Usage Access. App opened/closed rules still require Usage Access. A rule created at the current or past minute waits for its next valid day; missed times are not replayed after the engine starts.
+- Charger rules do not need Usage Access. They listen for Android power connected/disconnected broadcasts only while the engine is running, so they do not fire for a cable already connected at engine startup.
+- Battery threshold rules do not need Usage Access. They react only when the level crosses selected threshold; a battery level already above or below threshold at engine startup does not trigger an action.
 - HyperOS Autostart is an OEM-owned setting and must be enabled manually. Battery restriction exemption reduces, but cannot eliminate, OEM service termination.
 - `QUERY_ALL_PACKAGES` is declared to provide a complete installed launchable-app picker. Store distribution policy may require justification.
 - No AccessibilityService is used. It is not necessary for UsageStats-based app detection and would add broader access than required.
@@ -129,7 +133,7 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 app/src/main/java/com/flowpilot/app/
   data/model/                 Serializable rule model
   data/                       DataStore repository
-  engine/                     UsageStats tracker, foreground reducer, schedule/rule evaluators, service, boot receiver
+  engine/                     UsageStats, charger, and battery trackers, foreground reducer, schedule/rule evaluators, service, boot receiver
   actions/                    Action executors and Shizuku UserService bridge
   permission/                 Capability and setup checks
   ui/                         Compose screens, state, theme, components
@@ -142,6 +146,8 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Debug APK installed on Xiaomi 15T Pro / HyperOS 3.
 - Foreground automation service verified active with silent `engine_silent_v2` notification channel.
 - Scheduled-rule persistence and an execution at a future selected time verified on device.
+- Charger connected and disconnected rules verified on device.
+- Battery below/above threshold rules verified on device.
 - NFC and Battery Saver device action paths still require per-action verification after permission changes.
 
 ## License / distribution note

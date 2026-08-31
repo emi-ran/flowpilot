@@ -120,9 +120,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         actions: List<com.flowpilot.app.data.model.ActionType>,
         scheduledMinute: Int = 0,
         scheduledDays: Set<Int> = emptySet(),
+        batteryLevel: Int = 50,
     ) {
         viewModelScope.launch {
-            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays)
+            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel)
             startEngine()
         }
     }

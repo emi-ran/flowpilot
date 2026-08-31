@@ -56,6 +56,8 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     APP_CLOSED("App closed", TriggerCategory.APP),
     CHARGER_CONNECTED("Charger connected", TriggerCategory.SYSTEM),
     CHARGER_DISCONNECTED("Charger disconnected", TriggerCategory.SYSTEM),
+    BATTERY_BELOW("Battery below level", TriggerCategory.SYSTEM),
+    BATTERY_ABOVE("Battery above level", TriggerCategory.SYSTEM),
     TIME_SCHEDULE("At scheduled time", TriggerCategory.TIME);
 
     companion object {
@@ -86,6 +88,7 @@ data class Automation(
     val appName: String = "",
     val scheduledMinute: Int = 0,
     val scheduledDays: Set<Int> = emptySet(),
+    val batteryLevel: Int = 50,
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     val createdAt: Long,

@@ -31,6 +31,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     val now = java.time.LocalTime.now()
     var scheduledMinute by remember { mutableIntStateOf(now.hour * 60 + now.minute) }
     var scheduledDays by remember { mutableStateOf(emptySet<Int>()) }
+    var batteryLevel by remember { mutableIntStateOf(50) }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
@@ -89,6 +90,8 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             if (event == TriggerEvent.TIME_SCHEDULE) {
                 ScheduleSettings(scheduledMinute, scheduledDays, { showTimePicker = true }) { scheduledDays = it }
+            } else if (event == TriggerEvent.BATTERY_BELOW || event == TriggerEvent.BATTERY_ABOVE) {
+                BatteryThresholdSettings(batteryLevel) { batteryLevel = it }
             } else if (event == TriggerEvent.APP_OPENED || event == TriggerEvent.APP_CLOSED) {
                 SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
             }
@@ -164,7 +167,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
-                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays)
+                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel)
                         done()
                     },
                     modifier = Modifier.weight(1f),
@@ -176,6 +179,18 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun BatteryThresholdSettings(level: Int, setLevel: (Int) -> Unit) {
+    Text("Threshold", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text("$level%", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 4.dp))
+    Slider(
+        value = level.toFloat(),
+        onValueChange = { setLevel(it.toInt()) },
+        valueRange = 1f..100f,
+        steps = 98,
+    )
 }
 
 @Composable

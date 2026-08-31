@@ -23,6 +23,7 @@ class AutomationEngine(
     context: Context,
     private val tracker: ForegroundAppTracker = ForegroundAppTracker(context.applicationContext),
     private val chargerTracker: ChargerStateTracker = ChargerStateTracker(context.applicationContext),
+    private val batteryTracker: BatteryLevelTracker = BatteryLevelTracker(context.applicationContext),
 ) {
 
     private val appContext = context.applicationContext
@@ -44,12 +45,14 @@ class AutomationEngine(
         if (job?.isActive == true) return
         running = true
         chargerTracker.start()
+        batteryTracker.start()
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         job = scope.launch {
             while (isActive) {
                 try {
                     poll()
                     pollChargerEvents()
+                    pollBatteryTransitions()
                     pollSchedules()
                 } catch (e: Exception) {
                     Log.w(TAG, "Exception during engine poll: ${e.message}")
@@ -65,6 +68,7 @@ class AutomationEngine(
         job?.cancel()
         job = null
         chargerTracker.stop()
+        batteryTracker.stop()
     }
 
     suspend fun poll() {
@@ -126,6 +130,19 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateCharger(rules, event)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $event charger rules (${matches.size} rule(s))")
+                executeAll(matches)
+            }
+        }
+    }
+
+    private suspend fun pollBatteryTransitions() {
+        val transitions = batteryTracker.drainTransitions()
+        if (transitions.isEmpty()) return
+        val rules = repository.automations.first()
+        for (transition in transitions) {
+            val matches = RuleEvaluator.evaluateBattery(rules, transition)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing battery threshold rules for ${transition.previous}% -> ${transition.current}% (${matches.size} rule(s))")
                 executeAll(matches)
             }
         }

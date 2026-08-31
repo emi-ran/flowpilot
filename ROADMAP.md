@@ -29,13 +29,15 @@ Do not bundle unrelated features. One feature family at a time.
     - Weekdays
     - Selected days of week
     - Polls every 500 ms, executes once per matching minute, and does not replay missed occurrences after engine start
-2. **Charger state**
-   - Charger connected
-   - Charger disconnected
-3. **Battery threshold**
-   - Below selected percentage, such as 20%
-   - Above selected percentage, such as 80%
-   - Edge-triggered; must not fire repeatedly while remaining past threshold
+2. **Charger state** (complete)
+    - Charger connected
+    - Charger disconnected
+    - Android power broadcasts while engine runs; duplicate states are deduped and existing charger state is not replayed after engine start
+3. **Battery threshold** (complete)
+    - Below selected percentage, such as 20%
+    - Above selected percentage, such as 80%
+    - Edge-triggered; must not fire repeatedly while remaining past threshold
+    - Current level seeds at engine start without replay; later battery broadcasts trigger only a threshold crossing
 4. **Screen state**
    - Screen on
    - Screen off
@@ -94,14 +96,12 @@ Each must expose its required permission or Shizuku state. Do not show success u
 
 ## Proposed Implementation Order
 
-1. Charger trigger
-2. Battery threshold trigger
-3. Notification, vibration, sound, app launch, URL actions
-4. HTTP webhook action
-5. Media volume and alarm/timer actions
-6. Screen and headset triggers
-7. Wi-Fi and Bluetooth device/context triggers
-8. HyperOS 3 system controls, one action at a time
+1. Notification, vibration, sound, app launch, URL actions
+2. HTTP webhook action
+3. Media volume and alarm/timer actions
+4. Screen and headset triggers
+5. Wi-Fi and Bluetooth device/context triggers
+6. HyperOS 3 system controls, one action at a time
 
 ## Acceptance Gate
 

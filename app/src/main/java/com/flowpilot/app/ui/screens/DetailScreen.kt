@@ -32,6 +32,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var event by remember(initialRule.id) { mutableStateOf(initialRule.triggerEvent) }
     var scheduledMinute by remember(initialRule.id) { mutableIntStateOf(initialRule.scheduledMinute) }
     var scheduledDays by remember(initialRule.id) { mutableStateOf(initialRule.scheduledDays) }
+    var batteryLevel by remember(initialRule.id) { mutableIntStateOf(initialRule.batteryLevel) }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActions) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
@@ -129,6 +130,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                         FilterChip(selected = scheduledDays.isNotEmpty() && day in scheduledDays, onClick = { scheduledDays = if (day in scheduledDays) scheduledDays - day else scheduledDays + day }, label = { Text(label) })
                     }
                 }
+            } else if (event == TriggerEvent.BATTERY_BELOW || event == TriggerEvent.BATTERY_ABOVE) {
+                Text("Threshold", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("$batteryLevel%", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 4.dp))
+                Slider(value = batteryLevel.toFloat(), onValueChange = { batteryLevel = it.toInt() }, valueRange = 1f..100f, steps = 98)
             } else if (event == TriggerEvent.APP_OPENED || event == TriggerEvent.APP_CLOSED) {
                 SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
             }
@@ -212,6 +217,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 TriggerEvent.TIME_SCHEDULE -> "Schedule %02d:%02d · %s".format(scheduledMinute / 60, scheduledMinute % 60, summary)
                                 TriggerEvent.CHARGER_CONNECTED,
                                 TriggerEvent.CHARGER_DISCONNECTED -> "${event.label} · $summary"
+                                TriggerEvent.BATTERY_BELOW,
+                                TriggerEvent.BATTERY_ABOVE -> "${event.label} ${batteryLevel}% · $summary"
                                 else -> "${appName.ifBlank { pkg }} · $summary"
                             }
                         }
@@ -223,6 +230,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 appName = appName,
                                 scheduledMinute = scheduledMinute,
                                 scheduledDays = scheduledDays,
+                                batteryLevel = batteryLevel,
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
                             )

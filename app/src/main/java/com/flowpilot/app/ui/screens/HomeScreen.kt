@@ -216,6 +216,8 @@ private fun RuleCard(
                     TriggerEvent.APP_CLOSED -> Icons.Default.Close
                     TriggerEvent.CHARGER_CONNECTED,
                     TriggerEvent.CHARGER_DISCONNECTED -> Icons.Default.Bolt
+                    TriggerEvent.BATTERY_BELOW,
+                    TriggerEvent.BATTERY_ABOVE -> Icons.Default.Bolt
                     TriggerEvent.TIME_SCHEDULE -> Icons.Default.Bolt
                 },
                 null,
@@ -225,7 +227,12 @@ private fun RuleCard(
             Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
                 Text(item.rule.name, style = MaterialTheme.typography.titleMedium)
                 Text("${item.rule.triggerEvent.label} → ${item.rule.actionSummary}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                Text(item.rule.appName.ifBlank { item.rule.appPackage }, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                val detail = when (item.rule.triggerEvent) {
+                    TriggerEvent.BATTERY_BELOW,
+                    TriggerEvent.BATTERY_ABOVE -> "Threshold: ${item.rule.batteryLevel}%"
+                    else -> item.rule.appName.ifBlank { item.rule.appPackage }
+                }
+                if (detail.isNotBlank()) Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 CapabilityPill(item.capability.label, Modifier.padding(top = 6.dp), onClick = onPermission)
             }
             if (!isSelectionMode) {

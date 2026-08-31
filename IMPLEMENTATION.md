@@ -6,10 +6,11 @@ minSdk 26, JDK 17.
 
 ## Feature set
 
-Automation rules: WHEN [app opened | app closed | scheduled time] DO one or more [NFC on | NFC off |
-Battery Saver on | Battery Saver off] actions. Schedules support daily, weekdays, or selected days. Engine
-detects foreground apps via UsageStatsManager, evaluates enabled rules, executes each schedule occurrence
-once, and restarts on boot/app update when the engine-startup preference is enabled.
+Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
+battery above | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on | Battery Saver off]
+actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+UsageStatsManager and charger/battery transitions via Android broadcasts, evaluates enabled rules, executes
+each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
 ## Capability matrix (verified against Android 16 / HyperOS constraints)
 
@@ -48,11 +49,13 @@ app/src/main/java/com/flowpilot/app/
     model/Automation.kt              kotlinx.serialization data model
     AutomationRepository.kt          DataStore persistence (Flow)
   engine/
-    AutomationEngine.kt              foreground/schedule evaluate -> execute loop + dedupe
+    AutomationEngine.kt              foreground/charger/battery/schedule evaluate -> execute loop + dedupe
     RuleEvaluator.kt                 pure logic (unit-testable)
     ScheduleEvaluator.kt             pure schedule matching
     ForegroundReducer.kt             foreground transition batch reduction
     ForegroundAppTracker.kt          UsageStatsManager polling
+    ChargerStateTracker.kt           power connected/disconnected broadcasts
+    BatteryLevelTracker.kt           battery level transitions
     AutomationService.kt             foreground service
     BootReceiver.kt                  restart on boot
   actions/
@@ -62,18 +65,26 @@ app/src/main/java/com/flowpilot/app/
     ShizukuShell.kt                  Shizuku connection + run shell command via UserService
   permission/
     CapabilityManager.kt             per-action and setup checks
-tests (Robolectric + Truth) for rule/schedule matching, foreground reduction, and action executors.
+tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foreground reduction, and action executors.
 ```
 
 ## Engine loop
 
-1. AutomationEngine polls foreground events and schedules every 500 ms.
+1. AutomationEngine polls foreground events, queued charger/battery broadcasts, and schedules every 500 ms.
 2. On foreground package change -> report `AppOpened(pkg)` / `AppClosed(pkg)` event.
 3. RuleEvaluator matches enabled rules whose trigger app == pkg and event matches.
 4. For each match, check `lastTriggeredAt`/active-lock dedupe (a rule for "app opened" fires once
    per open, not while app stays foreground).
 5. Execute actions via capability-aware executors. Battery Saver uses direct access when available or Shizuku fallback.
 6. Update lastTriggeredAt, persist.
+
+ChargerStateTracker registers only while the engine runs. It queues `ACTION_POWER_CONNECTED` and
+`ACTION_POWER_DISCONNECTED`, dedupes consecutive identical states, and does not query current charger state
+at startup. This prevents an existing cable connection from replaying an action after service restart.
+
+BatteryLevelTracker seeds current percentage from sticky `ACTION_BATTERY_CHANGED` at engine start without
+queuing an event. It evaluates only later percentage crossings: above to at-or-below a below-threshold, or
+below to at-or-above an above-threshold. A level remaining beyond threshold cannot retrigger an action.
 
 ## Battery / reliability
 
