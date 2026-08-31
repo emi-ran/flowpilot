@@ -56,6 +56,7 @@ app/src/main/java/com/flowpilot/app/
     ForegroundAppTracker.kt          UsageStatsManager polling
     ChargerStateTracker.kt           power connected/disconnected broadcasts
     BatteryLevelTracker.kt           battery level transitions
+    ScreenStateTracker.kt            screen on/off broadcasts
     AutomationService.kt             foreground service
     BootReceiver.kt                  restart on boot
   actions/
@@ -64,6 +65,7 @@ app/src/main/java/com/flowpilot/app/
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
     NotificationExecutor.kt           visible user-configured automation alerts
     VibrationExecutor.kt              configurable waveform vibration
+    SoundExecutor.kt                  selected system/custom sound playback with bounded duration
     MediaVolumeExecutor.kt            percentage-to-music-stream volume mapping
     LaunchExecutor.kt                 selected app or validated HTTP(S) URL activity launch
     ShizukuShell.kt                  Shizuku connection + run shell command via UserService
@@ -90,6 +92,9 @@ BatteryLevelTracker seeds current percentage from sticky `ACTION_BATTERY_CHANGED
 queuing an event. It evaluates only later percentage crossings: above to at-or-below a below-threshold, or
 below to at-or-above an above-threshold. A level remaining beyond threshold cannot retrigger an action.
 
+ScreenStateTracker registers `ACTION_SCREEN_ON` and `ACTION_SCREEN_OFF` only while the engine runs,
+dedupes consecutive events, and does not read or replay current screen state when it starts.
+
 NotificationExecutor posts title/body configured on the rule to `automation_alerts_v2` at high importance.
 Android preserves channel importance after creation, so channel IDs are versioned when alert behavior changes.
 Android 13+ notification permission is required; OEM notification settings can still suppress banners.
@@ -102,6 +107,11 @@ background-activity restrictions remain explicit failure cases.
 MediaVolumeExecutor converts stored 0-100% configuration to the current device's `STREAM_MUSIC` range,
 sets volume without a system UI overlay, then reads the resulting level. A mismatch reports failure rather
 than claiming a blocked volume change succeeded.
+
+SoundExecutor plays the device's current notification, alarm, ringtone, or a persistently permitted
+document-picker audio URI. Create and edit screens show source duration when metadata is available,
+then preview and execute only the configured first 1-60 seconds. Preview owns one active player: a new
+preview stops the old one, Stop preview releases it, and Compose disposal stops it when leaving the screen.
 
 ## Battery / reliability
 

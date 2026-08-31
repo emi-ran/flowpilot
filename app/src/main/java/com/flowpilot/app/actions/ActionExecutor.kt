@@ -2,6 +2,7 @@ package com.flowpilot.app.actions
 
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.VibrationPattern
+import com.flowpilot.app.data.model.SoundPreset
 
 /** Result of attempting to execute an action. Kept honest — never claims success on a no-op. */
 data class ActionResult(
@@ -16,6 +17,9 @@ data class ActionParameters(
     val vibrationDurationMs: Int = 220,
     val vibrationAmplitude: Int = 180,
     val mediaVolumePercent: Int = 50,
+    val soundPreset: SoundPreset = SoundPreset.NOTIFICATION,
+    val soundUri: String = "",
+    val soundDurationMs: Int = 3_000,
     val launchPackage: String = "",
     val url: String = "",
 )

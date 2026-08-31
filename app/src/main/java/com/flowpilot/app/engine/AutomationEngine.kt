@@ -24,6 +24,7 @@ class AutomationEngine(
     private val tracker: ForegroundAppTracker = ForegroundAppTracker(context.applicationContext),
     private val chargerTracker: ChargerStateTracker = ChargerStateTracker(context.applicationContext),
     private val batteryTracker: BatteryLevelTracker = BatteryLevelTracker(context.applicationContext),
+    private val screenTracker: ScreenStateTracker = ScreenStateTracker(context.applicationContext),
 ) {
 
     private val appContext = context.applicationContext
@@ -46,6 +47,7 @@ class AutomationEngine(
         running = true
         chargerTracker.start()
         batteryTracker.start()
+        screenTracker.start()
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         job = scope.launch {
             while (isActive) {
@@ -53,6 +55,7 @@ class AutomationEngine(
                     poll()
                     pollChargerEvents()
                     pollBatteryTransitions()
+                    pollScreenEvents()
                     pollSchedules()
                 } catch (e: Exception) {
                     Log.w(TAG, "Exception during engine poll: ${e.message}")
@@ -69,6 +72,7 @@ class AutomationEngine(
         job = null
         chargerTracker.stop()
         batteryTracker.stop()
+        screenTracker.stop()
     }
 
     suspend fun poll() {
@@ -151,6 +155,19 @@ class AutomationEngine(
         }
     }
 
+    private suspend fun pollScreenEvents() {
+        val events = screenTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (event in events) {
+            val matches = RuleEvaluator.evaluateScreen(rules, event)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing $event screen rules (${matches.size} rule(s))")
+                executeAll(matches)
+            }
+        }
+    }
+
     private suspend fun executeAll(rules: List<com.flowpilot.app.data.model.Automation>) {
         for (rule in rules) {
             withContext(Dispatchers.IO) {
@@ -165,6 +182,9 @@ class AutomationEngine(
                             vibrationDurationMs = rule.vibrationDurationMs,
                             vibrationAmplitude = rule.vibrationAmplitude,
                             mediaVolumePercent = rule.mediaVolumePercent,
+                            soundPreset = rule.soundPreset,
+                            soundUri = rule.soundUri,
+                            soundDurationMs = rule.soundDurationMs,
                             launchPackage = rule.launchPackage,
                             url = rule.url,
                         ),

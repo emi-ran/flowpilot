@@ -48,6 +48,14 @@ object RuleEvaluator {
             }
         }
 
+    fun evaluateScreen(rules: List<Automation>, event: ScreenEvent): List<Automation> {
+        val trigger = when (event) {
+            ScreenEvent.ON -> TriggerEvent.SCREEN_ON
+            ScreenEvent.OFF -> TriggerEvent.SCREEN_OFF
+        }
+        return rules.filter { it.enabled && it.triggerEvent == trigger }
+    }
+
     fun evaluate(
         rules: List<Automation>,
         event: AppEvent,

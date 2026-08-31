@@ -218,6 +218,8 @@ private fun RuleCard(
                     TriggerEvent.CHARGER_DISCONNECTED -> Icons.Default.Bolt
                     TriggerEvent.BATTERY_BELOW,
                     TriggerEvent.BATTERY_ABOVE -> Icons.Default.Bolt
+                    TriggerEvent.SCREEN_ON,
+                    TriggerEvent.SCREEN_OFF -> Icons.Default.Bolt
                     TriggerEvent.TIME_SCHEDULE -> Icons.Default.Bolt
                 },
                 null,

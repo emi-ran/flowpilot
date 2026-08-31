@@ -36,7 +36,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, or scheduled time -> one or more NFC on/off, Battery Saver on/off, notification, vibrate, set media volume, launch app, and open URL actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, or scheduled time -> one or more NFC on/off, Battery Saver on/off, notification, vibrate, play sound, set media volume, launch app, and open URL actions.
 - Installed launchable app picker with search, display name, package ID internally.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
@@ -47,6 +47,7 @@ Target / compile SDK: 36 (Android 16)
 - Time schedules: daily, weekdays, or selected days; one execution per matching minute with no past-occurrence replay after engine start.
 - Charger triggers: connected/disconnected broadcasts while engine runs; duplicate state broadcasts are deduped and current charger state is not replayed after engine start.
 - Battery threshold triggers: below/above a selected percentage; only a crossing triggers an action and current level is seeded without replay after engine start.
+- Screen triggers: on/off broadcasts while engine runs; duplicate consecutive broadcasts are deduped and current screen state is not replayed after engine start.
 - Show notification action: per-rule title and message, posted through visible `Automation alerts` channel.
 - Boot/app-update receiver restarts the engine only when Run engine on device startup is enabled.
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
@@ -57,6 +58,7 @@ Target / compile SDK: 36 (Android 16)
    - Launch app: starts selected installed launchable app.
    - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
    - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
+   - Play sound: selected current notification, alarm, ringtone, or a user-selected audio file, limited to selected first 1-60 seconds with preview and stop controls.
 - Unit tests for rule matching, schedule matching, foreground reduction, action executors, and disabled rules.
 
 ## Setup permissions
@@ -130,6 +132,8 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 - Battery threshold rules do not need Usage Access. They react only when the level crosses selected threshold; a battery level already above or below threshold at engine startup does not trigger an action.
 - Show notification needs `POST_NOTIFICATIONS` on Android 13+. The action reports failure when permission is denied. Android/HyperOS channel settings can still suppress a heads-up banner.
 - Launch app requires an installed launchable target. Open URL accepts only absolute `http` or `https` URLs with a host. Both actions start a new activity from the foreground service and can be restricted by future Android or OEM background-activity-launch policies.
+- Custom Play sound files use Android's document picker and persist read access to the selected URI. Removing or moving access to that source makes the action report failure.
+- Play sound preview stops any prior preview, can be stopped manually, and stops when leaving create or edit screen.
 - HyperOS Autostart is an OEM-owned setting and must be enabled manually. Battery restriction exemption reduces, but cannot eliminate, OEM service termination.
 - `QUERY_ALL_PACKAGES` is declared to provide a complete installed launchable-app picker. Store distribution policy may require justification.
 - No AccessibilityService is used. It is not necessary for UsageStats-based app detection and would add broader access than required.
@@ -161,12 +165,14 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Open URL verified on Xiaomi 15T Pro / HyperOS 3.
 - Vibration implementation builds and has unit coverage; device smoke test remains pending.
 - Media volume implementation builds and has unit coverage; device smoke test remains pending.
+- Play sound and screen on/off implementations build and have unit coverage; device smoke tests remain pending.
 
 ## Next validation
 
 1. Create `Charger connected -> Set media volume -> 20%`, reconnect charger, and confirm Xiaomi media volume reaches 20%.
 2. Repeat media-volume test at 0% and 100%.
-3. Verify vibration presets, total duration, and strength on device before starting Play sound.
+3. Create a screen on/off rule with notification, vibration, or sound and confirm it fires only after a new screen-state transition.
+4. Verify Play sound presets, custom file, selected duration, and Stop preview on device.
 - NFC and Battery Saver device action paths still require per-action verification after permission changes.
 
 ## License / distribution note

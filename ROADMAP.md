@@ -38,9 +38,10 @@ Do not bundle unrelated features. One feature family at a time.
     - Above selected percentage, such as 80%
     - Edge-triggered; must not fire repeatedly while remaining past threshold
     - Current level seeds at engine start without replay; later battery broadcasts trigger only a threshold crossing
-4. **Screen state**
+4. **Screen state** (implementation complete; device smoke test pending)
    - Screen on
    - Screen off
+   - Dynamic broadcasts while engine runs; duplicate events deduped and no startup replay
 5. **Headset state**
    - Wired headset connected/disconnected
    - Bluetooth audio device connected/disconnected
@@ -66,7 +67,9 @@ Do not bundle unrelated features. One feature family at a time.
 2. **Show notification** (complete)
     - Per-rule title and message
     - Android 13+ notification permission check and visible high-importance `automation_alerts_v2` channel
-3. **Play sound**
+3. **Play sound** (implementation complete; device smoke test pending)
+   - Current notification, alarm, ringtone, or selected custom audio URI
+   - Metadata duration display, 1-60 second playback limit, preview, and Stop preview
 4. **Vibrate** (implementation complete; device smoke test pending)
 5. **Launch app** (complete)
     - Selected launchable app, separate from app trigger picker
@@ -111,15 +114,15 @@ Each must expose its required permission or Shizuku state. Do not show success u
 2. **Vibration device smoke test**
     - Verify every preset, duration, and strength control on device.
     - Confirm selected duration is total waveform duration.
-3. **Play sound**
-    - Use app-owned bundled sound only; no external file/media picker yet.
-    - Define audio focus and Do Not Disturb behavior before implementation.
+3. **Screen and sound device smoke tests**
+   - Confirm screen on/off rules run only after a new display transition.
+   - Confirm system/custom sounds honor selected 1-60 second duration and Stop preview.
 4. **HTTP webhook action**
     - Add method, headers, body, bounded timeout, redacted secrets, and explicit response result.
 5. **Alarm/timer action**
     - Confirm Android alarm/timer intent support on target device first.
-6. **Screen and headset triggers**
-    - Add one framework broadcast family at a time with startup baseline and duplicate-event tests.
+6. **Headset triggers**
+   - Add wired and Bluetooth audio state one family at a time with startup baseline and duplicate-event tests.
 7. **Wi-Fi and Bluetooth device/context triggers**
     - Add selected SSID/device persistence and unavailable-permission states.
 8. **HyperOS 3 system controls**

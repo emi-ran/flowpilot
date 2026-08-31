@@ -43,6 +43,7 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     BATTERY_SAVER_OFF("Turn Battery Saver off", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
     SHOW_NOTIFICATION("Show notification", ActionCategory.SYSTEM, CapabilityRequirement.NOTIFICATIONS),
     VIBRATE("Vibrate", ActionCategory.SYSTEM, CapabilityRequirement.VIBRATION),
+    PLAY_SOUND("Play sound", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
     SET_MEDIA_VOLUME("Set media volume", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
     LAUNCH_APP("Launch app", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
     OPEN_URL("Open URL", ActionCategory.SYSTEM, CapabilityRequirement.NONE);
@@ -70,6 +71,14 @@ enum class VibrationPattern(val label: String) {
     SOS("SOS"),
 }
 
+@Serializable
+enum class SoundPreset(val label: String) {
+    NOTIFICATION("Notification sound"),
+    ALARM("Alarm sound"),
+    RINGTONE("Ringtone"),
+    CUSTOM("Custom audio file"),
+}
+
 /** What event on a chosen app triggers a rule. */
 @Serializable
 enum class TriggerEvent(val label: String, val category: TriggerCategory) {
@@ -79,6 +88,8 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     CHARGER_DISCONNECTED("Charger disconnected", TriggerCategory.SYSTEM),
     BATTERY_BELOW("Battery below level", TriggerCategory.SYSTEM),
     BATTERY_ABOVE("Battery above level", TriggerCategory.SYSTEM),
+    SCREEN_ON("Screen turned on", TriggerCategory.SYSTEM),
+    SCREEN_OFF("Screen turned off", TriggerCategory.SYSTEM),
     TIME_SCHEDULE("At scheduled time", TriggerCategory.TIME);
 
     companion object {
@@ -116,6 +127,10 @@ data class Automation(
     val vibrationDurationMs: Int = 220,
     val vibrationAmplitude: Int = 180,
     val mediaVolumePercent: Int = 50,
+    val soundPreset: SoundPreset = SoundPreset.NOTIFICATION,
+    val soundUri: String = "",
+    val soundName: String = "",
+    val soundDurationMs: Int = 3_000,
     val launchPackage: String = "",
     val launchAppName: String = "",
     val url: String = "",

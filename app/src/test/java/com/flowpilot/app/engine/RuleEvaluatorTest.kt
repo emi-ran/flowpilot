@@ -7,6 +7,15 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class RuleEvaluatorTest {
+
+    @Test fun screenEvents_matchOnlyEnabledRulesForThatState() {
+        val on = rule(TriggerEvent.SCREEN_ON).copy(id = "on")
+        val off = rule(TriggerEvent.SCREEN_OFF).copy(id = "off")
+        val disabled = rule(TriggerEvent.SCREEN_ON).copy(id = "disabled", enabled = false)
+
+        assertThat(RuleEvaluator.evaluateScreen(listOf(on, off, disabled), ScreenEvent.ON)).containsExactly(on)
+        assertThat(RuleEvaluator.evaluateScreen(listOf(on, off, disabled), ScreenEvent.OFF)).containsExactly(off)
+    }
     private fun rule(event: TriggerEvent = TriggerEvent.APP_OPENED) = Automation(
         id = "1", name = "Wallet", appPackage = "wallet.pkg", appName = "Wallet",
         triggerEvent = event, action = ActionType.NFC_ON, createdAt = 1L,

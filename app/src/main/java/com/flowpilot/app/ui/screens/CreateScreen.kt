@@ -6,6 +6,8 @@
 package com.flowpilot.app.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,9 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.media.MediaMetadataRetriever
+import android.media.RingtoneManager
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.VibrationPattern
+import com.flowpilot.app.data.model.SoundPreset
+import com.flowpilot.app.actions.SoundExecutor
 import com.flowpilot.app.actions.ActionParameters
 import com.flowpilot.app.actions.VibrationExecutor
 import com.flowpilot.app.ui.AppViewModel
@@ -48,10 +54,25 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var vibrationDurationMs by remember { mutableIntStateOf(220) }
     var vibrationAmplitude by remember { mutableIntStateOf(180) }
     var mediaVolumePercent by remember { mutableIntStateOf(50) }
+    var soundPreset by remember { mutableStateOf(SoundPreset.NOTIFICATION) }
+    var soundUri by remember { mutableStateOf("") }
+    var soundName by remember { mutableStateOf("") }
+    var soundDurationMs by remember { mutableIntStateOf(3_000) }
     var launchPackage by remember { mutableStateOf("") }
     var launchAppName by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
     val previewVibration = remember(context) { VibrationExecutor(context) }
+    val previewSound = remember(context) { SoundExecutor(context) }
+    val sourceSoundDurationMs = remember(soundPreset, soundUri) { soundSourceDurationMs(context, soundPreset, soundUri) }
+    DisposableEffect(previewSound) { onDispose { previewSound.stopPreview() } }
+    val soundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        soundPreset = SoundPreset.CUSTOM
+        soundUri = uri.toString()
+        soundName = uri.lastPathSegment?.substringAfterLast('/') ?: "Custom audio"
+        soundSourceDurationMs(context, SoundPreset.CUSTOM, uri.toString())?.let { soundDurationMs = it.coerceIn(1_000, 60_000) }
+    }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
@@ -202,6 +223,9 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     },
                 )
             }
+            if (ActionType.PLAY_SOUND in actions) {
+                SoundSettings(soundPreset, soundName, soundDurationMs, sourceSoundDurationMs, { preset -> soundPreset = preset; if (preset != SoundPreset.CUSTOM) soundUri = "" }, { soundDurationMs = it }, { previewSound.execute(ActionType.PLAY_SOUND, ActionParameters(soundPreset = soundPreset, soundUri = soundUri, soundDurationMs = soundDurationMs)) }, previewSound::stopPreview, { soundPicker.launch(arrayOf("audio/*")) })
+            }
             if (ActionType.SET_MEDIA_VOLUME in actions) {
                 MediaVolumeSettings(mediaVolumePercent) { mediaVolumePercent = it }
             }
@@ -236,7 +260,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
-                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, launchPackage, launchAppName, url)
+                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url)
                         done()
                     },
                     modifier = Modifier.weight(1f),
@@ -245,6 +269,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                         (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
+                            (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             actions.isNotEmpty(),
                 ) {
                     Text("Save")
@@ -336,6 +361,55 @@ private fun MediaVolumeSettings(percent: Int, setPercent: (Int) -> Unit) {
         valueRange = 0f..100f,
         steps = 0,
     )
+}
+
+fun soundSourceDurationMs(context: android.content.Context, preset: SoundPreset, rawUri: String): Int? {
+    val uri = when (preset) {
+        SoundPreset.NOTIFICATION -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        SoundPreset.ALARM -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        SoundPreset.RINGTONE -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+        SoundPreset.CUSTOM -> rawUri.takeIf { it.isNotBlank() }?.let(android.net.Uri::parse)
+    } ?: return null
+    return try {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(context, uri)
+            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toIntOrNull()
+        } finally {
+            retriever.release()
+        }
+    } catch (_: Throwable) {
+        null
+    }
+}
+
+@Composable
+fun SoundSettings(
+    preset: SoundPreset,
+    customName: String,
+    durationMs: Int,
+    sourceDurationMs: Int?,
+    setPreset: (SoundPreset) -> Unit,
+    setDurationMs: (Int) -> Unit,
+    preview: () -> Unit,
+    stopPreview: () -> Unit,
+    chooseFile: () -> Unit,
+) {
+    Text("Sound", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+        SoundPreset.entries.forEach { option ->
+            FilterChip(selected = preset == option, onClick = { setPreset(option) }, label = { Text(option.label) })
+        }
+    }
+    if (preset == SoundPreset.CUSTOM) {
+        Text(if (customName.isBlank()) "No audio file selected" else customName, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
+        OutlinedButton(onClick = chooseFile, modifier = Modifier.padding(top = 8.dp)) { Text("Choose MP3 or WAV") }
+    }
+    sourceDurationMs?.let { Text("Source length  ${it / 1000}s", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp)) }
+    Text("Play for  ${durationMs / 1000}s", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
+    Slider(value = durationMs.toFloat(), onValueChange = { setDurationMs(it.toInt()) }, valueRange = 1_000f..60_000f, steps = 59)
+    OutlinedButton(onClick = preview, modifier = Modifier.padding(top = 8.dp)) { Text("Preview") }
+    TextButton(onClick = stopPreview) { Text("Stop preview") }
 }
 
 @Composable

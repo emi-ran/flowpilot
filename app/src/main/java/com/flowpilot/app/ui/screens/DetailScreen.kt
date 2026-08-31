@@ -6,6 +6,8 @@
 package com.flowpilot.app.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,7 +29,9 @@ import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.VibrationPattern
+import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.actions.ActionParameters
+import com.flowpilot.app.actions.SoundExecutor
 import com.flowpilot.app.actions.VibrationExecutor
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.ActionPicker
@@ -49,10 +53,25 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var vibrationDurationMs by remember(initialRule.id) { mutableIntStateOf(initialRule.vibrationDurationMs) }
     var vibrationAmplitude by remember(initialRule.id) { mutableIntStateOf(initialRule.vibrationAmplitude) }
     var mediaVolumePercent by remember(initialRule.id) { mutableIntStateOf(initialRule.mediaVolumePercent) }
+    var soundPreset by remember(initialRule.id) { mutableStateOf(initialRule.soundPreset) }
+    var soundUri by remember(initialRule.id) { mutableStateOf(initialRule.soundUri) }
+    var soundName by remember(initialRule.id) { mutableStateOf(initialRule.soundName) }
+    var soundDurationMs by remember(initialRule.id) { mutableIntStateOf(initialRule.soundDurationMs) }
     var launchPackage by remember(initialRule.id) { mutableStateOf(initialRule.launchPackage) }
     var launchAppName by remember(initialRule.id) { mutableStateOf(initialRule.launchAppName) }
     var url by remember(initialRule.id) { mutableStateOf(initialRule.url) }
     val previewVibration = remember(context) { VibrationExecutor(context) }
+    val previewSound = remember(context) { SoundExecutor(context) }
+    val sourceSoundDurationMs = remember(soundPreset, soundUri) { soundSourceDurationMs(context, soundPreset, soundUri) }
+    DisposableEffect(previewSound) { onDispose { previewSound.stopPreview() } }
+    val soundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        soundPreset = SoundPreset.CUSTOM
+        soundUri = uri.toString()
+        soundName = uri.lastPathSegment?.substringAfterLast('/') ?: "Custom audio"
+        soundSourceDurationMs(context, SoundPreset.CUSTOM, uri.toString())?.let { soundDurationMs = it.coerceIn(1_000, 60_000) }
+    }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActions.distinct()) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
@@ -261,6 +280,9 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     steps = 0,
                 )
             }
+            if (ActionType.PLAY_SOUND in actions) {
+                SoundSettings(soundPreset, soundName, soundDurationMs, sourceSoundDurationMs, { preset -> soundPreset = preset; if (preset != SoundPreset.CUSTOM) soundUri = "" }, { soundDurationMs = it }, { previewSound.execute(ActionType.PLAY_SOUND, ActionParameters(soundPreset = soundPreset, soundUri = soundUri, soundDurationMs = soundDurationMs)) }, previewSound::stopPreview, { soundPicker.launch(arrayOf("audio/*")) })
+            }
             if (ActionType.SET_MEDIA_VOLUME in actions) {
                 Text("Media volume", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
                 Text("$mediaVolumePercent%", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 4.dp))
@@ -319,6 +341,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 vibrationDurationMs = vibrationDurationMs,
                                 vibrationAmplitude = vibrationAmplitude,
                                 mediaVolumePercent = mediaVolumePercent,
+                                soundPreset = soundPreset,
+                                soundUri = soundUri,
+                                soundName = soundName,
+                                soundDurationMs = soundDurationMs,
                                 launchPackage = launchPackage,
                                 launchAppName = launchAppName,
                                 url = url,
@@ -334,6 +360,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                         (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
+                            (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             actions.isNotEmpty(),
                 ) {
                     Text("Save changes")
