@@ -36,9 +36,9 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, or scheduled time -> one or more NFC on/off, Battery Saver on/off, Auto-rotate on/off, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, or scheduled time -> one or more NFC on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Create alarm, Start timer, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Installed launchable app picker with search, display name, package ID internally.
-- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, and Time; actions use Alerts, Audio, Apps & Links, Display, Battery, and NFC.
+- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, and Time; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, and NFC.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
 - Enable/disable switches.
@@ -56,8 +56,11 @@ Target / compile SDK: 36 (Android 16)
 - Action executors:
    - NFC ON/OFF: `svc nfc enable|disable` through Shizuku.
    - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
-   - Auto-rotate ON/OFF: direct `Settings.System.ACCELEROMETER_ROTATION` write with user-grantable `android.permission.WRITE_SETTINGS` special access.
-   - Launch app: starts selected installed launchable app.
+    - Auto-rotate ON/OFF: direct `Settings.System.ACCELEROMETER_ROTATION` write with user-grantable `android.permission.WRITE_SETTINGS` special access.
+    - Do Not Disturb ON/OFF: direct `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` / `INTERRUPTION_FILTER_ALL`) with user-grantable Notification Policy Access (`android.permission.ACCESS_NOTIFICATION_POLICY`).
+    - Create alarm: dispatches `AlarmClock.ACTION_SET_ALARM` with hour, minute, and optional label to the system Clock app (`FLAG_ACTIVITY_NEW_TASK`).
+    - Start timer: dispatches `AlarmClock.ACTION_SET_TIMER` with bounded duration (1s-24h), optional label, and `EXTRA_SKIP_UI = true` to start the timer in the background without opening the Clock app UI (`FLAG_ACTIVITY_NEW_TASK`).
+    - Launch app: starts selected installed launchable app.
    - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
    - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
    - Play sound: selected current notification, alarm, ringtone, or a user-selected audio file, limited to selected first 1-60 seconds with preview and stop controls.
@@ -92,7 +95,13 @@ Open FlowPilot -> Settings -> Advanced permissions -> Modify system settings -> 
 
 Reason: Toggling system auto-rotation (`Settings.System.ACCELEROMETER_ROTATION`) requires Android's user-grantable `WRITE_SETTINGS` special app access (`Settings.System.canWrite(context)`), not `WRITE_SECURE_SETTINGS` or Shizuku.
 
-### 5. Battery Saver actions: ADB path
+### 5. Do Not Disturb access (Notification Policy Access)
+
+Open FlowPilot -> Settings -> Advanced permissions -> Do Not Disturb access -> allow FlowPilot.
+
+Reason: Changing Do Not Disturb (`NotificationManager.setInterruptionFilter`) requires Android's user-grantable Notification Policy Access (`NotificationManager.isNotificationPolicyAccessGranted`). Standard `POST_NOTIFICATIONS` is insufficient.
+
+### 6. Battery Saver actions: ADB path
 
 With USB debugging enabled and device connected:
 
@@ -108,7 +117,7 @@ adb shell dumpsys package com.flowpilot.app | grep WRITE_SECURE_SETTINGS
 
 This gives FlowPilot direct Battery Saver access. NFC still needs Shizuku.
 
-### 6. Shizuku path
+### 7. Shizuku path
 
 Install Shizuku from its official source:
 
@@ -140,6 +149,8 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 - Charger rules do not need Usage Access. They listen for Android power connected/disconnected broadcasts only while the engine is running, so they do not fire for a cable already connected at engine startup.
 - Battery threshold rules do not need Usage Access. They react only when the level crosses selected threshold; a battery level already above or below threshold at engine startup does not trigger an action.
 - Show notification needs `POST_NOTIFICATIONS` on Android 13+. The action reports failure when permission is denied. Android/HyperOS channel settings can still suppress a heads-up banner.
+- Do Not Disturb on/off requires Notification Policy Access (`android.permission.ACCESS_NOTIFICATION_POLICY`). Normal notification permissions cannot change DND filter state.
+- Create alarm dispatches `AlarmClock.ACTION_SET_ALARM` without `EXTRA_SKIP_UI`, allowing the system Clock app to present confirmation or UI as needed. Start timer dispatches `AlarmClock.ACTION_SET_TIMER` with `EXTRA_SKIP_UI = true` to request background timer start without opening the Clock app UI. Both actions start an activity from the foreground service with `FLAG_ACTIVITY_NEW_TASK` and are subject to Android and HyperOS background activity start policies.
 - Launch app requires an installed launchable target. Open URL accepts only absolute `http` or `https` URLs with a host. Both actions start a new activity from the foreground service and can be restricted by future Android or OEM background-activity-launch policies.
 - Custom Play sound files use Android's document picker and persist read access to the selected URI. Removing or moving access to that source makes the action report failure.
 - Play sound preview stops any prior preview, can be stopped manually, and stops when leaving create or edit screen.
@@ -178,6 +189,8 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Play sound and screen on/off implementations build and have unit coverage; device smoke tests remain pending.
 - Speak text (offline TTS) builds, unit tests, and Xiaomi device smoke test passed.
 - Auto-rotate on/off (WRITE_SETTINGS) implementation builds and has unit coverage; ADB validation confirmed target device values (0 and 1), while FlowPilot app path device smoke test remains pending.
+- Clock create alarm and start timer passed Xiaomi 15T Pro / HyperOS 3 device smoke tests. Start timer uses `EXTRA_SKIP_UI = true` and starts its countdown without opening Clock UI.
+- Do Not Disturb on/off (Notification Policy Access) implementation complete with unit tests; device smoke test remains pending.
 
 ## Next validation
 
@@ -188,7 +201,8 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 5. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
    - Search for Turkish with `Türkçe`, `Turkish`, `tr`, or `tr-TR`.
    - Hold a voice row to preview it without changing selection; reopen picker and confirm it returns to selected voice.
-- NFC and Battery Saver device action paths still require per-action verification after permission changes.
+6. Grant Do Not Disturb access, trigger DND on then off, and confirm both Xiaomi system states change. Deny access and confirm the rule reports failure.
+7. NFC and Battery Saver device action paths still require per-action verification after permission changes.
 
 ## License / distribution note
 

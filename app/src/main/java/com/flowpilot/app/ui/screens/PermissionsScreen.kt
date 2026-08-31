@@ -39,6 +39,7 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val writeSettings by vm.hasWriteSettings.collectAsState()
     val write by vm.hasWriteSecureSettings.collectAsState()
     val notif by vm.hasNotifications.collectAsState()
+    val notifPolicy by vm.hasNotificationPolicy.collectAsState()
     val ignoresBatteryOptimizations by vm.ignoresBatteryOptimizations.collectAsState()
     val shizuku by vm.shizukuState.collectAsState()
     var showAdbDialog by remember { mutableStateOf(false) }
@@ -76,6 +77,19 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
             }
             PermissionCard("Notifications", "Shows engine status while automation runs.", notif) {
                 notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            PermissionCard(
+                "Do Not Disturb access",
+                "Allows FlowPilot to turn Do Not Disturb on or off. Grant Notification Policy Access in Android settings.",
+                notifPolicy,
+            ) {
+                val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                }
             }
             PermissionCard(
                 "Modify system settings",

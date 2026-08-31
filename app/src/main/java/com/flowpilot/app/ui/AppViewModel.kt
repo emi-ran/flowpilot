@@ -32,6 +32,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasWriteSettings = MutableStateFlow(false)
     val hasWriteSecureSettings = MutableStateFlow(false)
     val hasNotifications = MutableStateFlow(false)
+    val hasNotificationPolicy = MutableStateFlow(false)
     val ignoresBatteryOptimizations = MutableStateFlow(false)
     val shizukuState = MutableStateFlow(ShizukuState.NOT_INSTALLED)
     val engineRunning = MutableStateFlow(false)
@@ -89,6 +90,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         hasNotifications.value = if (Build.VERSION.SDK_INT >= 33) {
             app.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         } else true
+        hasNotificationPolicy.value = c.hasNotificationPolicyAccess()
         ignoresBatteryOptimizations.value = c.isIgnoringBatteryOptimizations()
 
         if (engineRunning.value) {
@@ -141,10 +143,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         ttsVoiceName: String = "",
         ttsSpeechRate: Float = 1.0f,
         ttsAudioFileName: String = "",
+        alarmHour: Int = 7,
+        alarmMinute: Int = 0,
+        alarmMessage: String = "",
+        timerDurationSeconds: Int = 300,
+        timerMessage: String = "",
         ruleId: String = UUID.randomUUID().toString(),
     ) {
         viewModelScope.launch {
-            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url, ttsText, ttsVoiceName, ttsSpeechRate, ttsAudioFileName, ruleId)
+            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url, ttsText, ttsVoiceName, ttsSpeechRate, ttsAudioFileName, alarmHour, alarmMinute, alarmMessage, timerDurationSeconds, timerMessage, ruleId)
             startEngine()
         }
     }

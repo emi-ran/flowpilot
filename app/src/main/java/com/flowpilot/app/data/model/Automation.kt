@@ -22,6 +22,9 @@ enum class CapabilityRequirement {
     /** Needs Android's notification runtime permission on Android 13+. */
     NOTIFICATIONS,
 
+    /** Needs user-grantable Notification Policy Access (Do Not Disturb access). */
+    NOTIFICATION_POLICY,
+
     /** Needs a device vibrator. */
     VIBRATION,
 
@@ -38,6 +41,7 @@ enum class ActionCategory(val label: String) {
     ALERTS("Alerts"),
     AUDIO("Audio"),
     APPS_LINKS("Apps & Links"),
+    CLOCK("Clock"),
 }
 
 /** A concrete system action a rule can perform. */
@@ -50,10 +54,14 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     AUTO_ROTATE_ON("Turn Auto-rotate on", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     AUTO_ROTATE_OFF("Turn Auto-rotate off", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     SHOW_NOTIFICATION("Show notification", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATIONS),
+    DND_ON("Turn Do Not Disturb on", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATION_POLICY),
+    DND_OFF("Turn Do Not Disturb off", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATION_POLICY),
     VIBRATE("Vibrate", ActionCategory.ALERTS, CapabilityRequirement.VIBRATION),
     PLAY_SOUND("Play sound", ActionCategory.AUDIO, CapabilityRequirement.NONE),
     SET_MEDIA_VOLUME("Set media volume", ActionCategory.AUDIO, CapabilityRequirement.NONE),
     SPEAK_TEXT("Speak text (TTS)", ActionCategory.AUDIO, CapabilityRequirement.NONE),
+    CREATE_ALARM("Create alarm", ActionCategory.CLOCK, CapabilityRequirement.NONE),
+    START_TIMER("Start timer", ActionCategory.CLOCK, CapabilityRequirement.NONE),
     LAUNCH_APP("Launch app", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_URL("Open URL", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE);
 
@@ -155,6 +163,11 @@ data class Automation(
     val ttsVoiceName: String = "",
     val ttsSpeechRate: Float = 1.0f,
     val ttsAudioFileName: String = "",
+    val alarmHour: Int = 7,
+    val alarmMinute: Int = 0,
+    val alarmMessage: String = "",
+    val timerDurationSeconds: Int = 300,
+    val timerMessage: String = "",
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     val createdAt: Long,

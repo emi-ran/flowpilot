@@ -26,6 +26,11 @@ data class ActionParameters(
     val ttsVoiceName: String = "",
     val ttsSpeechRate: Float = 1.0f,
     val ttsAudioFileName: String = "",
+    val alarmHour: Int = 7,
+    val alarmMinute: Int = 0,
+    val alarmMessage: String = "",
+    val timerDurationSeconds: Int = 300,
+    val timerMessage: String = "",
 )
 
 /** A capability-aware executor for one family of system actions. */

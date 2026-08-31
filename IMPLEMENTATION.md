@@ -8,7 +8,7 @@ minSdk 26, JDK 17.
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
 battery above | screen on | screen off | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on |
-Battery Saver off | Auto-rotate on | Auto-rotate off | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+Battery Saver off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | create alarm | start timer | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager and charger/battery transitions via Android broadcasts, evaluates enabled rules, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -18,12 +18,20 @@ each schedule occurrence once, and restarts on boot/app update when the engine-s
 |-------------------|---------------------|------------------------------|---------------------|---------|
 | Detect app        | Yes (Usage Access)  | -                            | -                   | -       |
 | Auto-rotate       | YES (WRITE_SETTINGS special access) | -                    | -                   | -       |
+| Do Not Disturb    | YES (Notification Policy Access) | -                | -                   | -       |
+| Alarm / Timer     | YES (Standard Clock intents / SET_ALARM) | -        | -                   | -       |
 | Battery Saver     | NO                  | YES (`pm grant` + write global low_power) | YES (`settings put global low_power`) | YES |
 | NFC               | NO (API 29+ removed NfcAdapter.enable) | NO (needs shell uid) | YES (`svc nfc enable|disable`) | YES |
 
 - Auto-rotate toggling modifies `Settings.System.ACCELEROMETER_ROTATION` (1 for on, 0 for off / portrait lock).
   It uses Android's standard user-grantable special app access `android.permission.WRITE_SETTINGS` checked via
   `Settings.System.canWrite(context)` and opened with `Settings.ACTION_MANAGE_WRITE_SETTINGS`.
+- Do Not Disturb toggling uses `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` for on,
+  `INTERRUPTION_FILTER_ALL` for off). It requires Android's standard user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY`
+  special access checked via `NotificationManager.isNotificationPolicyAccessGranted` and opened with
+  `Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS`.
+- Alarm creation and Timer start use Android's standard `AlarmClock.ACTION_SET_ALARM` and `AlarmClock.ACTION_SET_TIMER`
+  intents resolved and launched with `FLAG_ACTIVITY_NEW_TASK`. `CREATE_ALARM` omits `EXTRA_SKIP_UI` to allow confirmation, while `START_TIMER` sets `EXTRA_SKIP_UI = true` for background timer execution.
 - NFC toggling is a privileged action on Android 10+; `NfcAdapter.enable()/disable()` exist but are
   restricted to system/DPC. Normal apps can only redirect the user to NFC settings. On Xiaomi 15T Pro /
   HyperOS 3, FlowPilot uses Shizuku to run `svc nfc enable|disable` as shell. `cmd nfc` crashed the target
@@ -68,6 +76,8 @@ app/src/main/java/com/flowpilot/app/
     NfcExecutor.kt                   Shizuku `svc nfc enable|disable`
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
     AutoRotateExecutor.kt            WRITE_SETTINGS direct write to Settings.System.ACCELEROMETER_ROTATION
+    DndExecutor.kt                   NotificationManager.setInterruptionFilter (Notification Policy Access)
+    ClockExecutor.kt                 AlarmClock.ACTION_SET_ALARM and ACTION_SET_TIMER intent dispatch
     NotificationExecutor.kt           visible user-configured automation alerts
     VibrationExecutor.kt              configurable waveform vibration
     SoundExecutor.kt                  selected system/custom sound playback with bounded duration
@@ -105,6 +115,15 @@ dedupes consecutive events, and does not read or replay current screen state whe
 AutoRotateExecutor writes `Settings.System.ACCELEROMETER_ROTATION` to `1` (free rotation) or `0`
 (portrait lock), then reads back the value. It requires `android.permission.WRITE_SETTINGS` checked via
 `Settings.System.canWrite(context)` and returns explicit honest failures for permission blocks or write mismatches.
+
+DndExecutor sets `NotificationManager.setInterruptionFilter` to `INTERRUPTION_FILTER_NONE` (total silence) or
+`INTERRUPTION_FILTER_ALL` (all interruptions), then verifies `currentInterruptionFilter`. It requires
+`android.permission.ACCESS_NOTIFICATION_POLICY` checked via `NotificationManager.isNotificationPolicyAccessGranted`
+and fails with clear messages if permission is missing, state mismatches, or system throws.
+
+ClockExecutor dispatches `AlarmClock.ACTION_SET_ALARM` with `EXTRA_HOUR`, `EXTRA_MINUTES`, and optional `EXTRA_MESSAGE` (without `EXTRA_SKIP_UI`),
+or `AlarmClock.ACTION_SET_TIMER` with `EXTRA_LENGTH` (1s-24h), optional `EXTRA_MESSAGE`, and `EXTRA_SKIP_UI = true` for background timer starts. Both use `FLAG_ACTIVITY_NEW_TASK`
+and resolve the handling component before starting. Result reports request dispatched to the system Clock app.
 
 NotificationExecutor posts title/body configured on the rule to `automation_alerts_v2` at high importance.
 Android preserves channel importance after creation, so channel IDs are versioned when alert behavior changes.

@@ -65,6 +65,12 @@ class CapabilityManager(private val context: Context) {
         }
     }
 
+    /** Has the app been granted Notification Policy Access (Do Not Disturb access)? */
+    fun hasNotificationPolicyAccess(): Boolean {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+        return nm?.isNotificationPolicyAccessGranted == true
+    }
+
     /** Does the device expose NFC hardware that can be toggled? */
     fun hasNfcHardware(): Boolean =
         context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC)
@@ -106,6 +112,9 @@ class CapabilityManager(private val context: Context) {
                 context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
             ) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
 
+        CapabilityRequirement.NOTIFICATION_POLICY ->
+            if (hasNotificationPolicyAccess()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
+
         CapabilityRequirement.VIBRATION ->
             if ((context.getSystemService(android.os.Vibrator::class.java))?.hasVibrator() == true) {
                 CapabilityStatus.AVAILABLE
@@ -117,6 +126,13 @@ class CapabilityManager(private val context: Context) {
     /** open system Settings for Usage Access */
     fun openUsageAccessSettings() {
         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
+    /** open system Settings for Notification Policy Access (Do Not Disturb access) */
+    fun openNotificationPolicySettings() {
+        val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }

@@ -74,6 +74,11 @@ class AutomationRepository(private val context: Context) {
         ttsVoiceName: String = "",
         ttsSpeechRate: Float = 1.0f,
         ttsAudioFileName: String = "",
+        alarmHour: Int = 7,
+        alarmMinute: Int = 0,
+        alarmMessage: String = "",
+        timerDurationSeconds: Int = 300,
+        timerMessage: String = "",
         id: String = UUID.randomUUID().toString(),
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
@@ -116,6 +121,11 @@ class AutomationRepository(private val context: Context) {
             ttsVoiceName = ttsVoiceName,
             ttsSpeechRate = ttsSpeechRate,
             ttsAudioFileName = ttsAudioFileName,
+            alarmHour = alarmHour,
+            alarmMinute = alarmMinute,
+            alarmMessage = alarmMessage,
+            timerDurationSeconds = timerDurationSeconds,
+            timerMessage = timerMessage,
             action = primaryAction,
             actions = actions,
             createdAt = System.currentTimeMillis(),

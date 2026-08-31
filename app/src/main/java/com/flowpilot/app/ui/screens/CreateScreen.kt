@@ -64,6 +64,12 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var launchPackage by remember { mutableStateOf("") }
     var launchAppName by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
+    var alarmHour by remember { mutableIntStateOf(7) }
+    var alarmMinute by remember { mutableIntStateOf(0) }
+    var alarmMessage by remember { mutableStateOf("") }
+    var showAlarmTimePicker by remember { mutableStateOf(false) }
+    var timerDurationSeconds by remember { mutableIntStateOf(300) }
+    var timerMessage by remember { mutableStateOf("") }
     val newRuleId = remember { java.util.UUID.randomUUID().toString() }
     var ttsText by remember { mutableStateOf("") }
     var ttsVoiceName by remember { mutableStateOf("") }
@@ -126,6 +132,15 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             confirmButton = { TextButton({ scheduledMinute = pickerState.hour * 60 + pickerState.minute; showTimePicker = false }) { Text("OK") } },
             dismissButton = { TextButton({ showTimePicker = false }) { Text("Cancel") } },
             text = { TimePicker(pickerState) },
+        )
+    }
+    if (showAlarmTimePicker) {
+        val alarmPickerState = rememberTimePickerState(alarmHour, alarmMinute, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { showAlarmTimePicker = false },
+            confirmButton = { TextButton({ alarmHour = alarmPickerState.hour; alarmMinute = alarmPickerState.minute; showAlarmTimePicker = false }) { Text("OK") } },
+            dismissButton = { TextButton({ showAlarmTimePicker = false }) { Text("Cancel") } },
+            text = { TimePicker(alarmPickerState) },
         )
     }
 
@@ -272,6 +287,23 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     ttsExecutor = previewTts,
                 )
             }
+            if (ActionType.CREATE_ALARM in actions) {
+                AlarmSettings(
+                    hour = alarmHour,
+                    minute = alarmMinute,
+                    message = alarmMessage,
+                    chooseTime = { showAlarmTimePicker = true },
+                    setMessage = { alarmMessage = it },
+                )
+            }
+            if (ActionType.START_TIMER in actions) {
+                TimerSettings(
+                    durationSeconds = timerDurationSeconds,
+                    message = timerMessage,
+                    setDurationSeconds = { timerDurationSeconds = it },
+                    setMessage = { timerMessage = it },
+                )
+            }
 
             OutlinedTextField(
                 value = name,
@@ -286,7 +318,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
-                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url, ttsText, ttsVoiceName, ttsSpeechRate, ttsAudioFileName, newRuleId)
+                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url, ttsText, ttsVoiceName, ttsSpeechRate, ttsAudioFileName, alarmHour, alarmMinute, alarmMessage, timerDurationSeconds, timerMessage, newRuleId)
                         done()
                     },
                     modifier = Modifier.weight(1f),
@@ -309,6 +341,69 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
 fun isWebUrl(value: String): Boolean {
     val uri = android.net.Uri.parse(value.trim())
     return uri.scheme in setOf("https", "http") && !uri.host.isNullOrBlank()
+}
+
+@Composable
+fun AlarmSettings(
+    hour: Int,
+    minute: Int,
+    message: String,
+    chooseTime: () -> Unit,
+    setMessage: (String) -> Unit,
+) {
+    Text("Alarm", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    SelectionRow("Alarm time", "%02d:%02d".format(hour, minute), chooseTime)
+    OutlinedTextField(
+        value = message,
+        onValueChange = setMessage,
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        label = { Text("Label (optional)") },
+        singleLine = true,
+    )
+}
+
+@Composable
+fun TimerSettings(
+    durationSeconds: Int,
+    message: String,
+    setDurationSeconds: (Int) -> Unit,
+    setMessage: (String) -> Unit,
+) {
+    val minutes = durationSeconds / 60
+    Text("Timer", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text("Duration  ${if (minutes >= 60) "${minutes / 60}h ${minutes % 60}m" else "$minutes min"}", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 4.dp))
+
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(top = 8.dp),
+    ) {
+        listOf(1 to "1m", 5 to "5m", 10 to "10m", 15 to "15m", 30 to "30m", 60 to "1h", 120 to "2h").forEach { (m, label) ->
+            FilterChip(
+                selected = durationSeconds == m * 60,
+                onClick = { setDurationSeconds(m * 60) },
+                label = { Text(label) },
+            )
+        }
+    }
+
+    Slider(
+        value = (durationSeconds / 60).toFloat(),
+        onValueChange = { setDurationSeconds((it.toInt() * 60).coerceIn(60, 86400)) },
+        valueRange = 1f..1440f, // 1 minute to 24 hours
+        steps = 0,
+        modifier = Modifier.padding(top = 8.dp),
+    )
+
+    OutlinedTextField(
+        value = message,
+        onValueChange = setMessage,
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        label = { Text("Label (optional)") },
+        singleLine = true,
+    )
 }
 
 @Composable

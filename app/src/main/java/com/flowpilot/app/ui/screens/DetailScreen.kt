@@ -41,6 +41,8 @@ import com.flowpilot.app.ui.components.AppPicker
 import com.flowpilot.app.ui.components.SelectionRow
 import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
+import com.flowpilot.app.ui.screens.AlarmSettings
+import com.flowpilot.app.ui.screens.TimerSettings
 
 @Composable
 fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
@@ -63,6 +65,12 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var launchPackage by remember(initialRule.id) { mutableStateOf(initialRule.launchPackage) }
     var launchAppName by remember(initialRule.id) { mutableStateOf(initialRule.launchAppName) }
     var url by remember(initialRule.id) { mutableStateOf(initialRule.url) }
+    var alarmHour by remember(initialRule.id) { mutableIntStateOf(initialRule.alarmHour) }
+    var alarmMinute by remember(initialRule.id) { mutableIntStateOf(initialRule.alarmMinute) }
+    var alarmMessage by remember(initialRule.id) { mutableStateOf(initialRule.alarmMessage) }
+    var showAlarmTimePicker by remember { mutableStateOf(false) }
+    var timerDurationSeconds by remember(initialRule.id) { mutableIntStateOf(initialRule.timerDurationSeconds) }
+    var timerMessage by remember(initialRule.id) { mutableStateOf(initialRule.timerMessage) }
     var ttsText by remember(initialRule.id) { mutableStateOf(initialRule.ttsText) }
     var ttsVoiceName by remember(initialRule.id) { mutableStateOf(initialRule.ttsVoiceName) }
     var ttsSpeechRate by remember(initialRule.id) { mutableFloatStateOf(initialRule.ttsSpeechRate) }
@@ -125,6 +133,15 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
             confirmButton = { TextButton({ scheduledMinute = pickerState.hour * 60 + pickerState.minute; showTimePicker = false }) { Text("OK") } },
             dismissButton = { TextButton({ showTimePicker = false }) { Text("Cancel") } },
             text = { TimePicker(pickerState) },
+        )
+    }
+    if (showAlarmTimePicker) {
+        val alarmPickerState = rememberTimePickerState(alarmHour, alarmMinute, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { showAlarmTimePicker = false },
+            confirmButton = { TextButton({ alarmHour = alarmPickerState.hour; alarmMinute = alarmPickerState.minute; showAlarmTimePicker = false }) { Text("OK") } },
+            dismissButton = { TextButton({ showAlarmTimePicker = false }) { Text("Cancel") } },
+            text = { TimePicker(alarmPickerState) },
         )
     }
 
@@ -324,6 +341,23 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     ttsExecutor = previewTts,
                 )
             }
+            if (ActionType.CREATE_ALARM in actions) {
+                AlarmSettings(
+                    hour = alarmHour,
+                    minute = alarmMinute,
+                    message = alarmMessage,
+                    chooseTime = { showAlarmTimePicker = true },
+                    setMessage = { alarmMessage = it },
+                )
+            }
+            if (ActionType.START_TIMER in actions) {
+                TimerSettings(
+                    durationSeconds = timerDurationSeconds,
+                    message = timerMessage,
+                    setDurationSeconds = { timerDurationSeconds = it },
+                    setMessage = { timerMessage = it },
+                )
+            }
 
             OutlinedTextField(
                 value = name,
@@ -377,6 +411,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 ttsVoiceName = ttsVoiceName,
                                 ttsSpeechRate = ttsSpeechRate,
                                 ttsAudioFileName = ttsAudioFileName,
+                                alarmHour = alarmHour,
+                                alarmMinute = alarmMinute,
+                                alarmMessage = alarmMessage,
+                                timerDurationSeconds = timerDurationSeconds,
+                                timerMessage = timerMessage,
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
                             )

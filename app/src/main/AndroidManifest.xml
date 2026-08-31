@@ -15,6 +15,12 @@
     <!-- Notification permission (Android 13+) for the engine's ongoing status notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Notification Policy Access for Do Not Disturb toggle. -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
+    <!-- Set alarms and timers via Clock app. -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+
     <!-- Normal permission for user-configured vibration actions. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 

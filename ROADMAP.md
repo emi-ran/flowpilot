@@ -82,7 +82,9 @@ Do not bundle unrelated features. One feature family at a time.
 7. **Open URL** (complete)
     - Validated `http` / `https` URLs through Android `ACTION_VIEW`
     - Verified on Xiaomi 15T Pro / HyperOS 3
-8. **Create alarm or timer**
+8. **Create alarm or timer** (complete; Xiaomi device smoke test passed)
+   - Alarm opens system Clock UI for confirmation.
+   - Timer starts its countdown without opening Clock UI (`AlarmClock.EXTRA_SKIP_UI = true`).
 9. **Set media volume** (implementation complete; device smoke test pending)
     - Configurable 0-100% music-stream level
     - Uses `AudioManager.setStreamVolume` and verifies resulting level
@@ -97,12 +99,16 @@ Each must expose its required permission or Shizuku state. Do not show success u
 4. Airplane mode on/off
 5. Location services on/off
 6. Hotspot on/off
-7. Do Not Disturb on/off
+7. **Do Not Disturb on/off** (implementation complete; unit tests added, device smoke test pending)
+   - `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` / `INTERRUPTION_FILTER_ALL`)
+   - Requires user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY` special access
 8. **Auto-rotate on/off** (implementation complete; target ADB tested, app device smoke test pending)
     - `Settings.System.ACCELEROMETER_ROTATION` write (1 = on, 0 = off / portrait lock)
     - Requires user-grantable `android.permission.WRITE_SETTINGS` special access (`Settings.System.canWrite(context)`)
-9. Dark theme on/off
-10. Sound profile
+9. **Create alarm or timer** (complete; Xiaomi device smoke test passed)
+    - `AlarmClock.ACTION_SET_ALARM` opens Clock UI; `AlarmClock.ACTION_SET_TIMER` starts in background with `AlarmClock.EXTRA_SKIP_UI = true`
+10. Dark theme on/off
+11. Sound profile
     - Silent
     - Vibrate
     - Normal
@@ -130,8 +136,8 @@ Each must expose its required permission or Shizuku state. Do not show success u
     - Deny special access and confirm rule reports failure instead of success.
 5. **HTTP webhook action**
     - Add method, headers, body, bounded timeout, redacted secrets, and explicit response result.
-6. **Alarm/timer action**
-    - Confirm Android alarm/timer intent support on target device first.
+6. **DND device smoke test**
+    - Verify DND on/off transitions and permission error path on Xiaomi 15T Pro / HyperOS 3.
 7. **Headset triggers**
    - Add wired and Bluetooth audio state one family at a time with startup baseline and duplicate-event tests.
 8. **Wi-Fi and Bluetooth device/context triggers**

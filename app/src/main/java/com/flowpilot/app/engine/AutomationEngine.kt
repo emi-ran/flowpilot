@@ -191,6 +191,11 @@ class AutomationEngine(
                             ttsVoiceName = rule.ttsVoiceName,
                             ttsSpeechRate = rule.ttsSpeechRate,
                             ttsAudioFileName = rule.ttsAudioFileName,
+                            alarmHour = rule.alarmHour,
+                            alarmMinute = rule.alarmMinute,
+                            alarmMessage = rule.alarmMessage,
+                            timerDurationSeconds = rule.timerDurationSeconds,
+                            timerMessage = rule.timerMessage,
                         ),
                     )
                     Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")

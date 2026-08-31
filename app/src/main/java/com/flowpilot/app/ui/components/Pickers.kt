@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.BatteryChargingFull
@@ -24,6 +25,9 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DoNotDisturb
+import androidx.compose.material.icons.filled.DoNotDisturbOff
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Notifications
@@ -231,12 +235,52 @@ fun ActionPicker(
                         keywords = listOf("notify", "notification", "banner", "message", "alert", "push"),
                     ),
                     PickerItem(
+                        value = ActionType.DND_ON,
+                        title = ActionType.DND_ON.label,
+                        subtitle = "Mute all interruptions and enable Do Not Disturb",
+                        icon = Icons.Default.DoNotDisturb,
+                        iconTint = Color(0xFFE57373),
+                        keywords = listOf("dnd", "do not disturb", "mute", "silence", "quiet", "dnd on", "zen"),
+                    ),
+                    PickerItem(
+                        value = ActionType.DND_OFF,
+                        title = ActionType.DND_OFF.label,
+                        subtitle = "Allow normal interruptions and disable Do Not Disturb",
+                        icon = Icons.Default.DoNotDisturbOff,
+                        iconTint = Color(0xFF81C784),
+                        keywords = listOf("dnd", "do not disturb", "unmute", "normal", "dnd off", "zen off"),
+                    ),
+                    PickerItem(
                         value = ActionType.VIBRATE,
                         title = ActionType.VIBRATE.label,
                         subtitle = "Vibrate device with custom pattern and strength",
                         icon = Icons.Default.Vibration,
                         iconTint = Color(0xFFFFCC80),
                         keywords = listOf("vibration", "haptic", "buzz", "pulse", "shake", "vibrate"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = ActionCategory.CLOCK.name,
+                label = ActionCategory.CLOCK.label,
+                icon = Icons.Default.Alarm,
+                iconTint = Color(0xFFFFD54F),
+                items = listOf(
+                    PickerItem(
+                        value = ActionType.CREATE_ALARM,
+                        title = ActionType.CREATE_ALARM.label,
+                        subtitle = "Create an alarm in the system Clock app",
+                        icon = Icons.Default.Alarm,
+                        iconTint = Color(0xFFFFD54F),
+                        keywords = listOf("alarm", "clock", "wake", "alert", "time", "set alarm"),
+                    ),
+                    PickerItem(
+                        value = ActionType.START_TIMER,
+                        title = ActionType.START_TIMER.label,
+                        subtitle = "Start a countdown timer in the system Clock app",
+                        icon = Icons.Default.HourglassEmpty,
+                        iconTint = Color(0xFFFFCA28),
+                        keywords = listOf("timer", "countdown", "clock", "stopwatch", "seconds", "minutes", "start timer"),
                     ),
                 ),
             ),
