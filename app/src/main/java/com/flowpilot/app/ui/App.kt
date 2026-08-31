@@ -2,6 +2,7 @@
 
 package com.flowpilot.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,10 @@ enum class Page {
 fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     var page by remember { mutableStateOf(Page.HOME) }
     var selectedRule by remember { mutableStateOf<Automation?>(null) }
+
+    BackHandler(enabled = page != Page.HOME) {
+        page = Page.HOME
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),

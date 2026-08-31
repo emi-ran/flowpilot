@@ -6,6 +6,7 @@ import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -26,6 +27,7 @@ import com.flowpilot.app.ui.components.CapabilityPill
 
 @Composable
 fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
+    BackHandler(onBack = back)
     val context = LocalContext.current
     val usage by vm.hasUsageAccess.collectAsState()
     val write by vm.hasWriteSecureSettings.collectAsState()

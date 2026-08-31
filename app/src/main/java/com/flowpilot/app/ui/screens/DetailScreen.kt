@@ -2,6 +2,7 @@
 
 package com.flowpilot.app.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,7 @@ import com.flowpilot.app.ui.components.TriggerPicker
 
 @Composable
 fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
+    BackHandler(onBack = back)
     var event by remember(initialRule.id) { mutableStateOf(initialRule.triggerEvent) }
     var actions by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActions) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }

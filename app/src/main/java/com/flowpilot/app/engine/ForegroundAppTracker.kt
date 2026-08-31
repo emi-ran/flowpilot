@@ -5,17 +5,16 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 
 /**
- * Detects which app is currently in the foreground using UsageStatsManager
- * (Usage Access). Uses queryEvents for precise MOVE_TO_FOREGROUND timestamps
- * rather than the coarse queryUsageStats aggregation.
+ * Detects foreground/background app transitions using UsageStatsManager (Usage Access).
+ * Uses queryEvents for precise event sequence rather than coarse aggregates.
  */
-class ForegroundAppTracker(private val context: Context) {
+class ForegroundAppTracker(
+    private val context: Context,
+    initialEventTime: Long = System.currentTimeMillis(),
+) {
 
     @Volatile
-    private var lastEventTime: Long = System.currentTimeMillis() - 10_000L
-
-    @Volatile
-    private var lastKnownPackage: String? = null
+    private var lastEventTime: Long = initialEventTime
 
     data class Transition(
         val packageName: String,
@@ -24,7 +23,7 @@ class ForegroundAppTracker(private val context: Context) {
     )
 
     /**
-     * @return all foreground/background transition events since the last poll.
+     * @return all foreground/background transition events since the last poll in chronological order.
      */
     fun queryNewTransitions(): List<Transition> {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
@@ -47,42 +46,21 @@ class ForegroundAppTracker(private val context: Context) {
             if (event.timeStamp > maxTime) maxTime = event.timeStamp
 
             @Suppress("DEPRECATION")
-            if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND ||
-                event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
-                list.add(Transition(event.packageName, isForeground = true, timestamp = event.timeStamp))
-                lastKnownPackage = event.packageName
+            when (event.eventType) {
+                UsageEvents.Event.MOVE_TO_FOREGROUND,
+                UsageEvents.Event.ACTIVITY_RESUMED -> {
+                    list.add(Transition(event.packageName, isForeground = true, timestamp = event.timeStamp))
+                }
+                UsageEvents.Event.MOVE_TO_BACKGROUND,
+                UsageEvents.Event.ACTIVITY_PAUSED,
+                UsageEvents.Event.ACTIVITY_STOPPED -> {
+                    list.add(Transition(event.packageName, isForeground = false, timestamp = event.timeStamp))
+                }
             }
         }
         if (maxTime > lastEventTime) {
             lastEventTime = maxTime
         }
         return list
-    }
-
-    /**
-     * @return the most recently foregrounded package, or null if none found /
-     *         if Usage Access is not granted.
-     */
-    fun currentForegroundPackage(): String? {
-        val transitions = queryNewTransitions()
-        val lastFg = transitions.lastOrNull { it.isForeground }?.packageName
-        if (lastFg != null) return lastFg
-
-        if (lastKnownPackage != null) return lastKnownPackage
-
-        val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
-            ?: return null
-        val now = System.currentTimeMillis()
-        val begin = now - 15 * 60_000L
-        return try {
-            val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, begin, now)
-            val mostRecent = stats?.maxByOrNull { it.lastTimeUsed }?.packageName
-            if (mostRecent != null) {
-                lastKnownPackage = mostRecent
-            }
-            mostRecent
-        } catch (_: Throwable) {
-            null
-        }
     }
 }

@@ -35,4 +35,29 @@ class RuleEvaluatorTest {
         assertThat(result.toExecute).isEmpty()
         assertThat(result.matched).isEmpty()
     }
+
+    @Test fun multi_action_rule_preserved_and_effective_actions_evaluated() {
+        val multiActionRule = Automation(
+            id = "2",
+            name = "Akbank · Turn NFC on + Turn Battery Saver off",
+            appPackage = "com.akbank.android.apps.akbank_direkt",
+            appName = "Akbank",
+            triggerEvent = TriggerEvent.APP_OPENED,
+            action = ActionType.NFC_ON,
+            actions = listOf(ActionType.NFC_ON, ActionType.BATTERY_SAVER_OFF),
+            createdAt = 2L,
+        )
+        assertThat(multiActionRule.effectiveActions).containsExactly(
+            ActionType.NFC_ON,
+            ActionType.BATTERY_SAVER_OFF
+        ).inOrder()
+        assertThat(multiActionRule.actionSummary).isEqualTo("Turn NFC on + Turn Battery Saver off")
+
+        val result = RuleEvaluator.evaluate(listOf(multiActionRule), AppEvent.OPENED, "com.akbank.android.apps.akbank_direkt", false)
+        assertThat(result.toExecute).containsExactly(multiActionRule)
+        assertThat(result.toExecute.first().effectiveActions).containsExactly(
+            ActionType.NFC_ON,
+            ActionType.BATTERY_SAVER_OFF
+        ).inOrder()
+    }
 }

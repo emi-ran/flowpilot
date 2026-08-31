@@ -2,6 +2,7 @@
 
 package com.flowpilot.app.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,8 +26,9 @@ import com.flowpilot.app.ui.components.TriggerPicker
 
 @Composable
 fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
+    BackHandler(onBack = done)
     var event by remember { mutableStateOf(TriggerEvent.APP_OPENED) }
-    var actions by remember { mutableStateOf(listOf(ActionType.NFC_ON)) }
+    var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
     var pkg by remember { mutableStateOf("") }
     var appName by remember { mutableStateOf("") }

@@ -18,16 +18,21 @@ import com.flowpilot.app.data.model.ActionType
 class PowerSaverExecutor(
     private val context: Context,
     private val shell: ShizukuShellCompatible,
+    private val permissionChecker: (Context) -> Boolean = { ctx ->
+        ctx.packageManager.checkPermission(
+            Manifest.permission.WRITE_SECURE_SETTINGS,
+            ctx.packageName,
+        ) == PackageManager.PERMISSION_GRANTED
+    },
+    private val settingsWriter: (ContentResolver, String, Int) -> Boolean = { cr, name, value ->
+        Settings.Global.putInt(cr, name, value)
+    },
 ) : ActionExecutor {
 
     override val supportedTypes: Set<ActionType> =
         setOf(ActionType.BATTERY_SAVER_ON, ActionType.BATTERY_SAVER_OFF)
 
-    private fun hasWriteSecureSettings(): Boolean =
-        context.packageManager.checkPermission(
-            Manifest.permission.WRITE_SECURE_SETTINGS,
-            context.packageName,
-        ) == PackageManager.PERMISSION_GRANTED
+    private fun hasWriteSecureSettings(): Boolean = permissionChecker(context)
 
     override fun execute(action: ActionType): ActionResult {
         val target = when (action) {
@@ -36,7 +41,19 @@ class PowerSaverExecutor(
             else -> return ActionResult(false, "Unsupported action for battery saver")
         }
 
-        // Primary & most effective method: Shizuku executes `cmd power set-mode <0|1>`
+        // Primary method: Direct write via WRITE_SECURE_SETTINGS (ADB-granted).
+        // Preferred because it is instantaneous and requires no Shizuku or shell processes.
+        if (hasWriteSecureSettings()) {
+            return try {
+                val ok = settingsWriter(context.contentResolver, "low_power", target)
+                if (ok) ActionResult(true, "Battery saver ${if (target == 1) "on" else "off"}")
+                else ActionResult(false, "Failed to write battery saver setting")
+            } catch (t: Throwable) {
+                ActionResult(false, t.message ?: t.javaClass.simpleName)
+            }
+        }
+
+        // Fallback method: Shizuku executes `cmd power set-mode <0|1>`
         // and updates system & global settings for AOSP and Xiaomi HyperOS.
         if (shell.isShizukuRunning() && shell.hasPermission()) {
             return try {
@@ -55,21 +72,6 @@ class PowerSaverExecutor(
             }
         }
 
-        // Fallback method: Direct write via WRITE_SECURE_SETTINGS (ADB-granted).
-        if (hasWriteSecureSettings()) {
-            return try {
-                val ok = Settings.Global.putInt(
-                    context.contentResolver,
-                    "low_power",
-                    target,
-                )
-                if (ok) ActionResult(true, "Battery saver ${if (target == 1) "on" else "off"}")
-                else ActionResult(false, "Failed to write battery saver setting")
-            } catch (t: Throwable) {
-                ActionResult(false, t.message ?: t.javaClass.simpleName)
-            }
-        }
-
-        return ActionResult(false, "Battery saver needs Shizuku permission or WRITE_SECURE_SETTINGS")
+        return ActionResult(false, "Battery saver needs WRITE_SECURE_SETTINGS or Shizuku permission")
     }
 }

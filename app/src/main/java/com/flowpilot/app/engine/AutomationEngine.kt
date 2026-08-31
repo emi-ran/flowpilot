@@ -15,13 +15,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * The automation engine: polls the foreground app, emits open/close events,
+ * The automation engine: polls the foreground app transitions, reduces batch to final state,
  * evaluates enabled rules, dedupes, and executes matching actions.
  */
-class AutomationEngine(context: Context) {
+class AutomationEngine(
+    context: Context,
+    private val tracker: ForegroundAppTracker = ForegroundAppTracker(context.applicationContext),
+) {
 
     private val appContext = context.applicationContext
-    private val tracker = ForegroundAppTracker(appContext)
     private val repository = AutomationRepository(appContext)
     private val dispatcher = ActionDispatcher.get(appContext)
 
@@ -32,21 +34,14 @@ class AutomationEngine(context: Context) {
     var running: Boolean = false
         private set
 
-    // State across polls.
     @Volatile
-    private var lastForeground: String? = null
-
-    // Keep a lock per package: whether APP_OPENED rules already fired for the
-    // current foreground residency of that package (maps package -> locked).
-    private val openLocks = HashMap<String, Boolean>()
+    private var state: ForegroundState = ForegroundState()
 
     fun start() {
         if (job?.isActive == true) return
         running = true
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         job = scope.launch {
-            // Warm up after a short delay so the service settles.
-            delay(1000)
             while (isActive) {
                 try {
                     poll()
@@ -65,54 +60,39 @@ class AutomationEngine(context: Context) {
         job = null
     }
 
-    private suspend fun poll() {
+    suspend fun poll() {
         val transitions = withContext(Dispatchers.IO) { tracker.queryNewTransitions() }
-        val rules = repository.automations.first()
+        if (transitions.isEmpty()) return
 
-        if (transitions.isEmpty()) {
-            return
+        val domainTransitions = transitions.map {
+            ForegroundReducer.Transition(
+                packageName = it.packageName,
+                isForeground = it.isForeground,
+                timestamp = it.timestamp,
+            )
         }
 
-        for (transition in transitions) {
-            val pkg = transition.packageName
-            if (transition.isForeground) {
-                if (lastForeground == pkg) continue
+        val stepOutput = synchronized(this) {
+            val output = ForegroundReducer.reduceBatch(state, domainTransitions)
+            state = output.state
+            output
+        }
 
-                // Previous app closed / left foreground
-                if (lastForeground != null) {
-                    val prev = lastForeground!!
-                    val prevLock = synchronized(openLocks) { openLocks[prev] ?: false }
-                    val result = RuleEvaluator.evaluate(rules, AppEvent.CLOSED, prev, prevLock)
-                    if (result.toExecute.isNotEmpty()) {
-                        Log.i(TAG, "Executing CLOSED rules for $prev (${result.toExecute.size} rule(s))")
-                        executeAll(result.toExecute)
-                    }
-                    synchronized(openLocks) { openLocks.remove(prev) }
-                }
+        val rules = repository.automations.first()
 
-                // Current app opened
-                val newLock = synchronized(openLocks) { openLocks[pkg] ?: false }
-                val result = RuleEvaluator.evaluate(rules, AppEvent.OPENED, pkg, newLock)
-                if (result.toExecute.isNotEmpty()) {
-                    Log.i(TAG, "Executing OPENED rules for $pkg (${result.toExecute.size} rule(s))")
-                    executeAll(result.toExecute)
-                    synchronized(openLocks) { openLocks[pkg] = true }
-                }
+        stepOutput.closedPackage?.let { pkg ->
+            val result = RuleEvaluator.evaluate(rules, AppEvent.CLOSED, pkg, heldOpenLock = false)
+            if (result.toExecute.isNotEmpty()) {
+                Log.i(TAG, "Executing CLOSED rules for $pkg (${result.toExecute.size} rule(s))")
+                executeAll(result.toExecute)
+            }
+        }
 
-                lastForeground = pkg
-                Log.d(TAG, "Foreground changed to: $pkg")
-            } else {
-                // Background/paused event
-                if (lastForeground == pkg) {
-                    val prevLock = synchronized(openLocks) { openLocks[pkg] ?: false }
-                    val result = RuleEvaluator.evaluate(rules, AppEvent.CLOSED, pkg, prevLock)
-                    if (result.toExecute.isNotEmpty()) {
-                        Log.i(TAG, "Executing CLOSED rules on background for $pkg (${result.toExecute.size} rule(s))")
-                        executeAll(result.toExecute)
-                    }
-                    synchronized(openLocks) { openLocks.remove(pkg) }
-                    lastForeground = null
-                }
+        stepOutput.openedPackage?.let { pkg ->
+            val result = RuleEvaluator.evaluate(rules, AppEvent.OPENED, pkg, heldOpenLock = false)
+            if (result.toExecute.isNotEmpty()) {
+                Log.i(TAG, "Executing OPENED rules for $pkg (${result.toExecute.size} rule(s))")
+                executeAll(result.toExecute)
             }
         }
     }
@@ -137,6 +117,6 @@ class AutomationEngine(context: Context) {
 
     private companion object {
         const val TAG = "FlowPilotEngine"
-        const val POLL_INTERVAL_MS = 1000L
+        const val POLL_INTERVAL_MS = 500L
     }
 }
