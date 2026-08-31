@@ -15,6 +15,7 @@ data class ActionParameters(
     val vibrationPattern: VibrationPattern = VibrationPattern.PULSE,
     val vibrationDurationMs: Int = 220,
     val vibrationAmplitude: Int = 180,
+    val mediaVolumePercent: Int = 50,
     val launchPackage: String = "",
     val url: String = "",
 )

@@ -9,10 +9,11 @@ class ActionDispatcher private constructor(
     private val powerSaver: PowerSaverExecutor,
     private val notification: NotificationExecutor,
     private val vibration: VibrationExecutor,
+    private val mediaVolume: MediaVolumeExecutor,
     private val launcher: LaunchExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
-        listOf(nfc, powerSaver, notification, vibration, launcher).flatMap { e -> e.supportedTypes.map { it to e } }.toMap()
+        listOf(nfc, powerSaver, notification, vibration, mediaVolume, launcher).flatMap { e -> e.supportedTypes.map { it to e } }.toMap()
     }
 
     fun execute(action: ActionType, parameters: ActionParameters = ActionParameters()): ActionResult {
@@ -31,6 +32,7 @@ class ActionDispatcher private constructor(
                     PowerSaverExecutor(context.applicationContext, ShizukuShell.instance),
                     NotificationExecutor(context.applicationContext),
                     VibrationExecutor(context.applicationContext),
+                    MediaVolumeExecutor(context.applicationContext),
                     LaunchExecutor(context.applicationContext),
                 ).also { instance = it }
             }

@@ -126,12 +126,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         vibrationPattern: com.flowpilot.app.data.model.VibrationPattern = com.flowpilot.app.data.model.VibrationPattern.PULSE,
         vibrationDurationMs: Int = 220,
         vibrationAmplitude: Int = 180,
+        mediaVolumePercent: Int = 50,
         launchPackage: String = "",
         launchAppName: String = "",
         url: String = "",
     ) {
         viewModelScope.launch {
-            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, launchPackage, launchAppName, url)
+            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, launchPackage, launchAppName, url)
             startEngine()
         }
     }

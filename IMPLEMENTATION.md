@@ -8,7 +8,7 @@ minSdk 26, JDK 17.
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
 battery above | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on | Battery Saver off |
-show notification | vibrate | launch app | open URL] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+show notification | vibrate | set media volume | launch app | open URL] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager and charger/battery transitions via Android broadcasts, evaluates enabled rules, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -64,6 +64,7 @@ app/src/main/java/com/flowpilot/app/
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
     NotificationExecutor.kt           visible user-configured automation alerts
     VibrationExecutor.kt              configurable waveform vibration
+    MediaVolumeExecutor.kt            percentage-to-music-stream volume mapping
     LaunchExecutor.kt                 selected app or validated HTTP(S) URL activity launch
     ShizukuShell.kt                  Shizuku connection + run shell command via UserService
   permission/
@@ -97,6 +98,10 @@ LaunchExecutor uses a selected package's launcher intent or `ACTION_VIEW` for an
 URL. Both intents carry `FLAG_ACTIVITY_NEW_TASK` because the automation engine runs outside an activity.
 Launch failure is logged and returned to the engine; target app removal, missing URL resolver, and OEM
 background-activity restrictions remain explicit failure cases.
+
+MediaVolumeExecutor converts stored 0-100% configuration to the current device's `STREAM_MUSIC` range,
+sets volume without a system UI overlay, then reads the resulting level. A mismatch reports failure rather
+than claiming a blocked volume change succeeded.
 
 ## Battery / reliability
 

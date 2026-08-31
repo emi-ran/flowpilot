@@ -75,7 +75,9 @@ Do not bundle unrelated features. One feature family at a time.
     - Validated `http` / `https` URLs through Android `ACTION_VIEW`
     - Verified on Xiaomi 15T Pro / HyperOS 3
 7. **Create alarm or timer**
-8. **Set media volume**
+8. **Set media volume** (implementation complete; device smoke test pending)
+    - Configurable 0-100% music-stream level
+    - Uses `AudioManager.setStreamVolume` and verifies resulting level
 
 ### Phase 2 — HyperOS 3 system controls
 
@@ -102,14 +104,26 @@ Each must expose its required permission or Shizuku state. Do not show success u
 
 ## Proposed Implementation Order
 
-1. Set media volume
-2. Vibration device smoke test
-3. Play sound
-4. HTTP webhook action
-5. Alarm/timer action
-6. Screen and headset triggers
-7. Wi-Fi and Bluetooth device/context triggers
-8. HyperOS 3 system controls, one action at a time
+1. **Media volume device smoke test**
+    - Create `Charger connected -> Set media volume -> 20%`.
+    - Reconnect charger and confirm Xiaomi media volume changes to 20%.
+    - Repeat with 0% and 100%; verify a blocked change reports failure.
+2. **Vibration device smoke test**
+    - Verify every preset, duration, and strength control on device.
+    - Confirm selected duration is total waveform duration.
+3. **Play sound**
+    - Use app-owned bundled sound only; no external file/media picker yet.
+    - Define audio focus and Do Not Disturb behavior before implementation.
+4. **HTTP webhook action**
+    - Add method, headers, body, bounded timeout, redacted secrets, and explicit response result.
+5. **Alarm/timer action**
+    - Confirm Android alarm/timer intent support on target device first.
+6. **Screen and headset triggers**
+    - Add one framework broadcast family at a time with startup baseline and duplicate-event tests.
+7. **Wi-Fi and Bluetooth device/context triggers**
+    - Add selected SSID/device persistence and unavailable-permission states.
+8. **HyperOS 3 system controls**
+    - One control at a time; device-state evidence required before marking complete.
 
 ## Acceptance Gate
 

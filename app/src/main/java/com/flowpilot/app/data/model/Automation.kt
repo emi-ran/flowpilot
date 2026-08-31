@@ -43,6 +43,7 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     BATTERY_SAVER_OFF("Turn Battery Saver off", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
     SHOW_NOTIFICATION("Show notification", ActionCategory.SYSTEM, CapabilityRequirement.NOTIFICATIONS),
     VIBRATE("Vibrate", ActionCategory.SYSTEM, CapabilityRequirement.VIBRATION),
+    SET_MEDIA_VOLUME("Set media volume", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
     LAUNCH_APP("Launch app", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
     OPEN_URL("Open URL", ActionCategory.SYSTEM, CapabilityRequirement.NONE);
 
@@ -114,6 +115,7 @@ data class Automation(
     val vibrationPattern: VibrationPattern = VibrationPattern.PULSE,
     val vibrationDurationMs: Int = 220,
     val vibrationAmplitude: Int = 180,
+    val mediaVolumePercent: Int = 50,
     val launchPackage: String = "",
     val launchAppName: String = "",
     val url: String = "",

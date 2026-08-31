@@ -48,6 +48,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var vibrationPattern by remember(initialRule.id) { mutableStateOf(initialRule.vibrationPattern) }
     var vibrationDurationMs by remember(initialRule.id) { mutableIntStateOf(initialRule.vibrationDurationMs) }
     var vibrationAmplitude by remember(initialRule.id) { mutableIntStateOf(initialRule.vibrationAmplitude) }
+    var mediaVolumePercent by remember(initialRule.id) { mutableIntStateOf(initialRule.mediaVolumePercent) }
     var launchPackage by remember(initialRule.id) { mutableStateOf(initialRule.launchPackage) }
     var launchAppName by remember(initialRule.id) { mutableStateOf(initialRule.launchAppName) }
     var url by remember(initialRule.id) { mutableStateOf(initialRule.url) }
@@ -260,6 +261,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     steps = 0,
                 )
             }
+            if (ActionType.SET_MEDIA_VOLUME in actions) {
+                Text("Media volume", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+                Text("$mediaVolumePercent%", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 4.dp))
+                Slider(value = mediaVolumePercent.toFloat(), onValueChange = { mediaVolumePercent = it.toInt() }, valueRange = 0f..100f, steps = 0)
+            }
             if (ActionType.LAUNCH_APP in actions) {
                 Text("Launch app", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
                 SelectionRow(
@@ -312,6 +318,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 vibrationPattern = vibrationPattern,
                                 vibrationDurationMs = vibrationDurationMs,
                                 vibrationAmplitude = vibrationAmplitude,
+                                mediaVolumePercent = mediaVolumePercent,
                                 launchPackage = launchPackage,
                                 launchAppName = launchAppName,
                                 url = url,

@@ -47,6 +47,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var vibrationPattern by remember { mutableStateOf(VibrationPattern.PULSE) }
     var vibrationDurationMs by remember { mutableIntStateOf(220) }
     var vibrationAmplitude by remember { mutableIntStateOf(180) }
+    var mediaVolumePercent by remember { mutableIntStateOf(50) }
     var launchPackage by remember { mutableStateOf("") }
     var launchAppName by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
@@ -201,6 +202,9 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     },
                 )
             }
+            if (ActionType.SET_MEDIA_VOLUME in actions) {
+                MediaVolumeSettings(mediaVolumePercent) { mediaVolumePercent = it }
+            }
             if (ActionType.LAUNCH_APP in actions) {
                 Text("Launch app", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
                 SelectionRow(
@@ -232,7 +236,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
-                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, launchPackage, launchAppName, url)
+                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, launchPackage, launchAppName, url)
                         done()
                     },
                     modifier = Modifier.weight(1f),
@@ -318,6 +322,18 @@ private fun VibrationSettings(
         onValueChange = { setAmplitude(it.toInt()) },
         onValueChangeFinished = { preview(pattern, durationMs, amplitude) },
         valueRange = 1f..255f,
+        steps = 0,
+    )
+}
+
+@Composable
+private fun MediaVolumeSettings(percent: Int, setPercent: (Int) -> Unit) {
+    Text("Media volume", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text("$percent%", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 4.dp))
+    Slider(
+        value = percent.toFloat(),
+        onValueChange = { setPercent(it.toInt()) },
+        valueRange = 0f..100f,
         steps = 0,
     )
 }

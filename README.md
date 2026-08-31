@@ -36,7 +36,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, or scheduled time -> one or more NFC on/off, Battery Saver on/off, notification, launch app, and open URL actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, or scheduled time -> one or more NFC on/off, Battery Saver on/off, notification, vibrate, set media volume, launch app, and open URL actions.
 - Installed launchable app picker with search, display name, package ID internally.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
@@ -56,6 +56,7 @@ Target / compile SDK: 36 (Android 16)
    - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
    - Launch app: starts selected installed launchable app.
    - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
+   - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
 - Unit tests for rule matching, schedule matching, foreground reduction, action executors, and disabled rules.
 
 ## Setup permissions
@@ -159,6 +160,13 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Launch app verified from charger-connected and app-opened rules.
 - Open URL verified on Xiaomi 15T Pro / HyperOS 3.
 - Vibration implementation builds and has unit coverage; device smoke test remains pending.
+- Media volume implementation builds and has unit coverage; device smoke test remains pending.
+
+## Next validation
+
+1. Create `Charger connected -> Set media volume -> 20%`, reconnect charger, and confirm Xiaomi media volume reaches 20%.
+2. Repeat media-volume test at 0% and 100%.
+3. Verify vibration presets, total duration, and strength on device before starting Play sound.
 - NFC and Battery Saver device action paths still require per-action verification after permission changes.
 
 ## License / distribution note

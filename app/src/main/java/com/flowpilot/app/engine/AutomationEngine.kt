@@ -164,6 +164,7 @@ class AutomationEngine(
                             vibrationPattern = rule.vibrationPattern,
                             vibrationDurationMs = rule.vibrationDurationMs,
                             vibrationAmplitude = rule.vibrationAmplitude,
+                            mediaVolumePercent = rule.mediaVolumePercent,
                             launchPackage = rule.launchPackage,
                             url = rule.url,
                         ),
