@@ -58,6 +58,12 @@ class AutomationRepository(private val context: Context) {
         batteryLevel: Int = 50,
         notificationTitle: String = "FlowPilot",
         notificationBody: String = "Automation ran",
+        vibrationPattern: com.flowpilot.app.data.model.VibrationPattern = com.flowpilot.app.data.model.VibrationPattern.PULSE,
+        vibrationDurationMs: Int = 220,
+        vibrationAmplitude: Int = 180,
+        launchPackage: String = "",
+        launchAppName: String = "",
+        url: String = "",
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
         val summary = actions.joinToString(" + ") { it.label }
@@ -84,6 +90,12 @@ class AutomationRepository(private val context: Context) {
             batteryLevel = batteryLevel,
             notificationTitle = notificationTitle,
             notificationBody = notificationBody,
+            vibrationPattern = vibrationPattern,
+            vibrationDurationMs = vibrationDurationMs,
+            vibrationAmplitude = vibrationAmplitude,
+            launchPackage = launchPackage,
+            launchAppName = launchAppName,
+            url = url,
             action = primaryAction,
             actions = actions,
             createdAt = System.currentTimeMillis(),

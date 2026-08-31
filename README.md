@@ -36,7 +36,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, or scheduled time -> one or more NFC on/off, Battery Saver on/off, and notification actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, or scheduled time -> one or more NFC on/off, Battery Saver on/off, notification, launch app, and open URL actions.
 - Installed launchable app picker with search, display name, package ID internally.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
@@ -51,9 +51,11 @@ Target / compile SDK: 36 (Android 16)
 - Boot/app-update receiver restarts the engine only when Run engine on device startup is enabled.
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
 - Shizuku UserService AIDL command bridge. Commands run with Shizuku shell/root identity; app never claims success if the command failed.
-- Four real action executors:
-  - NFC ON/OFF: `svc nfc enable|disable` through Shizuku.
-  - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
+- Action executors:
+   - NFC ON/OFF: `svc nfc enable|disable` through Shizuku.
+   - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
+   - Launch app: starts selected installed launchable app.
+   - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
 - Unit tests for rule matching, schedule matching, foreground reduction, action executors, and disabled rules.
 
 ## Setup permissions
@@ -126,6 +128,7 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 - Charger rules do not need Usage Access. They listen for Android power connected/disconnected broadcasts only while the engine is running, so they do not fire for a cable already connected at engine startup.
 - Battery threshold rules do not need Usage Access. They react only when the level crosses selected threshold; a battery level already above or below threshold at engine startup does not trigger an action.
 - Show notification needs `POST_NOTIFICATIONS` on Android 13+. The action reports failure when permission is denied. Android/HyperOS channel settings can still suppress a heads-up banner.
+- Launch app requires an installed launchable target. Open URL accepts only absolute `http` or `https` URLs with a host. Both actions start a new activity from the foreground service and can be restricted by future Android or OEM background-activity-launch policies.
 - HyperOS Autostart is an OEM-owned setting and must be enabled manually. Battery restriction exemption reduces, but cannot eliminate, OEM service termination.
 - `QUERY_ALL_PACKAGES` is declared to provide a complete installed launchable-app picker. Store distribution policy may require justification.
 - No AccessibilityService is used. It is not necessary for UsageStats-based app detection and would add broader access than required.
@@ -153,6 +156,9 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Charger connected and disconnected rules verified on device.
 - Battery below/above threshold rules verified on device.
 - Show notification rule verified on device, including visible `automation_alerts_v2` heads-up channel.
+- Launch app verified from charger-connected and app-opened rules.
+- Open URL verified on Xiaomi 15T Pro / HyperOS 3.
+- Vibration implementation builds and has unit coverage; device smoke test remains pending.
 - NFC and Battery Saver device action paths still require per-action verification after permission changes.
 
 ## License / distribution note

@@ -24,7 +24,7 @@ class NotificationExecutor(
 ) : ActionExecutor {
     override val supportedTypes = setOf(ActionType.SHOW_NOTIFICATION)
 
-    override fun execute(action: ActionType, notificationTitle: String, notificationBody: String): ActionResult {
+    override fun execute(action: ActionType, parameters: ActionParameters): ActionResult {
         if (action != ActionType.SHOW_NOTIFICATION) return ActionResult(false, "Unsupported action for notification")
         if (!permissionChecker(context)) return ActionResult(false, "Notification permission not granted")
         return try {
@@ -36,8 +36,8 @@ class NotificationExecutor(
             }
             val notification = Notification.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(notificationTitle.ifBlank { "FlowPilot" })
-                .setContentText(notificationBody.ifBlank { "Automation ran" })
+                .setContentTitle(parameters.notificationTitle.ifBlank { "FlowPilot" })
+                .setContentText(parameters.notificationBody.ifBlank { "Automation ran" })
                 .setAutoCancel(true)
                 .build()
             poster(nextId.incrementAndGet(), notification)

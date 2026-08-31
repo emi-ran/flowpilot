@@ -19,6 +19,9 @@ enum class CapabilityRequirement {
     /** Needs Android's notification runtime permission on Android 13+. */
     NOTIFICATIONS,
 
+    /** Needs a device vibrator. */
+    VIBRATION,
+
     /** Not possible on this device at all (e.g. no NFC hardware). */
     UNSUPPORTED,
 }
@@ -38,7 +41,10 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     NFC_OFF("Turn NFC off", ActionCategory.NFC, CapabilityRequirement.SHIZUKU),
     BATTERY_SAVER_ON("Turn Battery Saver on", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
     BATTERY_SAVER_OFF("Turn Battery Saver off", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
-    SHOW_NOTIFICATION("Show notification", ActionCategory.SYSTEM, CapabilityRequirement.NOTIFICATIONS);
+    SHOW_NOTIFICATION("Show notification", ActionCategory.SYSTEM, CapabilityRequirement.NOTIFICATIONS),
+    VIBRATE("Vibrate", ActionCategory.SYSTEM, CapabilityRequirement.VIBRATION),
+    LAUNCH_APP("Launch app", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
+    OPEN_URL("Open URL", ActionCategory.SYSTEM, CapabilityRequirement.NONE);
 
     companion object {
         fun fromId(id: String): ActionType? = entries.firstOrNull { it.name == id }
@@ -51,6 +57,16 @@ enum class TriggerCategory(val label: String) {
     APP("App"),
     SYSTEM("System"),
     TIME("Time"),
+}
+
+@Serializable
+enum class VibrationPattern(val label: String) {
+    PULSE("Pulse"),
+    DOUBLE_TAP("Double tap"),
+    ALERT("Alert"),
+    HEARTBEAT("Heartbeat"),
+    TRIPLE_TAP("Triple tap"),
+    SOS("SOS"),
 }
 
 /** What event on a chosen app triggers a rule. */
@@ -95,6 +111,12 @@ data class Automation(
     val batteryLevel: Int = 50,
     val notificationTitle: String = "FlowPilot",
     val notificationBody: String = "Automation ran",
+    val vibrationPattern: VibrationPattern = VibrationPattern.PULSE,
+    val vibrationDurationMs: Int = 220,
+    val vibrationAmplitude: Int = 180,
+    val launchPackage: String = "",
+    val launchAppName: String = "",
+    val url: String = "",
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     val createdAt: Long,

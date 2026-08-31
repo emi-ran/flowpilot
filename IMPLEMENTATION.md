@@ -7,8 +7,8 @@ minSdk 26, JDK 17.
 ## Feature set
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
-battery above | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on | Battery Saver off]
-or [show notification] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+battery above | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on | Battery Saver off |
+show notification | vibrate | launch app | open URL] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager and charger/battery transitions via Android broadcasts, evaluates enabled rules, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -63,6 +63,8 @@ app/src/main/java/com/flowpilot/app/
     NfcExecutor.kt                   Shizuku `svc nfc enable|disable`
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
     NotificationExecutor.kt           visible user-configured automation alerts
+    VibrationExecutor.kt              configurable waveform vibration
+    LaunchExecutor.kt                 selected app or validated HTTP(S) URL activity launch
     ShizukuShell.kt                  Shizuku connection + run shell command via UserService
   permission/
     CapabilityManager.kt             per-action and setup checks
@@ -90,6 +92,11 @@ below to at-or-above an above-threshold. A level remaining beyond threshold cann
 NotificationExecutor posts title/body configured on the rule to `automation_alerts_v2` at high importance.
 Android preserves channel importance after creation, so channel IDs are versioned when alert behavior changes.
 Android 13+ notification permission is required; OEM notification settings can still suppress banners.
+
+LaunchExecutor uses a selected package's launcher intent or `ACTION_VIEW` for an absolute `http` or `https`
+URL. Both intents carry `FLAG_ACTIVITY_NEW_TASK` because the automation engine runs outside an activity.
+Launch failure is logged and returned to the engine; target app removal, missing URL resolver, and OEM
+background-activity restrictions remain explicit failure cases.
 
 ## Battery / reliability
 

@@ -15,6 +15,9 @@
     <!-- Notification permission (Android 13+) for the engine's ongoing status notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Normal permission for user-configured vibration actions. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- Foreground service for the automation engine. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />

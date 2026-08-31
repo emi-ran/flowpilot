@@ -45,14 +45,19 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
     )
 }
 
-/** Full-screen modal picker for actions, grouped by category (NFC / Battery / System). */
+/** Full-screen modal picker for actions, excluding actions already configured on this rule. */
 @Composable
-fun ActionPicker(selected: ActionType?, select: (ActionType) -> Unit, onDismiss: () -> Unit) {
+fun ActionPicker(
+    selected: ActionType?,
+    unavailable: Set<ActionType>,
+    select: (ActionType) -> Unit,
+    onDismiss: () -> Unit,
+) {
     ChoiceDialog(
         title = "Choose action",
         onDismiss = onDismiss,
         grouped = ActionCategory.entries.map { cat ->
-            cat.label to ActionType.entries.filter { it.category == cat }
+            cat.label to ActionType.entries.filter { it.category == cat && (it == selected || it !in unavailable) }
         },
         selectedLabel = { it.label },
         isSelected = { selected != null && it == selected },

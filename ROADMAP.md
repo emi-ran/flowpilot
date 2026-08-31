@@ -67,9 +67,13 @@ Do not bundle unrelated features. One feature family at a time.
     - Per-rule title and message
     - Android 13+ notification permission check and visible high-importance `automation_alerts_v2` channel
 3. **Play sound**
-4. **Vibrate**
-5. **Launch app**
-6. **Open URL**
+4. **Vibrate** (implementation complete; device smoke test pending)
+5. **Launch app** (complete)
+    - Selected launchable app, separate from app trigger picker
+    - Verified from charger-connected and app-opened rules
+6. **Open URL** (complete)
+    - Validated `http` / `https` URLs through Android `ACTION_VIEW`
+    - Verified on Xiaomi 15T Pro / HyperOS 3
 7. **Create alarm or timer**
 8. **Set media volume**
 
@@ -98,12 +102,14 @@ Each must expose its required permission or Shizuku state. Do not show success u
 
 ## Proposed Implementation Order
 
-1. Notification, vibration, sound, app launch, URL actions
-2. HTTP webhook action
-3. Media volume and alarm/timer actions
-4. Screen and headset triggers
-5. Wi-Fi and Bluetooth device/context triggers
-6. HyperOS 3 system controls, one action at a time
+1. Set media volume
+2. Vibration device smoke test
+3. Play sound
+4. HTTP webhook action
+5. Alarm/timer action
+6. Screen and headset triggers
+7. Wi-Fi and Bluetooth device/context triggers
+8. HyperOS 3 system controls, one action at a time
 
 ## Acceptance Gate
 

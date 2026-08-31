@@ -94,6 +94,11 @@ class CapabilityManager(private val context: Context) {
                 context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
             ) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
 
+        CapabilityRequirement.VIBRATION ->
+            if ((context.getSystemService(android.os.Vibrator::class.java))?.hasVibrator() == true) {
+                CapabilityStatus.AVAILABLE
+            } else CapabilityStatus.UNSUPPORTED
+
         CapabilityRequirement.UNSUPPORTED -> CapabilityStatus.UNSUPPORTED
     }
 

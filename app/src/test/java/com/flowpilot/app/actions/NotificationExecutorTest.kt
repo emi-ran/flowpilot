@@ -20,7 +20,7 @@ class NotificationExecutorTest {
             poster = { id, notification -> posted = id to notification },
         )
 
-        val result = executor.execute(ActionType.SHOW_NOTIFICATION, "Low battery", "Enable charger")
+        val result = executor.execute(ActionType.SHOW_NOTIFICATION, ActionParameters(notificationTitle = "Low battery", notificationBody = "Enable charger"))
 
         assertThat(result.success).isTrue()
         assertThat(result.message).isEqualTo("Notification posted")
@@ -33,7 +33,7 @@ class NotificationExecutorTest {
             permissionChecker = { false },
         )
 
-        val result = executor.execute(ActionType.SHOW_NOTIFICATION, "Title", "Body")
+        val result = executor.execute(ActionType.SHOW_NOTIFICATION, ActionParameters(notificationTitle = "Title", notificationBody = "Body"))
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("permission")

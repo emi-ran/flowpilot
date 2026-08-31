@@ -1,10 +1,15 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+)
 
 package com.flowpilot.app.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -14,10 +19,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.data.model.VibrationPattern
+import com.flowpilot.app.actions.ActionParameters
+import com.flowpilot.app.actions.VibrationExecutor
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.ActionPicker
 import com.flowpilot.app.ui.components.AppPicker
@@ -27,6 +36,7 @@ import com.flowpilot.app.ui.components.TriggerPicker
 @Composable
 fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     BackHandler(onBack = done)
+    val context = LocalContext.current
     var event by remember { mutableStateOf(TriggerEvent.APP_OPENED) }
     val now = java.time.LocalTime.now()
     var scheduledMinute by remember { mutableIntStateOf(now.hour * 60 + now.minute) }
@@ -34,6 +44,13 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var batteryLevel by remember { mutableIntStateOf(50) }
     var notificationTitle by remember { mutableStateOf("FlowPilot") }
     var notificationBody by remember { mutableStateOf("Automation ran") }
+    var vibrationPattern by remember { mutableStateOf(VibrationPattern.PULSE) }
+    var vibrationDurationMs by remember { mutableIntStateOf(220) }
+    var vibrationAmplitude by remember { mutableIntStateOf(180) }
+    var launchPackage by remember { mutableStateOf("") }
+    var launchAppName by remember { mutableStateOf("") }
+    var url by remember { mutableStateOf("") }
+    val previewVibration = remember(context) { VibrationExecutor(context) }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
@@ -41,15 +58,18 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var appName by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var showApps by remember { mutableStateOf(false) }
+    var showLaunchApps by remember { mutableStateOf(false) }
     var showTriggers by remember { mutableStateOf(false) }
     var showActions by remember { mutableStateOf(false) }
 
     if (showApps) AppPicker({ p, n -> pkg = p; appName = n; showApps = false }) { showApps = false }
+    if (showLaunchApps) AppPicker({ p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }) { showLaunchApps = false }
     if (showTriggers) TriggerPicker(event, { event = it; showTriggers = false }) { showTriggers = false }
     if (showActions) {
         val currentSelected = editingActionIndex?.let { if (it < actions.size) actions[it] else null }
         ActionPicker(
             selected = currentSelected,
+            unavailable = actions.toSet(),
             select = { chosen ->
                 val idx = editingActionIndex
                 if (idx != null && idx < actions.size) {
@@ -85,6 +105,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
         Column(
             Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
         ) {
             Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
@@ -164,6 +185,39 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     setBody = { notificationBody = it },
                 )
             }
+            if (ActionType.VIBRATE in actions) {
+                VibrationSettings(
+                    vibrationPattern,
+                    vibrationDurationMs,
+                    vibrationAmplitude,
+                    { vibrationPattern = it },
+                    { vibrationDurationMs = it },
+                    { vibrationAmplitude = it },
+                    { pattern, duration, amplitude ->
+                        previewVibration.execute(
+                            ActionType.VIBRATE,
+                            ActionParameters(vibrationPattern = pattern, vibrationDurationMs = duration, vibrationAmplitude = amplitude),
+                        )
+                    },
+                )
+            }
+            if (ActionType.LAUNCH_APP in actions) {
+                Text("Launch app", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+                SelectionRow(
+                    if (launchPackage.isEmpty()) "App" else launchAppName,
+                    if (launchPackage.isEmpty()) "Choose an app to launch" else launchPackage,
+                ) { showLaunchApps = true }
+            }
+            if (ActionType.OPEN_URL in actions) {
+                Text("Open URL", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    label = { Text("https://example.com") },
+                    singleLine = true,
+                )
+            }
 
             OutlinedTextField(
                 value = name,
@@ -173,23 +227,32 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 label = { Text("Name (optional)") },
                 singleLine = true,
             )
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
-                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody)
+                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, launchPackage, launchAppName, url)
                         done()
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
-                    enabled = (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) && actions.isNotEmpty(),
+                    enabled =
+                        (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
+                            (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
+                            (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
+                            actions.isNotEmpty(),
                 ) {
                     Text("Save")
                 }
             }
         }
     }
+}
+
+fun isWebUrl(value: String): Boolean {
+    val uri = android.net.Uri.parse(value.trim())
+    return uri.scheme in setOf("https", "http") && !uri.host.isNullOrBlank()
 }
 
 @Composable
@@ -200,7 +263,7 @@ private fun BatteryThresholdSettings(level: Int, setLevel: (Int) -> Unit) {
         value = level.toFloat(),
         onValueChange = { setLevel(it.toInt()) },
         valueRange = 1f..100f,
-        steps = 98,
+        steps = 0,
     )
 }
 
@@ -214,6 +277,49 @@ private fun NotificationSettings(
     Text("Notification", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     OutlinedTextField(value = title, onValueChange = setTitle, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Title") }, singleLine = true)
     OutlinedTextField(value = body, onValueChange = setBody, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Message") }, minLines = 2)
+}
+
+@Composable
+private fun VibrationSettings(
+    pattern: VibrationPattern,
+    durationMs: Int,
+    amplitude: Int,
+    setPattern: (VibrationPattern) -> Unit,
+    setDuration: (Int) -> Unit,
+    setAmplitude: (Int) -> Unit,
+    preview: (VibrationPattern, Int, Int) -> Unit,
+) {
+    Text("Vibration", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(top = 8.dp),
+    ) {
+        VibrationPattern.entries.forEach { option ->
+            FilterChip(selected = pattern == option, onClick = { setPattern(option); preview(option, durationMs, amplitude) }, label = { Text(option.label) })
+        }
+    }
+    Text("Duration  $durationMs ms", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
+    Slider(
+        value = durationMs.toFloat(),
+        onValueChange = { setDuration(it.toInt()) },
+        onValueChangeFinished = { preview(pattern, durationMs, amplitude) },
+        valueRange = 80f..800f,
+        steps = 0,
+    )
+    val strength = when {
+        amplitude < 100 -> "Soft"
+        amplitude < 200 -> "Normal"
+        else -> "Strong"
+    }
+    Text("Strength  $strength", style = MaterialTheme.typography.bodyMedium)
+    Slider(
+        value = amplitude.toFloat(),
+        onValueChange = { setAmplitude(it.toInt()) },
+        onValueChangeFinished = { preview(pattern, durationMs, amplitude) },
+        valueRange = 1f..255f,
+        steps = 0,
+    )
 }
 
 @Composable

@@ -11,7 +11,7 @@ class NfcExecutor(private val shell: ShizukuShellCompatible) : ActionExecutor {
 
     override val supportedTypes: Set<ActionType> = setOf(ActionType.NFC_ON, ActionType.NFC_OFF)
 
-    override fun execute(action: ActionType, notificationTitle: String, notificationBody: String): ActionResult {
+    override fun execute(action: ActionType, parameters: ActionParameters): ActionResult {
         if (!shell.isShizukuRunning()) {
             return ActionResult(false, "Shizuku not running — NFC can't be toggled")
         }

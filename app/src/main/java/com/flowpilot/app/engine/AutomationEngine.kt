@@ -75,6 +75,8 @@ class AutomationEngine(
         val transitions = withContext(Dispatchers.IO) { tracker.queryNewTransitions() }
         if (transitions.isEmpty()) return
 
+        Log.i(TAG, "Foreground transitions: ${transitions.joinToString { "${it.packageName}:${if (it.isForeground) "open" else "close"}" }}")
+
         val domainTransitions = transitions.map {
             ForegroundReducer.Transition(
                 packageName = it.packageName,
@@ -126,6 +128,7 @@ class AutomationEngine(
         val events = chargerTracker.drainEvents()
         if (events.isEmpty()) return
         val rules = repository.automations.first()
+        Log.i(TAG, "Loaded ${rules.size} rule(s) for foreground evaluation")
         for (event in events) {
             val matches = RuleEvaluator.evaluateCharger(rules, event)
             if (matches.isNotEmpty()) {
@@ -153,7 +156,18 @@ class AutomationEngine(
             withContext(Dispatchers.IO) {
                 var anySuccess = false
                 for (action in rule.effectiveActions) {
-                    val result = dispatcher.execute(action, rule.notificationTitle, rule.notificationBody)
+                    val result = dispatcher.execute(
+                        action,
+                        com.flowpilot.app.actions.ActionParameters(
+                            notificationTitle = rule.notificationTitle,
+                            notificationBody = rule.notificationBody,
+                            vibrationPattern = rule.vibrationPattern,
+                            vibrationDurationMs = rule.vibrationDurationMs,
+                            vibrationAmplitude = rule.vibrationAmplitude,
+                            launchPackage = rule.launchPackage,
+                            url = rule.url,
+                        ),
+                    )
                     Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")
                     if (result.success) {
                         anySuccess = true

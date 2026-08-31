@@ -32,7 +32,7 @@ class PowerSaverExecutorTest {
             },
         )
 
-        val result = executor.execute(ActionType.BATTERY_SAVER_ON, "", "")
+        val result = executor.execute(ActionType.BATTERY_SAVER_ON)
 
         assertThat(result.success).isTrue()
         assertThat(result.message).isEqualTo("Battery saver on")
@@ -59,7 +59,7 @@ class PowerSaverExecutorTest {
             permissionChecker = { false },
         )
 
-        val result = executor.execute(ActionType.BATTERY_SAVER_ON, "", "")
+        val result = executor.execute(ActionType.BATTERY_SAVER_ON)
 
         assertThat(result.success).isTrue()
         assertThat(result.message).isEqualTo("Battery saver on")
@@ -76,7 +76,7 @@ class PowerSaverExecutorTest {
             permissionChecker = { false },
         )
 
-        val result = executor.execute(ActionType.BATTERY_SAVER_ON, "", "")
+        val result = executor.execute(ActionType.BATTERY_SAVER_ON)
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("needs WRITE_SECURE_SETTINGS or Shizuku")
