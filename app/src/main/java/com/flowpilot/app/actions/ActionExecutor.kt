@@ -22,6 +22,10 @@ data class ActionParameters(
     val soundDurationMs: Int = 3_000,
     val launchPackage: String = "",
     val url: String = "",
+    val ttsText: String = "",
+    val ttsVoiceName: String = "",
+    val ttsSpeechRate: Float = 1.0f,
+    val ttsAudioFileName: String = "",
 )
 
 /** A capability-aware executor for one family of system actions. */

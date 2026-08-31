@@ -36,7 +36,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, or scheduled time -> one or more NFC on/off, Battery Saver on/off, notification, vibrate, play sound, set media volume, launch app, and open URL actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, or scheduled time -> one or more NFC on/off, Battery Saver on/off, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Installed launchable app picker with search, display name, package ID internally.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
@@ -59,6 +59,7 @@ Target / compile SDK: 36 (Android 16)
    - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
    - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
    - Play sound: selected current notification, alarm, ringtone, or a user-selected audio file, limited to selected first 1-60 seconds with preview and stop controls.
+    - Speak text (TTS): offline-first pre-synthesized audio caching to app-private storage with voice filter (`isNetworkConnectionRequired = false`), rate adjustment, preview/stop lifecycle, and offline playback during rule execution. Search voices by name or language (`Türkçe`, `Turkish`, `tr-TR`); hold a voice row to preview it without selecting it.
 - Unit tests for rule matching, schedule matching, foreground reduction, action executors, and disabled rules.
 
 ## Setup permissions
@@ -134,6 +135,7 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 - Launch app requires an installed launchable target. Open URL accepts only absolute `http` or `https` URLs with a host. Both actions start a new activity from the foreground service and can be restricted by future Android or OEM background-activity-launch policies.
 - Custom Play sound files use Android's document picker and persist read access to the selected URI. Removing or moving access to that source makes the action report failure.
 - Play sound preview stops any prior preview, can be stopped manually, and stops when leaving create or edit screen.
+- TTS voice preview requires spoken text. The voice picker states this when a voice row is held before text is entered. Reopening the picker scrolls to the selected voice; the selected voice remains unchanged by a hold-to-preview gesture.
 - HyperOS Autostart is an OEM-owned setting and must be enabled manually. Battery restriction exemption reduces, but cannot eliminate, OEM service termination.
 - `QUERY_ALL_PACKAGES` is declared to provide a complete installed launchable-app picker. Store distribution policy may require justification.
 - No AccessibilityService is used. It is not necessary for UsageStats-based app detection and would add broader access than required.
@@ -166,6 +168,7 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Vibration implementation builds and has unit coverage; device smoke test remains pending.
 - Media volume implementation builds and has unit coverage; device smoke test remains pending.
 - Play sound and screen on/off implementations build and have unit coverage; device smoke tests remain pending.
+- Speak text (offline TTS) builds and unit tests pass; Xiaomi device smoke test remains pending.
 
 ## Next validation
 
@@ -173,6 +176,9 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 2. Repeat media-volume test at 0% and 100%.
 3. Create a screen on/off rule with notification, vibration, or sound and confirm it fires only after a new screen-state transition.
 4. Verify Play sound presets, custom file, selected duration, and Stop preview on device.
+5. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
+   - Search for Turkish with `Türkçe`, `Turkish`, `tr`, or `tr-TR`.
+   - Hold a voice row to preview it without changing selection; reopen picker and confirm it returns to selected voice.
 - NFC and Battery Saver device action paths still require per-action verification after permission changes.
 
 ## License / distribution note

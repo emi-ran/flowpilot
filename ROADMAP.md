@@ -70,15 +70,20 @@ Do not bundle unrelated features. One feature family at a time.
 3. **Play sound** (implementation complete; device smoke test pending)
    - Current notification, alarm, ringtone, or selected custom audio URI
    - Metadata duration display, 1-60 second playback limit, preview, and Stop preview
-4. **Vibrate** (implementation complete; device smoke test pending)
-5. **Launch app** (complete)
+4. **Speak text / TTS** (offline-first pre-synthesized cache implementation complete; device smoke test pending)
+   - Offline voice filter (`isNetworkConnectionRequired = false`)
+   - Pre-synthesis during configuration to app-private cache
+   - Zero-network, zero-synthesis execution at trigger time via MediaPlayer
+   - Automatic orphan cache cleanup
+5. **Vibrate** (implementation complete; device smoke test pending)
+6. **Launch app** (complete)
     - Selected launchable app, separate from app trigger picker
     - Verified from charger-connected and app-opened rules
-6. **Open URL** (complete)
+7. **Open URL** (complete)
     - Validated `http` / `https` URLs through Android `ACTION_VIEW`
     - Verified on Xiaomi 15T Pro / HyperOS 3
-7. **Create alarm or timer**
-8. **Set media volume** (implementation complete; device smoke test pending)
+8. **Create alarm or timer**
+9. **Set media volume** (implementation complete; device smoke test pending)
     - Configurable 0-100% music-stream level
     - Uses `AudioManager.setStreamVolume` and verifies resulting level
 
@@ -117,15 +122,20 @@ Each must expose its required permission or Shizuku state. Do not show success u
 3. **Screen and sound device smoke tests**
    - Confirm screen on/off rules run only after a new display transition.
    - Confirm system/custom sounds honor selected 1-60 second duration and Stop preview.
-4. **HTTP webhook action**
+4. **Speak text (offline TTS) device smoke test**
+    - Confirm offline voice filtering and synthesis in UI.
+    - Search Turkish by `Türkçe`, `Turkish`, `tr`, or `tr-TR`; hold a voice row to preview without selecting it.
+    - Confirm picker returns to selected voice and empty-message hold shows its instruction.
+    - Confirm saved rule plays cached audio offline upon trigger.
+5. **HTTP webhook action**
     - Add method, headers, body, bounded timeout, redacted secrets, and explicit response result.
-5. **Alarm/timer action**
+6. **Alarm/timer action**
     - Confirm Android alarm/timer intent support on target device first.
-6. **Headset triggers**
+7. **Headset triggers**
    - Add wired and Bluetooth audio state one family at a time with startup baseline and duplicate-event tests.
-7. **Wi-Fi and Bluetooth device/context triggers**
+8. **Wi-Fi and Bluetooth device/context triggers**
     - Add selected SSID/device persistence and unavailable-permission states.
-8. **HyperOS 3 system controls**
+9. **HyperOS 3 system controls**
     - One control at a time; device-state evidence required before marking complete.
 
 ## Acceptance Gate

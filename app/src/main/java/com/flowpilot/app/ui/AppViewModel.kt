@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 data class AutomationUI(val rule: Automation, val capability: CapabilityStatus)
 
@@ -134,9 +135,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         launchPackage: String = "",
         launchAppName: String = "",
         url: String = "",
+        ttsText: String = "",
+        ttsVoiceName: String = "",
+        ttsSpeechRate: Float = 1.0f,
+        ttsAudioFileName: String = "",
+        ruleId: String = UUID.randomUUID().toString(),
     ) {
         viewModelScope.launch {
-            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url)
+            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url, ttsText, ttsVoiceName, ttsSpeechRate, ttsAudioFileName, ruleId)
             startEngine()
         }
     }

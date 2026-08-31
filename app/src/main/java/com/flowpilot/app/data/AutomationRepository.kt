@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -69,11 +70,16 @@ class AutomationRepository(private val context: Context) {
         launchPackage: String = "",
         launchAppName: String = "",
         url: String = "",
+        ttsText: String = "",
+        ttsVoiceName: String = "",
+        ttsSpeechRate: Float = 1.0f,
+        ttsAudioFileName: String = "",
+        id: String = UUID.randomUUID().toString(),
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
         val summary = actions.joinToString(" + ") { it.label }
         val rule = Automation(
-            id = UUID.randomUUID().toString(),
+            id = id,
             name = name.ifBlank {
                 when (triggerEvent) {
                     com.flowpilot.app.data.model.TriggerEvent.TIME_SCHEDULE ->
@@ -106,6 +112,10 @@ class AutomationRepository(private val context: Context) {
             launchPackage = launchPackage,
             launchAppName = launchAppName,
             url = url,
+            ttsText = ttsText,
+            ttsVoiceName = ttsVoiceName,
+            ttsSpeechRate = ttsSpeechRate,
+            ttsAudioFileName = ttsAudioFileName,
             action = primaryAction,
             actions = actions,
             createdAt = System.currentTimeMillis(),
@@ -114,6 +124,7 @@ class AutomationRepository(private val context: Context) {
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
             prefs[key] = json.encodeToString(listSerializer, current + rule)
         }
+        cleanupOrphanTtsFiles()
         return rule
     }
 
@@ -123,6 +134,7 @@ class AutomationRepository(private val context: Context) {
             val updated = current.map { if (it.id == rule.id) rule else it }
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
+        cleanupOrphanTtsFiles()
     }
 
     suspend fun patchLastTriggeredAt(id: String, at: Long) {
@@ -146,6 +158,7 @@ class AutomationRepository(private val context: Context) {
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
             prefs[key] = json.encodeToString(listSerializer, current.filterNot { it.id == id })
         }
+        cleanupOrphanTtsFiles()
     }
 
     suspend fun deleteMany(ids: Set<String>) {
@@ -154,11 +167,20 @@ class AutomationRepository(private val context: Context) {
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
             prefs[key] = json.encodeToString(listSerializer, current.filterNot { it.id in ids })
         }
+        cleanupOrphanTtsFiles()
     }
 
     private fun safeDecode(raw: String): List<Automation> = try {
         json.decodeFromString(listSerializer, raw)
     } catch (_: Exception) {
         emptyList()
+    }
+
+    private suspend fun cleanupOrphanTtsFiles() {
+        try {
+            val rules = automations.first()
+            val usedFiles = rules.mapNotNull { it.ttsAudioFileName.takeIf { f -> f.isNotBlank() } }.toSet()
+            com.flowpilot.app.actions.TtsManager(context).cleanStaleFiles(usedFiles)
+        } catch (_: Throwable) {}
     }
 }

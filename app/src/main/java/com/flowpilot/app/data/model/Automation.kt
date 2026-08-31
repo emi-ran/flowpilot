@@ -46,7 +46,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     PLAY_SOUND("Play sound", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
     SET_MEDIA_VOLUME("Set media volume", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
     LAUNCH_APP("Launch app", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
-    OPEN_URL("Open URL", ActionCategory.SYSTEM, CapabilityRequirement.NONE);
+    OPEN_URL("Open URL", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
+    SPEAK_TEXT("Speak text (TTS)", ActionCategory.SYSTEM, CapabilityRequirement.NONE);
 
     companion object {
         fun fromId(id: String): ActionType? = entries.firstOrNull { it.name == id }
@@ -78,6 +79,13 @@ enum class SoundPreset(val label: String) {
     RINGTONE("Ringtone"),
     CUSTOM("Custom audio file"),
 }
+
+@Serializable
+data class TtsVoiceOption(
+    val name: String,
+    val locale: String,
+    val displayName: String,
+)
 
 /** What event on a chosen app triggers a rule. */
 @Serializable
@@ -134,6 +142,10 @@ data class Automation(
     val launchPackage: String = "",
     val launchAppName: String = "",
     val url: String = "",
+    val ttsText: String = "",
+    val ttsVoiceName: String = "",
+    val ttsSpeechRate: Float = 1.0f,
+    val ttsAudioFileName: String = "",
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     val createdAt: Long,

@@ -32,12 +32,15 @@ import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.actions.ActionParameters
 import com.flowpilot.app.actions.SoundExecutor
+import com.flowpilot.app.actions.TtsExecutor
+import com.flowpilot.app.actions.TtsManager
 import com.flowpilot.app.actions.VibrationExecutor
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.ActionPicker
 import com.flowpilot.app.ui.components.AppPicker
 import com.flowpilot.app.ui.components.SelectionRow
 import com.flowpilot.app.ui.components.TriggerPicker
+import com.flowpilot.app.ui.components.TtsSettings
 
 @Composable
 fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
@@ -60,6 +63,13 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var launchPackage by remember(initialRule.id) { mutableStateOf(initialRule.launchPackage) }
     var launchAppName by remember(initialRule.id) { mutableStateOf(initialRule.launchAppName) }
     var url by remember(initialRule.id) { mutableStateOf(initialRule.url) }
+    var ttsText by remember(initialRule.id) { mutableStateOf(initialRule.ttsText) }
+    var ttsVoiceName by remember(initialRule.id) { mutableStateOf(initialRule.ttsVoiceName) }
+    var ttsSpeechRate by remember(initialRule.id) { mutableFloatStateOf(initialRule.ttsSpeechRate) }
+    var ttsAudioFileName by remember(initialRule.id) { mutableStateOf(initialRule.ttsAudioFileName) }
+    val ttsManager = remember(context) { TtsManager(context) }
+    val previewTts = remember(context, ttsManager) { TtsExecutor(context, ttsManager) }
+    DisposableEffect(previewTts) { onDispose { previewTts.stopPreview() } }
     val previewVibration = remember(context) { VibrationExecutor(context) }
     val previewSound = remember(context) { SoundExecutor(context) }
     val sourceSoundDurationMs = remember(soundPreset, soundUri) { soundSourceDurationMs(context, soundPreset, soundUri) }
@@ -299,6 +309,21 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 Text("Open URL", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
                 OutlinedTextField(value = url, onValueChange = { url = it }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("https://example.com") }, singleLine = true)
             }
+            if (ActionType.SPEAK_TEXT in actions) {
+                TtsSettings(
+                    text = ttsText,
+                    voiceName = ttsVoiceName,
+                    speechRate = ttsSpeechRate,
+                    audioFileName = ttsAudioFileName,
+                    ruleId = initialRule.id,
+                    setText = { ttsText = it },
+                    setVoiceName = { ttsVoiceName = it },
+                    setSpeechRate = { ttsSpeechRate = it },
+                    setAudioFileName = { ttsAudioFileName = it },
+                    ttsManager = ttsManager,
+                    ttsExecutor = previewTts,
+                )
+            }
 
             OutlinedTextField(
                 value = name,
@@ -348,6 +373,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 launchPackage = launchPackage,
                                 launchAppName = launchAppName,
                                 url = url,
+                                ttsText = ttsText,
+                                ttsVoiceName = ttsVoiceName,
+                                ttsSpeechRate = ttsSpeechRate,
+                                ttsAudioFileName = ttsAudioFileName,
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
                             )
@@ -361,6 +390,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
+                            (ActionType.SPEAK_TEXT !in actions || (ttsAudioFileName.isNotEmpty() && ttsManager.getCacheFile(ttsAudioFileName)?.exists() == true && ttsAudioFileName == ttsManager.computeCacheFileName(initialRule.id, ttsText.trim(), ttsVoiceName, ttsSpeechRate))) &&
                             actions.isNotEmpty(),
                 ) {
                     Text("Save changes")

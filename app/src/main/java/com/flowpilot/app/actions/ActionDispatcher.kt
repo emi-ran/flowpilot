@@ -12,9 +12,10 @@ class ActionDispatcher private constructor(
     private val sound: SoundExecutor,
     private val mediaVolume: MediaVolumeExecutor,
     private val launcher: LaunchExecutor,
+    private val tts: TtsExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
-        listOf(nfc, powerSaver, notification, vibration, sound, mediaVolume, launcher).flatMap { e -> e.supportedTypes.map { it to e } }.toMap()
+        listOf(nfc, powerSaver, notification, vibration, sound, mediaVolume, launcher, tts).flatMap { e -> e.supportedTypes.map { it to e } }.toMap()
     }
 
     fun execute(action: ActionType, parameters: ActionParameters = ActionParameters()): ActionResult {
@@ -36,6 +37,7 @@ class ActionDispatcher private constructor(
                     SoundExecutor(context.applicationContext),
                     MediaVolumeExecutor(context.applicationContext),
                     LaunchExecutor(context.applicationContext),
+                    TtsExecutor(context.applicationContext),
                 ).also { instance = it }
             }
     }

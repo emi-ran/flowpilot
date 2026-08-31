@@ -187,6 +187,10 @@ class AutomationEngine(
                             soundDurationMs = rule.soundDurationMs,
                             launchPackage = rule.launchPackage,
                             url = rule.url,
+                            ttsText = rule.ttsText,
+                            ttsVoiceName = rule.ttsVoiceName,
+                            ttsSpeechRate = rule.ttsSpeechRate,
+                            ttsAudioFileName = rule.ttsAudioFileName,
                         ),
                     )
                     Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")

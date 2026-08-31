@@ -31,6 +31,8 @@ import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.actions.SoundExecutor
+import com.flowpilot.app.actions.TtsExecutor
+import com.flowpilot.app.actions.TtsManager
 import com.flowpilot.app.actions.ActionParameters
 import com.flowpilot.app.actions.VibrationExecutor
 import com.flowpilot.app.ui.AppViewModel
@@ -38,6 +40,7 @@ import com.flowpilot.app.ui.components.ActionPicker
 import com.flowpilot.app.ui.components.AppPicker
 import com.flowpilot.app.ui.components.SelectionRow
 import com.flowpilot.app.ui.components.TriggerPicker
+import com.flowpilot.app.ui.components.TtsSettings
 
 @Composable
 fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
@@ -61,6 +64,14 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var launchPackage by remember { mutableStateOf("") }
     var launchAppName by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
+    val newRuleId = remember { java.util.UUID.randomUUID().toString() }
+    var ttsText by remember { mutableStateOf("") }
+    var ttsVoiceName by remember { mutableStateOf("") }
+    var ttsSpeechRate by remember { mutableFloatStateOf(1.0f) }
+    var ttsAudioFileName by remember { mutableStateOf("") }
+    val ttsManager = remember(context) { TtsManager(context) }
+    val previewTts = remember(context, ttsManager) { TtsExecutor(context, ttsManager) }
+    DisposableEffect(previewTts) { onDispose { previewTts.stopPreview() } }
     val previewVibration = remember(context) { VibrationExecutor(context) }
     val previewSound = remember(context) { SoundExecutor(context) }
     val sourceSoundDurationMs = remember(soundPreset, soundUri) { soundSourceDurationMs(context, soundPreset, soundUri) }
@@ -246,6 +257,21 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     singleLine = true,
                 )
             }
+            if (ActionType.SPEAK_TEXT in actions) {
+                TtsSettings(
+                    text = ttsText,
+                    voiceName = ttsVoiceName,
+                    speechRate = ttsSpeechRate,
+                    audioFileName = ttsAudioFileName,
+                    ruleId = newRuleId,
+                    setText = { ttsText = it },
+                    setVoiceName = { ttsVoiceName = it },
+                    setSpeechRate = { ttsSpeechRate = it },
+                    setAudioFileName = { ttsAudioFileName = it },
+                    ttsManager = ttsManager,
+                    ttsExecutor = previewTts,
+                )
+            }
 
             OutlinedTextField(
                 value = name,
@@ -260,7 +286,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
-                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url)
+                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody, vibrationPattern, vibrationDurationMs, vibrationAmplitude, mediaVolumePercent, soundPreset, soundUri, soundName, soundDurationMs, launchPackage, launchAppName, url, ttsText, ttsVoiceName, ttsSpeechRate, ttsAudioFileName, newRuleId)
                         done()
                     },
                     modifier = Modifier.weight(1f),
@@ -270,6 +296,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
+                            (ActionType.SPEAK_TEXT !in actions || (ttsAudioFileName.isNotEmpty() && ttsManager.getCacheFile(ttsAudioFileName)?.exists() == true && ttsAudioFileName == ttsManager.computeCacheFileName(newRuleId, ttsText.trim(), ttsVoiceName, ttsSpeechRate))) &&
                             actions.isNotEmpty(),
                 ) {
                     Text("Save")

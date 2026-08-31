@@ -7,8 +7,8 @@ minSdk 26, JDK 17.
 ## Feature set
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
-battery above | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on | Battery Saver off |
-show notification | vibrate | set media volume | launch app | open URL] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+battery above | screen on | screen off | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on |
+Battery Saver off | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager and charger/battery transitions via Android broadcasts, evaluates enabled rules, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -68,6 +68,8 @@ app/src/main/java/com/flowpilot/app/
     SoundExecutor.kt                  selected system/custom sound playback with bounded duration
     MediaVolumeExecutor.kt            percentage-to-music-stream volume mapping
     LaunchExecutor.kt                 selected app or validated HTTP(S) URL activity launch
+    TtsManager.kt                     offline voice discovery and pre-synthesized cache management
+    TtsExecutor.kt                    offline cached TTS playback
     ShizukuShell.kt                  Shizuku connection + run shell command via UserService
   permission/
     CapabilityManager.kt             per-action and setup checks
@@ -112,6 +114,16 @@ SoundExecutor plays the device's current notification, alarm, ringtone, or a per
 document-picker audio URI. Create and edit screens show source duration when metadata is available,
 then preview and execute only the configured first 1-60 seconds. Preview owns one active player: a new
 preview stops the old one, Stop preview releases it, and Compose disposal stops it when leaving the screen.
+
+TtsManager filters TextToSpeech voice inventory for offline-ready voices (`isNetworkConnectionRequired = false`).
+During rule creation/editing, the user configures text, offline voice, and speech rate. Synthesis writes a WAV
+file to the app-private `files/tts_cache` directory. Save is gated until a valid synthesized cache file matching
+the exact text/voice/rate configuration exists. TtsExecutor plays the pre-synthesized audio directly using
+MediaPlayer without triggering synthesis or network requests at rule execution time. Orphan cache files are
+cleaned up automatically when rules are modified or removed. The picker filters by voice name, BCP-47 locale,
+and localized language name; reopening it scrolls to the selected voice. A hold gesture synthesizes and plays a
+temporary preview for that row without changing the selected voice. Preview requires nonblank spoken text and
+shows an in-picker instruction when text is missing.
 
 ## Battery / reliability
 
