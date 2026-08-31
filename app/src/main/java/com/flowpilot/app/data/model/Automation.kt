@@ -31,7 +31,9 @@ enum class CapabilityRequirement {
 enum class ActionCategory(val label: String) {
     NFC("NFC"),
     BATTERY("Battery"),
-    SYSTEM("System"),
+    ALERTS("Alerts"),
+    AUDIO("Audio"),
+    APPS_LINKS("Apps & Links"),
 }
 
 /** A concrete system action a rule can perform. */
@@ -41,13 +43,13 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     NFC_OFF("Turn NFC off", ActionCategory.NFC, CapabilityRequirement.SHIZUKU),
     BATTERY_SAVER_ON("Turn Battery Saver on", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
     BATTERY_SAVER_OFF("Turn Battery Saver off", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
-    SHOW_NOTIFICATION("Show notification", ActionCategory.SYSTEM, CapabilityRequirement.NOTIFICATIONS),
-    VIBRATE("Vibrate", ActionCategory.SYSTEM, CapabilityRequirement.VIBRATION),
-    PLAY_SOUND("Play sound", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
-    SET_MEDIA_VOLUME("Set media volume", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
-    LAUNCH_APP("Launch app", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
-    OPEN_URL("Open URL", ActionCategory.SYSTEM, CapabilityRequirement.NONE),
-    SPEAK_TEXT("Speak text (TTS)", ActionCategory.SYSTEM, CapabilityRequirement.NONE);
+    SHOW_NOTIFICATION("Show notification", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATIONS),
+    VIBRATE("Vibrate", ActionCategory.ALERTS, CapabilityRequirement.VIBRATION),
+    PLAY_SOUND("Play sound", ActionCategory.AUDIO, CapabilityRequirement.NONE),
+    SET_MEDIA_VOLUME("Set media volume", ActionCategory.AUDIO, CapabilityRequirement.NONE),
+    SPEAK_TEXT("Speak text (TTS)", ActionCategory.AUDIO, CapabilityRequirement.NONE),
+    LAUNCH_APP("Launch app", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
+    OPEN_URL("Open URL", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE);
 
     companion object {
         fun fromId(id: String): ActionType? = entries.firstOrNull { it.name == id }
@@ -58,7 +60,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
 @Serializable
 enum class TriggerCategory(val label: String) {
     APP("App"),
-    SYSTEM("System"),
+    POWER("Power"),
+    DISPLAY("Display"),
     TIME("Time"),
 }
 
@@ -92,12 +95,12 @@ data class TtsVoiceOption(
 enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     APP_OPENED("App opened", TriggerCategory.APP),
     APP_CLOSED("App closed", TriggerCategory.APP),
-    CHARGER_CONNECTED("Charger connected", TriggerCategory.SYSTEM),
-    CHARGER_DISCONNECTED("Charger disconnected", TriggerCategory.SYSTEM),
-    BATTERY_BELOW("Battery below level", TriggerCategory.SYSTEM),
-    BATTERY_ABOVE("Battery above level", TriggerCategory.SYSTEM),
-    SCREEN_ON("Screen turned on", TriggerCategory.SYSTEM),
-    SCREEN_OFF("Screen turned off", TriggerCategory.SYSTEM),
+    CHARGER_CONNECTED("Charger connected", TriggerCategory.POWER),
+    CHARGER_DISCONNECTED("Charger disconnected", TriggerCategory.POWER),
+    BATTERY_BELOW("Battery below level", TriggerCategory.POWER),
+    BATTERY_ABOVE("Battery above level", TriggerCategory.POWER),
+    SCREEN_ON("Screen turned on", TriggerCategory.DISPLAY),
+    SCREEN_OFF("Screen turned off", TriggerCategory.DISPLAY),
     TIME_SCHEDULE("At scheduled time", TriggerCategory.TIME);
 
     companion object {

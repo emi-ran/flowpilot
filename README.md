@@ -38,6 +38,7 @@ Target / compile SDK: 36 (Android 16)
 - Automations list matching supplied dark Stitch design.
 - Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, or scheduled time -> one or more NFC on/off, Battery Saver on/off, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Installed launchable app picker with search, display name, package ID internally.
+- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, and Time; actions use Alerts, Audio, Apps & Links, Battery, and NFC.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
 - Enable/disable switches.
