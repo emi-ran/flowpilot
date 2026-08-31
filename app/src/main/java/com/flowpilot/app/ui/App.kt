@@ -23,6 +23,7 @@ enum class Page {
 @Composable
 fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     var page by remember { mutableStateOf(Page.HOME) }
+    var permissionsReturnPage by remember { mutableStateOf(Page.HOME) }
     var selectedRule by remember { mutableStateOf<Automation?>(null) }
 
     BackHandler(enabled = page != Page.HOME) {
@@ -49,11 +50,14 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                         detail = { selectedRule = it; page = Page.DETAIL },
                         create = { page = Page.CREATE },
                         settings = { page = Page.SETTINGS },
-                        permissions = { page = Page.PERMISSIONS },
+                        permissions = { permissionsReturnPage = Page.HOME; page = Page.PERMISSIONS },
                     )
-                    Page.SETTINGS -> SettingsScreen(vm) { page = Page.PERMISSIONS }
+                    Page.SETTINGS -> SettingsScreen(vm) {
+                        permissionsReturnPage = Page.SETTINGS
+                        page = Page.PERMISSIONS
+                    }
                     Page.CREATE -> CreateScreen(vm) { page = Page.HOME }
-                    Page.PERMISSIONS -> PermissionsScreen(vm) { page = Page.HOME }
+                    Page.PERMISSIONS -> PermissionsScreen(vm) { page = permissionsReturnPage }
                     Page.DETAIL -> {
                         selectedRule?.let { rule ->
                             DetailScreen(vm, rule) { page = Page.HOME }

@@ -36,7 +36,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed -> NFC on/off or Battery Saver on/off.
+- Create rule flow: app opened/closed or daily schedule -> NFC on/off or Battery Saver on/off.
 - Installed launchable app picker with search, display name, package ID internally.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
@@ -44,7 +44,7 @@ Target / compile SDK: 36 (Android 16)
 - Foreground automation service with visible ongoing notification.
 - UsageStatsManager event polling with ~1.5 second interval.
 - App transition detection: one open event per foreground residency, one close event on transition.
-- Boot/app-update receiver to restart the engine where Android permits it.
+- Boot/app-update receiver restarts enabled engine where Android permits it.
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
 - Shizuku UserService AIDL command bridge. Commands run with Shizuku shell/root identity; app never claims success if the command failed.
 - Four real action executors:
@@ -64,13 +64,13 @@ Reason: Android does not expose foreground-app changes as a normal runtime permi
 
 On Android 13+, allow notifications when prompted.
 
-Reason: Android requires the foreground service to have a visible status notification. It shows that FlowPilot is watching app transitions.
+Reason: Android requires a foreground-service status notification. FlowPilot uses a silent, minimum-importance channel with no sound, vibration, badge, or lock-screen content.
 
-### 3. Battery optimization
+### 3. Battery restrictions and HyperOS Autostart
 
-Optional. If HyperOS stops the engine, allow FlowPilot under system Battery / Autostart / Battery optimization settings.
+Open FlowPilot -> Settings -> Advanced permissions and allow Battery restrictions. Then open HyperOS app settings from the HyperOS Autostart card, enable Autostart, and set Battery saver to No restrictions.
 
-Reason: OEM background restrictions can stop any polling service. FlowPilot does not silently request exemption.
+Reason: schedules run in a foreground service, but HyperOS can still stop/restrict it. Android has no public API to enable HyperOS Autostart, so FlowPilot opens its own app settings for that final manual step.
 
 ### 4. Battery Saver actions: ADB path
 
@@ -112,7 +112,7 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 - Normal apps cannot toggle NFC on Android 10+; `NfcAdapter.enable()` / `disable()` are privileged/system/DPC operations. FlowPilot therefore marks NFC as Shizuku-required.
 - Battery Saver is a protected global setting. It requires `WRITE_SECURE_SETTINGS` through ADB development grant or Shizuku.
 - UsageStatsManager polling is Android-supported but not an instantaneous callback API. Event timing can vary by device and OEM, especially HyperOS.
-- HyperOS may require manual Autostart and battery-policy exemptions. Android can still stop/restrict background work.
+- HyperOS Autostart is an OEM-owned setting and must be enabled manually. Battery restriction exemption reduces, but cannot eliminate, OEM service termination.
 - `QUERY_ALL_PACKAGES` is declared to provide a complete installed launchable-app picker. Store distribution policy may require justification.
 - No AccessibilityService is used. It is not necessary for UsageStats-based app detection and would add broader access than required.
 - No root, hidden API calls, silent shell execution, or fake fallback behavior.

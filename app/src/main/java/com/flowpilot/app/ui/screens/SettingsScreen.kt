@@ -28,7 +28,7 @@ fun SettingsScreen(vm: AppViewModel, permissions: () -> Unit) {
             Text("Manage your FlowPilot preferences.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 20.dp))
             Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
                 SettingRow("Dark theme", Icons.Default.DarkMode, true) {}
-                SettingRow("Run on startup", Icons.Default.RocketLaunch, engine) { if (it) vm.startEngine() else vm.stopEngine() }
+                SettingRow("Run engine on device startup", Icons.Default.RocketLaunch, engine) { if (it) vm.startEngine() else vm.stopEngine() }
                 SettingRow("Advanced permissions", Icons.Default.AdminPanelSettings, null) { permissions() }
                 SettingRow("Backup / Restore", Icons.Default.CloudSync, null) {}
                 SettingRow("About", Icons.Default.Info, null) {}

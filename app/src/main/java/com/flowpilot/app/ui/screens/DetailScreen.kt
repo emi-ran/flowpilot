@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.ActionPicker
 import com.flowpilot.app.ui.components.AppPicker
@@ -29,6 +30,9 @@ import com.flowpilot.app.ui.components.TriggerPicker
 fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     BackHandler(onBack = back)
     var event by remember(initialRule.id) { mutableStateOf(initialRule.triggerEvent) }
+    var scheduledMinute by remember(initialRule.id) { mutableIntStateOf(initialRule.scheduledMinute) }
+    var scheduledDays by remember(initialRule.id) { mutableStateOf(initialRule.scheduledDays) }
+    var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActions) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
     var pkg by remember(initialRule.id) { mutableStateOf(initialRule.appPackage) }
@@ -59,6 +63,15 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 showActions = false
                 editingActionIndex = null
             }
+        )
+    }
+    if (showTimePicker) {
+        val pickerState = rememberTimePickerState(scheduledMinute / 60, scheduledMinute % 60, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = { TextButton({ scheduledMinute = pickerState.hour * 60 + pickerState.minute; showTimePicker = false }) { Text("OK") } },
+            dismissButton = { TextButton({ showTimePicker = false }) { Text("Cancel") } },
+            text = { TimePicker(pickerState) },
         )
     }
 
@@ -101,7 +114,24 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
             Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
             SelectionRow("Trigger", event.label) { showTriggers = true }
             Spacer(Modifier.height(10.dp))
-            SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
+            if (event == TriggerEvent.TIME_SCHEDULE) {
+                val hour = scheduledMinute / 60
+                val minute = scheduledMinute % 60
+                SelectionRow("Time", "%02d:%02d".format(hour, minute)) { showTimePicker = true }
+                Text("Repeat", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = scheduledDays.isEmpty(), onClick = { scheduledDays = emptySet() }, label = { Text("Daily") })
+                    FilterChip(selected = scheduledDays == setOf(1, 2, 3, 4, 5), onClick = { scheduledDays = setOf(1, 2, 3, 4, 5) }, label = { Text("Weekdays") })
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
+                    listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { index, label ->
+                        val day = index + 1
+                        FilterChip(selected = scheduledDays.isNotEmpty() && day in scheduledDays, onClick = { scheduledDays = if (day in scheduledDays) scheduledDays - day else scheduledDays + day }, label = { Text(label) })
+                    }
+                }
+            } else {
+                SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
+            }
 
             Text(
                 "DO (${actions.size} action${if (actions.size > 1) "s" else ""})",
@@ -177,13 +207,18 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 Button(
                     onClick = {
                         val summary = actions.joinToString(" + ") { it.label }
-                        val finalName = name.ifBlank { "${appName.ifBlank { pkg }} · $summary" }
+                        val finalName = name.ifBlank {
+                            if (event == TriggerEvent.TIME_SCHEDULE) "Schedule %02d:%02d · %s".format(scheduledMinute / 60, scheduledMinute % 60, summary)
+                            else "${appName.ifBlank { pkg }} · $summary"
+                        }
                         vm.updateRule(
                             initialRule.copy(
                                 name = finalName,
                                 triggerEvent = event,
                                 appPackage = pkg,
                                 appName = appName,
+                                scheduledMinute = scheduledMinute,
+                                scheduledDays = scheduledDays,
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
                             )
@@ -192,7 +227,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
-                    enabled = pkg.isNotEmpty() && actions.isNotEmpty(),
+                    enabled = (event == TriggerEvent.TIME_SCHEDULE || pkg.isNotEmpty()) && actions.isNotEmpty(),
                 ) {
                     Text("Save changes")
                 }

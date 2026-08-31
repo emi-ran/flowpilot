@@ -53,15 +53,25 @@ class AutomationRepository(private val context: Context) {
         appPackage: String,
         appName: String,
         actions: List<com.flowpilot.app.data.model.ActionType>,
+        scheduledMinute: Int = 0,
+        scheduledDays: Set<Int> = emptySet(),
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
         val summary = actions.joinToString(" + ") { it.label }
         val rule = Automation(
             id = UUID.randomUUID().toString(),
-            name = name.ifBlank { "${appName.ifBlank { appPackage }} · $summary" },
+            name = name.ifBlank {
+                if (triggerEvent == com.flowpilot.app.data.model.TriggerEvent.TIME_SCHEDULE) {
+                    "Schedule %02d:%02d · %s".format(scheduledMinute / 60, scheduledMinute % 60, summary)
+                } else {
+                    "${appName.ifBlank { appPackage }} · $summary"
+                }
+            },
             triggerEvent = triggerEvent,
             appPackage = appPackage,
             appName = appName,
+            scheduledMinute = scheduledMinute,
+            scheduledDays = scheduledDays,
             action = primaryAction,
             actions = actions,
             createdAt = System.currentTimeMillis(),

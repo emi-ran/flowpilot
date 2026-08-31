@@ -53,7 +53,8 @@ enum class TriggerCategory(val label: String) {
 @Serializable
 enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     APP_OPENED("App opened", TriggerCategory.APP),
-    APP_CLOSED("App closed", TriggerCategory.APP);
+    APP_CLOSED("App closed", TriggerCategory.APP),
+    TIME_SCHEDULE("At scheduled time", TriggerCategory.TIME);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }
@@ -81,6 +82,8 @@ data class Automation(
     val triggerEvent: TriggerEvent = TriggerEvent.APP_OPENED,
     val appPackage: String,
     val appName: String = "",
+    val scheduledMinute: Int = 0,
+    val scheduledDays: Set<Int> = emptySet(),
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     val createdAt: Long,

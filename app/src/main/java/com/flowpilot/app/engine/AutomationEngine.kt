@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
 
 /**
  * The automation engine: polls the foreground app transitions, reduces batch to final state,
@@ -36,6 +37,7 @@ class AutomationEngine(
 
     @Volatile
     private var state: ForegroundState = ForegroundState()
+    private var lastScheduleOccurrence: Long? = null
 
     fun start() {
         if (job?.isActive == true) return
@@ -45,6 +47,7 @@ class AutomationEngine(
             while (isActive) {
                 try {
                     poll()
+                    pollSchedules()
                 } catch (e: Exception) {
                     Log.w(TAG, "Exception during engine poll: ${e.message}")
                 }
@@ -94,6 +97,20 @@ class AutomationEngine(
                 Log.i(TAG, "Executing OPENED rules for $pkg (${result.toExecute.size} rule(s))")
                 executeAll(result.toExecute)
             }
+        }
+    }
+
+    private suspend fun pollSchedules() {
+        val now = LocalDateTime.now()
+        val occurrence = now.toLocalDate().toEpochDay() * 1440 + now.hour * 60 + now.minute
+        val previous = lastScheduleOccurrence
+        lastScheduleOccurrence = occurrence
+        if (previous == null || previous == occurrence) return
+
+        val matches = ScheduleEvaluator.matchingRules(repository.automations.first(), now)
+        if (matches.isNotEmpty()) {
+            Log.i(TAG, "Executing scheduled rules (${matches.size} rule(s))")
+            executeAll(matches)
         }
     }
 

@@ -30,6 +30,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasUsageAccess = MutableStateFlow(false)
     val hasWriteSecureSettings = MutableStateFlow(false)
     val hasNotifications = MutableStateFlow(false)
+    val ignoresBatteryOptimizations = MutableStateFlow(false)
     val shizukuState = MutableStateFlow(ShizukuState.NOT_INSTALLED)
     val engineRunning = MutableStateFlow(false)
 
@@ -56,7 +57,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             repository.isEngineEnabled.collect { enabled ->
                 (engineRunning as MutableStateFlow).value = enabled
-                if (enabled && capabilities.hasUsageAccess()) {
+                if (enabled) {
                     AutomationService.start(app)
                 }
             }
@@ -85,8 +86,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         hasNotifications.value = if (Build.VERSION.SDK_INT >= 33) {
             app.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         } else true
+        ignoresBatteryOptimizations.value = c.isIgnoringBatteryOptimizations()
 
-        if (engineRunning.value && hasUsageAccess.value) {
+        if (engineRunning.value) {
             try {
                 AutomationService.start(app)
             } catch (_: Throwable) {}
@@ -116,12 +118,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         appPackage: String,
         appName: String,
         actions: List<com.flowpilot.app.data.model.ActionType>,
+        scheduledMinute: Int = 0,
+        scheduledDays: Set<Int> = emptySet(),
     ) {
         viewModelScope.launch {
-            repository.add(name ?: "", triggerEvent, appPackage, appName, actions)
-            if (capabilities.hasUsageAccess()) {
-                startEngine()
-            }
+            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays)
+            startEngine()
         }
     }
 
@@ -129,9 +131,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             repository.setEnabled(id, enabled)
             refreshPermissions()
-            if (enabled && capabilities.hasUsageAccess()) {
-                startEngine()
-            }
+            if (enabled) startEngine()
         }
     }
 

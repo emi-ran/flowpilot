@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.media.AudioAttributes
 import android.os.Build
 import android.os.IBinder
 import com.flowpilot.app.MainActivity
@@ -50,10 +51,13 @@ class AutomationService : Service() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.notif_channel_engine),
-            NotificationManager.IMPORTANCE_DEFAULT,
+            NotificationManager.IMPORTANCE_MIN,
         ).apply {
             description = getString(R.string.notif_channel_engine_desc)
             setShowBadge(false)
+            setSound(null, AudioAttributes.Builder().build())
+            enableVibration(false)
+            lockscreenVisibility = Notification.VISIBILITY_SECRET
         }
         nm.createNotificationChannel(channel)
     }
@@ -85,11 +89,14 @@ class AutomationService : Service() {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pi)
             .setOngoing(true)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .setVisibility(Notification.VISIBILITY_SECRET)
             .build()
     }
 
     companion object {
-        private const val CHANNEL_ID = "engine"
+        // Channel settings are immutable after creation. New ID upgrades older loud channel.
+        private const val CHANNEL_ID = "engine_silent_v2"
         private const val NOTIF_ID = 1001
 
         fun start(context: Context) {

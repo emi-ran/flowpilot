@@ -28,6 +28,10 @@ import com.flowpilot.app.ui.components.TriggerPicker
 fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     BackHandler(onBack = done)
     var event by remember { mutableStateOf(TriggerEvent.APP_OPENED) }
+    val now = java.time.LocalTime.now()
+    var scheduledMinute by remember { mutableIntStateOf(now.hour * 60 + now.minute) }
+    var scheduledDays by remember { mutableStateOf(emptySet<Int>()) }
+    var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
     var pkg by remember { mutableStateOf("") }
@@ -59,6 +63,15 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             }
         )
     }
+    if (showTimePicker) {
+        val pickerState = rememberTimePickerState(scheduledMinute / 60, scheduledMinute % 60, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = { TextButton({ scheduledMinute = pickerState.hour * 60 + pickerState.minute; showTimePicker = false }) { Text("OK") } },
+            dismissButton = { TextButton({ showTimePicker = false }) { Text("Cancel") } },
+            text = { TimePicker(pickerState) },
+        )
+    }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -74,7 +87,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
             SelectionRow("Trigger", event.label) { showTriggers = true }
             Spacer(Modifier.height(10.dp))
-            SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
+            if (event == TriggerEvent.TIME_SCHEDULE) {
+                ScheduleSettings(scheduledMinute, scheduledDays, { showTimePicker = true }) { scheduledDays = it }
+            } else {
+                SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
+            }
 
             Text(
                 "DO (${actions.size} action${if (actions.size > 1) "s" else ""})",
@@ -147,16 +164,46 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
-                        vm.addRule(name, event, pkg, appName, actions)
+                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays)
                         done()
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
-                    enabled = pkg.isNotEmpty() && actions.isNotEmpty(),
+                    enabled = (event == TriggerEvent.TIME_SCHEDULE || pkg.isNotEmpty()) && actions.isNotEmpty(),
                 ) {
                     Text("Save")
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ScheduleSettings(
+    scheduledMinute: Int,
+    scheduledDays: Set<Int>,
+    chooseTime: () -> Unit,
+    setDays: (Set<Int>) -> Unit,
+) {
+    val hour = scheduledMinute / 60
+    val minute = scheduledMinute % 60
+    SelectionRow("Time", "%02d:%02d".format(hour, minute), chooseTime)
+    Text("Repeat", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(selected = scheduledDays.isEmpty(), onClick = { setDays(emptySet()) }, label = { Text("Daily") })
+        FilterChip(selected = scheduledDays == setOf(1, 2, 3, 4, 5), onClick = { setDays(setOf(1, 2, 3, 4, 5)) }, label = { Text("Weekdays") })
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
+        listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { index, label ->
+            val day = index + 1
+            FilterChip(
+                selected = scheduledDays.isNotEmpty() && day in scheduledDays,
+                onClick = {
+                    val next = if (day in scheduledDays) scheduledDays - day else scheduledDays + day
+                    setDays(next)
+                },
+                label = { Text(label) },
+            )
         }
     }
 }
