@@ -129,7 +129,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                         FilterChip(selected = scheduledDays.isNotEmpty() && day in scheduledDays, onClick = { scheduledDays = if (day in scheduledDays) scheduledDays - day else scheduledDays + day }, label = { Text(label) })
                     }
                 }
-            } else {
+            } else if (event == TriggerEvent.APP_OPENED || event == TriggerEvent.APP_CLOSED) {
                 SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
             }
 
@@ -208,8 +208,12 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     onClick = {
                         val summary = actions.joinToString(" + ") { it.label }
                         val finalName = name.ifBlank {
-                            if (event == TriggerEvent.TIME_SCHEDULE) "Schedule %02d:%02d · %s".format(scheduledMinute / 60, scheduledMinute % 60, summary)
-                            else "${appName.ifBlank { pkg }} · $summary"
+                            when (event) {
+                                TriggerEvent.TIME_SCHEDULE -> "Schedule %02d:%02d · %s".format(scheduledMinute / 60, scheduledMinute % 60, summary)
+                                TriggerEvent.CHARGER_CONNECTED,
+                                TriggerEvent.CHARGER_DISCONNECTED -> "${event.label} · $summary"
+                                else -> "${appName.ifBlank { pkg }} · $summary"
+                            }
                         }
                         vm.updateRule(
                             initialRule.copy(
@@ -227,7 +231,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
-                    enabled = (event == TriggerEvent.TIME_SCHEDULE || pkg.isNotEmpty()) && actions.isNotEmpty(),
+                    enabled = (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) && actions.isNotEmpty(),
                 ) {
                     Text("Save changes")
                 }

@@ -24,10 +24,11 @@ Do not bundle unrelated features. One feature family at a time.
 
 ### Phase 1 — Framework-safe signals
 
-1. **Time schedule**
-   - At a chosen time every day
-   - Weekdays
-   - Selected days of week
+1. **Time schedule** (complete)
+    - At a chosen time every day
+    - Weekdays
+    - Selected days of week
+    - Polls every 500 ms, executes once per matching minute, and does not replay missed occurrences after engine start
 2. **Charger state**
    - Charger connected
    - Charger disconnected
@@ -89,19 +90,18 @@ Each must expose its required permission or Shizuku state. Do not show success u
 ## Existing Device-specific Controls
 
 - NFC: Xiaomi 15T Pro / HyperOS 3 path is `svc nfc enable|disable` through Shizuku. Do not use `cmd nfc`; it crashed the device NFC service during testing.
-- Battery Saver: use direct `WRITE_SECURE_SETTINGS` write first when granted. Shizuku is fallback.
+- Battery Saver: use direct `WRITE_SECURE_SETTINGS` write first when granted. Shizuku fallback uses `cmd power set-mode <0|1>` with settings fallback.
 
 ## Proposed Implementation Order
 
-1. Time schedule trigger
-2. Charger trigger
-3. Battery threshold trigger
-4. Notification, vibration, sound, app launch, URL actions
-5. HTTP webhook action
-6. Media volume and alarm/timer actions
-7. Screen and headset triggers
-8. Wi-Fi and Bluetooth device/context triggers
-9. HyperOS 3 system controls, one action at a time
+1. Charger trigger
+2. Battery threshold trigger
+3. Notification, vibration, sound, app launch, URL actions
+4. HTTP webhook action
+5. Media volume and alarm/timer actions
+6. Screen and headset triggers
+7. Wi-Fi and Bluetooth device/context triggers
+8. HyperOS 3 system controls, one action at a time
 
 ## Acceptance Gate
 

@@ -36,6 +36,22 @@ class RuleEvaluatorTest {
         assertThat(result.matched).isEmpty()
     }
 
+    @Test fun charger_rules_match_only_their_transition() {
+        val connected = rule(TriggerEvent.CHARGER_CONNECTED).copy(appPackage = "", appName = "")
+        val disconnected = rule(TriggerEvent.CHARGER_DISCONNECTED).copy(id = "2", appPackage = "", appName = "")
+
+        assertThat(RuleEvaluator.evaluateCharger(listOf(connected, disconnected), ChargerEvent.CONNECTED))
+            .containsExactly(connected)
+        assertThat(RuleEvaluator.evaluateCharger(listOf(connected, disconnected), ChargerEvent.DISCONNECTED))
+            .containsExactly(disconnected)
+    }
+
+    @Test fun disabled_charger_rule_never_matches() {
+        val rule = rule(TriggerEvent.CHARGER_CONNECTED).copy(enabled = false, appPackage = "", appName = "")
+
+        assertThat(RuleEvaluator.evaluateCharger(listOf(rule), ChargerEvent.CONNECTED)).isEmpty()
+    }
+
     @Test fun multi_action_rule_preserved_and_effective_actions_evaluated() {
         val multiActionRule = Automation(
             id = "2",

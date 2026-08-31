@@ -36,21 +36,22 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed or daily schedule -> NFC on/off or Battery Saver on/off.
+- Create rule flow: app opened/closed or scheduled time -> one or more NFC on/off and Battery Saver on/off actions.
 - Installed launchable app picker with search, display name, package ID internally.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
 - Enable/disable switches.
 - Foreground automation service with visible ongoing notification.
-- UsageStatsManager event polling with ~1.5 second interval.
+- UsageStatsManager event polling every 500 ms.
 - App transition detection: one open event per foreground residency, one close event on transition.
-- Boot/app-update receiver restarts enabled engine where Android permits it.
+- Time schedules: daily, weekdays, or selected days; one execution per matching minute with no past-occurrence replay after engine start.
+- Boot/app-update receiver restarts the engine only when Run engine on device startup is enabled.
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
 - Shizuku UserService AIDL command bridge. Commands run with Shizuku shell/root identity; app never claims success if the command failed.
 - Four real action executors:
-  - NFC ON/OFF: `cmd nfc on|off` through Shizuku.
-  - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or `settings put global low_power` through Shizuku.
-- Unit tests for rule matching, open dedupe, close events, and disabled rules.
+  - NFC ON/OFF: `svc nfc enable|disable` through Shizuku.
+  - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
+- Unit tests for rule matching, schedule matching, foreground reduction, action executors, and disabled rules.
 
 ## Setup permissions
 
@@ -68,9 +69,9 @@ Reason: Android requires a foreground-service status notification. FlowPilot use
 
 ### 3. Battery restrictions and HyperOS Autostart
 
-Open FlowPilot -> Settings -> Advanced permissions and allow Battery restrictions. Then open HyperOS app settings from the HyperOS Autostart card, enable Autostart, and set Battery saver to No restrictions.
+Open FlowPilot -> Settings -> Advanced permissions and allow Battery restrictions. Then use HyperOS Autostart -> Open list, enable FlowPilot, and set Battery saver to No restrictions.
 
-Reason: schedules run in a foreground service, but HyperOS can still stop/restrict it. Android has no public API to enable HyperOS Autostart, so FlowPilot opens its own app settings for that final manual step.
+Reason: schedules run in a foreground service, but HyperOS can still stop/restrict it. Android has no public API to read or enable HyperOS Autostart. FlowPilot opens HyperOS's Autostart list for manual verification and setup.
 
 ### 4. Battery Saver actions: ADB path
 
@@ -86,7 +87,7 @@ Verify:
 adb shell dumpsys package com.flowpilot.app | grep WRITE_SECURE_SETTINGS
 ```
 
-This makes Battery Saver actions available directly to FlowPilot. NFC still needs Shizuku.
+This gives FlowPilot direct Battery Saver access. NFC still needs Shizuku.
 
 ### 5. Shizuku path
 
@@ -96,11 +97,15 @@ Install Shizuku from its official source:
 
 Start Shizuku through Wireless debugging or USB debugging. Open FlowPilot's permission screen and grant FlowPilot access when Shizuku asks.
 
-Shizuku is required for NFC ON/OFF because normal Android apps cannot toggle NFC on modern Android. FlowPilot runs only these narrow commands through its Shizuku UserService:
+Shizuku is required for NFC ON/OFF because normal Android apps cannot toggle NFC on modern Android. It also enables Battery Saver actions when direct ADB access is absent. FlowPilot runs only these narrow commands through its Shizuku UserService:
 
 ```text
-cmd nfc on
-cmd nfc off
+svc nfc enable
+svc nfc disable
+cmd power set-mode 1
+cmd power set-mode 0
+settings put system POWER_SAVE_MODE_OPEN 1
+settings put system POWER_SAVE_MODE_OPEN 0
 settings put global low_power 1
 settings put global low_power 0
 ```
@@ -110,8 +115,9 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 ## Android restrictions and limitations
 
 - Normal apps cannot toggle NFC on Android 10+; `NfcAdapter.enable()` / `disable()` are privileged/system/DPC operations. FlowPilot therefore marks NFC as Shizuku-required.
-- Battery Saver is a protected global setting. It requires `WRITE_SECURE_SETTINGS` through ADB development grant or Shizuku.
+- Battery Saver is a protected global setting. `WRITE_SECURE_SETTINGS` gives FlowPilot direct access; Shizuku provides a supported fallback action path.
 - UsageStatsManager polling is Android-supported but not an instantaneous callback API. Event timing can vary by device and OEM, especially HyperOS.
+- Scheduled rules do not need Usage Access. App opened/closed rules still require Usage Access. A rule created at the current or past minute waits for its next valid day; missed times are not replayed after the engine starts.
 - HyperOS Autostart is an OEM-owned setting and must be enabled manually. Battery restriction exemption reduces, but cannot eliminate, OEM service termination.
 - `QUERY_ALL_PACKAGES` is declared to provide a complete installed launchable-app picker. Store distribution policy may require justification.
 - No AccessibilityService is used. It is not necessary for UsageStats-based app detection and would add broader access than required.
@@ -123,20 +129,20 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 app/src/main/java/com/flowpilot/app/
   data/model/                 Serializable rule model
   data/                       DataStore repository
-  engine/                     UsageStats tracker, evaluator, service, boot receiver
+  engine/                     UsageStats tracker, foreground reducer, schedule/rule evaluators, service, boot receiver
   actions/                    Action executors and Shizuku UserService bridge
   permission/                 Capability and setup checks
   ui/                         Compose screens, state, theme, components
+app/src/test/                 Rule, schedule, foreground reducer, and action executor tests
 ```
 
 ## Verification performed
 
-- `./gradlew :app:compileDebugKotlin --no-daemon` — passed.
-- `./gradlew testDebugUnitTest --no-daemon` — passed.
-- `./gradlew lintDebug --no-daemon` — passed.
-- `./gradlew assembleDebug --no-daemon` — passed.
-- APK inspected with `aapt`: package `com.flowpilot.app`, SDK 26–36, declared Usage Access, Query All Packages, notification, foreground service, boot, battery optimization, and WRITE_SECURE_SETTINGS permissions.
-- Device-side smoke test requires a connected Android device; build host currently has no verified device result.
+- `./gradlew testDebugUnitTest assembleDebug --no-daemon` — passed.
+- Debug APK installed on Xiaomi 15T Pro / HyperOS 3.
+- Foreground automation service verified active with silent `engine_silent_v2` notification channel.
+- Scheduled-rule persistence and an execution at a future selected time verified on device.
+- NFC and Battery Saver device action paths still require per-action verification after permission changes.
 
 ## License / distribution note
 
@@ -146,10 +152,3 @@ Shizuku is an external dependency. Follow its license and distribution guidance 
 
 Add project license before public distribution.
 
-<!-- Generated delivery artifact: debug APK only. -->
-
-SHA-256 of verified local debug APK at delivery time:
-
-```text
-49e2719e7e1bec36d3238bb03dec9187f51c43b007d9d07977df24ad382955ca
-```

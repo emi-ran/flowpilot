@@ -89,7 +89,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             if (event == TriggerEvent.TIME_SCHEDULE) {
                 ScheduleSettings(scheduledMinute, scheduledDays, { showTimePicker = true }) { scheduledDays = it }
-            } else {
+            } else if (event == TriggerEvent.APP_OPENED || event == TriggerEvent.APP_CLOSED) {
                 SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
             }
 
@@ -169,7 +169,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
-                    enabled = (event == TriggerEvent.TIME_SCHEDULE || pkg.isNotEmpty()) && actions.isNotEmpty(),
+                    enabled = (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) && actions.isNotEmpty(),
                 ) {
                     Text("Save")
                 }

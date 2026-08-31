@@ -54,6 +54,8 @@ enum class TriggerCategory(val label: String) {
 enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     APP_OPENED("App opened", TriggerCategory.APP),
     APP_CLOSED("App closed", TriggerCategory.APP),
+    CHARGER_CONNECTED("Charger connected", TriggerCategory.SYSTEM),
+    CHARGER_DISCONNECTED("Charger disconnected", TriggerCategory.SYSTEM),
     TIME_SCHEDULE("At scheduled time", TriggerCategory.TIME);
 
     companion object {

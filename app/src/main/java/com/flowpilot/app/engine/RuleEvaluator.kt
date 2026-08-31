@@ -30,6 +30,14 @@ data class EvaluationResult(
  */
 object RuleEvaluator {
 
+    fun evaluateCharger(rules: List<Automation>, event: ChargerEvent): List<Automation> {
+        val triggerEvent = when (event) {
+            ChargerEvent.CONNECTED -> TriggerEvent.CHARGER_CONNECTED
+            ChargerEvent.DISCONNECTED -> TriggerEvent.CHARGER_DISCONNECTED
+        }
+        return rules.filter { it.enabled && it.triggerEvent == triggerEvent }
+    }
+
     fun evaluate(
         rules: List<Automation>,
         event: AppEvent,

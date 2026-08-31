@@ -211,7 +211,13 @@ private fun RuleCard(
                 )
             }
             Icon(
-                if (item.rule.triggerEvent == TriggerEvent.APP_OPENED) Icons.Default.Apps else Icons.Default.Close,
+                when (item.rule.triggerEvent) {
+                    TriggerEvent.APP_OPENED -> Icons.Default.Apps
+                    TriggerEvent.APP_CLOSED -> Icons.Default.Close
+                    TriggerEvent.CHARGER_CONNECTED,
+                    TriggerEvent.CHARGER_DISCONNECTED -> Icons.Default.Bolt
+                    TriggerEvent.TIME_SCHEDULE -> Icons.Default.Bolt
+                },
                 null,
                 Modifier.size(40.dp),
                 tint = MaterialTheme.colorScheme.primary,

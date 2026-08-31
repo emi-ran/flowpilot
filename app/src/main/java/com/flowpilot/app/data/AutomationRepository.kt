@@ -61,10 +61,13 @@ class AutomationRepository(private val context: Context) {
         val rule = Automation(
             id = UUID.randomUUID().toString(),
             name = name.ifBlank {
-                if (triggerEvent == com.flowpilot.app.data.model.TriggerEvent.TIME_SCHEDULE) {
-                    "Schedule %02d:%02d · %s".format(scheduledMinute / 60, scheduledMinute % 60, summary)
-                } else {
-                    "${appName.ifBlank { appPackage }} · $summary"
+                when (triggerEvent) {
+                    com.flowpilot.app.data.model.TriggerEvent.TIME_SCHEDULE ->
+                        "Schedule %02d:%02d · %s".format(scheduledMinute / 60, scheduledMinute % 60, summary)
+                    com.flowpilot.app.data.model.TriggerEvent.CHARGER_CONNECTED,
+                    com.flowpilot.app.data.model.TriggerEvent.CHARGER_DISCONNECTED ->
+                        "${triggerEvent.label} · $summary"
+                    else -> "${appName.ifBlank { appPackage }} · $summary"
                 }
             },
             triggerEvent = triggerEvent,

@@ -22,6 +22,7 @@ import java.time.LocalDateTime
 class AutomationEngine(
     context: Context,
     private val tracker: ForegroundAppTracker = ForegroundAppTracker(context.applicationContext),
+    private val chargerTracker: ChargerStateTracker = ChargerStateTracker(context.applicationContext),
 ) {
 
     private val appContext = context.applicationContext
@@ -42,11 +43,13 @@ class AutomationEngine(
     fun start() {
         if (job?.isActive == true) return
         running = true
+        chargerTracker.start()
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         job = scope.launch {
             while (isActive) {
                 try {
                     poll()
+                    pollChargerEvents()
                     pollSchedules()
                 } catch (e: Exception) {
                     Log.w(TAG, "Exception during engine poll: ${e.message}")
@@ -61,6 +64,7 @@ class AutomationEngine(
         running = false
         job?.cancel()
         job = null
+        chargerTracker.stop()
     }
 
     suspend fun poll() {
@@ -111,6 +115,19 @@ class AutomationEngine(
         if (matches.isNotEmpty()) {
             Log.i(TAG, "Executing scheduled rules (${matches.size} rule(s))")
             executeAll(matches)
+        }
+    }
+
+    private suspend fun pollChargerEvents() {
+        val events = chargerTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (event in events) {
+            val matches = RuleEvaluator.evaluateCharger(rules, event)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing $event charger rules (${matches.size} rule(s))")
+                executeAll(matches)
+            }
         }
     }
 
