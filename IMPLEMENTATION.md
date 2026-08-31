@@ -8,7 +8,7 @@ minSdk 26, JDK 17.
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
 battery above | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on | Battery Saver off]
-actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+or [show notification] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager and charger/battery transitions via Android broadcasts, evaluates enabled rules, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -62,6 +62,7 @@ app/src/main/java/com/flowpilot/app/
     ActionExecutor.kt                interface + dispatch
     NfcExecutor.kt                   Shizuku `svc nfc enable|disable`
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
+    NotificationExecutor.kt           visible user-configured automation alerts
     ShizukuShell.kt                  Shizuku connection + run shell command via UserService
   permission/
     CapabilityManager.kt             per-action and setup checks
@@ -85,6 +86,10 @@ at startup. This prevents an existing cable connection from replaying an action 
 BatteryLevelTracker seeds current percentage from sticky `ACTION_BATTERY_CHANGED` at engine start without
 queuing an event. It evaluates only later percentage crossings: above to at-or-below a below-threshold, or
 below to at-or-above an above-threshold. A level remaining beyond threshold cannot retrigger an action.
+
+NotificationExecutor posts title/body configured on the rule to `automation_alerts_v2` at high importance.
+Android preserves channel importance after creation, so channel IDs are versioned when alert behavior changes.
+Android 13+ notification permission is required; OEM notification settings can still suppress banners.
 
 ## Battery / reliability
 

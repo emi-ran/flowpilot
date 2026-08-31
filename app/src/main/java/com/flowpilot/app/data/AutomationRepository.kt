@@ -56,6 +56,8 @@ class AutomationRepository(private val context: Context) {
         scheduledMinute: Int = 0,
         scheduledDays: Set<Int> = emptySet(),
         batteryLevel: Int = 50,
+        notificationTitle: String = "FlowPilot",
+        notificationBody: String = "Automation ran",
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
         val summary = actions.joinToString(" + ") { it.label }
@@ -80,6 +82,8 @@ class AutomationRepository(private val context: Context) {
             scheduledMinute = scheduledMinute,
             scheduledDays = scheduledDays,
             batteryLevel = batteryLevel,
+            notificationTitle = notificationTitle,
+            notificationBody = notificationBody,
             action = primaryAction,
             actions = actions,
             createdAt = System.currentTimeMillis(),

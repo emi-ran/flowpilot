@@ -153,7 +153,7 @@ class AutomationEngine(
             withContext(Dispatchers.IO) {
                 var anySuccess = false
                 for (action in rule.effectiveActions) {
-                    val result = dispatcher.execute(action)
+                    val result = dispatcher.execute(action, rule.notificationTitle, rule.notificationBody)
                     Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")
                     if (result.success) {
                         anySuccess = true

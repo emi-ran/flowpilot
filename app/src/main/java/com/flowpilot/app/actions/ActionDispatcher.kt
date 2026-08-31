@@ -7,14 +7,15 @@ import com.flowpilot.app.data.model.ActionType
 class ActionDispatcher private constructor(
     private val nfc: NfcExecutor,
     private val powerSaver: PowerSaverExecutor,
+    private val notification: NotificationExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
-        listOf(nfc, powerSaver).flatMap { e -> e.supportedTypes.map { it to e } }.toMap()
+        listOf(nfc, powerSaver, notification).flatMap { e -> e.supportedTypes.map { it to e } }.toMap()
     }
 
-    fun execute(action: ActionType): ActionResult {
+    fun execute(action: ActionType, notificationTitle: String = "", notificationBody: String = ""): ActionResult {
         val executor = map[action] ?: return ActionResult(false, "No executor for ${action.label}")
-        return executor.execute(action)
+        return executor.execute(action, notificationTitle, notificationBody)
     }
 
     companion object {
@@ -26,6 +27,7 @@ class ActionDispatcher private constructor(
                 instance ?: ActionDispatcher(
                     NfcExecutor(ShizukuShell.instance),
                     PowerSaverExecutor(context.applicationContext, ShizukuShell.instance),
+                    NotificationExecutor(context.applicationContext),
                 ).also { instance = it }
             }
     }

@@ -121,9 +121,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         scheduledMinute: Int = 0,
         scheduledDays: Set<Int> = emptySet(),
         batteryLevel: Int = 50,
+        notificationTitle: String = "FlowPilot",
+        notificationBody: String = "Automation ran",
     ) {
         viewModelScope.launch {
-            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel)
+            repository.add(name ?: "", triggerEvent, appPackage, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody)
             startEngine()
         }
     }

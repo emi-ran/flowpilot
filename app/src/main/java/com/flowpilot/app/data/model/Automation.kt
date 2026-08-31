@@ -16,6 +16,9 @@ enum class CapabilityRequirement {
     /** Needs Shizuku running (and granted to this app). */
     SHIZUKU,
 
+    /** Needs Android's notification runtime permission on Android 13+. */
+    NOTIFICATIONS,
+
     /** Not possible on this device at all (e.g. no NFC hardware). */
     UNSUPPORTED,
 }
@@ -34,7 +37,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     NFC_ON("Turn NFC on", ActionCategory.NFC, CapabilityRequirement.SHIZUKU),
     NFC_OFF("Turn NFC off", ActionCategory.NFC, CapabilityRequirement.SHIZUKU),
     BATTERY_SAVER_ON("Turn Battery Saver on", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
-    BATTERY_SAVER_OFF("Turn Battery Saver off", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS);
+    BATTERY_SAVER_OFF("Turn Battery Saver off", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
+    SHOW_NOTIFICATION("Show notification", ActionCategory.SYSTEM, CapabilityRequirement.NOTIFICATIONS);
 
     companion object {
         fun fromId(id: String): ActionType? = entries.firstOrNull { it.name == id }
@@ -89,6 +93,8 @@ data class Automation(
     val scheduledMinute: Int = 0,
     val scheduledDays: Set<Int> = emptySet(),
     val batteryLevel: Int = 50,
+    val notificationTitle: String = "FlowPilot",
+    val notificationBody: String = "Automation ran",
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     val createdAt: Long,

@@ -11,5 +11,5 @@ data class ActionResult(
 /** A capability-aware executor for one family of system actions. */
 interface ActionExecutor {
     val supportedTypes: Set<ActionType>
-    fun execute(action: ActionType): ActionResult
+    fun execute(action: ActionType, notificationTitle: String = "", notificationBody: String = ""): ActionResult
 }

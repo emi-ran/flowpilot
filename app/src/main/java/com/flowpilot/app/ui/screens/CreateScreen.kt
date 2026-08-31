@@ -32,6 +32,8 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var scheduledMinute by remember { mutableIntStateOf(now.hour * 60 + now.minute) }
     var scheduledDays by remember { mutableStateOf(emptySet<Int>()) }
     var batteryLevel by remember { mutableIntStateOf(50) }
+    var notificationTitle by remember { mutableStateOf("FlowPilot") }
+    var notificationBody by remember { mutableStateOf("Automation ran") }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
@@ -154,6 +156,15 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 Text("Add action")
             }
 
+            if (ActionType.SHOW_NOTIFICATION in actions) {
+                NotificationSettings(
+                    title = notificationTitle,
+                    body = notificationBody,
+                    setTitle = { notificationTitle = it },
+                    setBody = { notificationBody = it },
+                )
+            }
+
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -167,7 +178,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
-                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel)
+                        vm.addRule(name, event, pkg, appName, actions, scheduledMinute, scheduledDays, batteryLevel, notificationTitle, notificationBody)
                         done()
                     },
                     modifier = Modifier.weight(1f),
@@ -191,6 +202,18 @@ private fun BatteryThresholdSettings(level: Int, setLevel: (Int) -> Unit) {
         valueRange = 1f..100f,
         steps = 98,
     )
+}
+
+@Composable
+private fun NotificationSettings(
+    title: String,
+    body: String,
+    setTitle: (String) -> Unit,
+    setBody: (String) -> Unit,
+) {
+    Text("Notification", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    OutlinedTextField(value = title, onValueChange = setTitle, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Title") }, singleLine = true)
+    OutlinedTextField(value = body, onValueChange = setBody, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Message") }, minLines = 2)
 }
 
 @Composable

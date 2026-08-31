@@ -36,7 +36,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, or scheduled time -> one or more NFC on/off and Battery Saver on/off actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, or scheduled time -> one or more NFC on/off, Battery Saver on/off, and notification actions.
 - Installed launchable app picker with search, display name, package ID internally.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
@@ -47,6 +47,7 @@ Target / compile SDK: 36 (Android 16)
 - Time schedules: daily, weekdays, or selected days; one execution per matching minute with no past-occurrence replay after engine start.
 - Charger triggers: connected/disconnected broadcasts while engine runs; duplicate state broadcasts are deduped and current charger state is not replayed after engine start.
 - Battery threshold triggers: below/above a selected percentage; only a crossing triggers an action and current level is seeded without replay after engine start.
+- Show notification action: per-rule title and message, posted through visible `Automation alerts` channel.
 - Boot/app-update receiver restarts the engine only when Run engine on device startup is enabled.
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
 - Shizuku UserService AIDL command bridge. Commands run with Shizuku shell/root identity; app never claims success if the command failed.
@@ -68,6 +69,8 @@ Reason: Android does not expose foreground-app changes as a normal runtime permi
 On Android 13+, allow notifications when prompted.
 
 Reason: Android requires a foreground-service status notification. FlowPilot uses a silent, minimum-importance channel with no sound, vibration, badge, or lock-screen content.
+
+The Show notification action uses separate `Automation alerts` channel with heads-up importance. If HyperOS does not show banners, enable floating notifications for this channel in system notification settings.
 
 ### 3. Battery restrictions and HyperOS Autostart
 
@@ -122,6 +125,7 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 - Scheduled rules do not need Usage Access. App opened/closed rules still require Usage Access. A rule created at the current or past minute waits for its next valid day; missed times are not replayed after the engine starts.
 - Charger rules do not need Usage Access. They listen for Android power connected/disconnected broadcasts only while the engine is running, so they do not fire for a cable already connected at engine startup.
 - Battery threshold rules do not need Usage Access. They react only when the level crosses selected threshold; a battery level already above or below threshold at engine startup does not trigger an action.
+- Show notification needs `POST_NOTIFICATIONS` on Android 13+. The action reports failure when permission is denied. Android/HyperOS channel settings can still suppress a heads-up banner.
 - HyperOS Autostart is an OEM-owned setting and must be enabled manually. Battery restriction exemption reduces, but cannot eliminate, OEM service termination.
 - `QUERY_ALL_PACKAGES` is declared to provide a complete installed launchable-app picker. Store distribution policy may require justification.
 - No AccessibilityService is used. It is not necessary for UsageStats-based app detection and would add broader access than required.
@@ -148,6 +152,7 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Scheduled-rule persistence and an execution at a future selected time verified on device.
 - Charger connected and disconnected rules verified on device.
 - Battery below/above threshold rules verified on device.
+- Show notification rule verified on device, including visible `automation_alerts_v2` heads-up channel.
 - NFC and Battery Saver device action paths still require per-action verification after permission changes.
 
 ## License / distribution note

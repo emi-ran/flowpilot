@@ -63,7 +63,9 @@ Do not bundle unrelated features. One feature family at a time.
    - Discord webhook
    - Custom HTTP endpoint
    - Requirements: method, headers, body, timeout, redacted secrets, explicit success/failure result
-2. **Show notification**
+2. **Show notification** (complete)
+    - Per-rule title and message
+    - Android 13+ notification permission check and visible high-importance `automation_alerts_v2` channel
 3. **Play sound**
 4. **Vibrate**
 5. **Launch app**

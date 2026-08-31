@@ -89,6 +89,11 @@ class CapabilityManager(private val context: Context) {
                 else -> CapabilityStatus.SHIZUKU_REQUIRED
             }
 
+        CapabilityRequirement.NOTIFICATIONS ->
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
+
         CapabilityRequirement.UNSUPPORTED -> CapabilityStatus.UNSUPPORTED
     }
 

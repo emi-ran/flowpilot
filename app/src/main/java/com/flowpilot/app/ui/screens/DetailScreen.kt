@@ -33,6 +33,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var scheduledMinute by remember(initialRule.id) { mutableIntStateOf(initialRule.scheduledMinute) }
     var scheduledDays by remember(initialRule.id) { mutableStateOf(initialRule.scheduledDays) }
     var batteryLevel by remember(initialRule.id) { mutableIntStateOf(initialRule.batteryLevel) }
+    var notificationTitle by remember(initialRule.id) { mutableStateOf(initialRule.notificationTitle) }
+    var notificationBody by remember(initialRule.id) { mutableStateOf(initialRule.notificationBody) }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActions) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
@@ -196,6 +198,12 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 Text("Add action")
             }
 
+            if (ActionType.SHOW_NOTIFICATION in actions) {
+                Text("Notification", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+                OutlinedTextField(value = notificationTitle, onValueChange = { notificationTitle = it }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Title") }, singleLine = true)
+                OutlinedTextField(value = notificationBody, onValueChange = { notificationBody = it }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Message") }, minLines = 2)
+            }
+
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -231,6 +239,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 scheduledMinute = scheduledMinute,
                                 scheduledDays = scheduledDays,
                                 batteryLevel = batteryLevel,
+                                notificationTitle = notificationTitle,
+                                notificationBody = notificationBody,
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
                             )

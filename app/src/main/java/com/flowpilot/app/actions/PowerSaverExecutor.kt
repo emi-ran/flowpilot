@@ -34,7 +34,7 @@ class PowerSaverExecutor(
 
     private fun hasWriteSecureSettings(): Boolean = permissionChecker(context)
 
-    override fun execute(action: ActionType): ActionResult {
+    override fun execute(action: ActionType, notificationTitle: String, notificationBody: String): ActionResult {
         val target = when (action) {
             ActionType.BATTERY_SAVER_ON -> 1
             ActionType.BATTERY_SAVER_OFF -> 0
