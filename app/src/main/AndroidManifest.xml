@@ -28,6 +28,9 @@
     <!-- Battery optimization exemption so the engine isn't killed. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Modify system settings (WRITE_SETTINGS) for system settings toggles like Auto-rotate. -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+
     <!-- Toggle Battery Saver / other secure settings.
          protectionLevel is "signature|privileged|development", so it can be granted
          via `adb shell pm grant` (or via Shizuku). Declared so the grant is possible. -->

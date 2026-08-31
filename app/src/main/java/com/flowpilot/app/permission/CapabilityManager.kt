@@ -56,6 +56,15 @@ class CapabilityManager(private val context: Context) {
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 
+    /** Has the app been granted WRITE_SETTINGS special access? */
+    fun hasWriteSettings(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.System.canWrite(context)
+        } else {
+            true
+        }
+    }
+
     /** Does the device expose NFC hardware that can be toggled? */
     fun hasNfcHardware(): Boolean =
         context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC)
@@ -74,6 +83,9 @@ class CapabilityManager(private val context: Context) {
      */
     fun statusFor(action: ActionType): CapabilityStatus = when (action.requirement) {
         CapabilityRequirement.NONE -> CapabilityStatus.AVAILABLE
+
+        CapabilityRequirement.WRITE_SETTINGS ->
+            if (hasWriteSettings()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
 
         CapabilityRequirement.WRITE_SECURE_SETTINGS ->
             when {
@@ -112,6 +124,19 @@ class CapabilityManager(private val context: Context) {
     /** open system Settings for this app's battery optimization allowlist */
     fun openBatteryOptimizationSettings() {
         val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
+    /** open system Settings for Modify system settings (WRITE_SETTINGS) */
+    fun openWriteSettings() {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
+                data = Uri.parse("package:${context.packageName}")
+            }
+        } else {
+            Intent(Settings.ACTION_SETTINGS)
+        }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }

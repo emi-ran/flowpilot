@@ -36,9 +36,9 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, or scheduled time -> one or more NFC on/off, Battery Saver on/off, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, or scheduled time -> one or more NFC on/off, Battery Saver on/off, Auto-rotate on/off, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Installed launchable app picker with search, display name, package ID internally.
-- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, and Time; actions use Alerts, Audio, Apps & Links, Battery, and NFC.
+- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, and Time; actions use Alerts, Audio, Apps & Links, Display, Battery, and NFC.
 - Rule detail and delete.
 - Persistent rules through DataStore JSON.
 - Enable/disable switches.
@@ -56,6 +56,7 @@ Target / compile SDK: 36 (Android 16)
 - Action executors:
    - NFC ON/OFF: `svc nfc enable|disable` through Shizuku.
    - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
+   - Auto-rotate ON/OFF: direct `Settings.System.ACCELEROMETER_ROTATION` write with user-grantable `android.permission.WRITE_SETTINGS` special access.
    - Launch app: starts selected installed launchable app.
    - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
    - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
@@ -85,7 +86,13 @@ Open FlowPilot -> Settings -> Advanced permissions and allow Battery restriction
 
 Reason: schedules run in a foreground service, but HyperOS can still stop/restrict it. Android has no public API to read or enable HyperOS Autostart. FlowPilot opens HyperOS's Autostart list for manual verification and setup.
 
-### 4. Battery Saver actions: ADB path
+### 4. Modify system settings (WRITE_SETTINGS) for Auto-rotate
+
+Open FlowPilot -> Settings -> Advanced permissions -> Modify system settings -> allow FlowPilot.
+
+Reason: Toggling system auto-rotation (`Settings.System.ACCELEROMETER_ROTATION`) requires Android's user-grantable `WRITE_SETTINGS` special app access (`Settings.System.canWrite(context)`), not `WRITE_SECURE_SETTINGS` or Shizuku.
+
+### 5. Battery Saver actions: ADB path
 
 With USB debugging enabled and device connected:
 
@@ -101,7 +108,7 @@ adb shell dumpsys package com.flowpilot.app | grep WRITE_SECURE_SETTINGS
 
 This gives FlowPilot direct Battery Saver access. NFC still needs Shizuku.
 
-### 5. Shizuku path
+### 6. Shizuku path
 
 Install Shizuku from its official source:
 
@@ -169,7 +176,8 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Vibration implementation builds and has unit coverage; device smoke test remains pending.
 - Media volume implementation builds and has unit coverage; device smoke test remains pending.
 - Play sound and screen on/off implementations build and have unit coverage; device smoke tests remain pending.
-- Speak text (offline TTS) builds and unit tests pass; Xiaomi device smoke test remains pending.
+- Speak text (offline TTS) builds, unit tests, and Xiaomi device smoke test passed.
+- Auto-rotate on/off (WRITE_SETTINGS) implementation builds and has unit coverage; ADB validation confirmed target device values (0 and 1), while FlowPilot app path device smoke test remains pending.
 
 ## Next validation
 

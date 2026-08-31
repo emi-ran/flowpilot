@@ -10,6 +10,9 @@ enum class CapabilityRequirement {
     /** Plain app with Usage Access only — no extra system powers needed. */
     NONE,
 
+    /** Needs user-grantable special access to modify system settings (android.permission.WRITE_SETTINGS). */
+    WRITE_SETTINGS,
+
     /** Needs the app to hold android.permission.WRITE_SECURE_SETTINGS (via ADB `pm grant`). */
     WRITE_SECURE_SETTINGS,
 
@@ -31,6 +34,7 @@ enum class CapabilityRequirement {
 enum class ActionCategory(val label: String) {
     NFC("NFC"),
     BATTERY("Battery"),
+    DISPLAY("Display"),
     ALERTS("Alerts"),
     AUDIO("Audio"),
     APPS_LINKS("Apps & Links"),
@@ -43,6 +47,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     NFC_OFF("Turn NFC off", ActionCategory.NFC, CapabilityRequirement.SHIZUKU),
     BATTERY_SAVER_ON("Turn Battery Saver on", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
     BATTERY_SAVER_OFF("Turn Battery Saver off", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
+    AUTO_ROTATE_ON("Turn Auto-rotate on", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
+    AUTO_ROTATE_OFF("Turn Auto-rotate off", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     SHOW_NOTIFICATION("Show notification", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATIONS),
     VIBRATE("Vibrate", ActionCategory.ALERTS, CapabilityRequirement.VIBRATION),
     PLAY_SOUND("Play sound", ActionCategory.AUDIO, CapabilityRequirement.NONE),

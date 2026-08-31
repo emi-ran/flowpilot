@@ -29,6 +29,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     val automations = MutableStateFlow<List<AutomationUI>>(emptyList())
     val hasUsageAccess = MutableStateFlow(false)
+    val hasWriteSettings = MutableStateFlow(false)
     val hasWriteSecureSettings = MutableStateFlow(false)
     val hasNotifications = MutableStateFlow(false)
     val ignoresBatteryOptimizations = MutableStateFlow(false)
@@ -82,6 +83,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshPermissions() {
         val c = capabilities
         hasUsageAccess.value = c.hasUsageAccess()
+        hasWriteSettings.value = c.hasWriteSettings()
         hasWriteSecureSettings.value = c.hasWriteSecureSettings()
         shizukuState.value = c.shizukuState()
         hasNotifications.value = if (Build.VERSION.SDK_INT >= 33) {

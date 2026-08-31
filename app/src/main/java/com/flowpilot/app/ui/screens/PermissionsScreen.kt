@@ -36,6 +36,7 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val usage by vm.hasUsageAccess.collectAsState()
+    val writeSettings by vm.hasWriteSettings.collectAsState()
     val write by vm.hasWriteSecureSettings.collectAsState()
     val notif by vm.hasNotifications.collectAsState()
     val ignoresBatteryOptimizations by vm.ignoresBatteryOptimizations.collectAsState()
@@ -75,6 +76,20 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
             }
             PermissionCard("Notifications", "Shows engine status while automation runs.", notif) {
                 notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            PermissionCard(
+                "Modify system settings",
+                "Allows FlowPilot to change system settings such as Auto-rotate. Grant in Android special access settings.",
+                writeSettings,
+            ) {
+                val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                }
+                try {
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                }
             }
             PermissionCard(
                 "Battery restrictions",

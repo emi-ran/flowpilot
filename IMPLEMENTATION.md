@@ -8,7 +8,7 @@ minSdk 26, JDK 17.
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
 battery above | screen on | screen off | scheduled time] DO one or more [NFC on | NFC off | Battery Saver on |
-Battery Saver off | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+Battery Saver off | Auto-rotate on | Auto-rotate off | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager and charger/battery transitions via Android broadcasts, evaluates enabled rules, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -17,9 +17,13 @@ each schedule occurrence once, and restarts on boot/app update when the engine-s
 | Action            | Plain app           | ADB (WRITE_SECURE_SETTINGS) | Shizuku             | Root    |
 |-------------------|---------------------|------------------------------|---------------------|---------|
 | Detect app        | Yes (Usage Access)  | -                            | -                   | -       |
+| Auto-rotate       | YES (WRITE_SETTINGS special access) | -                    | -                   | -       |
 | Battery Saver     | NO                  | YES (`pm grant` + write global low_power) | YES (`settings put global low_power`) | YES |
 | NFC               | NO (API 29+ removed NfcAdapter.enable) | NO (needs shell uid) | YES (`svc nfc enable|disable`) | YES |
 
+- Auto-rotate toggling modifies `Settings.System.ACCELEROMETER_ROTATION` (1 for on, 0 for off / portrait lock).
+  It uses Android's standard user-grantable special app access `android.permission.WRITE_SETTINGS` checked via
+  `Settings.System.canWrite(context)` and opened with `Settings.ACTION_MANAGE_WRITE_SETTINGS`.
 - NFC toggling is a privileged action on Android 10+; `NfcAdapter.enable()/disable()` exist but are
   restricted to system/DPC. Normal apps can only redirect the user to NFC settings. On Xiaomi 15T Pro /
   HyperOS 3, FlowPilot uses Shizuku to run `svc nfc enable|disable` as shell. `cmd nfc` crashed the target
@@ -63,6 +67,7 @@ app/src/main/java/com/flowpilot/app/
     ActionExecutor.kt                interface + dispatch
     NfcExecutor.kt                   Shizuku `svc nfc enable|disable`
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
+    AutoRotateExecutor.kt            WRITE_SETTINGS direct write to Settings.System.ACCELEROMETER_ROTATION
     NotificationExecutor.kt           visible user-configured automation alerts
     VibrationExecutor.kt              configurable waveform vibration
     SoundExecutor.kt                  selected system/custom sound playback with bounded duration
@@ -96,6 +101,10 @@ below to at-or-above an above-threshold. A level remaining beyond threshold cann
 
 ScreenStateTracker registers `ACTION_SCREEN_ON` and `ACTION_SCREEN_OFF` only while the engine runs,
 dedupes consecutive events, and does not read or replay current screen state when it starts.
+
+AutoRotateExecutor writes `Settings.System.ACCELEROMETER_ROTATION` to `1` (free rotation) or `0`
+(portrait lock), then reads back the value. It requires `android.permission.WRITE_SETTINGS` checked via
+`Settings.System.canWrite(context)` and returns explicit honest failures for permission blocks or write mismatches.
 
 NotificationExecutor posts title/body configured on the rule to `automation_alerts_v2` at high importance.
 Android preserves channel importance after creation, so channel IDs are versioned when alert behavior changes.

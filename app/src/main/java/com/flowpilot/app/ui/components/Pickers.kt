@@ -30,6 +30,9 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.PowerOff
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.RotateLeft
+import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SearchOff
@@ -290,6 +293,30 @@ fun ActionPicker(
                         icon = Icons.Default.Language,
                         iconTint = Color(0xFF4DB6AC),
                         keywords = listOf("url", "link", "web", "browser", "http", "https", "site", "open"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = ActionCategory.DISPLAY.name,
+                label = ActionCategory.DISPLAY.label,
+                icon = Icons.Default.ScreenRotation,
+                iconTint = Color(0xFF4DD0E1),
+                items = listOf(
+                    PickerItem(
+                        value = ActionType.AUTO_ROTATE_ON,
+                        title = ActionType.AUTO_ROTATE_ON.label,
+                        subtitle = "Enable automatic screen rotation based on orientation",
+                        icon = Icons.Default.ScreenRotation,
+                        iconTint = Color(0xFF4DD0E1),
+                        keywords = listOf("rotate", "rotation", "auto rotate", "orientation", "landscape", "portrait", "screen"),
+                    ),
+                    PickerItem(
+                        value = ActionType.AUTO_ROTATE_OFF,
+                        title = ActionType.AUTO_ROTATE_OFF.label,
+                        subtitle = "Lock screen orientation to portrait / disable auto-rotate",
+                        icon = Icons.Default.StayCurrentPortrait,
+                        iconTint = Color(0xFF80DEEA),
+                        keywords = listOf("rotate", "rotation", "lock rotation", "portrait lock", "orientation", "screen lock", "disable auto rotate"),
                     ),
                 ),
             ),

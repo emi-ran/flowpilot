@@ -70,7 +70,7 @@ Do not bundle unrelated features. One feature family at a time.
 3. **Play sound** (implementation complete; device smoke test pending)
    - Current notification, alarm, ringtone, or selected custom audio URI
    - Metadata duration display, 1-60 second playback limit, preview, and Stop preview
-4. **Speak text / TTS** (offline-first pre-synthesized cache implementation complete; device smoke test pending)
+4. **Speak text / TTS** (complete; Xiaomi device smoke test passed)
    - Offline voice filter (`isNetworkConnectionRequired = false`)
    - Pre-synthesis during configuration to app-private cache
    - Zero-network, zero-synthesis execution at trigger time via MediaPlayer
@@ -98,7 +98,9 @@ Each must expose its required permission or Shizuku state. Do not show success u
 5. Location services on/off
 6. Hotspot on/off
 7. Do Not Disturb on/off
-8. Auto-rotate on/off
+8. **Auto-rotate on/off** (implementation complete; target ADB tested, app device smoke test pending)
+    - `Settings.System.ACCELEROMETER_ROTATION` write (1 = on, 0 = off / portrait lock)
+    - Requires user-grantable `android.permission.WRITE_SETTINGS` special access (`Settings.System.canWrite(context)`)
 9. Dark theme on/off
 10. Sound profile
     - Silent
@@ -122,11 +124,10 @@ Each must expose its required permission or Shizuku state. Do not show success u
 3. **Screen and sound device smoke tests**
    - Confirm screen on/off rules run only after a new display transition.
    - Confirm system/custom sounds honor selected 1-60 second duration and Stop preview.
-4. **Speak text (offline TTS) device smoke test**
-    - Confirm offline voice filtering and synthesis in UI.
-    - Search Turkish by `Türkçe`, `Turkish`, `tr`, or `tr-TR`; hold a voice row to preview without selecting it.
-    - Confirm picker returns to selected voice and empty-message hold shows its instruction.
-    - Confirm saved rule plays cached audio offline upon trigger.
+4. **Auto-rotate app-path device smoke test**
+    - Grant Modify system settings to FlowPilot.
+    - Trigger Auto-rotate off then on; confirm quick settings state and phone orientation behavior.
+    - Deny special access and confirm rule reports failure instead of success.
 5. **HTTP webhook action**
     - Add method, headers, body, bounded timeout, redacted secrets, and explicit response result.
 6. **Alarm/timer action**

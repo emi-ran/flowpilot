@@ -7,6 +7,7 @@ import com.flowpilot.app.data.model.ActionType
 class ActionDispatcher private constructor(
     private val nfc: NfcExecutor,
     private val powerSaver: PowerSaverExecutor,
+    private val autoRotate: AutoRotateExecutor,
     private val notification: NotificationExecutor,
     private val vibration: VibrationExecutor,
     private val sound: SoundExecutor,
@@ -15,7 +16,7 @@ class ActionDispatcher private constructor(
     private val tts: TtsExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
-        listOf(nfc, powerSaver, notification, vibration, sound, mediaVolume, launcher, tts).flatMap { e -> e.supportedTypes.map { it to e } }.toMap()
+        listOf(nfc, powerSaver, autoRotate, notification, vibration, sound, mediaVolume, launcher, tts).flatMap { e -> e.supportedTypes.map { it to e } }.toMap()
     }
 
     fun execute(action: ActionType, parameters: ActionParameters = ActionParameters()): ActionResult {
@@ -32,6 +33,7 @@ class ActionDispatcher private constructor(
                 instance ?: ActionDispatcher(
                     NfcExecutor(ShizukuShell.instance),
                     PowerSaverExecutor(context.applicationContext, ShizukuShell.instance),
+                    AutoRotateExecutor(context.applicationContext),
                     NotificationExecutor(context.applicationContext),
                     VibrationExecutor(context.applicationContext),
                     SoundExecutor(context.applicationContext),
