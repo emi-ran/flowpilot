@@ -84,6 +84,11 @@ class AutomationRepository(private val context: Context) {
         alarmMessage: String = "",
         timerDurationSeconds: Int = 300,
         timerMessage: String = "",
+        webhookMethod: String = "POST",
+        webhookUrl: String = "",
+        webhookHeaders: String = "",
+        webhookBody: String = "",
+        webhookTimeoutSeconds: Int = 10,
         id: String = UUID.randomUUID().toString(),
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
@@ -141,6 +146,11 @@ class AutomationRepository(private val context: Context) {
             alarmMessage = alarmMessage,
             timerDurationSeconds = timerDurationSeconds,
             timerMessage = timerMessage,
+            webhookMethod = webhookMethod,
+            webhookUrl = webhookUrl,
+            webhookHeaders = webhookHeaders,
+            webhookBody = webhookBody,
+            webhookTimeoutSeconds = webhookTimeoutSeconds,
             action = primaryAction,
             actions = actions,
             createdAt = System.currentTimeMillis(),

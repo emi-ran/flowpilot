@@ -173,6 +173,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         alarmMessage: String = "",
         timerDurationSeconds: Int = 300,
         timerMessage: String = "",
+        webhookMethod: String = "POST",
+        webhookUrl: String = "",
+        webhookHeaders: String = "",
+        webhookBody: String = "",
+        webhookTimeoutSeconds: Int = 10,
         ruleId: String = UUID.randomUUID().toString(),
     ) {
         viewModelScope.launch {
@@ -212,6 +217,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 alarmMessage = alarmMessage,
                 timerDurationSeconds = timerDurationSeconds,
                 timerMessage = timerMessage,
+                webhookMethod = webhookMethod,
+                webhookUrl = webhookUrl,
+                webhookHeaders = webhookHeaders,
+                webhookBody = webhookBody,
+                webhookTimeoutSeconds = webhookTimeoutSeconds,
                 id = ruleId,
             )
             startEngine()

@@ -39,6 +39,7 @@ import com.flowpilot.app.actions.SoundExecutor
 import com.flowpilot.app.actions.TtsExecutor
 import com.flowpilot.app.actions.TtsManager
 import com.flowpilot.app.actions.VibrationExecutor
+import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.ActionPicker
 import com.flowpilot.app.ui.components.AppPicker
@@ -81,6 +82,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var showAlarmTimePicker by remember { mutableStateOf(false) }
     var timerDurationSeconds by remember(initialRule.id) { mutableIntStateOf(initialRule.timerDurationSeconds) }
     var timerMessage by remember(initialRule.id) { mutableStateOf(initialRule.timerMessage) }
+    var webhookMethod by remember(initialRule.id) { mutableStateOf(initialRule.webhookMethod) }
+    var webhookUrl by remember(initialRule.id) { mutableStateOf(initialRule.webhookUrl) }
+    var webhookHeaders by remember(initialRule.id) { mutableStateOf(initialRule.webhookHeaders) }
+    var webhookBody by remember(initialRule.id) { mutableStateOf(initialRule.webhookBody) }
+    var webhookTimeoutSeconds by remember(initialRule.id) { mutableIntStateOf(initialRule.webhookTimeoutSeconds) }
     var ttsText by remember(initialRule.id) { mutableStateOf(initialRule.ttsText) }
     var ttsVoiceName by remember(initialRule.id) { mutableStateOf(initialRule.ttsVoiceName) }
     var ttsSpeechRate by remember(initialRule.id) { mutableFloatStateOf(initialRule.ttsSpeechRate) }
@@ -407,6 +413,20 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     setMessage = { timerMessage = it },
                 )
             }
+            if (ActionType.HTTP_WEBHOOK in actions) {
+                WebhookSettings(
+                    method = webhookMethod,
+                    url = webhookUrl,
+                    headers = webhookHeaders,
+                    body = webhookBody,
+                    timeoutSeconds = webhookTimeoutSeconds,
+                    setMethod = { webhookMethod = it },
+                    setUrl = { webhookUrl = it },
+                    setHeaders = { webhookHeaders = it },
+                    setBody = { webhookBody = it },
+                    setTimeoutSeconds = { webhookTimeoutSeconds = it },
+                )
+            }
 
             OutlinedTextField(
                 value = name,
@@ -473,6 +493,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 alarmMessage = alarmMessage,
                                 timerDurationSeconds = timerDurationSeconds,
                                 timerMessage = timerMessage,
+                                webhookMethod = webhookMethod,
+                                webhookUrl = webhookUrl,
+                                webhookHeaders = webhookHeaders,
+                                webhookBody = webhookBody,
+                                webhookTimeoutSeconds = webhookTimeoutSeconds,
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
                             )
@@ -486,6 +511,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                             (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
+                            (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || (ttsAudioFileName.isNotEmpty() && ttsManager.getCacheFile(ttsAudioFileName)?.exists() == true && ttsAudioFileName == ttsManager.computeCacheFileName(initialRule.id, ttsText.trim(), ttsVoiceName, ttsSpeechRate))) &&
                             actions.isNotEmpty(),

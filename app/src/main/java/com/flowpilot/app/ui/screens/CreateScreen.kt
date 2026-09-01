@@ -36,11 +36,12 @@ import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.data.model.SoundPreset
+import com.flowpilot.app.actions.ActionParameters
 import com.flowpilot.app.actions.SoundExecutor
 import com.flowpilot.app.actions.TtsExecutor
 import com.flowpilot.app.actions.TtsManager
-import com.flowpilot.app.actions.ActionParameters
 import com.flowpilot.app.actions.VibrationExecutor
+import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.ActionPicker
 import com.flowpilot.app.ui.components.AppPicker
@@ -83,6 +84,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var showAlarmTimePicker by remember { mutableStateOf(false) }
     var timerDurationSeconds by remember { mutableIntStateOf(300) }
     var timerMessage by remember { mutableStateOf("") }
+    var webhookMethod by remember { mutableStateOf("POST") }
+    var webhookUrl by remember { mutableStateOf("") }
+    var webhookHeaders by remember { mutableStateOf("") }
+    var webhookBody by remember { mutableStateOf("") }
+    var webhookTimeoutSeconds by remember { mutableIntStateOf(10) }
     val newRuleId = remember { java.util.UUID.randomUUID().toString() }
     var ttsText by remember { mutableStateOf("") }
     var ttsVoiceName by remember { mutableStateOf("") }
@@ -356,6 +362,20 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     setMessage = { timerMessage = it },
                 )
             }
+            if (ActionType.HTTP_WEBHOOK in actions) {
+                WebhookSettings(
+                    method = webhookMethod,
+                    url = webhookUrl,
+                    headers = webhookHeaders,
+                    body = webhookBody,
+                    timeoutSeconds = webhookTimeoutSeconds,
+                    setMethod = { webhookMethod = it },
+                    setUrl = { webhookUrl = it },
+                    setHeaders = { webhookHeaders = it },
+                    setBody = { webhookBody = it },
+                    setTimeoutSeconds = { webhookTimeoutSeconds = it },
+                )
+            }
 
             OutlinedTextField(
                 value = name,
@@ -406,6 +426,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             alarmMessage = alarmMessage,
                             timerDurationSeconds = timerDurationSeconds,
                             timerMessage = timerMessage,
+                            webhookMethod = webhookMethod,
+                            webhookUrl = webhookUrl,
+                            webhookHeaders = webhookHeaders,
+                            webhookBody = webhookBody,
+                            webhookTimeoutSeconds = webhookTimeoutSeconds,
                             ruleId = newRuleId,
                         )
                         done()
@@ -417,6 +442,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
+                            (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || (ttsAudioFileName.isNotEmpty() && ttsManager.getCacheFile(ttsAudioFileName)?.exists() == true && ttsAudioFileName == ttsManager.computeCacheFileName(newRuleId, ttsText.trim(), ttsVoiceName, ttsSpeechRate))) &&
                             actions.isNotEmpty(),
@@ -461,6 +487,82 @@ fun NotificationTriggerSettings(
         shape = RoundedCornerShape(16.dp),
         label = { Text("Keyword filter (optional, case-insensitive)") },
         singleLine = true,
+    )
+}
+
+@Composable
+fun WebhookSettings(
+    method: String,
+    url: String,
+    headers: String,
+    body: String,
+    timeoutSeconds: Int,
+    setMethod: (String) -> Unit,
+    setUrl: (String) -> Unit,
+    setHeaders: (String) -> Unit,
+    setBody: (String) -> Unit,
+    setTimeoutSeconds: (Int) -> Unit,
+) {
+    Text("HTTP Webhook", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+
+    val methods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD")
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(top = 8.dp),
+    ) {
+        methods.forEach { m ->
+            FilterChip(
+                selected = method.equals(m, ignoreCase = true),
+                onClick = { setMethod(m) },
+                label = { Text(m) },
+            )
+        }
+    }
+
+    OutlinedTextField(
+        value = url,
+        onValueChange = setUrl,
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        label = { Text("URL (https://example.com/api)") },
+        singleLine = true,
+    )
+
+    val headerError = WebhookExecutor.validateHeaders(headers)
+    OutlinedTextField(
+        value = headers,
+        onValueChange = setHeaders,
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        label = { Text("Headers (Key: Value, one per line)") },
+        placeholder = { Text("Content-Type: application/json\nAuthorization: Bearer token") },
+        isError = headerError != null,
+        supportingText = headerError?.let { err ->
+            { Text(text = err, color = MaterialTheme.colorScheme.error) }
+        },
+        minLines = 2,
+    )
+
+    if (method.uppercase() in listOf("POST", "PUT", "PATCH")) {
+        OutlinedTextField(
+            value = body,
+            onValueChange = setBody,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            label = { Text("Request Body") },
+            placeholder = { Text("{\"event\": \"automation_triggered\"}") },
+            minLines = 3,
+        )
+    }
+
+    Text("Timeout  ${timeoutSeconds}s", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
+    Slider(
+        value = timeoutSeconds.toFloat(),
+        onValueChange = { setTimeoutSeconds(it.toInt().coerceIn(1, 60)) },
+        valueRange = 1f..60f,
+        steps = 58,
+        modifier = Modifier.padding(top = 4.dp),
     )
 }
 

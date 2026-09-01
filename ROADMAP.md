@@ -65,7 +65,7 @@ Do not bundle unrelated features. One feature family at a time.
 
 ### Phase 1 — App-level actions
 
-1. **HTTP webhook**
+1. **HTTP webhook** (implementation complete; unit tests added, device smoke test pending)
    - Home Assistant
    - ntfy
    - Discord webhook
@@ -141,8 +141,8 @@ Each must expose its required permission or Shizuku state. Do not show success u
     - Grant Modify system settings to FlowPilot.
     - Trigger Auto-rotate off then on; confirm quick settings state and phone orientation behavior.
     - Deny special access and confirm rule reports failure instead of success.
-5. **HTTP webhook action**
-    - Add method, headers, body, bounded timeout, redacted secrets, and explicit response result.
+5. **HTTP webhook action device smoke test**
+    - Trigger webhook rule with test endpoint and verify 2xx response, payload dispatch, and timeout/error handling on device.
 6. **DND device smoke test**
     - Verify DND on/off transitions and permission error path on Xiaomi 15T Pro / HyperOS 3.
 7. **Headset triggers**

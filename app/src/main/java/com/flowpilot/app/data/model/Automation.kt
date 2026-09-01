@@ -63,7 +63,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     CREATE_ALARM("Create alarm", ActionCategory.CLOCK, CapabilityRequirement.NONE),
     START_TIMER("Start timer", ActionCategory.CLOCK, CapabilityRequirement.NONE),
     LAUNCH_APP("Launch app", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
-    OPEN_URL("Open URL", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE);
+    OPEN_URL("Open URL", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
+    HTTP_WEBHOOK("Send HTTP webhook", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE);
 
     companion object {
         fun fromId(id: String): ActionType? = entries.firstOrNull { it.name == id }
@@ -197,6 +198,11 @@ data class Automation(
     val alarmMessage: String = "",
     val timerDurationSeconds: Int = 300,
     val timerMessage: String = "",
+    val webhookMethod: String = "POST",
+    val webhookUrl: String = "",
+    val webhookHeaders: String = "",
+    val webhookBody: String = "",
+    val webhookTimeoutSeconds: Int = 10,
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     val createdAt: Long,

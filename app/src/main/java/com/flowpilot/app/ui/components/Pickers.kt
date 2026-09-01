@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DoNotDisturb
 import androidx.compose.material.icons.filled.DoNotDisturbOff
 import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.Http
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Nfc
@@ -382,6 +383,14 @@ fun ActionPicker(
                         icon = Icons.Default.Language,
                         iconTint = Color(0xFF4DB6AC),
                         keywords = listOf("url", "link", "web", "browser", "http", "https", "site", "open"),
+                    ),
+                    PickerItem(
+                        value = ActionType.HTTP_WEBHOOK,
+                        title = ActionType.HTTP_WEBHOOK.label,
+                        subtitle = "Send HTTP request (Home Assistant, Discord, ntfy)",
+                        icon = Icons.Default.Http,
+                        iconTint = Color(0xFF26A69A),
+                        keywords = listOf("webhook", "http", "https", "post", "get", "api", "rest", "ha", "home assistant", "discord", "ntfy", "curl"),
                     ),
                 ),
             ),

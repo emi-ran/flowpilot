@@ -8,7 +8,7 @@ minSdk 26, JDK 17.
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
 battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | notification received] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [NFC on | NFC off | Battery Saver on |
-Battery Saver off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | create alarm | start timer | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+Battery Saver off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -87,6 +87,7 @@ app/src/main/java/com/flowpilot/app/
     SoundExecutor.kt                  selected system/custom sound playback with bounded duration
     MediaVolumeExecutor.kt            percentage-to-music-stream volume mapping
     LaunchExecutor.kt                 selected app or validated HTTP(S) URL activity launch
+    WebhookExecutor.kt                outbound HTTP/HTTPS webhook request with bounded timeout & secret redaction
     TtsManager.kt                     offline voice discovery and pre-synthesized cache management
     TtsExecutor.kt                    offline cached TTS playback
     ShizukuShell.kt                  Shizuku connection + run shell command via UserService
@@ -147,6 +148,8 @@ LaunchExecutor uses a selected package's launcher intent or `ACTION_VIEW` for an
 URL. Both intents carry `FLAG_ACTIVITY_NEW_TASK` because the automation engine runs outside an activity.
 Launch failure is logged and returned to the engine; target app removal, missing URL resolver, and OEM
 background-activity restrictions remain explicit failure cases.
+
+WebhookExecutor dispatches HTTP/HTTPS requests via standard `HttpURLConnection`. Validates strict `http` or `https` schemes with host, enforces bounded timeouts (1-60s), sets headers and request body, and considers strictly HTTP 2xx status codes as success. Sensitive headers (`Authorization`, `Cookie`, tokens, secrets) and sensitive parameter values are redacted from log entries and execution failure messages to prevent credential leakage.
 
 MediaVolumeExecutor converts stored 0-100% configuration to the current device's `STREAM_MUSIC` range,
 sets volume without a system UI overlay, then reads the resulting level. A mismatch reports failure rather

@@ -36,7 +36,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), notification received (selected app + optional keyword), or scheduled time -> one or more NFC on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Create alarm, Start timer, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), notification received (selected app + optional keyword), or scheduled time -> one or more NFC on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Rule conditions (AND semantics): battery below/above, charger connected/disconnected, screen on/off, Wi-Fi connected/disconnected. Rules execute only when trigger matches AND all configured conditions match current live state.
 - Installed launchable app picker with search, display name, package ID internally.
 - Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, and NFC.
@@ -62,8 +62,9 @@ Target / compile SDK: 36 (Android 16)
     - Create alarm: dispatches `AlarmClock.ACTION_SET_ALARM` with hour, minute, and optional label to the system Clock app (`FLAG_ACTIVITY_NEW_TASK`).
     - Start timer: dispatches `AlarmClock.ACTION_SET_TIMER` with bounded duration (1s-24h), optional label, and `EXTRA_SKIP_UI = true` to start the timer in the background without opening the Clock app UI (`FLAG_ACTIVITY_NEW_TASK`).
     - Launch app: starts selected installed launchable app.
-   - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
-   - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
+    - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
+    - Send HTTP webhook: dispatches outbound HTTP/HTTPS request (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, body, bounded 1-60s timeout, secret redaction, and strict 2xx success verification.
+    - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
    - Play sound: selected current notification, alarm, ringtone, or a user-selected audio file, limited to selected first 1-60 seconds with preview and stop controls.
     - Speak text (TTS): offline-first pre-synthesized audio caching to app-private storage with voice filter (`isNetworkConnectionRequired = false`), rate adjustment, preview/stop lifecycle, and offline playback during rule execution. Search voices by name or language (`Türkçe`, `Turkish`, `tr-TR`); hold a voice row to preview it without selecting it.
 - Unit tests for rule matching, schedule matching, foreground reduction, action executors, and disabled rules.
@@ -211,6 +212,7 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Notification-received trigger passed Xiaomi 15T Pro / HyperOS 3 device smoke tests with selected-app and keyword matching.
 - Wi-Fi connected/disconnected triggers passed Xiaomi 15T Pro / HyperOS 3 device smoke tests, including an SSID selected through the nearby-network picker while cellular remained the default network.
 - Do Not Disturb on/off (Notification Policy Access) implementation complete with unit tests; device smoke test remains pending.
+- Send HTTP webhook action implementation complete with unit tests; device smoke test remains pending.
 
 ## Next validation
 

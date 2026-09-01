@@ -249,6 +249,11 @@ class AutomationEngine(
                             alarmMessage = rule.alarmMessage,
                             timerDurationSeconds = rule.timerDurationSeconds,
                             timerMessage = rule.timerMessage,
+                            webhookMethod = rule.webhookMethod,
+                            webhookUrl = rule.webhookUrl,
+                            webhookHeaders = rule.webhookHeaders,
+                            webhookBody = rule.webhookBody,
+                            webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
                         ),
                     )
                     Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")

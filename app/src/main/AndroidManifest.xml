@@ -24,6 +24,9 @@
     <!-- Normal permission for user-configured vibration actions. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Internet permission for HTTP webhook actions. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Wi-Fi state, nearby devices (Android 13+), and fine location (required by Android 9+ to read Wi-Fi SSID / perform scans). -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />

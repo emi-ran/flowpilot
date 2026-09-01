@@ -31,6 +31,11 @@ data class ActionParameters(
     val alarmMessage: String = "",
     val timerDurationSeconds: Int = 300,
     val timerMessage: String = "",
+    val webhookMethod: String = "POST",
+    val webhookUrl: String = "",
+    val webhookHeaders: String = "",
+    val webhookBody: String = "",
+    val webhookTimeoutSeconds: Int = 10,
 )
 
 /** A capability-aware executor for one family of system actions. */
