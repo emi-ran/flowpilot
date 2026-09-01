@@ -65,7 +65,7 @@ Do not bundle unrelated features. One feature family at a time.
 
 ### Phase 1 — App-level actions
 
-1. **HTTP webhook** (implementation complete; unit tests added, device smoke test pending)
+1. **HTTP webhook** (complete; Xiaomi device smoke test passed)
    - Home Assistant
    - ntfy
    - Discord webhook
@@ -74,7 +74,7 @@ Do not bundle unrelated features. One feature family at a time.
 2. **Show notification** (complete)
     - Per-rule title and message
     - Android 13+ notification permission check and visible high-importance `automation_alerts_v2` channel
-3. **Play sound** (implementation complete; device smoke test pending)
+3. **Play sound** (complete; Xiaomi device smoke test passed)
    - Current notification, alarm, ringtone, or selected custom audio URI
    - Metadata duration display, 1-60 second playback limit, preview, and Stop preview
 4. **Speak text / TTS** (complete; Xiaomi device smoke test passed)
@@ -82,7 +82,7 @@ Do not bundle unrelated features. One feature family at a time.
    - Pre-synthesis during configuration to app-private cache
    - Zero-network, zero-synthesis execution at trigger time via MediaPlayer
    - Automatic orphan cache cleanup
-5. **Vibrate** (implementation complete; device smoke test pending)
+5. **Vibrate** (complete; Xiaomi device smoke test passed)
 6. **Launch app** (complete)
     - Selected launchable app, separate from app trigger picker
     - Verified from charger-connected and app-opened rules
@@ -92,7 +92,7 @@ Do not bundle unrelated features. One feature family at a time.
 8. **Create alarm or timer** (complete; Xiaomi device smoke test passed)
    - Alarm opens system Clock UI for confirmation.
    - Timer starts its countdown without opening Clock UI (`AlarmClock.EXTRA_SKIP_UI = true`).
-9. **Set media volume** (implementation complete; device smoke test pending)
+9. **Set media volume** (complete; Xiaomi device smoke test passed)
     - Configurable 0-100% music-stream level
     - Uses `AudioManager.setStreamVolume` and verifies resulting level
 
@@ -106,10 +106,10 @@ Each must expose its required permission or Shizuku state. Do not show success u
 4. Airplane mode on/off
 5. Location services on/off
 6. Hotspot on/off
-7. **Do Not Disturb on/off** (implementation complete; unit tests added, device smoke test pending)
+7. **Do Not Disturb on/off** (complete; Xiaomi device smoke test passed)
    - `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` / `INTERRUPTION_FILTER_ALL`)
    - Requires user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY` special access
-8. **Auto-rotate on/off** (implementation complete; target ADB tested, app device smoke test pending)
+8. **Auto-rotate on/off** (complete; Xiaomi device smoke test passed)
     - `Settings.System.ACCELEROMETER_ROTATION` write (1 = on, 0 = off / portrait lock)
     - Requires user-grantable `android.permission.WRITE_SETTINGS` special access (`Settings.System.canWrite(context)`)
 9. **Create alarm or timer** (complete; Xiaomi device smoke test passed)
@@ -127,29 +127,19 @@ Each must expose its required permission or Shizuku state. Do not show success u
 
 ## Proposed Implementation Order
 
-1. **Media volume device smoke test**
-    - Create `Charger connected -> Set media volume -> 20%`.
-    - Reconnect charger and confirm Xiaomi media volume changes to 20%.
-    - Repeat with 0% and 100%; verify a blocked change reports failure.
-2. **Vibration device smoke test**
-    - Verify every preset, duration, and strength control on device.
-    - Confirm selected duration is total waveform duration.
-3. **Screen and sound device smoke tests**
-   - Confirm screen on/off rules run only after a new display transition.
-   - Confirm system/custom sounds honor selected 1-60 second duration and Stop preview.
-4. **Auto-rotate app-path device smoke test**
-    - Grant Modify system settings to FlowPilot.
-    - Trigger Auto-rotate off then on; confirm quick settings state and phone orientation behavior.
-    - Deny special access and confirm rule reports failure instead of success.
-5. **HTTP webhook action device smoke test**
-    - Trigger webhook rule with test endpoint and verify 2xx response, payload dispatch, and timeout/error handling on device.
-6. **DND device smoke test**
-    - Verify DND on/off transitions and permission error path on Xiaomi 15T Pro / HyperOS 3.
-7. **Headset triggers**
+1. **Screen device smoke test**
+    - Confirm screen on/off rules run only after a new display transition.
+2. **HTTP webhook action device smoke test**
+     - Trigger webhook rule with test endpoint and verify 2xx response, payload dispatch, and timeout/error handling on device.
+3. **Permission denial paths**
+     - Deny Modify system settings and Do Not Disturb access; confirm Auto-rotate and DND report failure instead of success.
+4. **NFC and Battery Saver device action paths**
+     - Verify each supported permission path and failure behavior after permission changes.
+5. **Headset triggers**
    - Add wired and Bluetooth audio state one family at a time with startup baseline and duplicate-event tests.
-8. **Wi-Fi and Bluetooth device/context triggers**
+6. **Wi-Fi and Bluetooth device/context triggers**
     - Add selected Bluetooth-device persistence and unavailable-permission states.
-9. **HyperOS 3 system controls**
+7. **HyperOS 3 system controls**
     - One control at a time; device-state evidence required before marking complete.
 
 ## Acceptance Gate

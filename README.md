@@ -203,29 +203,26 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Show notification rule verified on device, including visible `automation_alerts_v2` heads-up channel.
 - Launch app verified from charger-connected and app-opened rules.
 - Open URL verified on Xiaomi 15T Pro / HyperOS 3.
-- Vibration implementation builds and has unit coverage; device smoke test remains pending.
-- Media volume implementation builds and has unit coverage; device smoke test remains pending.
-- Play sound and screen on/off implementations build and have unit coverage; device smoke tests remain pending.
+- Vibration implementation has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
+- Media volume implementation has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
+- Play sound passed Xiaomi 15T Pro / HyperOS 3 device smoke testing; screen on/off device smoke testing remains pending.
 - Speak text (offline TTS) builds, unit tests, and Xiaomi device smoke test passed.
-- Auto-rotate on/off (WRITE_SETTINGS) implementation builds and has unit coverage; ADB validation confirmed target device values (0 and 1), while FlowPilot app path device smoke test remains pending.
+- Auto-rotate on/off (WRITE_SETTINGS) implementation has unit coverage; ADB validation confirmed target device values (0 and 1), and FlowPilot app path passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - Clock create alarm and start timer passed Xiaomi 15T Pro / HyperOS 3 device smoke tests. Start timer uses `EXTRA_SKIP_UI = true` and starts its countdown without opening Clock UI.
 - Rule conditions, including AND matching of app, battery, charger, screen, and Wi-Fi state, passed Xiaomi 15T Pro / HyperOS 3 device smoke tests.
 - Notification-received trigger passed Xiaomi 15T Pro / HyperOS 3 device smoke tests with selected-app and keyword matching.
 - Wi-Fi connected/disconnected triggers passed Xiaomi 15T Pro / HyperOS 3 device smoke tests, including an SSID selected through the nearby-network picker while cellular remained the default network.
-- Do Not Disturb on/off (Notification Policy Access) implementation complete with unit tests; device smoke test remains pending.
-- Send HTTP webhook action implementation complete with unit tests; device smoke test remains pending.
+- Do Not Disturb on/off (Notification Policy Access) implementation has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
+- Send HTTP webhook action has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 
 ## Next validation
 
-1. Create `Charger connected -> Set media volume -> 20%`, reconnect charger, and confirm Xiaomi media volume reaches 20%.
-2. Repeat media-volume test at 0% and 100%.
-3. Create a screen on/off rule with notification, vibration, or sound and confirm it fires only after a new screen-state transition.
-4. Verify Play sound presets, custom file, selected duration, and Stop preview on device.
-5. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
+1. Create a screen on/off rule with notification, vibration, or sound and confirm it fires only after a new screen-state transition.
+2. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
    - Search for Turkish with `Türkçe`, `Turkish`, `tr`, or `tr-TR`.
    - Hold a voice row to preview it without changing selection; reopen picker and confirm it returns to selected voice.
-6. Grant Do Not Disturb access, trigger DND on then off, and confirm both Xiaomi system states change. Deny access and confirm the rule reports failure.
-7. NFC and Battery Saver device action paths still require per-action verification after permission changes.
+3. Deny Do Not Disturb access and confirm the rule reports failure instead of success.
+4. NFC and Battery Saver device action paths still require per-action verification after permission changes.
 
 ## License / distribution note
 
