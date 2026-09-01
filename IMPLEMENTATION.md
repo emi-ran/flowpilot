@@ -60,8 +60,9 @@ app/src/main/java/com/flowpilot/app/
       SettingsScreen.kt
     components/                      toggle, cards, picker controls
   data/
-    model/Automation.kt              kotlinx.serialization data model
-    AutomationRepository.kt          DataStore persistence (Flow)
+    model/Automation.kt              kotlinx.serialization data model with encrypted secret mapping
+    security/SecretCipher.kt         Android Keystore AES-256-GCM authenticated encryption at rest
+    AutomationRepository.kt          DataStore persistence (Flow) with automatic crypto migration
   engine/
     AutomationEngine.kt              foreground/charger/battery/schedule evaluate -> execute loop + dedupe
     RuleEvaluator.kt                 pure logic (unit-testable)

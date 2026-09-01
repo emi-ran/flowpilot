@@ -1,6 +1,7 @@
 package com.flowpilot.app.data.model
 
 import kotlinx.serialization.Serializable
+import com.flowpilot.app.data.security.SecretCipher
 
 /**
  * Where / how an action can be executed, tied to the permission/access it needs.
@@ -213,4 +214,32 @@ data class Automation(
 
     val actionSummary: String
         get() = effectiveActions.joinToString(" + ") { it.label }
+
+    /**
+     * Returns a copy with sensitive webhook fields encrypted for storage.
+     */
+    fun withEncryptedSecrets(): Automation {
+        val needsEncryption = webhookUrl.isNotEmpty() || webhookHeaders.isNotEmpty() || webhookBody.isNotEmpty()
+        if (!needsEncryption) return this
+        return copy(
+            webhookUrl = SecretCipher.encrypt(webhookUrl),
+            webhookHeaders = SecretCipher.encrypt(webhookHeaders),
+            webhookBody = SecretCipher.encrypt(webhookBody),
+        )
+    }
+
+    /**
+     * Returns a copy with sensitive webhook fields decrypted for runtime/UI usage.
+     */
+    fun withDecryptedSecrets(): Automation {
+        val needsDecryption = SecretCipher.isEncrypted(webhookUrl) ||
+            SecretCipher.isEncrypted(webhookHeaders) ||
+            SecretCipher.isEncrypted(webhookBody)
+        if (!needsDecryption) return this
+        return copy(
+            webhookUrl = SecretCipher.decrypt(webhookUrl),
+            webhookHeaders = SecretCipher.decrypt(webhookHeaders),
+            webhookBody = SecretCipher.decrypt(webhookBody),
+        )
+    }
 }

@@ -63,7 +63,8 @@ Target / compile SDK: 36 (Android 16)
     - Start timer: dispatches `AlarmClock.ACTION_SET_TIMER` with bounded duration (1s-24h), optional label, and `EXTRA_SKIP_UI = true` to start the timer in the background without opening the Clock app UI (`FLAG_ACTIVITY_NEW_TASK`).
     - Launch app: starts selected installed launchable app.
     - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
-    - Send HTTP webhook: dispatches outbound HTTP/HTTPS request (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, body, bounded 1-60s timeout, secret redaction, and strict 2xx success verification.
+    - Send HTTP webhook: dispatches outbound HTTP/HTTPS request (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, body, bounded 1-60s timeout, secret redaction, strict 2xx success verification, and at-rest AES-256-GCM Keystore encryption for webhook URLs, headers, and payloads.
+- Security & data protection: Android app backup is disabled (`android:allowBackup="false"`) to prevent credential leakage via ADB/cloud backup snapshots. Keystore keys remain on-device and never export to backups. In-app data migration transparently upgrades legacy plaintext webhook configurations on load and save.
     - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
    - Play sound: selected current notification, alarm, ringtone, or a user-selected audio file, limited to selected first 1-60 seconds with preview and stop controls.
     - Speak text (TTS): offline-first pre-synthesized audio caching to app-private storage with voice filter (`isNetworkConnectionRequired = false`), rate adjustment, preview/stop lifecycle, and offline playback during rule execution. Search voices by name or language (`Türkçe`, `Turkish`, `tr-TR`); hold a voice row to preview it without selecting it.

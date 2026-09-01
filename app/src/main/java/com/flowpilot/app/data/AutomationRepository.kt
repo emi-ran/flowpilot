@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.security.SecretCipher
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -18,6 +19,9 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 /** Persists automation rules as JSON in a single DataStore preferences key. */
 class AutomationRepository(private val context: Context) {
+
+    internal val rawDataStore: DataStore<Preferences>
+        get() = context.dataStore
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -40,11 +44,8 @@ class AutomationRepository(private val context: Context) {
 
     val automations: Flow<List<Automation>> = context.dataStore.data.map { prefs ->
         prefs[key]?.let { raw ->
-            try {
-                json.decodeFromString(listSerializer, raw)
-            } catch (_: Exception) {
-                emptyList()
-            }
+            val list = safeDecode(raw)
+            list.map { it.withDecryptedSecrets() }
         } ?: emptyList()
     }
 
@@ -157,7 +158,9 @@ class AutomationRepository(private val context: Context) {
         )
         context.dataStore.edit { prefs ->
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
-            prefs[key] = json.encodeToString(listSerializer, current + rule)
+            val encryptedRule = rule.withEncryptedSecrets()
+            val updated = current.map { it.withEncryptedSecrets() } + encryptedRule
+            prefs[key] = json.encodeToString(listSerializer, updated)
         }
         cleanupOrphanTtsFiles()
         return rule
@@ -166,7 +169,10 @@ class AutomationRepository(private val context: Context) {
     suspend fun update(rule: Automation) {
         context.dataStore.edit { prefs ->
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
-            val updated = current.map { if (it.id == rule.id) rule else it }
+            val encryptedRule = rule.withEncryptedSecrets()
+            val updated = current.map {
+                if (it.id == rule.id) encryptedRule else it.withEncryptedSecrets()
+            }
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
         cleanupOrphanTtsFiles()
@@ -175,7 +181,10 @@ class AutomationRepository(private val context: Context) {
     suspend fun patchLastTriggeredAt(id: String, at: Long) {
         context.dataStore.edit { prefs ->
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
-            val updated = current.map { if (it.id == id) it.copy(lastTriggeredAt = at) else it }
+            val updated = current.map {
+                val base = if (it.id == id) it.copy(lastTriggeredAt = at) else it
+                base.withEncryptedSecrets()
+            }
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
     }
@@ -183,7 +192,10 @@ class AutomationRepository(private val context: Context) {
     suspend fun setEnabled(id: String, enabled: Boolean) {
         context.dataStore.edit { prefs ->
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
-            val updated = current.map { if (it.id == id) it.copy(enabled = enabled) else it }
+            val updated = current.map {
+                val base = if (it.id == id) it.copy(enabled = enabled) else it
+                base.withEncryptedSecrets()
+            }
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
     }
@@ -191,7 +203,8 @@ class AutomationRepository(private val context: Context) {
     suspend fun delete(id: String) {
         context.dataStore.edit { prefs ->
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
-            prefs[key] = json.encodeToString(listSerializer, current.filterNot { it.id == id })
+            val updated = current.filterNot { it.id == id }.map { it.withEncryptedSecrets() }
+            prefs[key] = json.encodeToString(listSerializer, updated)
         }
         cleanupOrphanTtsFiles()
     }
@@ -200,7 +213,8 @@ class AutomationRepository(private val context: Context) {
         if (ids.isEmpty()) return
         context.dataStore.edit { prefs ->
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
-            prefs[key] = json.encodeToString(listSerializer, current.filterNot { it.id in ids })
+            val updated = current.filterNot { it.id in ids }.map { it.withEncryptedSecrets() }
+            prefs[key] = json.encodeToString(listSerializer, updated)
         }
         cleanupOrphanTtsFiles()
     }
@@ -209,6 +223,22 @@ class AutomationRepository(private val context: Context) {
         json.decodeFromString(listSerializer, raw)
     } catch (_: Exception) {
         emptyList()
+    }
+
+    suspend fun migrateLegacySecretsIfNeeded() {
+        context.dataStore.edit { prefs ->
+            val raw = prefs[key] ?: return@edit
+            val list = safeDecode(raw)
+            val hasPlaintext = list.any { rule ->
+                (rule.webhookUrl.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookUrl)) ||
+                (rule.webhookHeaders.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookHeaders)) ||
+                (rule.webhookBody.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookBody))
+            }
+            if (hasPlaintext) {
+                val encryptedList = list.map { it.withEncryptedSecrets() }
+                prefs[key] = json.encodeToString(listSerializer, encryptedList)
+            }
+        }
     }
 
     private suspend fun cleanupOrphanTtsFiles() {
