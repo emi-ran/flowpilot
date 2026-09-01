@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.security.SecretCipher
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -28,8 +29,10 @@ class AutomationRepository(private val context: Context) {
         encodeDefaults = true
     }
     private val listSerializer = ListSerializer(Automation.serializer())
+    private val historySerializer = ListSerializer(ExecutionHistoryEntry.serializer())
 
     private val key = stringPreferencesKey("rules")
+    private val historyKey = stringPreferencesKey("execution_history")
     private val engineKey = androidx.datastore.preferences.core.booleanPreferencesKey("engine_enabled")
 
     val isEngineEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -47,6 +50,26 @@ class AutomationRepository(private val context: Context) {
             val list = safeDecode(raw)
             list.map { it.withDecryptedSecrets() }
         } ?: emptyList()
+    }
+
+    val executionHistory: Flow<List<ExecutionHistoryEntry>> = context.dataStore.data.map { prefs ->
+        prefs[historyKey]?.let { raw ->
+            safeDecodeHistory(raw)
+        } ?: emptyList()
+    }
+
+    suspend fun appendHistory(entry: ExecutionHistoryEntry) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[historyKey]?.let { safeDecodeHistory(it) } ?: emptyList()
+            val updated = (listOf(entry) + current).take(MAX_HISTORY_ENTRIES)
+            prefs[historyKey] = json.encodeToString(historySerializer, updated)
+        }
+    }
+
+    suspend fun clearHistory() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(historyKey)
+        }
     }
 
     suspend fun add(
@@ -223,6 +246,16 @@ class AutomationRepository(private val context: Context) {
         json.decodeFromString(listSerializer, raw)
     } catch (_: Exception) {
         emptyList()
+    }
+
+    private fun safeDecodeHistory(raw: String): List<ExecutionHistoryEntry> = try {
+        json.decodeFromString(historySerializer, raw)
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    companion object {
+        const val MAX_HISTORY_ENTRIES = 100
     }
 
     suspend fun migrateLegacySecretsIfNeeded() {

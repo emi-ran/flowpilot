@@ -17,7 +17,7 @@ import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.ui.screens.*
 
 enum class Page {
-    HOME, SETTINGS, CREATE, PERMISSIONS, DETAIL
+    HOME, SETTINGS, CREATE, PERMISSIONS, DETAIL, HISTORY
 }
 
 @Composable
@@ -52,12 +52,17 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                         settings = { page = Page.SETTINGS },
                         permissions = { permissionsReturnPage = Page.HOME; page = Page.PERMISSIONS },
                     )
-                    Page.SETTINGS -> SettingsScreen(vm) {
-                        permissionsReturnPage = Page.SETTINGS
-                        page = Page.PERMISSIONS
-                    }
+                    Page.SETTINGS -> SettingsScreen(
+                        vm = vm,
+                        permissions = {
+                            permissionsReturnPage = Page.SETTINGS
+                            page = Page.PERMISSIONS
+                        },
+                        history = { page = Page.HISTORY },
+                    )
                     Page.CREATE -> CreateScreen(vm) { page = Page.HOME }
                     Page.PERMISSIONS -> PermissionsScreen(vm) { page = permissionsReturnPage }
+                    Page.HISTORY -> HistoryScreen(vm) { page = Page.SETTINGS }
                     Page.DETAIL -> {
                         selectedRule?.let { rule ->
                             DetailScreen(vm, rule) { page = Page.HOME }

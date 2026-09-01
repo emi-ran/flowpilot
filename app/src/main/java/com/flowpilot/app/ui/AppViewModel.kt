@@ -8,15 +8,19 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.flowpilot.app.actions.ShizukuShell
 import com.flowpilot.app.data.AutomationRepository
+import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.engine.AutomationService
 import com.flowpilot.app.permission.CapabilityManager
 import com.flowpilot.app.permission.CapabilityStatus
 import com.flowpilot.app.permission.ShizukuState
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -36,6 +40,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val capabilities = CapabilityManager(app)
 
     val automations = MutableStateFlow<List<AutomationUI>>(emptyList())
+    val executionHistory: StateFlow<List<ExecutionHistoryEntry>> = repository.executionHistory
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val hasUsageAccess = MutableStateFlow(false)
     val hasWriteSettings = MutableStateFlow(false)
     val hasWriteSecureSettings = MutableStateFlow(false)
@@ -259,6 +265,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { repository.deleteMany(ids) }
     }
 
+    fun clearHistory() {
+        viewModelScope.launch { repository.clearHistory() }
+    }
+
     fun startEngine() {
         viewModelScope.launch {
             repository.setEngineEnabled(true)
@@ -326,6 +336,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             var successCount = 0
             var failureCount = 0
             val failureMessages = mutableListOf<String>()
+            val actionRecords = mutableListOf<ActionExecutionRecord>()
 
             for (action in rule.effectiveActions) {
                 val result = dispatcher.execute(action, actionParams)
@@ -336,7 +347,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     val redacted = com.flowpilot.app.actions.WebhookExecutor.redactSensitiveText(result.message)
                     failureMessages.add("${action.label}: $redacted")
                 }
+                actionRecords.add(
+                    ActionExecutionRecord.create(
+                        actionType = action,
+                        success = result.success,
+                        message = result.message,
+                    )
+                )
             }
+
+            val historyEntry = ExecutionHistoryEntry.create(
+                ruleId = rule.id,
+                ruleName = rule.name,
+                trigger = "MANUAL",
+                timestamp = System.currentTimeMillis(),
+                actions = actionRecords,
+            )
+            repository.appendHistory(historyEntry)
 
             val summary = ManualRunResult(
                 totalActions = rule.effectiveActions.size,

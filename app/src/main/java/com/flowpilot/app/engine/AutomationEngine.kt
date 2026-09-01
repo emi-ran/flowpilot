@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.flowpilot.app.actions.ActionDispatcher
 import com.flowpilot.app.data.AutomationRepository
+import com.flowpilot.app.data.model.ActionExecutionRecord
+import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.TriggerEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -255,6 +257,7 @@ class AutomationEngine(
         for (rule in rules) {
             withContext(Dispatchers.IO) {
                 var anySuccess = false
+                val actionRecords = mutableListOf<ActionExecutionRecord>()
                 for (action in rule.effectiveActions) {
                     val result = dispatcher.execute(
                         action,
@@ -291,7 +294,24 @@ class AutomationEngine(
                     if (result.success) {
                         anySuccess = true
                     }
+                    actionRecords.add(
+                        ActionExecutionRecord.create(
+                            actionType = action,
+                            success = result.success,
+                            message = result.message,
+                        )
+                    )
                 }
+
+                val historyEntry = ExecutionHistoryEntry.create(
+                    ruleId = rule.id,
+                    ruleName = rule.name,
+                    trigger = trigger?.name ?: rule.triggerEvent.name,
+                    timestamp = System.currentTimeMillis(),
+                    actions = actionRecords,
+                )
+                repository.appendHistory(historyEntry)
+
                 if (anySuccess) {
                     repository.patchLastTriggeredAt(rule.id, System.currentTimeMillis())
                 }

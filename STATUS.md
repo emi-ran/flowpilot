@@ -5,9 +5,8 @@ Last updated: 2026-09-01
 ## Build state
 
 - Debug build and unit tests pass: `.\gradlew.bat testDebugUnitTest assembleDebug --no-daemon`.
-- Latest debug APK is installed on Xiaomi 15T Pro / HyperOS 3.
-- `com.flowpilot.app` was launched after the latest APK install.
-- Current source changes are not yet committed.
+- Latest debug APK with run history builds and unit tests pass locally; no ADB target was connected for install or launch.
+- Current source changes are ready to commit.
 
 ## Device-verified features
 
@@ -15,11 +14,13 @@ Last updated: 2026-09-01
 - Notifications, app launch, URL opening, alarm, timer, offline TTS, media volume, vibration, Play sound, webhook base action, NFC, Battery Saver, Auto-rotate, Do Not Disturb, and Dark theme actions.
 - Webhook header/body template variables and unknown-token preservation.
 - Manual test run from Edit automation, including confirmation, saved-action execution, result feedback, and unchanged rule state.
+- Persistent run history for engine and manual executions: action-level outcomes, 100-entry newest-first retention, and redacted diagnostics.
 - Create/Edit keyboard behavior: keyboard opens only for focused fields, form scroll remains available, and a focused field returns above the IME when typing after manual scrolling.
 
 ## Implemented; device validation pending
 
 - Sound profile denied Notification Policy Access behavior.
+- Run history screen smoke test on Xiaomi 15T Pro / HyperOS 3.
 
 ## Current constraints
 

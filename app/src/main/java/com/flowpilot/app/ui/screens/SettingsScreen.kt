@@ -17,7 +17,11 @@ import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.FollowSwitch
 
 @Composable
-fun SettingsScreen(vm: AppViewModel, permissions: () -> Unit) {
+fun SettingsScreen(
+    vm: AppViewModel,
+    permissions: () -> Unit,
+    history: () -> Unit = {},
+) {
     val engine by vm.engineRunning.collectAsState()
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -30,7 +34,7 @@ fun SettingsScreen(vm: AppViewModel, permissions: () -> Unit) {
                 SettingRow("Dark theme", Icons.Default.DarkMode, true) {}
                 SettingRow("Run engine on device startup", Icons.Default.RocketLaunch, engine) { if (it) vm.startEngine() else vm.stopEngine() }
                 SettingRow("Advanced permissions", Icons.Default.AdminPanelSettings, null) { permissions() }
-                SettingRow("Backup / Restore", Icons.Default.CloudSync, null) {}
+                SettingRow("Run history", Icons.Default.History, null) { history() }
                 SettingRow("About", Icons.Default.Info, null) {}
             }
         }

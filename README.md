@@ -39,7 +39,8 @@ Target / compile SDK: 36 (Android 16)
 - Installed launchable app picker with search, display name, package ID internally.
 - Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, and NFC. Display includes Dark theme and Auto-rotate; Audio includes Sound profile, sound playback, media volume, and TTS.
 - Rule detail and delete.
-- Manual automation test run: in Edit automation TopAppBar, Play icon prompts confirmation (bypassing triggers/conditions, excluding unsaved edits, leaving rule state untouched), runs actions immediately on IO dispatcher with safe live system context (`trigger = MANUAL`), and displays summary feedback via Snackbar.
+- Automation run history: persistent log of rule executions (engine-triggered and manual test runs) retained up to the newest 100 entries in DataStore. Displays readable local timestamp, rule name, trigger source (`MANUAL` or trigger event name), overall execution status (Success, Partial success, Failure), and individual action outcomes. Sensitive credentials (tokens, query parameters, auth headers) in action messages are safely redacted before persistence, and action parameters/webhook payloads are never persisted in history. Users can view history from Settings -> Run history and clear it with confirmation.
+- Manual automation test run: in Edit automation TopAppBar, Play icon prompts confirmation (bypassing triggers/conditions, excluding unsaved edits, leaving rule state untouched), runs actions immediately on IO dispatcher with safe live system context (`trigger = MANUAL`), records a manual history entry, and displays summary feedback via Snackbar.
 - Persistent rules through DataStore JSON.
 - Enable/disable switches.
 - Foreground automation service with visible ongoing notification.
