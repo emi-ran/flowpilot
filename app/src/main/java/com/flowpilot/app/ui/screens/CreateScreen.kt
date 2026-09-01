@@ -45,6 +45,7 @@ import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.ActionPicker
 import com.flowpilot.app.ui.components.AppPicker
+import com.flowpilot.app.ui.components.BluetoothDevicePickerField
 import com.flowpilot.app.ui.components.SelectionRow
 import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
@@ -61,6 +62,8 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var scheduledDays by remember { mutableStateOf(emptySet<Int>()) }
     var batteryLevel by remember { mutableIntStateOf(50) }
     var wifiSsid by remember { mutableStateOf("") }
+    var bluetoothDeviceAddress by remember { mutableStateOf("") }
+    var bluetoothDeviceName by remember { mutableStateOf("") }
     var notificationAppPackage by remember { mutableStateOf("") }
     var notificationAppName by remember { mutableStateOf("") }
     var notificationKeyword by remember { mutableStateOf("") }
@@ -199,6 +202,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
             } else if (event == TriggerEvent.WIFI_CONNECTED || event == TriggerEvent.WIFI_DISCONNECTED) {
                 WifiTriggerSettings(wifiSsid) { wifiSsid = it }
+            } else if (event == TriggerEvent.BLUETOOTH_CONNECTED || event == TriggerEvent.BLUETOOTH_DISCONNECTED) {
+                BluetoothTriggerSettings(bluetoothDeviceAddress, bluetoothDeviceName) { address, deviceName ->
+                    bluetoothDeviceAddress = address
+                    bluetoothDeviceName = deviceName
+                }
             } else if (event == TriggerEvent.NOTIFICATION_RECEIVED) {
                 NotificationTriggerSettings(
                     appPackage = notificationAppPackage,
@@ -408,6 +416,8 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             scheduledDays = scheduledDays,
                             batteryLevel = batteryLevel,
                             wifiSsid = wifiSsid,
+                            bluetoothDeviceAddress = bluetoothDeviceAddress,
+                            bluetoothDeviceName = bluetoothDeviceName,
                             notificationAppPackage = notificationAppPackage,
                             notificationAppName = notificationAppName,
                             notificationKeyword = notificationKeyword,
@@ -448,6 +458,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     enabled =
                         (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
                             (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
+                            (event != TriggerEvent.BLUETOOTH_CONNECTED && event != TriggerEvent.BLUETOOTH_DISCONNECTED || bluetoothDeviceAddress.isNotEmpty()) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
@@ -472,6 +483,16 @@ fun WifiTriggerSettings(
         ssid = ssid,
         onSsidChange = setSsid,
     )
+}
+
+@Composable
+fun BluetoothTriggerSettings(
+    address: String,
+    name: String,
+    onDeviceSelected: (address: String, name: String) -> Unit,
+) {
+    Text("Bluetooth device", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    BluetoothDevicePickerField(address = address, name = name, onDeviceSelected = onDeviceSelected)
 }
 
 @Composable

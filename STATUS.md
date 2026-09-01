@@ -4,8 +4,8 @@ Last updated: 2026-09-01
 
 ## Build state
 
-- Debug build and unit tests pass: `.\gradlew.bat testDebugUnitTest assembleDebug --no-daemon`.
-- Latest debug APK with run history builds and unit tests pass locally; no ADB target was connected for install or launch.
+- Debug build and unit tests passed: `.\gradlew.bat testDebugUnitTest assembleDebug --no-daemon`.
+- Latest debug APK was installed and launched on Xiaomi 15T Pro / HyperOS 3.
 - Current source changes are ready to commit.
 
 ## Device-verified features
@@ -15,6 +15,7 @@ Last updated: 2026-09-01
 - Webhook header/body template variables and unknown-token preservation.
 - Manual test run from Edit automation, including confirmation, saved-action execution, result feedback, and unchanged rule state.
 - Persistent run history for engine and manual executions: action-level outcomes, 100-entry newest-first retention, and redacted diagnostics.
+- Bluetooth bonded-device connected/disconnected triggers and Bluetooth on/off Shizuku actions, including delayed adapter-state readback.
 - Create/Edit keyboard behavior: keyboard opens only for focused fields, form scroll remains available, and a focused field returns above the IME when typing after manual scrolling.
 
 ## Implemented; device validation pending
@@ -24,10 +25,10 @@ Last updated: 2026-09-01
 
 ## Current constraints
 
-- Dark theme and NFC require active Shizuku permission.
+- Dark theme, NFC, and Bluetooth on/off require active Shizuku permission. Bluetooth on/off also requires `BLUETOOTH_CONNECT` on Android 12+ and verifies adapter state after exact allowlisted `svc bluetooth enable|disable`.
 - Battery Saver needs `WRITE_SECURE_SETTINGS` or Shizuku.
 - Webhook secrets are Android Keystore AES-256-GCM encrypted at rest; Android backups are disabled.
-- Wired headset and Bluetooth device triggers are deferred and must not be prioritized unless explicitly requested.
+- Bluetooth triggers use selected bonded devices, public ACL broadcasts, and `BLUETOOTH_CONNECT` on Android 12+; no discovery, pairing, scan history, or startup replay. Bluetooth device/profile behavior can still differ on other OEMs.
 - Xiaomi 15T Pro maps Sound profile Vibrate and Silent to the same observed ringer behavior; other devices can differ.
 
 ## Next validation

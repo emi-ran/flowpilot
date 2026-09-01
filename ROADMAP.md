@@ -58,8 +58,11 @@ Do not bundle unrelated features. One feature family at a time.
    - Optional case-insensitive title/text keyword filtering
    - NotificationListenerService lifecycle and duplicate post suppression
    - Zero content logging or persistence
-8. **Bluetooth device state** (deferred; do not prioritize unless explicitly requested)
-   - Selected Bluetooth device connected/disconnected
+8. **Bluetooth device state** (complete; Xiaomi device smoke test passed)
+    - Selected Bluetooth device connected/disconnected
+    - Selected bonded device MAC address matching; cached name for UI
+    - Android public ACL broadcasts only while engine runs; no discovery, pairing, scan history, or startup replay
+    - Android 12+ `BLUETOOTH_CONNECT` runtime permission required
 
 ## Planned Actions
 
@@ -105,7 +108,9 @@ Do not bundle unrelated features. One feature family at a time.
 Each must expose its required permission or Shizuku state. Do not show success unless target device state changes.
 
 1. Wi-Fi on/off
-2. Bluetooth on/off
+2. **Bluetooth on/off** (complete; Xiaomi device smoke test passed)
+    - Shizuku-only `svc bluetooth enable|disable`, strict bridge allowlist, and bounded `BluetoothAdapter.isEnabled` readback
+   - Requires Android 12+ `BLUETOOTH_CONNECT`; standard app path intentionally absent
 3. Mobile data on/off
 4. Airplane mode on/off
 5. Location services on/off
@@ -139,7 +144,12 @@ Each must expose its required permission or Shizuku state. Do not show success u
      - Stop or deny Shizuku and confirm Dark theme reports failure instead of success.
      - Deny Modify system settings and Do Not Disturb access; confirm Auto-rotate and DND report failure instead of success.
 3. **HyperOS 3 system controls**
-    - One control at a time; device-state evidence required before marking complete.
+     - One control at a time; device-state evidence required before marking complete.
+4. **Bluetooth negative paths**
+     - Deny `BLUETOOTH_CONNECT`; verify bonded-device picker and rules show permission-required state.
+     - Restart engine while device remains connected; verify no replay.
+     - Unpair selected device; verify no crash and no false match.
+     - Stop/deny Shizuku and verify Bluetooth on/off failures remain explicit.
 
 ## Acceptance Gate
 

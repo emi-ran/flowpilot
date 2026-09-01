@@ -61,6 +61,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var scheduledDays by remember(initialRule.id) { mutableStateOf(initialRule.scheduledDays) }
     var batteryLevel by remember(initialRule.id) { mutableIntStateOf(initialRule.batteryLevel) }
     var wifiSsid by remember(initialRule.id) { mutableStateOf(initialRule.wifiSsid) }
+    var bluetoothDeviceAddress by remember(initialRule.id) { mutableStateOf(initialRule.bluetoothDeviceAddress) }
+    var bluetoothDeviceName by remember(initialRule.id) { mutableStateOf(initialRule.bluetoothDeviceName) }
     var notificationAppPackage by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppPackage) }
     var notificationAppName by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppName) }
     var notificationKeyword by remember(initialRule.id) { mutableStateOf(initialRule.notificationKeyword) }
@@ -288,6 +290,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
             } else if (event == TriggerEvent.WIFI_CONNECTED || event == TriggerEvent.WIFI_DISCONNECTED) {
                 WifiTriggerSettings(wifiSsid) { wifiSsid = it }
+            } else if (event == TriggerEvent.BLUETOOTH_CONNECTED || event == TriggerEvent.BLUETOOTH_DISCONNECTED) {
+                BluetoothTriggerSettings(bluetoothDeviceAddress, bluetoothDeviceName) { address, deviceName ->
+                    bluetoothDeviceAddress = address
+                    bluetoothDeviceName = deviceName
+                }
             } else if (event == TriggerEvent.NOTIFICATION_RECEIVED) {
                 NotificationTriggerSettings(
                     appPackage = notificationAppPackage,
@@ -536,6 +543,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 TriggerEvent.BATTERY_ABOVE -> "${event.label} ${batteryLevel}% · $summary"
                                 TriggerEvent.WIFI_CONNECTED,
                                 TriggerEvent.WIFI_DISCONNECTED -> "${event.label} ${wifiSsid.ifBlank { "Any Wi-Fi" }} · $summary"
+                                TriggerEvent.BLUETOOTH_CONNECTED,
+                                TriggerEvent.BLUETOOTH_DISCONNECTED -> "${event.label} ${bluetoothDeviceName.ifBlank { bluetoothDeviceAddress }} · $summary"
                                 TriggerEvent.NOTIFICATION_RECEIVED -> "Notification (${notificationAppName.ifBlank { notificationAppPackage }}) · $summary"
                                 else -> "${appName.ifBlank { pkg }} · $summary"
                             }
@@ -550,6 +559,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 scheduledDays = scheduledDays,
                                 batteryLevel = batteryLevel,
                                 wifiSsid = wifiSsid,
+                                bluetoothDeviceAddress = bluetoothDeviceAddress,
+                                bluetoothDeviceName = bluetoothDeviceName,
                                 notificationAppPackage = notificationAppPackage,
                                 notificationAppName = notificationAppName,
                                 notificationKeyword = notificationKeyword,
@@ -592,6 +603,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     enabled =
                         (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
                             (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
+                            (event != TriggerEvent.BLUETOOTH_CONNECTED && event != TriggerEvent.BLUETOOTH_DISCONNECTED || bluetoothDeviceAddress.isNotEmpty()) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&

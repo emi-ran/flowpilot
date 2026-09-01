@@ -29,6 +29,7 @@ class AutomationEngine(
     private val batteryTracker: BatteryLevelTracker = BatteryLevelTracker(context.applicationContext),
     private val screenTracker: ScreenStateTracker = ScreenStateTracker(context.applicationContext),
     private val wifiTracker: WifiStateTracker = WifiStateTracker(context.applicationContext),
+    private val bluetoothTracker: BluetoothDeviceTracker = BluetoothDeviceTracker(context.applicationContext),
 ) {
 
     private val appContext = context.applicationContext
@@ -53,6 +54,7 @@ class AutomationEngine(
         batteryTracker.start()
         screenTracker.start()
         wifiTracker.start()
+        bluetoothTracker.start()
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         job = scope.launch {
             while (isActive) {
@@ -63,6 +65,7 @@ class AutomationEngine(
                     pollBatteryTransitions(liveState)
                     pollScreenEvents(liveState)
                     pollWifiTransitions(liveState)
+                    pollBluetoothTransitions(liveState)
                     pollNotificationEvents(liveState)
                     pollSchedules(liveState)
                 } catch (e: Exception) {
@@ -82,6 +85,7 @@ class AutomationEngine(
         batteryTracker.stop()
         screenTracker.stop()
         wifiTracker.stop()
+        bluetoothTracker.stop()
     }
 
     private fun getLiveSystemState(): LiveSystemState {
@@ -242,6 +246,27 @@ class AutomationEngine(
         }
     }
 
+    private suspend fun pollBluetoothTransitions(liveState: LiveSystemState) {
+        // Permission may be granted while service stays alive; begin listening without restarting engine.
+        bluetoothTracker.start()
+        val transitions = bluetoothTracker.drainTransitions()
+        if (transitions.isEmpty()) return
+        val rules = repository.automations.first()
+        for (transition in transitions) {
+            val matches = RuleEvaluator.evaluateBluetooth(rules, transition, liveState)
+            val trigger = when (transition.event) {
+                BluetoothDeviceEvent.CONNECTED -> TriggerEvent.BLUETOOTH_CONNECTED
+                BluetoothDeviceEvent.DISCONNECTED -> TriggerEvent.BLUETOOTH_DISCONNECTED
+            }
+            val unmatchedRules = rules.count { it.enabled && it.triggerEvent == trigger } - matches.size
+            Log.i(BLUETOOTH_TAG, "Unmatched transition rules=$unmatchedRules")
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing $trigger Bluetooth rules (${matches.size} rule(s))")
+                executeAll(matches, trigger = trigger, liveState = liveState)
+            }
+        }
+    }
+
     private suspend fun executeAll(
         rules: List<com.flowpilot.app.data.model.Automation>,
         trigger: TriggerEvent? = null,
@@ -321,6 +346,7 @@ class AutomationEngine(
 
     private companion object {
         const val TAG = "FlowPilotEngine"
+        const val BLUETOOTH_TAG = "FlowPilotBluetooth"
         const val POLL_INTERVAL_MS = 500L
     }
 }

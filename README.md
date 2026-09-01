@@ -34,10 +34,10 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), notification received (selected app + optional keyword), or scheduled time -> one or more NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Sound profile (Normal/Vibrate/Silent), Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), Bluetooth device connected/disconnected (selected bonded device), notification received (selected app + optional keyword), or scheduled time -> one or more Bluetooth on/off, NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Sound profile (Normal/Vibrate/Silent), Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Rule conditions (AND semantics): battery below/above, charger connected/disconnected, screen on/off, Wi-Fi connected/disconnected. Rules execute only when trigger matches AND all configured conditions match current live state.
 - Installed launchable app picker with search, display name, package ID internally.
-- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, and NFC. Display includes Dark theme and Auto-rotate; Audio includes Sound profile, sound playback, media volume, and TTS.
+- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, Bluetooth, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, Connectivity, and NFC. Connectivity contains Bluetooth on/off through Shizuku.
 - Rule detail and delete.
 - Automation run history: persistent log of rule executions (engine-triggered and manual test runs) retained up to the newest 100 entries in DataStore. Displays readable local timestamp, rule name, trigger source (`MANUAL` or trigger event name), overall execution status (Success, Partial success, Failure), and individual action outcomes. Sensitive credentials (tokens, query parameters, auth headers) in action messages are safely redacted before persistence, and action parameters/webhook payloads are never persisted in history. Users can view history from Settings -> Run history and clear it with confirmation.
 - Manual automation test run: in Edit automation TopAppBar, Play icon prompts confirmation (bypassing triggers/conditions, excluding unsaved edits, leaving rule state untouched), runs actions immediately on IO dispatcher with safe live system context (`trigger = MANUAL`), records a manual history entry, and displays summary feedback via Snackbar.
@@ -50,6 +50,7 @@ Target / compile SDK: 36 (Android 16)
 - Charger triggers: connected/disconnected broadcasts while engine runs; duplicate state broadcasts are deduped and current charger state is not replayed after engine start.
 - Battery threshold triggers: below/above a selected percentage; only a crossing triggers an action and current level is seeded without replay after engine start.
 - Screen triggers: on/off broadcasts while engine runs; duplicate consecutive broadcasts are deduped and current screen state is not replayed after engine start.
+- Bluetooth device triggers: public ACL connected/disconnected broadcasts while engine runs, matching only selected bonded device address. Per-device consecutive state broadcasts are deduped; no initial connection state is queried or replayed on engine start. Picker never scans or stores paired-device history.
 - Show notification action: per-rule title and message, posted through visible `Automation alerts` channel.
 - Boot/app-update receiver restarts the engine only when Run engine on device startup is enabled.
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
@@ -120,7 +121,13 @@ Reason: Android requires `ACCESS_FINE_LOCATION`, `ACCESS_WIFI_STATE`, and device
 
 Use a Wi-Fi trigger or Wi-Fi condition's scan icon / **Scan nearby** control to select an SSID from nearby scan results, or type it manually. Scans are user-initiated; Android throttles scan frequency and may return recently cached results. FlowPilot persists only the SSID selected for a rule, not scan-result history.
 
-### 8. Battery Saver actions: ADB path
+### 8. Bluetooth paired-device access
+
+On Android 12+, open FlowPilot -> Settings -> Advanced permissions -> **Bluetooth paired-device access** and allow Nearby devices, or grant permission when selecting Bluetooth trigger device.
+
+Reason: `BLUETOOTH_CONNECT` is required to list bonded devices and read device data from public ACL connect/disconnect broadcasts. FlowPilot uses bonded-device selection only; it does not start discovery, pair devices, or persist device-list history. If selected device is later unpaired, rule remains saved but matches no future ACL event until a bonded device is selected again.
+
+### 9. Battery Saver actions: ADB path
 
 With USB debugging enabled and device connected:
 
@@ -136,7 +143,7 @@ adb -s <device-serial> shell dumpsys package com.flowpilot.app
 
 This gives FlowPilot direct Battery Saver access. NFC still needs Shizuku.
 
-### 9. Shizuku path
+### 10. Shizuku path
 
 Install Shizuku from its official source:
 
@@ -144,11 +151,13 @@ Install Shizuku from its official source:
 
 Start Shizuku through Wireless debugging or USB debugging. Open FlowPilot's permission screen and grant FlowPilot access when Shizuku asks.
 
-Shizuku is required for NFC ON/OFF because normal Android apps cannot toggle NFC on modern Android. It also enables Battery Saver actions when direct ADB access is absent. FlowPilot runs only these narrow commands through its Shizuku UserService:
+Shizuku is required for NFC and Bluetooth ON/OFF because normal Android apps cannot reliably toggle these radios on modern Android. It also enables Battery Saver actions when direct ADB access is absent. FlowPilot runs only these narrow commands through its Shizuku UserService:
 
 ```text
 svc nfc enable
 svc nfc disable
+svc bluetooth enable
+svc bluetooth disable
 cmd uimode night yes
 cmd uimode night no
 cmd power set-mode 1
@@ -157,13 +166,16 @@ settings put system POWER_SAVE_MODE_OPEN 1
 settings put system POWER_SAVE_MODE_OPEN 0
 settings put global low_power 1
 settings put global low_power 0
+pm grant com.flowpilot.app android.permission.WRITE_SECURE_SETTINGS
 ```
 
-No root is required. If Shizuku is stopped, the action reports failure and does not fake success.
+No root is required. Bluetooth on/off uses only `svc bluetooth enable|disable` through Shizuku, then reads `BluetoothAdapter.isEnabled`; command success with mismatched adapter state reports failure. If Shizuku is stopped, action reports failure and does not fake success.
 
 ## Android restrictions and limitations
 
 - Normal apps cannot toggle NFC on Android 10+; `NfcAdapter.enable()` / `disable()` are privileged/system/DPC operations. FlowPilot therefore marks NFC as Shizuku-required.
+- Normal apps cannot reliably toggle Bluetooth on modern Android. Bluetooth on/off requires active Shizuku access and `BLUETOOTH_CONNECT` on Android 12+; FlowPilot runs only `svc bluetooth enable|disable` and waits up to 5 seconds for adapter readback. This path passed Xiaomi 15T Pro / HyperOS 3 smoke testing.
+- Bluetooth device triggers use public `BluetoothDevice.ACTION_ACL_CONNECTED` / `ACTION_ACL_DISCONNECTED` broadcasts only while engine runs. Android 12+ requires `BLUETOOTH_CONNECT`. No existing connection is synthesized at engine start; selected-device trigger execution passed Xiaomi 15T Pro / HyperOS 3 smoke testing.
 - Battery Saver is a protected global setting. `WRITE_SECURE_SETTINGS` gives FlowPilot direct access; Shizuku provides a supported fallback action path.
 - UsageStatsManager polling is Android-supported but not an instantaneous callback API. Event timing can vary by device and OEM, especially HyperOS.
 - Scheduled rules do not need Usage Access. App opened/closed rules still require Usage Access. A rule created at the current or past minute waits for its next valid day; missed times are not replayed after the engine starts.
@@ -190,7 +202,7 @@ app/src/main/java/com/flowpilot/app/
   data/model/                 Serializable rule model and action/trigger catalog
   data/security/              Android Keystore secret encryption
   data/                       DataStore repository and legacy secret migration
-  engine/                     UsageStats, charger, and battery trackers, foreground reducer, schedule/rule evaluators, service, boot receiver
+  engine/                     UsageStats, charger, battery, screen, Wi-Fi, and Bluetooth ACL trackers, reducers/evaluators, service, boot receiver
   actions/                    Action executors, webhook template rendering, and Shizuku UserService bridge
   permission/                 Capability and setup checks
   ui/                         Compose screens, state, manual test run, IME focus visibility, theme, components
@@ -199,7 +211,7 @@ app/src/test/                 Rule, schedule, reducer, encryption, template, man
 
 ## Verification performed
 
-- `.\gradlew.bat testDebugUnitTest assembleDebug --no-daemon` — passed for current working tree.
+- `.\gradlew.bat testDebugUnitTest assembleDebug --no-daemon` — passed for current Bluetooth source changes.
 - Debug APK installed on Xiaomi 15T Pro / HyperOS 3.
 - Foreground automation service verified active with silent `engine_silent_v2` notification channel.
 - Scheduled-rule persistence and an execution at a future selected time verified on device.
@@ -223,6 +235,8 @@ app/src/test/                 Rule, schedule, reducer, encryption, template, man
 - Sound profile (Normal/Vibrate/Silent) has unit coverage; Xiaomi 15T Pro maps Vibrate and Silent to the same observed ringer behavior. Other devices can differ.
 - Webhook template variables passed Xiaomi 15T Pro / HyperOS 3 device smoke testing in request headers/body, including unknown-token preservation.
 - Manual test run passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
+- Bluetooth on/off through Shizuku passed Xiaomi 15T Pro / HyperOS 3 device smoke testing; state changes can settle asynchronously, so executor waits up to 5 seconds for adapter-state readback.
+- Bluetooth selected-bonded-device connection trigger passed Xiaomi 15T Pro / HyperOS 3 device smoke testing by executing a configured Battery Saver action.
 - Create/Edit keyboard behavior passed Xiaomi 15T Pro / HyperOS 3 device smoke testing: keyboard opens only for focused text fields, scroll remains available, and a focused field returns above the IME when typing after it was scrolled out of view.
 
 ## Next validation
@@ -232,6 +246,7 @@ app/src/test/                 Rule, schedule, reducer, encryption, template, man
    - Search for Turkish with `Türkçe`, `Turkish`, `tr`, or `tr-TR`.
    - Hold a voice row to preview it without changing selection; reopen picker and confirm it returns to selected voice.
 3. Stop or deny Shizuku, and deny Do Not Disturb access; confirm Dark theme and DND rules report failure instead of success.
+4. Grant `BLUETOOTH_CONNECT`, select bonded device, then verify ACL connect/disconnect rules fire once per transition and do not fire on engine restart while already connected. Test unpairing selected device, permission denial, stopped Shizuku, shell failure, and Bluetooth adapter readback mismatch on Xiaomi 15T Pro / HyperOS 3.
 
 ## License / distribution note
 

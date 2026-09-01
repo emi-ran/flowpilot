@@ -18,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Hub
@@ -223,6 +225,8 @@ private fun RuleCard(
                     TriggerEvent.TIME_SCHEDULE -> Icons.Default.Bolt
                     TriggerEvent.WIFI_CONNECTED,
                     TriggerEvent.WIFI_DISCONNECTED -> Icons.Default.Bolt
+                    TriggerEvent.BLUETOOTH_CONNECTED -> Icons.Default.Bluetooth
+                    TriggerEvent.BLUETOOTH_DISCONNECTED -> Icons.Default.BluetoothDisabled
                     TriggerEvent.NOTIFICATION_RECEIVED -> Icons.Default.Bolt
                 },
                 null,
@@ -237,6 +241,8 @@ private fun RuleCard(
                     TriggerEvent.BATTERY_ABOVE -> "Threshold: ${item.rule.batteryLevel}%"
                     TriggerEvent.WIFI_CONNECTED,
                     TriggerEvent.WIFI_DISCONNECTED -> if (item.rule.wifiSsid.isNotBlank()) "SSID: ${item.rule.wifiSsid}" else "Any Wi-Fi"
+                    TriggerEvent.BLUETOOTH_CONNECTED,
+                    TriggerEvent.BLUETOOTH_DISCONNECTED -> item.rule.bluetoothDeviceName.ifBlank { item.rule.bluetoothDeviceAddress }
                     TriggerEvent.NOTIFICATION_RECEIVED -> {
                         val app = item.rule.notificationAppName.ifBlank { item.rule.notificationAppPackage }
                         if (item.rule.notificationKeyword.isNotBlank()) "$app · Keyword: \"${item.rule.notificationKeyword}\"" else app

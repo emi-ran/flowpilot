@@ -82,6 +82,8 @@ class AutomationRepository(private val context: Context) {
         scheduledDays: Set<Int> = emptySet(),
         batteryLevel: Int = 50,
         wifiSsid: String = "",
+        bluetoothDeviceAddress: String = "",
+        bluetoothDeviceName: String = "",
         notificationAppPackage: String = "",
         notificationAppName: String = "",
         notificationKeyword: String = "",
@@ -132,6 +134,9 @@ class AutomationRepository(private val context: Context) {
                     com.flowpilot.app.data.model.TriggerEvent.WIFI_CONNECTED,
                     com.flowpilot.app.data.model.TriggerEvent.WIFI_DISCONNECTED ->
                         "${triggerEvent.label} ${wifiSsid.ifBlank { "Any Wi-Fi" }} · $summary"
+                    com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED,
+                    com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED ->
+                        "${triggerEvent.label} ${bluetoothDeviceName.ifBlank { bluetoothDeviceAddress }} · $summary"
                     com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED ->
                         "Notification (${notificationAppName.ifBlank { notificationAppPackage }}) · $summary"
                     else -> "${appName.ifBlank { appPackage }} · $summary"
@@ -144,6 +149,8 @@ class AutomationRepository(private val context: Context) {
             scheduledDays = scheduledDays,
             batteryLevel = batteryLevel,
             wifiSsid = wifiSsid,
+            bluetoothDeviceAddress = bluetoothDeviceAddress,
+            bluetoothDeviceName = bluetoothDeviceName,
             notificationAppPackage = notificationAppPackage,
             notificationAppName = notificationAppName,
             notificationKeyword = notificationKeyword,

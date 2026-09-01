@@ -36,6 +36,7 @@ enum class CapabilityRequirement {
 /** Groups actions shown in the picker (future actions slide into existing/new categories). */
 @Serializable
 enum class ActionCategory(val label: String) {
+    CONNECTIVITY("Connectivity"),
     NFC("NFC"),
     BATTERY("Battery"),
     DISPLAY("Display"),
@@ -48,6 +49,8 @@ enum class ActionCategory(val label: String) {
 /** A concrete system action a rule can perform. */
 @Serializable
 enum class ActionType(val label: String, val category: ActionCategory, val requirement: CapabilityRequirement) {
+    BLUETOOTH_ON("Turn Bluetooth on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    BLUETOOTH_OFF("Turn Bluetooth off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
     NFC_ON("Turn NFC on", ActionCategory.NFC, CapabilityRequirement.SHIZUKU),
     NFC_OFF("Turn NFC off", ActionCategory.NFC, CapabilityRequirement.SHIZUKU),
     BATTERY_SAVER_ON("Turn Battery Saver on", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
@@ -85,6 +88,7 @@ enum class TriggerCategory(val label: String) {
     DISPLAY("Display"),
     TIME("Time"),
     NETWORK("Network"),
+    BLUETOOTH("Bluetooth"),
     NOTIFICATION("Notification"),
 }
 
@@ -146,6 +150,8 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     TIME_SCHEDULE("At scheduled time", TriggerCategory.TIME),
     WIFI_CONNECTED("Connected to Wi-Fi", TriggerCategory.NETWORK),
     WIFI_DISCONNECTED("Disconnected from Wi-Fi", TriggerCategory.NETWORK),
+    BLUETOOTH_CONNECTED("Bluetooth device connected", TriggerCategory.BLUETOOTH),
+    BLUETOOTH_DISCONNECTED("Bluetooth device disconnected", TriggerCategory.BLUETOOTH),
     NOTIFICATION_RECEIVED("Notification received", TriggerCategory.NOTIFICATION);
 
     companion object {
@@ -178,6 +184,10 @@ data class Automation(
     val scheduledDays: Set<Int> = emptySet(),
     val batteryLevel: Int = 50,
     val wifiSsid: String = "",
+    /** Bonded Bluetooth device selected for Bluetooth trigger matching. */
+    val bluetoothDeviceAddress: String = "",
+    /** Cached Bluetooth device name for readable rule UI; address remains matcher. */
+    val bluetoothDeviceName: String = "",
     val notificationAppPackage: String = "",
     val notificationAppName: String = "",
     val notificationKeyword: String = "",

@@ -3,6 +3,7 @@ package com.flowpilot.app.permission
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
+import android.bluetooth.BluetoothManager
 import android.net.Uri
 import android.os.Build
 import android.os.Process
@@ -101,6 +102,18 @@ class CapabilityManager(private val context: Context) {
         return baseWifi && hasNearby
     }
 
+    /** Android 12+ gates bonded-device access and ACL broadcast device data behind Nearby devices. */
+    fun hasBluetoothConnectPermission(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            context.checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    /** A null adapter means Bluetooth is unsupported; do not claim Shizuku can fix missing hardware. */
+    fun hasBluetoothAdapter(): Boolean = try {
+        context.getSystemService(BluetoothManager::class.java)?.adapter != null
+    } catch (_: Throwable) {
+        false
+    }
+
     /** Does the device expose NFC hardware that can be toggled? */
     fun hasNfcHardware(): Boolean =
         context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC)
@@ -133,6 +146,8 @@ class CapabilityManager(private val context: Context) {
         CapabilityRequirement.SHIZUKU ->
             when {
                 action.category == com.flowpilot.app.data.model.ActionCategory.NFC && !hasNfcHardware() -> CapabilityStatus.UNSUPPORTED
+                action.category == com.flowpilot.app.data.model.ActionCategory.CONNECTIVITY && !hasBluetoothAdapter() -> CapabilityStatus.UNSUPPORTED
+                action.category == com.flowpilot.app.data.model.ActionCategory.CONNECTIVITY && !hasBluetoothConnectPermission() -> CapabilityStatus.PERMISSION_REQUIRED
                 shizukuState() == ShizukuState.READY -> CapabilityStatus.AVAILABLE
                 else -> CapabilityStatus.SHIZUKU_REQUIRED
             }

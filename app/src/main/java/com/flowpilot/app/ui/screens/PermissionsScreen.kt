@@ -43,6 +43,7 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val notifPolicy by vm.hasNotificationPolicy.collectAsState()
     val notifListener by vm.hasNotificationListener.collectAsState()
     val wifiPerms by vm.hasWifiPermissions.collectAsState()
+    val bluetoothConnect by vm.hasBluetoothConnectPermission.collectAsState()
     val ignoresBatteryOptimizations by vm.ignoresBatteryOptimizations.collectAsState()
     val shizuku by vm.shizukuState.collectAsState()
     var showAdbDialog by remember { mutableStateOf(false) }
@@ -64,6 +65,7 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
 
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
     val wifiLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vm.refreshPermissions() }
+    val bluetoothLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -93,6 +95,15 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                     context.startActivity(intent)
                 } catch (_: Exception) {
                     context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                }
+            }
+            PermissionCard(
+                "Bluetooth paired-device access",
+                "Required on Android 12+ to list bonded devices and receive Bluetooth device connect/disconnect events. FlowPilot never runs Bluetooth discovery or stores paired-device history.",
+                bluetoothConnect,
+            ) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    bluetoothLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
                 }
             }
             PermissionCard(
@@ -192,7 +203,7 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
             }
             PermissionCard(
                 "Shizuku",
-                "Required to toggle NFC. Install, start, then grant access.",
+                "Required to toggle NFC and Bluetooth. Install, start, then grant access.",
                 shizuku == ShizukuState.READY,
                 pillText = if (shizuku == ShizukuState.READY) "Available" else "Shizuku required",
             ) {

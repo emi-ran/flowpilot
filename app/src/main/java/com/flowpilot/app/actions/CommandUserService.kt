@@ -1,6 +1,7 @@
 package com.flowpilot.app.actions
 
 import android.content.Context
+import com.flowpilot.app.BuildConfig
 import androidx.annotation.Keep
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -12,6 +13,9 @@ class CommandUserService : ICommandService.Stub {
     constructor(context: Context) : super()
 
     override fun run(command: String): String {
+        if (command !in allowedCommands) {
+            return "126\ncommand not allowed"
+        }
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
             val output = StringBuilder()
@@ -45,5 +49,23 @@ class CommandUserService : ICommandService.Stub {
         } catch (t: Throwable) {
             "125\n${t.message ?: t.javaClass.simpleName}"
         }
+    }
+
+    private companion object {
+        val allowedCommands = setOf(
+            "svc nfc enable",
+            "svc nfc disable",
+            "svc bluetooth enable",
+            "svc bluetooth disable",
+            "cmd uimode night yes",
+            "cmd uimode night no",
+            "cmd power set-mode 1",
+            "cmd power set-mode 0",
+            "settings put system POWER_SAVE_MODE_OPEN 1",
+            "settings put system POWER_SAVE_MODE_OPEN 0",
+            "settings put global low_power 1",
+            "settings put global low_power 0",
+            "pm grant ${BuildConfig.APPLICATION_ID} android.permission.WRITE_SECURE_SETTINGS",
+        )
     }
 }

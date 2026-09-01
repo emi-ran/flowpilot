@@ -49,6 +49,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasNotificationPolicy = MutableStateFlow(false)
     val hasNotificationListener = MutableStateFlow(false)
     val hasWifiPermissions = MutableStateFlow(false)
+    val hasBluetoothConnectPermission = MutableStateFlow(false)
     val ignoresBatteryOptimizations = MutableStateFlow(false)
     val shizukuState = MutableStateFlow(ShizukuState.NOT_INSTALLED)
     val engineRunning = MutableStateFlow(false)
@@ -94,9 +95,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     rule.conditions.any { it.type == com.flowpilot.app.data.model.ConditionType.WIFI_CONNECTED || it.type == com.flowpilot.app.data.model.ConditionType.WIFI_DISCONNECTED }
 
                 val hasNotificationTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED
+                val hasBluetoothTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED ||
+                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED
 
                 val triggerStatus = when {
                     hasWifiTriggerOrCond && !capabilities.hasWifiPermissions() -> CapabilityStatus.PERMISSION_REQUIRED
+                    hasBluetoothTrigger && !capabilities.hasBluetoothAdapter() -> CapabilityStatus.UNSUPPORTED
+                    hasBluetoothTrigger && !capabilities.hasBluetoothConnectPermission() -> CapabilityStatus.PERMISSION_REQUIRED
                     hasNotificationTrigger && !capabilities.hasNotificationListenerAccess() -> CapabilityStatus.PERMISSION_REQUIRED
                     else -> CapabilityStatus.AVAILABLE
                 }
@@ -125,6 +130,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         hasNotificationPolicy.value = c.hasNotificationPolicyAccess()
         hasNotificationListener.value = c.hasNotificationListenerAccess()
         hasWifiPermissions.value = c.hasWifiPermissions()
+        hasBluetoothConnectPermission.value = c.hasBluetoothConnectPermission()
         ignoresBatteryOptimizations.value = c.isIgnoringBatteryOptimizations()
 
         if (engineRunning.value) {
@@ -161,6 +167,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         scheduledDays: Set<Int> = emptySet(),
         batteryLevel: Int = 50,
         wifiSsid: String = "",
+        bluetoothDeviceAddress: String = "",
+        bluetoothDeviceName: String = "",
         notificationAppPackage: String = "",
         notificationAppName: String = "",
         notificationKeyword: String = "",
@@ -205,6 +213,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 scheduledDays = scheduledDays,
                 batteryLevel = batteryLevel,
                 wifiSsid = wifiSsid,
+                bluetoothDeviceAddress = bluetoothDeviceAddress,
+                bluetoothDeviceName = bluetoothDeviceName,
                 notificationAppPackage = notificationAppPackage,
                 notificationAppName = notificationAppName,
                 notificationKeyword = notificationKeyword,

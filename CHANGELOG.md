@@ -12,6 +12,8 @@ All notable FlowPilot changes are documented here.
 - Webhook secret encryption at rest using Android Keystore AES-256-GCM and legacy configuration migration.
 - Manual saved-rule test run from Edit automation with confirmation and result feedback.
 - Persistent automation run history for engine and manual executions, with per-action outcomes, overall success/partial/failure state, and 100-entry retention.
+- Bluetooth bonded-device connected/disconnected triggers with Android 12+ `BLUETOOTH_CONNECT` gating, public ACL broadcast lifecycle, no startup replay, and per-device duplicate suppression.
+- Bluetooth on/off actions through exact allowlisted Shizuku `svc bluetooth enable|disable` commands with adapter-state readback verification.
 
 ### Changed
 
@@ -19,3 +21,4 @@ All notable FlowPilot changes are documented here.
 - Create/Edit form keyboard behavior uses Android `adjustResize`, IME-aware padding, and focus-gated bring-into-view scrolling. Keyboard opens only on text-field focus; focused fields return above the IME while typing.
 - Webhook logging and execution failures redact sensitive values.
 - Run-history diagnostics redact sensitive values and never persist webhook or action configuration fields.
+- Bluetooth ACL receiver uses an Android 13+ exported dynamic receiver required for Bluetooth-stack delivery; Bluetooth radio actions now wait for asynchronous adapter-state changes before reporting success or failure.

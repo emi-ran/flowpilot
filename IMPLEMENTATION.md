@@ -7,7 +7,7 @@ minSdk 26, JDK 17.
 ## Feature set
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
-battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | notification received] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [NFC on | NFC off | Battery Saver on |
+battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | Bluetooth device connected | Bluetooth device disconnected | notification received] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [Bluetooth on | Bluetooth off | NFC on | NFC off | Battery Saver on |
 Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
@@ -26,6 +26,7 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 | Dark Theme        | NO                  | NO (needs system uimode)     | YES (`cmd uimode night yes\|no`) | YES |
 | Battery Saver     | NO                  | YES (`pm grant` + write global low_power) | YES (`settings put global low_power`) | YES |
 | NFC               | NO (API 29+ removed NfcAdapter.enable) | NO (needs shell uid) | YES (`svc nfc enable|disable`) | YES |
+| Bluetooth on/off  | NO (modern Android restriction) | NO | YES: Shizuku `svc bluetooth enable|disable` + bounded `BluetoothAdapter.isEnabled` readback; Xiaomi smoke test passed | YES |
 
 - Auto-rotate toggling modifies `Settings.System.ACCELEROMETER_ROTATION` (1 for on, 0 for off / portrait lock).
   It uses Android's standard user-grantable special app access `android.permission.WRITE_SETTINGS` checked via
@@ -48,6 +49,8 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
   the resulting state so success is never falsely reported.
 
 Root is never required anywhere.
+
+Bluetooth trigger configuration stores selected bonded device address plus cached display name. `BLUETOOTH_CONNECT` is required on Android 12+ for bonded-device access and ACL broadcast device metadata. FlowPilot never starts discovery, pairs devices, or persists device-list history. `BluetoothDevice.ACTION_ACL_CONNECTED` / `ACTION_ACL_DISCONNECTED` broadcasts are dynamically registered only while engine runs; tracker does not query or replay current connections at startup and dedupes consecutive state per address.
 
 ## Architecture (plain, readable)
 
@@ -78,12 +81,14 @@ app/src/main/java/com/flowpilot/app/
     BatteryLevelTracker.kt           battery level transitions
     ScreenStateTracker.kt            screen on/off broadcasts
     WifiStateTracker.kt              Wi-Fi NetworkCallback state + SSID transition reducer
+    BluetoothDeviceTracker.kt        bonded-device ACL broadcasts + per-device transition reducer
     FlowPilotNotificationListener.kt transient notification listener and dedupe
     AutomationService.kt             foreground service
     BootReceiver.kt                  restart on boot
   actions/
     ActionExecutor.kt                interface + dispatch
     NfcExecutor.kt                   Shizuku `svc nfc enable|disable`
+    BluetoothExecutor.kt             Shizuku `svc bluetooth enable|disable` + adapter readback
     DarkThemeExecutor.kt             Shizuku `cmd uimode night yes|no`
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
     AutoRotateExecutor.kt            WRITE_SETTINGS direct write to Settings.System.ACCELEROMETER_ROTATION
@@ -135,6 +140,10 @@ on Android 13+ Nearby devices access are required for reliable SSID reading/scan
 FlowPilotNotificationListener receives notification posts only after the user grants Notification Listener
 access. It creates an in-memory event with package, title, and text only long enough to match the selected
 package and optional keyword, dedupes by post key/time, and never persists or logs notification content.
+
+BluetoothDeviceTracker dynamically receives public ACL connection broadcasts only after Android 12+ `BLUETOOTH_CONNECT` is granted. On Android 13+, it uses an exported dynamic receiver because Bluetooth stack broadcasts originate outside the system UID. It matches configured bonded-device MAC addresses without discovery or pairing, stores no device-list history, ignores duplicate consecutive state broadcasts, and does not seed current connections when engine starts. Selected device later unpaired remains visible in saved rule but produces no matching event until changed. Xiaomi 15T Pro / HyperOS 3 smoke testing confirmed selected-device connection triggers execute configured Battery Saver actions.
+
+BluetoothExecutor runs only exact allowlisted `svc bluetooth enable` or `svc bluetooth disable` through Shizuku. It returns failure when adapter, `BLUETOOTH_CONNECT`, Shizuku, command, or state readback is unavailable/mismatched, polling adapter state for up to 5 seconds after command completion. Xiaomi 15T Pro / HyperOS 3 smoke testing confirmed Bluetooth turns on and off successfully.
 
 AutoRotateExecutor writes `Settings.System.ACCELEROMETER_ROTATION` to `1` (free rotation) or `0`
 (portrait lock), then reads back the value. It requires `android.permission.WRITE_SETTINGS` checked via

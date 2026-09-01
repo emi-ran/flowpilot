@@ -6,6 +6,7 @@ import com.flowpilot.app.data.model.ActionType
 /** Routes an action to the executor that can perform it. */
 class ActionDispatcher private constructor(
     private val nfc: NfcExecutor,
+    private val bluetooth: BluetoothExecutor,
     private val powerSaver: PowerSaverExecutor,
     private val darkTheme: DarkThemeExecutor,
     private val autoRotate: AutoRotateExecutor,
@@ -21,7 +22,7 @@ class ActionDispatcher private constructor(
     private val webhook: WebhookExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
-        listOf(nfc, powerSaver, darkTheme, autoRotate, notification, vibration, sound, soundProfile, mediaVolume, launcher, tts, dnd, clock, webhook)
+        listOf(nfc, bluetooth, powerSaver, darkTheme, autoRotate, notification, vibration, sound, soundProfile, mediaVolume, launcher, tts, dnd, clock, webhook)
             .flatMap { e -> e.supportedTypes.map { it to e } }
             .toMap()
     }
@@ -39,6 +40,7 @@ class ActionDispatcher private constructor(
             instance ?: synchronized(this) {
                 instance ?: ActionDispatcher(
                     NfcExecutor(ShizukuShell.instance),
+                    BluetoothExecutor(context.applicationContext, ShizukuShell.instance),
                     PowerSaverExecutor(context.applicationContext, ShizukuShell.instance),
                     DarkThemeExecutor(context.applicationContext, ShizukuShell.instance),
                     AutoRotateExecutor(context.applicationContext),

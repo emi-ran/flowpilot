@@ -210,6 +210,27 @@ class RuleEvaluatorTest {
             .containsExactly(rAnyAppKeyword)
     }
 
+    @Test fun bluetooth_triggers_match_exact_selected_device_address() {
+        val connected = rule(TriggerEvent.BLUETOOTH_CONNECTED).copy(
+            id = "connected",
+            bluetoothDeviceAddress = "AA:BB:CC:DD:EE:FF",
+            bluetoothDeviceName = "Headphones",
+        )
+        val disconnected = rule(TriggerEvent.BLUETOOTH_DISCONNECTED).copy(
+            id = "disconnected",
+            bluetoothDeviceAddress = "AA:BB:CC:DD:EE:FF",
+        )
+        val other = rule(TriggerEvent.BLUETOOTH_CONNECTED).copy(
+            id = "other",
+            bluetoothDeviceAddress = "11:22:33:44:55:66",
+        )
+
+        assertThat(RuleEvaluator.evaluateBluetooth(listOf(connected, disconnected, other), BluetoothDeviceTransition(BluetoothDeviceEvent.CONNECTED, "aa:bb:cc:dd:ee:ff")))
+            .containsExactly(connected)
+        assertThat(RuleEvaluator.evaluateBluetooth(listOf(connected, disconnected, other), BluetoothDeviceTransition(BluetoothDeviceEvent.DISCONNECTED, "AA:BB:CC:DD:EE:FF")))
+            .containsExactly(disconnected)
+    }
+
     @Test fun notification_deduplicator_suppresses_replayed_or_older_post_times() {
         val dedupe = NotificationDeduplicator(ttlMs = 10_000L, maxEntries = 2)
         val key = "com.pkg_1_100"

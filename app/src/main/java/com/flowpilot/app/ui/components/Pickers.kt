@@ -18,6 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.BatterySaver
@@ -123,6 +125,16 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                         iconTint = Color(0xFF90CAF9),
                         keywords = listOf("exit", "close", "quit", "leave", "background", "stop"),
                     ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = TriggerCategory.BLUETOOTH.name,
+                label = TriggerCategory.BLUETOOTH.label,
+                icon = Icons.Default.Bluetooth,
+                iconTint = Color(0xFF80CBC4),
+                items = listOf(
+                    PickerItem(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_CONNECTED.label, "When selected bonded Bluetooth device connects", Icons.Default.Bluetooth, Color(0xFF80CBC4), listOf("bluetooth", "paired", "bonded", "device", "connect", "acl")),
+                    PickerItem(TriggerEvent.BLUETOOTH_DISCONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED.label, "When selected bonded Bluetooth device disconnects", Icons.Default.BluetoothDisabled, Color(0xFFB2DFDB), listOf("bluetooth", "paired", "bonded", "device", "disconnect", "acl")),
                 ),
             ),
             PickerCategoryGroup(
@@ -482,6 +494,16 @@ fun ActionPicker(
                         iconTint = Color(0xFFC5E1A5),
                         keywords = listOf("battery saver", "normal power", "saver off", "disable battery saver"),
                     ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = ActionCategory.CONNECTIVITY.name,
+                label = ActionCategory.CONNECTIVITY.label,
+                icon = Icons.Default.Bluetooth,
+                iconTint = Color(0xFF80CBC4),
+                items = listOf(
+                    PickerItem(ActionType.BLUETOOTH_ON, ActionType.BLUETOOTH_ON.label, "Turn Bluetooth radio on (requires Shizuku)", Icons.Default.Bluetooth, Color(0xFF80CBC4), listOf("bluetooth", "radio", "connectivity", "on", "enable", "shizuku")),
+                    PickerItem(ActionType.BLUETOOTH_OFF, ActionType.BLUETOOTH_OFF.label, "Turn Bluetooth radio off (requires Shizuku)", Icons.Default.BluetoothDisabled, Color(0xFFB2DFDB), listOf("bluetooth", "radio", "connectivity", "off", "disable", "shizuku")),
                 ),
             ),
             PickerCategoryGroup(

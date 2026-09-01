@@ -135,6 +135,23 @@ object RuleEvaluator {
         }
     }
 
+    fun evaluateBluetooth(
+        rules: List<Automation>,
+        transition: BluetoothDeviceTransition,
+        liveState: LiveSystemState = LiveSystemState(),
+    ): List<Automation> {
+        val trigger = when (transition.event) {
+            BluetoothDeviceEvent.CONNECTED -> TriggerEvent.BLUETOOTH_CONNECTED
+            BluetoothDeviceEvent.DISCONNECTED -> TriggerEvent.BLUETOOTH_DISCONNECTED
+        }
+        return rules.filter { rule ->
+            rule.enabled &&
+                rule.triggerEvent == trigger &&
+                rule.bluetoothDeviceAddress.trim().equals(transition.address.trim(), ignoreCase = true) &&
+                matchesConditions(rule.conditions, liveState)
+        }
+    }
+
     fun evaluateNotification(
         rules: List<Automation>,
         event: TransientNotificationEvent,
