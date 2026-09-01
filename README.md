@@ -53,6 +53,7 @@ Target / compile SDK: 36 (Android 16)
 - Bluetooth device triggers: public ACL connected/disconnected broadcasts while engine runs, matching only selected bonded device address. Per-device consecutive state broadcasts are deduped; no initial connection state is queried or replayed on engine start. Picker never scans or stores paired-device history.
 - NFC tag triggers: match a user-selected normalized tag UID. Tag payloads and technologies are never persisted; UID is retained only in the rule needed for matching. NFC scans route to the engine only while it runs.
 - Per-action delays: each action can wait 0-300 seconds before it runs. Actions remain sequential in configured order; engine stop cancels a pending delay and records cancellation in run history.
+- Per-rule cooldown: choose None, 1m, 5m, 15m, or 60m. After a successful automatic run, matching events are skipped until cooldown expires; manual test runs bypass cooldown without resetting `lastTriggeredAt`.
 - Show notification action: per-rule title and message, posted through visible `Automation alerts` channel.
 - Boot/app-update receiver restarts the engine only when Run engine on device startup is enabled.
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
@@ -247,6 +248,7 @@ app/src/test/                 Rule, schedule, reducer, encryption, template, man
 - Bluetooth on/off through Shizuku passed Xiaomi 15T Pro / HyperOS 3 device smoke testing; state changes can settle asynchronously, so executor waits up to 5 seconds for adapter-state readback.
 - Bluetooth selected-bonded-device connection trigger passed Xiaomi 15T Pro / HyperOS 3 device smoke testing by executing a configured Battery Saver action.
 - NFC tag trigger and per-action delay build and unit tests passed; debug APK installed and launched on Xiaomi 15T Pro / HyperOS 3. Configured NFC tag scan smoke testing passed; delayed-action device smoke testing remains pending.
+- Per-rule cooldown build and unit tests passed and Xiaomi 15T Pro / HyperOS 3 smoke testing confirmed a matching trigger runs once, suppresses another matching event during cooldown, then runs again after expiry.
 - Create/Edit keyboard behavior passed Xiaomi 15T Pro / HyperOS 3 device smoke testing: keyboard opens only for focused text fields, scroll remains available, and a focused field returns above the IME when typing after it was scrolled out of view.
 
 ## Next validation

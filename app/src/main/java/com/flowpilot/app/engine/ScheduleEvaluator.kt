@@ -10,11 +10,13 @@ object ScheduleEvaluator {
         rules: List<Automation>,
         now: LocalDateTime,
         liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
         val minute = now.hour * 60 + now.minute
         val day = now.dayOfWeek.value
         return rules.filter { rule ->
             rule.enabled && rule.triggerEvent == TriggerEvent.TIME_SCHEDULE &&
+                !rule.isCoolingDown(nowMs) &&
                 rule.scheduledMinute == minute &&
                 (rule.scheduledDays.isEmpty() || day in rule.scheduledDays) &&
                 RuleEvaluator.matchesConditions(rule.conditions, liveState)

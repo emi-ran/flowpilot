@@ -109,6 +109,9 @@ Do not bundle unrelated features. One feature family at a time.
 11. **Per-action delay** (implementation complete; Xiaomi smoke test pending)
     - Optional 0-300 second delay before each action
     - Actions remain sequential; engine stop cancels delay and records cancellation
+12. **Per-rule cooldown** (complete; Xiaomi smoke test passed)
+    - None, 1m, 5m, 15m, or 60m options
+    - Applies after successful automatic runs across every trigger type; manual tests bypass it
 
 ### Phase 2 — HyperOS 3 system controls
 

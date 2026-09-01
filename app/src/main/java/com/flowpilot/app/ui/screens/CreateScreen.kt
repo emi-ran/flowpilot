@@ -91,6 +91,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var showAlarmTimePicker by remember { mutableStateOf(false) }
     var timerDurationSeconds by remember { mutableIntStateOf(300) }
     var timerMessage by remember { mutableStateOf("") }
+    var cooldownMinutes by remember { mutableIntStateOf(0) }
     var webhookMethod by remember { mutableStateOf("POST") }
     var webhookUrl by remember { mutableStateOf("") }
     var webhookHeaders by remember { mutableStateOf("") }
@@ -421,6 +422,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 )
             }
 
+            RuleCooldownSettings(
+                cooldownMinutes = cooldownMinutes,
+                onCooldownChange = { cooldownMinutes = it },
+            )
+
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -444,6 +450,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             appName = appName,
                             actions = actions,
                             actionDelays = actionDelays,
+                            cooldownMinutes = cooldownMinutes,
                             scheduledMinute = scheduledMinute,
                             scheduledDays = scheduledDays,
                             batteryLevel = batteryLevel,
@@ -1055,6 +1062,41 @@ fun SoundSettings(
     Slider(value = durationMs.toFloat(), onValueChange = { setDurationMs(it.toInt()) }, valueRange = 1_000f..60_000f, steps = 59)
     OutlinedButton(onClick = preview, modifier = Modifier.padding(top = 8.dp)) { Text("Preview") }
     TextButton(onClick = stopPreview) { Text("Stop preview") }
+}
+
+@Composable
+fun RuleCooldownSettings(
+    cooldownMinutes: Int,
+    onCooldownChange: (Int) -> Unit,
+) {
+    Text(
+        "Cooldown",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 16.dp),
+    )
+    val options = listOf(0, 1, 5, 15, 60)
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(top = 8.dp),
+    ) {
+        options.forEach { minutes ->
+            val label = if (minutes == 0) "None" else "${minutes}m"
+            FilterChip(
+                selected = cooldownMinutes == minutes,
+                onClick = { onCooldownChange(minutes) },
+                label = { Text(label) },
+            )
+        }
+    }
+    Text(
+        text = if (cooldownMinutes == 0) "Rule triggers on every matching event."
+        else "Rule will wait $cooldownMinutes minute${if (cooldownMinutes > 1) "s" else ""} after a successful run before triggering automatically again.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 4.dp),
+    )
 }
 
 @Composable

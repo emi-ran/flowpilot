@@ -90,6 +90,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var showAlarmTimePicker by remember { mutableStateOf(false) }
     var timerDurationSeconds by remember(initialRule.id) { mutableIntStateOf(initialRule.timerDurationSeconds) }
     var timerMessage by remember(initialRule.id) { mutableStateOf(initialRule.timerMessage) }
+    var cooldownMinutes by remember(initialRule.id) { mutableIntStateOf(initialRule.cooldownMinutes) }
     var webhookMethod by remember(initialRule.id) { mutableStateOf(initialRule.webhookMethod) }
     var webhookUrl by remember(initialRule.id) { mutableStateOf(initialRule.webhookUrl) }
     var webhookHeaders by remember(initialRule.id) { mutableStateOf(initialRule.webhookHeaders) }
@@ -546,6 +547,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 )
             }
 
+            RuleCooldownSettings(
+                cooldownMinutes = cooldownMinutes,
+                onCooldownChange = { cooldownMinutes = it },
+            )
+
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -628,6 +634,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
                                 actionDelays = actionDelays,
+                                cooldownMinutes = cooldownMinutes,
                             )
                         )
                         back()

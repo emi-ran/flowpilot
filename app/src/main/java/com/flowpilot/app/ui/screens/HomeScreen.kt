@@ -237,6 +237,9 @@ private fun RuleCard(
             Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
                 Text(item.rule.name, style = MaterialTheme.typography.titleMedium)
                 Text("${item.rule.triggerEvent.label} → ${item.rule.actionSummary}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                if (item.rule.effectiveCooldownMinutes > 0) {
+                    Text("Cooldown: ${item.rule.effectiveCooldownMinutes}m", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                }
                 val detail = when (item.rule.triggerEvent) {
                     TriggerEvent.BATTERY_BELOW,
                     TriggerEvent.BATTERY_ABOVE -> "Threshold: ${item.rule.batteryLevel}%"

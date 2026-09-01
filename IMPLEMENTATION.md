@@ -14,6 +14,8 @@ each schedule occurrence once, and restarts on boot/app update when the engine-s
 
 Actions can have a per-action pre-execution delay of 0-300 seconds. Delays preserve configured action order and are cancellable when engine stops; cancellation is recorded in execution history.
 
+Rules can have a 0, 1, 5, 15, or 60-minute cooldown. Cooldown applies to all automatic trigger evaluators after a successful run updates `lastTriggeredAt`; manual test runs bypass it. A future `lastTriggeredAt` blocks safely until wall clock catches up.
+
 Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request a one-shot nearby-network scan; scan results are transient, deduplicated, and never persisted. Android throttles scan frequency and may return cached results. The tracker reads SSID from Wi-Fi-specific `NetworkCallback` capabilities instead of `activeNetwork`, so Xiaomi can detect Wi-Fi transitions even when cellular remains the default data network.
 
 ## Capability matrix (verified against Android 16 / HyperOS constraints)
@@ -118,11 +120,11 @@ tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foregrou
 
 1. AutomationEngine polls foreground events, queued charger/battery broadcasts, and schedules every 500 ms.
 2. On foreground package change -> report `AppOpened(pkg)` / `AppClosed(pkg)` event.
-3. RuleEvaluator matches enabled rules whose trigger app == pkg and event matches.
+3. RuleEvaluator matches enabled rules whose trigger app == pkg, event matches, conditions match live state, and cooldown period has expired (`now - lastTriggeredAt >= cooldown`).
 4. For each match, check `lastTriggeredAt`/active-lock dedupe (a rule for "app opened" fires once
    per open, not while app stays foreground).
 5. Execute actions via capability-aware executors. Battery Saver uses direct access when available or Shizuku fallback.
-6. Update lastTriggeredAt, persist.
+6. If at least one action succeeds, update `lastTriggeredAt` to current epoch time and persist. Cooldown begins counting down from this timestamp. Suppressed runs during cooldown produce no history records.
 
 ChargerStateTracker registers only while the engine runs. It queues `ACTION_POWER_CONNECTED` and
 `ACTION_POWER_DISCONNECTED`, dedupes consecutive identical states, and does not query current charger state

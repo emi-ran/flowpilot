@@ -227,6 +227,8 @@ data class Automation(
     val actions: List<ActionType> = emptyList(),
     /** Per-action optional delay in seconds (0..300), sequential with matching index in actions. */
     val actionDelays: List<Int> = emptyList(),
+    /** Cooldown duration in minutes (0 means disabled, stored values clamp to 1440). Blocks automatic trigger evaluation when (now - lastTriggeredAt) < cooldown. */
+    val cooldownMinutes: Int = 0,
     val createdAt: Long,
     val lastTriggeredAt: Long = 0L,
 ) {
@@ -240,6 +242,18 @@ data class Automation(
                 actionDelays.getOrNull(i)?.coerceIn(0, 300) ?: 0
             }
         }
+
+    val effectiveCooldownMinutes: Int
+        get() = cooldownMinutes.coerceIn(0, 1440)
+
+    fun isCoolingDown(nowMs: Long): Boolean {
+        val cdMinutes = effectiveCooldownMinutes
+        if (cdMinutes <= 0 || lastTriggeredAt <= 0L) return false
+        val elapsedMs = nowMs - lastTriggeredAt
+        if (elapsedMs < 0L) return true // Future timestamp safety
+        val cooldownMs = cdMinutes * 60_000L
+        return elapsedMs < cooldownMs
+    }
 
     val actionSummary: String
         get() {

@@ -76,23 +76,30 @@ object RuleEvaluator {
         rules: List<Automation>,
         event: ChargerEvent,
         liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
         val triggerEvent = when (event) {
             ChargerEvent.CONNECTED -> TriggerEvent.CHARGER_CONNECTED
             ChargerEvent.DISCONNECTED -> TriggerEvent.CHARGER_DISCONNECTED
         }
         val effectiveState = liveState.copy(isChargerConnected = (event == ChargerEvent.CONNECTED))
-        return rules.filter { it.enabled && it.triggerEvent == triggerEvent && matchesConditions(it.conditions, effectiveState) }
+        return rules.filter {
+            it.enabled &&
+                it.triggerEvent == triggerEvent &&
+                !it.isCoolingDown(nowMs) &&
+                matchesConditions(it.conditions, effectiveState)
+        }
     }
 
     fun evaluateBattery(
         rules: List<Automation>,
         transition: BatteryLevelTransition,
         liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
         val effectiveState = liveState.copy(batteryPercent = transition.current)
         return rules.filter { rule ->
-            if (!rule.enabled) return@filter false
+            if (!rule.enabled || rule.isCoolingDown(nowMs)) return@filter false
             val triggerMatches = when (rule.triggerEvent) {
                 TriggerEvent.BATTERY_BELOW -> transition.previous > rule.batteryLevel && transition.current <= rule.batteryLevel
                 TriggerEvent.BATTERY_ABOVE -> transition.previous < rule.batteryLevel && transition.current >= rule.batteryLevel
@@ -106,19 +113,26 @@ object RuleEvaluator {
         rules: List<Automation>,
         event: ScreenEvent,
         liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
         val trigger = when (event) {
             ScreenEvent.ON -> TriggerEvent.SCREEN_ON
             ScreenEvent.OFF -> TriggerEvent.SCREEN_OFF
         }
         val effectiveState = liveState.copy(isScreenOn = (event == ScreenEvent.ON))
-        return rules.filter { it.enabled && it.triggerEvent == trigger && matchesConditions(it.conditions, effectiveState) }
+        return rules.filter {
+            it.enabled &&
+                it.triggerEvent == trigger &&
+                !it.isCoolingDown(nowMs) &&
+                matchesConditions(it.conditions, effectiveState)
+        }
     }
 
     fun evaluateWifi(
         rules: List<Automation>,
         transition: WifiTransition,
         liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
         val trigger = when (transition.event) {
             WifiStateEvent.CONNECTED -> TriggerEvent.WIFI_CONNECTED
@@ -128,7 +142,7 @@ object RuleEvaluator {
             connectedWifiSsid = if (transition.event == WifiStateEvent.CONNECTED) transition.ssid else null
         )
         return rules.filter { rule ->
-            if (!rule.enabled || rule.triggerEvent != trigger) return@filter false
+            if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@filter false
             val ssidMatches = if (rule.wifiSsid.isBlank()) true
             else rule.wifiSsid.trim().equals(transition.ssid.trim(), ignoreCase = true)
             ssidMatches && matchesConditions(rule.conditions, effectiveState)
@@ -139,6 +153,7 @@ object RuleEvaluator {
         rules: List<Automation>,
         transition: BluetoothDeviceTransition,
         liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
         val trigger = when (transition.event) {
             BluetoothDeviceEvent.CONNECTED -> TriggerEvent.BLUETOOTH_CONNECTED
@@ -147,6 +162,7 @@ object RuleEvaluator {
         return rules.filter { rule ->
             rule.enabled &&
                 rule.triggerEvent == trigger &&
+                !rule.isCoolingDown(nowMs) &&
                 rule.bluetoothDeviceAddress.trim().equals(transition.address.trim(), ignoreCase = true) &&
                 matchesConditions(rule.conditions, liveState)
         }
@@ -156,9 +172,10 @@ object RuleEvaluator {
         rules: List<Automation>,
         event: TransientNotificationEvent,
         liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
         return rules.filter { rule ->
-            if (!rule.enabled || rule.triggerEvent != TriggerEvent.NOTIFICATION_RECEIVED) return@filter false
+            if (!rule.enabled || rule.triggerEvent != TriggerEvent.NOTIFICATION_RECEIVED || rule.isCoolingDown(nowMs)) return@filter false
             // Package match: must match selected package if configured
             if (rule.notificationAppPackage.isNotBlank() && rule.notificationAppPackage != event.packageName) {
                 return@filter false
@@ -178,12 +195,14 @@ object RuleEvaluator {
         rules: List<Automation>,
         event: NfcTagScannedEvent,
         liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
         val normalizedEventId = NfcTagUtils.normalizeTagId(event.tagId)
         if (normalizedEventId.isEmpty()) return emptyList()
         return rules.filter { rule ->
             rule.enabled &&
                 rule.triggerEvent == TriggerEvent.NFC_TAG_SCANNED &&
+                !rule.isCoolingDown(nowMs) &&
                 NfcTagUtils.normalizeTagId(rule.nfcTagId).equals(normalizedEventId, ignoreCase = true) &&
                 matchesConditions(rule.conditions, liveState)
         }
@@ -195,6 +214,7 @@ object RuleEvaluator {
         pkg: String,
         heldOpenLock: Boolean,
         liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
     ): EvaluationResult {
         val triggerEvent = when (event) {
             AppEvent.OPENED -> TriggerEvent.APP_OPENED
@@ -202,7 +222,11 @@ object RuleEvaluator {
         }
 
         val matching = rules.filter { r ->
-            r.enabled && r.triggerEvent == triggerEvent && r.appPackage == pkg && matchesConditions(r.conditions, liveState)
+            r.enabled &&
+                r.triggerEvent == triggerEvent &&
+                r.appPackage == pkg &&
+                !r.isCoolingDown(nowMs) &&
+                matchesConditions(r.conditions, liveState)
         }
 
         val toExecute = when (event) {

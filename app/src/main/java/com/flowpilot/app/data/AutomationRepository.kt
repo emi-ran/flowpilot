@@ -79,6 +79,7 @@ class AutomationRepository(private val context: Context) {
         appName: String,
         actions: List<com.flowpilot.app.data.model.ActionType>,
         actionDelays: List<Int> = emptyList(),
+        cooldownMinutes: Int = 0,
         scheduledMinute: Int = 0,
         scheduledDays: Set<Int> = emptySet(),
         batteryLevel: Int = 50,
@@ -190,6 +191,7 @@ class AutomationRepository(private val context: Context) {
             action = primaryAction,
             actions = actions,
             actionDelays = actionDelays,
+            cooldownMinutes = cooldownMinutes,
             createdAt = System.currentTimeMillis(),
         )
         context.dataStore.edit { prefs ->

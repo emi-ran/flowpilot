@@ -16,6 +16,7 @@ Last updated: 2026-09-01
 - Manual test run from Edit automation, including confirmation, saved-action execution, result feedback, and unchanged rule state.
 - Persistent run history for engine and manual executions: action-level outcomes, 100-entry newest-first retention, and redacted diagnostics.
 - Bluetooth bonded-device connected/disconnected triggers and Bluetooth on/off Shizuku actions, including delayed adapter-state readback.
+- Per-rule cooldown: matching trigger runs once, suppresses repeated matching event during cooldown, and runs again after expiry.
 - Create/Edit keyboard behavior: keyboard opens only for focused fields, form scroll remains available, and a focused field returns above the IME when typing after manual scrolling.
 
 ## Implemented; device validation pending
@@ -33,6 +34,7 @@ Last updated: 2026-09-01
 - Bluetooth triggers use selected bonded devices, public ACL broadcasts, and `BLUETOOTH_CONNECT` on Android 12+; no discovery, pairing, scan history, or startup replay. Bluetooth device/profile behavior can still differ on other OEMs.
 - NFC tag rules match a persisted tag UID, not tag payload. UID is identifier only, not authentication; cloned tags can match.
 - Per-action delay is bounded to 300 seconds in UI. Engine cancellation during delay creates failed run-history record.
+- Rule cooldown begins only after successful automatic execution, applies to every automatic trigger, and is bypassed by manual test runs.
 - Xiaomi 15T Pro maps Sound profile Vibrate and Silent to the same observed ringer behavior; other devices can differ.
 
 ## Next validation

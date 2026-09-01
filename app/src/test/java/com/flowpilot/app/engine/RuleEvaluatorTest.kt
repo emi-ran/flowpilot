@@ -337,4 +337,103 @@ class RuleEvaluatorTest {
         NfcTagHandoff.clearLatestScannedTagId()
         assertThat(NfcTagHandoff.latestScannedTagId.value).isNull()
     }
+
+    @Test fun cooldown_no_cooldown_always_matches() {
+        val r = rule(TriggerEvent.APP_OPENED).copy(cooldownMinutes = 0, lastTriggeredAt = 1000L)
+        val result = RuleEvaluator.evaluate(listOf(r), AppEvent.OPENED, "wallet.pkg", false, nowMs = 1500L)
+        assertThat(result.toExecute).containsExactly(r)
+    }
+
+    @Test fun cooldown_inside_boundary_blocked() {
+        val nowMs = 1_000_000L
+        val r = rule(TriggerEvent.APP_OPENED).copy(cooldownMinutes = 5, lastTriggeredAt = nowMs - (4 * 60_000L))
+        val result = RuleEvaluator.evaluate(listOf(r), AppEvent.OPENED, "wallet.pkg", false, nowMs = nowMs)
+        assertThat(result.toExecute).isEmpty()
+        assertThat(result.matched).isEmpty()
+    }
+
+    @Test fun cooldown_after_expiry_allowed() {
+        val nowMs = 1_000_000L
+        val r = rule(TriggerEvent.APP_OPENED).copy(cooldownMinutes = 5, lastTriggeredAt = nowMs - (5 * 60_000L))
+        val result = RuleEvaluator.evaluate(listOf(r), AppEvent.OPENED, "wallet.pkg", false, nowMs = nowMs)
+        assertThat(result.toExecute).containsExactly(r)
+    }
+
+    @Test fun cooldown_never_triggered_always_matches() {
+        val nowMs = 1_000_000L
+        val r = rule(TriggerEvent.APP_OPENED).copy(cooldownMinutes = 15, lastTriggeredAt = 0L)
+        val result = RuleEvaluator.evaluate(listOf(r), AppEvent.OPENED, "wallet.pkg", false, nowMs = nowMs)
+        assertThat(result.toExecute).containsExactly(r)
+    }
+
+    @Test fun cooldown_future_last_triggered_blocked_safely() {
+        val nowMs = 100_000L
+        val r = rule(TriggerEvent.APP_OPENED).copy(cooldownMinutes = 5, lastTriggeredAt = 200_000L)
+        val result = RuleEvaluator.evaluate(listOf(r), AppEvent.OPENED, "wallet.pkg", false, nowMs = nowMs)
+        assertThat(result.toExecute).isEmpty()
+    }
+
+    @Test fun cooldown_disabled_or_condition_mismatch_remains_blocked() {
+        val nowMs = 1_000_000L
+        val disabled = rule(TriggerEvent.APP_OPENED).copy(cooldownMinutes = 0, lastTriggeredAt = 0L, enabled = false)
+        val condMismatch = rule(TriggerEvent.APP_OPENED).copy(
+            cooldownMinutes = 0,
+            lastTriggeredAt = 0L,
+            conditions = listOf(com.flowpilot.app.data.model.RuleCondition(com.flowpilot.app.data.model.ConditionType.CHARGER_CONNECTED))
+        )
+        val state = LiveSystemState(isChargerConnected = false)
+        val result = RuleEvaluator.evaluate(listOf(disabled, condMismatch), AppEvent.OPENED, "wallet.pkg", false, liveState = state, nowMs = nowMs)
+        assertThat(result.toExecute).isEmpty()
+    }
+
+    @Test fun cooldown_applies_uniformly_across_all_evaluators() {
+        val nowMs = 500_000L
+        val recentSuccess = nowMs - 60_000L // 1 min ago
+        val cdMinutes = 5
+
+        // Charger
+        val chargerRule = rule(TriggerEvent.CHARGER_CONNECTED).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess)
+        assertThat(RuleEvaluator.evaluateCharger(listOf(chargerRule), ChargerEvent.CONNECTED, nowMs = nowMs)).isEmpty()
+
+        // Battery
+        val batteryRule = rule(TriggerEvent.BATTERY_BELOW).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess, batteryLevel = 20)
+        assertThat(RuleEvaluator.evaluateBattery(listOf(batteryRule), BatteryLevelTransition(21, 20), nowMs = nowMs)).isEmpty()
+
+        // Screen
+        val screenRule = rule(TriggerEvent.SCREEN_ON).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess)
+        assertThat(RuleEvaluator.evaluateScreen(listOf(screenRule), ScreenEvent.ON, nowMs = nowMs)).isEmpty()
+
+        // Wi-Fi
+        val wifiRule = rule(TriggerEvent.WIFI_CONNECTED).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess, wifiSsid = "Home")
+        assertThat(RuleEvaluator.evaluateWifi(listOf(wifiRule), WifiTransition(WifiStateEvent.CONNECTED, "Home"), nowMs = nowMs)).isEmpty()
+
+        // Bluetooth
+        val btRule = rule(TriggerEvent.BLUETOOTH_CONNECTED).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess, bluetoothDeviceAddress = "AA:BB:CC:DD:EE:FF")
+        assertThat(RuleEvaluator.evaluateBluetooth(listOf(btRule), BluetoothDeviceTransition(BluetoothDeviceEvent.CONNECTED, "AA:BB:CC:DD:EE:FF"), nowMs = nowMs)).isEmpty()
+
+        // Notification
+        val notifRule = rule(TriggerEvent.NOTIFICATION_RECEIVED).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess, notificationAppPackage = "com.test.app")
+        assertThat(
+            RuleEvaluator.evaluateNotification(
+                listOf(notifRule),
+                TransientNotificationEvent(
+                    packageName = "com.test.app",
+                    postTime = nowMs,
+                    key = "cooldown-test",
+                    title = "Title",
+                    text = "Text",
+                ),
+                nowMs = nowMs,
+            )
+        ).isEmpty()
+
+        // NFC Tag
+        val nfcRule = rule(TriggerEvent.NFC_TAG_SCANNED).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess, nfcTagId = "04A1B2")
+        assertThat(RuleEvaluator.evaluateNfcTag(listOf(nfcRule), NfcTagScannedEvent("04A1B2"), nowMs = nowMs)).isEmpty()
+
+        // Schedule
+        val schedRule = rule(TriggerEvent.TIME_SCHEDULE).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess, scheduledMinute = 120)
+        val now = java.time.LocalDateTime.of(2026, 9, 1, 2, 0)
+        assertThat(ScheduleEvaluator.matchingRules(listOf(schedRule), now, nowMs = nowMs)).isEmpty()
+    }
 }

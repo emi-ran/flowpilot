@@ -16,6 +16,7 @@ All notable FlowPilot changes are documented here.
 - Bluetooth on/off actions through exact allowlisted Shizuku `svc bluetooth enable|disable` commands with adapter-state readback verification.
 - NFC tag scanned trigger with normalized selected tag UID matching, transient intent handoff, and no NDEF payload or tag-tech persistence.
 - Optional per-action 0-300 second pre-execution delays, sequential action order, cancellation, and run-history recording.
+- Per-rule cooldown options (None, 1m, 5m, 15m, 60m) for all automatic triggers after successful execution; manual tests bypass cooldown and skipped runs create no history spam.
 
 ### Changed
 
