@@ -133,7 +133,10 @@ fun TtsSettings(
                 setText(it)
                 synthesisStatusMessage = null
             },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .bringIntoViewOnFocusOrChange(text),
             label = { Text("Spoken message") },
             placeholder = { Text("e.g. Battery charged, unplug cable") },
             minLines = 2,

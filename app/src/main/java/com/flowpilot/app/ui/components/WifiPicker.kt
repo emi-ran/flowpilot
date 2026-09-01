@@ -74,7 +74,10 @@ fun WifiSsidPickerField(
         OutlinedTextField(
             value = ssid,
             onValueChange = onSsidChange,
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
+                .bringIntoViewOnFocusOrChange(ssid),
             shape = RoundedCornerShape(16.dp),
             label = { Text(label) },
             trailingIcon = {

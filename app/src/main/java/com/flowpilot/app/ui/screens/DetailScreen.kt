@@ -47,6 +47,7 @@ import com.flowpilot.app.ui.components.AppPicker
 import com.flowpilot.app.ui.components.SelectionRow
 import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
+import com.flowpilot.app.ui.components.bringIntoViewOnFocusOrChange
 import com.flowpilot.app.ui.screens.AlarmSettings
 import com.flowpilot.app.ui.screens.TimerSettings
 import kotlinx.coroutines.launch
@@ -258,6 +259,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
+                    .imePadding()
                     .padding(horizontal = 20.dp),
             ) {
             Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
@@ -374,8 +376,26 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
 
             if (ActionType.SHOW_NOTIFICATION in actions) {
                 Text("Notification", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
-                OutlinedTextField(value = notificationTitle, onValueChange = { notificationTitle = it }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Title") }, singleLine = true)
-                OutlinedTextField(value = notificationBody, onValueChange = { notificationBody = it }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Message") }, minLines = 2)
+                OutlinedTextField(
+                    value = notificationTitle,
+                    onValueChange = { notificationTitle = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .bringIntoViewOnFocusOrChange(notificationTitle),
+                    label = { Text("Title") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = notificationBody,
+                    onValueChange = { notificationBody = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .bringIntoViewOnFocusOrChange(notificationBody),
+                    label = { Text("Message") },
+                    minLines = 2,
+                )
             }
             if (ActionType.VIBRATE in actions) {
                 Text("Vibration", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
@@ -430,7 +450,16 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
             }
             if (ActionType.OPEN_URL in actions) {
                 Text("Open URL", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
-                OutlinedTextField(value = url, onValueChange = { url = it }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("https://example.com") }, singleLine = true)
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .bringIntoViewOnFocusOrChange(url),
+                    label = { Text("https://example.com") },
+                    singleLine = true,
+                )
             }
             if (ActionType.SPEAK_TEXT in actions) {
                 TtsSettings(
@@ -482,7 +511,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+                    .bringIntoViewOnFocusOrChange(name),
                 shape = RoundedCornerShape(16.dp),
                 label = { Text("Name") },
                 singleLine = true,

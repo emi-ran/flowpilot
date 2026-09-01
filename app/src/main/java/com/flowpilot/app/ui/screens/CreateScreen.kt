@@ -49,6 +49,7 @@ import com.flowpilot.app.ui.components.SelectionRow
 import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
 import com.flowpilot.app.ui.components.WifiSsidPickerField
+import com.flowpilot.app.ui.components.bringIntoViewOnFocusOrChange
 
 @Composable
 fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
@@ -184,6 +185,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = 20.dp),
         ) {
             Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
@@ -325,7 +327,10 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .bringIntoViewOnFocusOrChange(url),
                     label = { Text("https://example.com") },
                     singleLine = true,
                 )
@@ -380,7 +385,10 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+                    .bringIntoViewOnFocusOrChange(name),
                 shape = RoundedCornerShape(16.dp),
                 label = { Text("Name (optional)") },
                 singleLine = true,
@@ -483,7 +491,10 @@ fun NotificationTriggerSettings(
     OutlinedTextField(
         value = keyword,
         onValueChange = setKeyword,
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .bringIntoViewOnFocusOrChange(keyword),
         shape = RoundedCornerShape(16.dp),
         label = { Text("Keyword filter (optional, case-insensitive)") },
         singleLine = true,
@@ -524,7 +535,10 @@ fun WebhookSettings(
     OutlinedTextField(
         value = url,
         onValueChange = setUrl,
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .bringIntoViewOnFocusOrChange(url),
         shape = RoundedCornerShape(16.dp),
         label = { Text("URL (https://example.com/api)") },
         singleLine = true,
@@ -534,7 +548,10 @@ fun WebhookSettings(
     OutlinedTextField(
         value = headers,
         onValueChange = setHeaders,
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .bringIntoViewOnFocusOrChange(headers),
         shape = RoundedCornerShape(16.dp),
         label = { Text("Headers (Key: Value, one per line)") },
         placeholder = { Text("Content-Type: application/json\nAuthorization: Bearer token") },
@@ -549,7 +566,10 @@ fun WebhookSettings(
         OutlinedTextField(
             value = body,
             onValueChange = setBody,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .bringIntoViewOnFocusOrChange(body),
             shape = RoundedCornerShape(16.dp),
             label = { Text("Request Body") },
             placeholder = { Text("{\"event\": \"\${trigger}\", \"battery\": \${batteryPercent}}") },
@@ -732,7 +752,10 @@ fun AlarmSettings(
     OutlinedTextField(
         value = message,
         onValueChange = setMessage,
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .bringIntoViewOnFocusOrChange(message),
         shape = RoundedCornerShape(16.dp),
         label = { Text("Label (optional)") },
         singleLine = true,
@@ -775,7 +798,10 @@ fun TimerSettings(
     OutlinedTextField(
         value = message,
         onValueChange = setMessage,
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .bringIntoViewOnFocusOrChange(message),
         shape = RoundedCornerShape(16.dp),
         label = { Text("Label (optional)") },
         singleLine = true,
@@ -802,8 +828,26 @@ private fun NotificationSettings(
     setBody: (String) -> Unit,
 ) {
     Text("Notification", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
-    OutlinedTextField(value = title, onValueChange = setTitle, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Title") }, singleLine = true)
-    OutlinedTextField(value = body, onValueChange = setBody, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), label = { Text("Message") }, minLines = 2)
+    OutlinedTextField(
+        value = title,
+        onValueChange = setTitle,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .bringIntoViewOnFocusOrChange(title),
+        label = { Text("Title") },
+        singleLine = true,
+    )
+    OutlinedTextField(
+        value = body,
+        onValueChange = setBody,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .bringIntoViewOnFocusOrChange(body),
+        label = { Text("Message") },
+        minLines = 2,
+    )
 }
 
 @Composable
