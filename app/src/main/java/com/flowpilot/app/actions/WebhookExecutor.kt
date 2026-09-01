@@ -31,8 +31,9 @@ class WebhookExecutor(
         val rawUrl = parameters.webhookUrl.trim()
         val method = parameters.webhookMethod.trim().uppercase()
         val timeoutMs = parameters.webhookTimeoutSeconds.coerceIn(MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS) * 1000
-        val headers = parseHeaders(parameters.webhookHeaders)
-        val body = parameters.webhookBody
+        val renderedHeaders = WebhookTemplateRenderer.render(parameters.webhookHeaders, parameters.webhookTemplateContext)
+        val headers = parseHeaders(renderedHeaders)
+        val body = WebhookTemplateRenderer.render(parameters.webhookBody, parameters.webhookTemplateContext)
 
         val sanitizedHeaders = sanitizeHeadersForLogging(headers)
         val sanitizedUrl = sanitizeUrlForLogging(rawUrl)

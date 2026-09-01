@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,6 +49,7 @@ import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
 import com.flowpilot.app.ui.screens.AlarmSettings
 import com.flowpilot.app.ui.screens.TimerSettings
+import kotlinx.coroutines.launch
 
 @Composable
 fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
@@ -118,6 +120,9 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var showTriggers by remember { mutableStateOf(false) }
     var showActions by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showRunConfirm by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     if (showApps) AppPicker({ p, n -> pkg = p; appName = n; showApps = false }) { showApps = false }
     if (showNotificationApps) AppPicker({ p, n -> notificationAppPackage = p; notificationAppName = n; showNotificationApps = false }) { showNotificationApps = false }
@@ -172,6 +177,41 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
         )
     }
 
+    if (showRunConfirm) {
+        AlertDialog(
+            onDismissRequest = { showRunConfirm = false },
+            title = { Text("Run automation now?") },
+            text = {
+                Text(
+                    "This will immediately run the saved actions for '${initialRule.name}'.\n\n" +
+                        "• Trigger and conditions will be bypassed\n" +
+                        "• Unsaved edits on this screen are not included\n" +
+                        "• Automation enabled state and last trigger time will not change"
+                )
+            },
+            confirmButton = {
+                TextButton({
+                    showRunConfirm = false
+                    vm.runRuleNow(initialRule) { result ->
+                        scope.launch {
+                            val msg = if (result.failureCount == 0) {
+                                "Executed ${result.successCount} action(s) successfully"
+                            } else {
+                                "Ran with errors: ${result.successCount} succeeded, ${result.failureCount} failed (${result.failureMessages.joinToString(", ")})"
+                            }
+                            snackbarHostState.showSnackbar(msg)
+                        }
+                    }
+                }) {
+                    Text("Run now")
+                }
+            },
+            dismissButton = {
+                TextButton({ showRunConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
+
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
@@ -192,23 +232,34 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
         )
     }
 
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("Edit automation", fontWeight = FontWeight.Bold) },
-            navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
-            actions = {
-                IconButton({ showDeleteConfirm = true }) {
-                    Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-        )
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
+                .padding(padding)
         ) {
+            TopAppBar(
+                title = { Text("Edit automation", fontWeight = FontWeight.Bold) },
+                navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
+                actions = {
+                    IconButton({ showRunConfirm = true }) {
+                        Icon(Icons.Default.PlayArrow, "Run now", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    IconButton({ showDeleteConfirm = true }) {
+                        Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            )
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp),
+            ) {
             Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
             SelectionRow("Trigger", event.label) { showTriggers = true }
             Spacer(Modifier.height(10.dp))
@@ -519,6 +570,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     Text("Save changes")
                 }
             }
+        }
         }
     }
 }

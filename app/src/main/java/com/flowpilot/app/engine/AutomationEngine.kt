@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.flowpilot.app.actions.ActionDispatcher
 import com.flowpilot.app.data.AutomationRepository
+import com.flowpilot.app.data.model.TriggerEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -129,7 +130,7 @@ class AutomationEngine(
             val result = RuleEvaluator.evaluate(rules, AppEvent.CLOSED, pkg, heldOpenLock = false, liveState = liveState)
             if (result.toExecute.isNotEmpty()) {
                 Log.i(TAG, "Executing CLOSED rules for $pkg (${result.toExecute.size} rule(s))")
-                executeAll(result.toExecute)
+                executeAll(result.toExecute, trigger = TriggerEvent.APP_CLOSED, liveState = liveState)
             }
         }
 
@@ -137,7 +138,7 @@ class AutomationEngine(
             val result = RuleEvaluator.evaluate(rules, AppEvent.OPENED, pkg, heldOpenLock = false, liveState = liveState)
             if (result.toExecute.isNotEmpty()) {
                 Log.i(TAG, "Executing OPENED rules for $pkg (${result.toExecute.size} rule(s))")
-                executeAll(result.toExecute)
+                executeAll(result.toExecute, trigger = TriggerEvent.APP_OPENED, liveState = liveState)
             }
         }
     }
@@ -152,7 +153,7 @@ class AutomationEngine(
         val matches = ScheduleEvaluator.matchingRules(repository.automations.first(), now, liveState)
         if (matches.isNotEmpty()) {
             Log.i(TAG, "Executing scheduled rules (${matches.size} rule(s))")
-            executeAll(matches)
+            executeAll(matches, trigger = TriggerEvent.TIME_SCHEDULE, liveState = liveState)
         }
     }
 
@@ -164,7 +165,11 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateCharger(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $event charger rules (${matches.size} rule(s))")
-                executeAll(matches)
+                val trigger = when (event) {
+                    ChargerEvent.CONNECTED -> TriggerEvent.CHARGER_CONNECTED
+                    ChargerEvent.DISCONNECTED -> TriggerEvent.CHARGER_DISCONNECTED
+                }
+                executeAll(matches, trigger = trigger, liveState = liveState.copy(isChargerConnected = (event == ChargerEvent.CONNECTED)))
             }
         }
     }
@@ -177,7 +182,10 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateBattery(rules, transition, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing battery threshold rules for ${transition.previous}% -> ${transition.current}% (${matches.size} rule(s))")
-                executeAll(matches)
+                val effectiveState = liveState.copy(batteryPercent = transition.current)
+                for (rule in matches) {
+                    executeAll(listOf(rule), trigger = rule.triggerEvent, liveState = effectiveState)
+                }
             }
         }
     }
@@ -190,7 +198,11 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateScreen(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $event screen rules (${matches.size} rule(s))")
-                executeAll(matches)
+                val trigger = when (event) {
+                    ScreenEvent.ON -> TriggerEvent.SCREEN_ON
+                    ScreenEvent.OFF -> TriggerEvent.SCREEN_OFF
+                }
+                executeAll(matches, trigger = trigger, liveState = liveState.copy(isScreenOn = (event == ScreenEvent.ON)))
             }
         }
     }
@@ -203,7 +215,14 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateWifi(rules, transition, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing Wi-Fi rules for ${transition.event} (${matches.size} rule(s))")
-                executeAll(matches)
+                val trigger = when (transition.event) {
+                    WifiStateEvent.CONNECTED -> TriggerEvent.WIFI_CONNECTED
+                    WifiStateEvent.DISCONNECTED -> TriggerEvent.WIFI_DISCONNECTED
+                }
+                val effectiveState = liveState.copy(
+                    connectedWifiSsid = if (transition.event == WifiStateEvent.CONNECTED) transition.ssid else null
+                )
+                executeAll(matches, trigger = trigger, liveState = effectiveState)
             }
         }
     }
@@ -216,12 +235,23 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateNotification(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing notification rules for ${event.packageName} (${matches.size} rule(s))")
-                executeAll(matches)
+                executeAll(matches, trigger = TriggerEvent.NOTIFICATION_RECEIVED, liveState = liveState)
             }
         }
     }
 
-    private suspend fun executeAll(rules: List<com.flowpilot.app.data.model.Automation>) {
+    private suspend fun executeAll(
+        rules: List<com.flowpilot.app.data.model.Automation>,
+        trigger: TriggerEvent? = null,
+        liveState: LiveSystemState = LiveSystemState(),
+    ) {
+        val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
+            trigger = trigger?.name ?: "",
+            timestamp = System.currentTimeMillis(),
+            batteryPercent = liveState.batteryPercent,
+            isCharging = liveState.isChargerConnected,
+            wifiSsid = liveState.connectedWifiSsid,
+        )
         for (rule in rules) {
             withContext(Dispatchers.IO) {
                 var anySuccess = false
@@ -254,6 +284,7 @@ class AutomationEngine(
                             webhookHeaders = rule.webhookHeaders,
                             webhookBody = rule.webhookBody,
                             webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
+                            webhookTemplateContext = templateContext,
                         ),
                     )
                     Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")

@@ -11,9 +11,7 @@ Requirements:
 - Gradle wrapper included
 
 ```bash
-export JAVA_HOME=/home/hermes/android-toolchain/jdk17
-export ANDROID_HOME=/home/hermes/Android/Sdk
-./gradlew testDebugUnitTest assembleDebug --no-daemon
+.\gradlew.bat testDebugUnitTest assembleDebug --no-daemon
 ```
 
 APK:
@@ -25,7 +23,7 @@ app/build/outputs/apk/debug/app-debug.apk
 Install:
 
 ```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s <device-serial> install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 Package ID: `com.flowpilot.app`
@@ -36,11 +34,12 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), notification received (selected app + optional keyword), or scheduled time -> one or more NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), notification received (selected app + optional keyword), or scheduled time -> one or more NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Sound profile (Normal/Vibrate/Silent), Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Rule conditions (AND semantics): battery below/above, charger connected/disconnected, screen on/off, Wi-Fi connected/disconnected. Rules execute only when trigger matches AND all configured conditions match current live state.
 - Installed launchable app picker with search, display name, package ID internally.
-- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, and NFC.
+- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, and NFC. Display includes Dark theme and Auto-rotate; Audio includes Sound profile, sound playback, media volume, and TTS.
 - Rule detail and delete.
+- Manual automation test run: in Edit automation TopAppBar, Play icon prompts confirmation (bypassing triggers/conditions, excluding unsaved edits, leaving rule state untouched), runs actions immediately on IO dispatcher with safe live system context (`trigger = MANUAL`), and displays summary feedback via Snackbar.
 - Persistent rules through DataStore JSON.
 - Enable/disable switches.
 - Foreground automation service with visible ongoing notification.
@@ -60,11 +59,12 @@ Target / compile SDK: 36 (Android 16)
     - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
     - Auto-rotate ON/OFF: direct `Settings.System.ACCELEROMETER_ROTATION` write with user-grantable `android.permission.WRITE_SETTINGS` special access.
     - Do Not Disturb ON/OFF: direct `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` / `INTERRUPTION_FILTER_ALL`) with user-grantable Notification Policy Access (`android.permission.ACCESS_NOTIFICATION_POLICY`).
+    - Sound profile (Normal/Vibrate/Silent): toggles `AudioManager.ringerMode` (`RINGER_MODE_NORMAL` / `RINGER_MODE_VIBRATE` / `RINGER_MODE_SILENT`) with user-grantable Notification Policy Access (`android.permission.ACCESS_NOTIFICATION_POLICY`).
     - Create alarm: dispatches `AlarmClock.ACTION_SET_ALARM` with hour, minute, and optional label to the system Clock app (`FLAG_ACTIVITY_NEW_TASK`).
     - Start timer: dispatches `AlarmClock.ACTION_SET_TIMER` with bounded duration (1s-24h), optional label, and `EXTRA_SKIP_UI = true` to start the timer in the background without opening the Clock app UI (`FLAG_ACTIVITY_NEW_TASK`).
     - Launch app: starts selected installed launchable app.
     - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
-    - Send HTTP webhook: dispatches outbound HTTP/HTTPS request (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, body, bounded 1-60s timeout, secret redaction, strict 2xx success verification, and at-rest AES-256-GCM Keystore encryption for webhook URLs, headers, and payloads.
+    - Send HTTP webhook: dispatches outbound HTTP/HTTPS request (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, body, dynamic template variable expansion in headers/body only (`${time}`, `${timestamp}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${trigger}`), bounded 1-60s timeout, secret redaction, strict 2xx success verification, and at-rest AES-256-GCM Keystore encryption for webhook URLs, headers, and payloads. URL templates are intentionally unsupported because URL encoding context differs; unknown or malformed variables remain unchanged and expansion is one pass only.
 - Security & data protection: Android app backup is disabled (`android:allowBackup="false"`) to prevent credential leakage via ADB/cloud backup snapshots. Keystore keys remain on-device and never export to backups. In-app data migration transparently upgrades legacy plaintext webhook configurations on load and save.
     - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
    - Play sound: selected current notification, alarm, ringtone, or a user-selected audio file, limited to selected first 1-60 seconds with preview and stop controls.
@@ -124,13 +124,13 @@ Use a Wi-Fi trigger or Wi-Fi condition's scan icon / **Scan nearby** control to 
 With USB debugging enabled and device connected:
 
 ```bash
-adb shell pm grant com.flowpilot.app android.permission.WRITE_SECURE_SETTINGS
+adb -s <device-serial> shell pm grant com.flowpilot.app android.permission.WRITE_SECURE_SETTINGS
 ```
 
 Verify:
 
 ```bash
-adb shell dumpsys package com.flowpilot.app | grep WRITE_SECURE_SETTINGS
+adb -s <device-serial> shell dumpsys package com.flowpilot.app
 ```
 
 This gives FlowPilot direct Battery Saver access. NFC still needs Shizuku.
@@ -186,18 +186,19 @@ No root is required. If Shizuku is stopped, the action reports failure and does 
 
 ```text
 app/src/main/java/com/flowpilot/app/
-  data/model/                 Serializable rule model
-  data/                       DataStore repository
+  data/model/                 Serializable rule model and action/trigger catalog
+  data/security/              Android Keystore secret encryption
+  data/                       DataStore repository and legacy secret migration
   engine/                     UsageStats, charger, and battery trackers, foreground reducer, schedule/rule evaluators, service, boot receiver
-  actions/                    Action executors and Shizuku UserService bridge
+  actions/                    Action executors, webhook template rendering, and Shizuku UserService bridge
   permission/                 Capability and setup checks
-  ui/                         Compose screens, state, theme, components
-app/src/test/                 Rule, schedule, foreground reducer, and action executor tests
+  ui/                         Compose screens, state, manual test run, theme, components
+app/src/test/                 Rule, schedule, reducer, encryption, template, manual-run, and action executor tests
 ```
 
 ## Verification performed
 
-- `./gradlew testDebugUnitTest assembleDebug --no-daemon` — passed.
+- `.\gradlew.bat testDebugUnitTest assembleDebug --no-daemon` — passed for current working tree.
 - Debug APK installed on Xiaomi 15T Pro / HyperOS 3.
 - Foreground automation service verified active with silent `engine_silent_v2` notification channel.
 - Scheduled-rule persistence and an execution at a future selected time verified on device.
@@ -208,7 +209,6 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Open URL verified on Xiaomi 15T Pro / HyperOS 3.
 - Screen on/off, vibration, and Play sound passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - Media volume implementation has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
-- Play sound passed Xiaomi 15T Pro / HyperOS 3 device smoke testing; screen on/off device smoke testing remains pending.
 - Speak text (offline TTS) builds, unit tests, and Xiaomi device smoke test passed.
 - Auto-rotate on/off (WRITE_SETTINGS) implementation has unit coverage; ADB validation confirmed target device values (0 and 1), and FlowPilot app path passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - Clock create alarm and start timer passed Xiaomi 15T Pro / HyperOS 3 device smoke tests. Start timer uses `EXTRA_SKIP_UI = true` and starts its countdown without opening Clock UI.
@@ -219,13 +219,18 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Send HTTP webhook action has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - NFC and Battery Saver action paths passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - Dark theme on/off (`cmd uimode night yes|no` through Shizuku) has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing through the FlowPilot rule path.
+- Sound profile (Normal/Vibrate/Silent) and webhook template variables have unit coverage; FlowPilot device smoke tests remain pending.
+- Manual test run has unit coverage and build/install verification; Xiaomi device interaction smoke test remains pending.
+- Keyboard resize fix (`adjustResize`) has build/install verification; Xiaomi device UI retest remains pending.
 
 ## Next validation
 
-1. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
+1. Create Sound profile rules for Normal, Vibrate, and Silent with Do Not Disturb access granted; confirm Xiaomi ringer mode changes and each action reports success. Deny access and confirm a failure result.
+2. Create a webhook rule with `${trigger}`, `${batteryPercent}`, `${isCharging}`, and `${wifiSsid}` in request headers or JSON body; verify endpoint receives rendered values and unknown `${token}` remains unchanged.
+3. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
    - Search for Turkish with `Türkçe`, `Turkish`, `tr`, or `tr-TR`.
    - Hold a voice row to preview it without changing selection; reopen picker and confirm it returns to selected voice.
-2. Stop or deny Shizuku, and deny Do Not Disturb access; confirm Dark theme and DND rules report failure instead of success.
+4. Stop or deny Shizuku, and deny Do Not Disturb access; confirm Dark theme and DND rules report failure instead of success.
 
 ## License / distribution note
 

@@ -65,6 +65,37 @@ class WebhookExecutorTest {
     }
 
     @Test
+    fun execute_rendersTemplateVariablesInHeadersAndBody() {
+        val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 200)
+        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val templateContext = WebhookTemplateContext(
+            trigger = "CHARGER_CONNECTED",
+            timestamp = 1700000000000L,
+            timeProvider = { "2023-11-14T22:13:20Z" },
+            batteryPercent = 90,
+            isCharging = true,
+            wifiSsid = "OfficeNet",
+        )
+
+        val result = executor.execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(
+                webhookUrl = "https://example.com/webhook",
+                webhookMethod = "POST",
+                webhookHeaders = "X-Trigger: \${trigger}\nX-Battery: \${batteryPercent}\nContent-Type: application/json",
+                webhookBody = "{\"event\": \"\${trigger}\", \"time\": \"\${time}\", \"wifi\": \"\${wifiSsid}\", \"charging\": \${isCharging}}",
+                webhookTemplateContext = templateContext,
+            ),
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(mockConnection.recordedRequestProperties["X-Trigger"]).isEqualTo("CHARGER_CONNECTED")
+        assertThat(mockConnection.recordedRequestProperties["X-Battery"]).isEqualTo("90")
+        assertThat(mockConnection.recordedRequestProperties["Content-Type"]).isEqualTo("application/json")
+        assertThat(mockConnection.writtenBody()).isEqualTo("{\"event\": \"CHARGER_CONNECTED\", \"time\": \"2023-11-14T22:13:20Z\", \"wifi\": \"OfficeNet\", \"charging\": true}")
+    }
+
+    @Test
     fun execute_successful200Response_returnsSuccess() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 200)
         val executor = WebhookExecutor(connectionFactory = { mockConnection })

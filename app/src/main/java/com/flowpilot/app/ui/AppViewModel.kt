@@ -18,9 +18,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 data class AutomationUI(val rule: Automation, val capability: CapabilityStatus)
+
+data class ManualRunResult(
+    val totalActions: Int,
+    val successCount: Int,
+    val failureCount: Int,
+    val failureMessages: List<String>,
+)
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -269,5 +277,108 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateEngineRunning(value: Boolean) {
         (engineRunning as MutableStateFlow).value = value
+    }
+
+    /**
+     * Executes only the provided rule's actions manually.
+     * Bypasses triggers and conditions, does not alter lastTriggeredAt or enabled state.
+     * Runs off the main dispatcher and invokes callback with overall result.
+     */
+    fun runRuleNow(rule: Automation, callback: (ManualRunResult) -> Unit) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val liveState = getLiveSystemState()
+            val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
+                trigger = "MANUAL",
+                timestamp = System.currentTimeMillis(),
+                batteryPercent = liveState.batteryPercent,
+                isCharging = liveState.isChargerConnected,
+                wifiSsid = liveState.connectedWifiSsid,
+            )
+            val actionParams = com.flowpilot.app.actions.ActionParameters(
+                notificationTitle = rule.notificationTitle,
+                notificationBody = rule.notificationBody,
+                vibrationPattern = rule.vibrationPattern,
+                vibrationDurationMs = rule.vibrationDurationMs,
+                vibrationAmplitude = rule.vibrationAmplitude,
+                mediaVolumePercent = rule.mediaVolumePercent,
+                soundPreset = rule.soundPreset,
+                soundUri = rule.soundUri,
+                soundDurationMs = rule.soundDurationMs,
+                launchPackage = rule.launchPackage,
+                url = rule.url,
+                ttsText = rule.ttsText,
+                ttsVoiceName = rule.ttsVoiceName,
+                ttsSpeechRate = rule.ttsSpeechRate,
+                ttsAudioFileName = rule.ttsAudioFileName,
+                alarmHour = rule.alarmHour,
+                alarmMinute = rule.alarmMinute,
+                alarmMessage = rule.alarmMessage,
+                timerDurationSeconds = rule.timerDurationSeconds,
+                timerMessage = rule.timerMessage,
+                webhookMethod = rule.webhookMethod,
+                webhookUrl = rule.webhookUrl,
+                webhookHeaders = rule.webhookHeaders,
+                webhookBody = rule.webhookBody,
+                webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
+                webhookTemplateContext = templateContext,
+            )
+            val dispatcher = com.flowpilot.app.actions.ActionDispatcher.get(app)
+            var successCount = 0
+            var failureCount = 0
+            val failureMessages = mutableListOf<String>()
+
+            for (action in rule.effectiveActions) {
+                val result = dispatcher.execute(action, actionParams)
+                if (result.success) {
+                    successCount++
+                } else {
+                    failureCount++
+                    val redacted = com.flowpilot.app.actions.WebhookExecutor.redactSensitiveText(result.message)
+                    failureMessages.add("${action.label}: $redacted")
+                }
+            }
+
+            val summary = ManualRunResult(
+                totalActions = rule.effectiveActions.size,
+                successCount = successCount,
+                failureCount = failureCount,
+                failureMessages = failureMessages,
+            )
+            withContext(kotlinx.coroutines.Dispatchers.Main) {
+                callback(summary)
+            }
+        }
+    }
+
+    private fun getLiveSystemState(): com.flowpilot.app.engine.LiveSystemState {
+        val batteryIntent = try {
+            app.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+        } catch (_: Throwable) {
+            null
+        }
+        val level = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val batteryPercent = if (level >= 0 && scale > 0) (level * 100) / scale else null
+
+        val plugged = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        val isChargerConnected = plugged != 0
+
+        val pm = app.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
+        val isScreenOn = pm?.isInteractive
+
+        val wifiSsid = try {
+            val cm = app.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            val wm = app.applicationContext.getSystemService(android.content.Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+            com.flowpilot.app.engine.WifiStateTracker.queryCurrentSsid(cm, wm)
+        } catch (_: Throwable) {
+            null
+        }
+
+        return com.flowpilot.app.engine.LiveSystemState(
+            batteryPercent = batteryPercent,
+            isChargerConnected = isChargerConnected,
+            isScreenOn = isScreenOn,
+            connectedWifiSsid = wifiSsid,
+        )
     }
 }

@@ -504,6 +504,7 @@ fun WebhookSettings(
     setTimeoutSeconds: (Int) -> Unit,
 ) {
     Text("HTTP Webhook", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    var showTemplateVariables by remember { mutableStateOf(false) }
 
     val methods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD")
     FlowRow(
@@ -551,9 +552,20 @@ fun WebhookSettings(
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             shape = RoundedCornerShape(16.dp),
             label = { Text("Request Body") },
-            placeholder = { Text("{\"event\": \"automation_triggered\"}") },
+            placeholder = { Text("{\"event\": \"\${trigger}\", \"battery\": \${batteryPercent}}") },
             minLines = 3,
         )
+    }
+
+    TextButton(
+        onClick = { showTemplateVariables = true },
+        modifier = Modifier.padding(top = 4.dp),
+    ) {
+        Text("View supported variables")
+    }
+
+    if (showTemplateVariables) {
+        WebhookTemplateVariablesDialog(onDismiss = { showTemplateVariables = false })
     }
 
     Text("Timeout  ${timeoutSeconds}s", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
@@ -564,6 +576,51 @@ fun WebhookSettings(
         steps = 58,
         modifier = Modifier.padding(top = 4.dp),
     )
+}
+
+@Composable
+private fun WebhookTemplateVariablesDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Webhook variables") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Use these in request headers or body. URL variables are not supported.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WebhookVariableRow("\${trigger}", "CHARGER_CONNECTED", "Event that ran this rule")
+                WebhookVariableRow("\${batteryPercent}", "72", "Current battery percentage")
+                WebhookVariableRow("\${isCharging}", "true", "Whether charger is connected")
+                WebhookVariableRow("\${wifiSsid}", "Home_5G", "Current Wi-Fi name")
+                WebhookVariableRow("\${time}", "2026-09-01T12:34:56Z", "ISO-8601 event time")
+                WebhookVariableRow("\${timestamp}", "1788266096000", "Epoch milliseconds")
+                Text(
+                    "Unknown variables stay unchanged. Variables expand once only.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Done") }
+        },
+    )
+}
+
+@Composable
+private fun WebhookVariableRow(token: String, example: String, description: String) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Text(token, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            Text("Example: $example", style = MaterialTheme.typography.bodySmall)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 @Composable

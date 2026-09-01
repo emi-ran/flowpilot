@@ -42,7 +42,7 @@ Do not bundle unrelated features. One feature family at a time.
    - Screen on
    - Screen off
    - Dynamic broadcasts while engine runs; duplicate events deduped and no startup replay
-5. **Headset state**
+5. **Headset state** (deferred; do not prioritize unless explicitly requested)
    - Wired headset connected/disconnected
    - Bluetooth audio device connected/disconnected
 
@@ -58,18 +58,19 @@ Do not bundle unrelated features. One feature family at a time.
    - Optional case-insensitive title/text keyword filtering
    - NotificationListenerService lifecycle and duplicate post suppression
    - Zero content logging or persistence
-8. **Bluetooth device state**
+8. **Bluetooth device state** (deferred; do not prioritize unless explicitly requested)
    - Selected Bluetooth device connected/disconnected
 
 ## Planned Actions
 
 ### Phase 1 — App-level actions
 
-1. **HTTP webhook** (complete; Xiaomi device smoke test passed)
+1. **HTTP webhook** (complete; template variables pending device smoke test)
    - Home Assistant
    - ntfy
    - Discord webhook
    - Custom HTTP endpoint
+   - Dynamic template variables for headers & body: `${time}`, `${timestamp}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${trigger}`
    - Requirements: method, headers, body, timeout, redacted secrets, explicit success/failure result
 2. **Show notification** (complete)
     - Per-rule title and message
@@ -96,6 +97,9 @@ Do not bundle unrelated features. One feature family at a time.
     - Configurable 0-100% music-stream level
     - Uses `AudioManager.setStreamVolume` and verifies resulting level
 
+10. **Manual test run** (implementation complete; device interaction smoke test pending)
+    - Edit automation TopAppBar action with confirmation, saved-action execution off main thread, trigger/condition bypass, unchanged rule state, and secret redaction.
+
 ### Phase 2 — HyperOS 3 system controls
 
 Each must expose its required permission or Shizuku state. Do not show success unless target device state changes.
@@ -116,10 +120,9 @@ Each must expose its required permission or Shizuku state. Do not show success u
     - `AlarmClock.ACTION_SET_ALARM` opens Clock UI; `AlarmClock.ACTION_SET_TIMER` starts in background with `AlarmClock.EXTRA_SKIP_UI = true`
 10. **Dark theme on/off** (complete; Xiaomi device smoke test passed)
     - Shizuku `cmd uimode night yes|no`; executor verifies `Settings.Secure.ui_night_mode` (2 = dark, 1 = light).
-11. Sound profile
-    - Silent
-    - Vibrate
-    - Normal
+11. **Sound profile (Normal/Vibrate/Silent)** (implementation complete; device smoke test pending)
+    - `AudioManager.ringerMode` (`RINGER_MODE_NORMAL` / `RINGER_MODE_VIBRATE` / `RINGER_MODE_SILENT`)
+    - Requires user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY` special access (`NotificationManager.isNotificationPolicyAccessGranted`)
 
 ## Existing Device-specific Controls
 
@@ -127,16 +130,20 @@ Each must expose its required permission or Shizuku state. Do not show success u
 - Battery Saver: use direct `WRITE_SECURE_SETTINGS` write first when granted. Shizuku fallback uses `cmd power set-mode <0|1>` with settings fallback.
 - NFC and Battery Saver action paths passed Xiaomi device smoke tests.
 
-## Proposed Implementation Order
+## Next validation
 
-1. **Permission denial paths**
+1. **Sound profile device smoke test**
+     - Run Normal, Vibrate, and Silent with Notification Policy Access granted; verify each Xiaomi ringer mode.
+     - Deny access and verify an honest failure result.
+2. **Webhook template variable device smoke test**
+     - Verify rendered headers/body values at an endpoint and that an unknown variable remains unchanged.
+3. **Manual test run and keyboard resize UI smoke test**
+     - Confirm saved actions execute only after confirmation, unsaved edits are excluded, and result Snackbar is readable.
+     - Confirm Create/Edit forms scroll without keyboard-created blank space.
+4. **Permission denial paths**
      - Stop or deny Shizuku and confirm Dark theme reports failure instead of success.
      - Deny Modify system settings and Do Not Disturb access; confirm Auto-rotate and DND report failure instead of success.
-2. **Headset triggers**
-   - Add wired and Bluetooth audio state one family at a time with startup baseline and duplicate-event tests.
-3. **Wi-Fi and Bluetooth device/context triggers**
-    - Add selected Bluetooth-device persistence and unavailable-permission states.
-4. **HyperOS 3 system controls**
+5. **HyperOS 3 system controls**
     - One control at a time; device-state evidence required before marking complete.
 
 ## Acceptance Gate

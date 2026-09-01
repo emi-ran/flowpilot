@@ -12,6 +12,7 @@ class ActionDispatcher private constructor(
     private val notification: NotificationExecutor,
     private val vibration: VibrationExecutor,
     private val sound: SoundExecutor,
+    private val soundProfile: SoundProfileExecutor,
     private val mediaVolume: MediaVolumeExecutor,
     private val launcher: LaunchExecutor,
     private val tts: TtsExecutor,
@@ -20,7 +21,7 @@ class ActionDispatcher private constructor(
     private val webhook: WebhookExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
-        listOf(nfc, powerSaver, darkTheme, autoRotate, notification, vibration, sound, mediaVolume, launcher, tts, dnd, clock, webhook)
+        listOf(nfc, powerSaver, darkTheme, autoRotate, notification, vibration, sound, soundProfile, mediaVolume, launcher, tts, dnd, clock, webhook)
             .flatMap { e -> e.supportedTypes.map { it to e } }
             .toMap()
     }
@@ -44,6 +45,7 @@ class ActionDispatcher private constructor(
                     NotificationExecutor(context.applicationContext),
                     VibrationExecutor(context.applicationContext),
                     SoundExecutor(context.applicationContext),
+                    SoundProfileExecutor(context.applicationContext),
                     MediaVolumeExecutor(context.applicationContext),
                     LaunchExecutor(context.applicationContext),
                     TtsExecutor(context.applicationContext),

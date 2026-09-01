@@ -339,6 +339,30 @@ fun ActionPicker(
                 iconTint = Color(0xFF81D4FA),
                 items = listOf(
                     PickerItem(
+                        value = ActionType.SOUND_PROFILE_NORMAL,
+                        title = ActionType.SOUND_PROFILE_NORMAL.label,
+                        subtitle = "Set sound profile to normal (ring and notifications audible)",
+                        icon = Icons.AutoMirrored.Filled.VolumeUp,
+                        iconTint = Color(0xFF81D4FA),
+                        keywords = listOf("sound", "profile", "ringer", "normal", "ring", "unmute", "audio"),
+                    ),
+                    PickerItem(
+                        value = ActionType.SOUND_PROFILE_VIBRATE,
+                        title = ActionType.SOUND_PROFILE_VIBRATE.label,
+                        subtitle = "Set sound profile to vibrate (silent with vibration)",
+                        icon = Icons.Default.Vibration,
+                        iconTint = Color(0xFFFFCC80),
+                        keywords = listOf("sound", "profile", "ringer", "vibrate", "vibration", "buzz"),
+                    ),
+                    PickerItem(
+                        value = ActionType.SOUND_PROFILE_SILENT,
+                        title = ActionType.SOUND_PROFILE_SILENT.label,
+                        subtitle = "Set sound profile to silent (mute calls and notifications)",
+                        icon = Icons.Default.DoNotDisturb,
+                        iconTint = Color(0xFFE57373),
+                        keywords = listOf("sound", "profile", "ringer", "silent", "mute", "silence"),
+                    ),
+                    PickerItem(
                         value = ActionType.PLAY_SOUND,
                         title = ActionType.PLAY_SOUND.label,
                         subtitle = "Play custom audio file or system tone",

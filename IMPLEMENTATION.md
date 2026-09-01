@@ -8,7 +8,7 @@ minSdk 26, JDK 17.
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
 battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | notification received] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [NFC on | NFC off | Battery Saver on |
-Battery Saver off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -21,6 +21,7 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 | Detect app        | Yes (Usage Access)  | -                            | -                   | -       |
 | Auto-rotate       | YES (WRITE_SETTINGS special access) | -                    | -                   | -       |
 | Do Not Disturb    | YES (Notification Policy Access) | -                | -                   | -       |
+| Sound Profile     | YES (Notification Policy Access) | -                | -                   | -       |
 | Alarm / Timer     | YES (Standard Clock intents / SET_ALARM) | -        | -                   | -       |
 | Dark Theme        | NO                  | NO (needs system uimode)     | YES (`cmd uimode night yes\|no`) | YES |
 | Battery Saver     | NO                  | YES (`pm grant` + write global low_power) | YES (`settings put global low_power`) | YES |
@@ -59,7 +60,7 @@ app/src/main/java/com/flowpilot/app/
     screens/
       HomeScreen.kt                  list + FAB
       CreateScreen.kt                WHEN -> DO flow and app picker
-      DetailScreen.kt                rule detail and delete
+      DetailScreen.kt                rule detail, manual run test action, and delete
       PermissionsScreen.kt           setup wizard
       SettingsScreen.kt
     components/                      toggle, cards, picker controls
@@ -87,19 +88,21 @@ app/src/main/java/com/flowpilot/app/
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
     AutoRotateExecutor.kt            WRITE_SETTINGS direct write to Settings.System.ACCELEROMETER_ROTATION
     DndExecutor.kt                   NotificationManager.setInterruptionFilter (Notification Policy Access)
+    SoundProfileExecutor.kt          AudioManager.ringerMode (Notification Policy Access)
     ClockExecutor.kt                 AlarmClock.ACTION_SET_ALARM and ACTION_SET_TIMER intent dispatch
     NotificationExecutor.kt           visible user-configured automation alerts
     VibrationExecutor.kt              configurable waveform vibration
     SoundExecutor.kt                  selected system/custom sound playback with bounded duration
     MediaVolumeExecutor.kt            percentage-to-music-stream volume mapping
     LaunchExecutor.kt                 selected app or validated HTTP(S) URL activity launch
-    WebhookExecutor.kt                outbound HTTP/HTTPS webhook request with bounded timeout & secret redaction
+    WebhookExecutor.kt                outbound HTTP/HTTPS webhook request with bounded timeout, secret redaction, and header/body template expansion
+    WebhookTemplateRenderer.kt        pure one-pass header/body substitution for known webhook variables
     TtsManager.kt                     offline voice discovery and pre-synthesized cache management
     TtsExecutor.kt                    offline cached TTS playback
     ShizukuShell.kt                  Shizuku connection + run shell command via UserService
   permission/
     CapabilityManager.kt             per-action and setup checks
-tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foreground reduction, and action executors.
+tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foreground reduction, encrypted persistence, webhook templates, manual execution summaries, and action executors.
 ```
 
 ## Engine loop
@@ -155,7 +158,9 @@ URL. Both intents carry `FLAG_ACTIVITY_NEW_TASK` because the automation engine r
 Launch failure is logged and returned to the engine; target app removal, missing URL resolver, and OEM
 background-activity restrictions remain explicit failure cases.
 
-WebhookExecutor dispatches HTTP/HTTPS requests via standard `HttpURLConnection`. Validates strict `http` or `https` schemes with host, enforces bounded timeouts (1-60s), sets headers and request body, and considers strictly HTTP 2xx status codes as success. Sensitive headers (`Authorization`, `Cookie`, tokens, secrets) and sensitive parameter values are redacted from log entries and execution failure messages to prevent credential leakage.
+WebhookExecutor dispatches HTTP/HTTPS requests via standard `HttpURLConnection`. Validates strict `http` or `https` schemes with host, enforces bounded timeouts (1-60s), renders known variables in headers/body only, sets headers and request body, and considers strictly HTTP 2xx status codes as success. URL templates are excluded because URL encoding context differs; unknown and malformed variables are preserved and rendering is non-recursive. Sensitive headers (`Authorization`, `Cookie`, tokens, secrets) and sensitive parameter values are redacted from log entries and execution failure messages to prevent credential leakage.
+
+Manual test runs execute a saved rule's effective actions on `Dispatchers.IO`, bypassing its trigger and conditions without altering `enabled` or `lastTriggeredAt`. The manual webhook context uses `MANUAL` as its trigger and reads current battery, charger, and Wi-Fi state; result summaries redact sensitive error values before reaching UI.
 
 MediaVolumeExecutor converts stored 0-100% configuration to the current device's `STREAM_MUSIC` range,
 sets volume without a system UI overlay, then reads the resulting level. A mismatch reports failure rather
@@ -186,6 +191,6 @@ shows an in-picker instruction when text is missing.
 
 ## Build / verify
 
-- `./gradlew assembleDebug` -> APK at app/build/outputs/apk/debug/app-debug.apk
-- `./gradlew testDebugUnitTest` (Robolectric) and `./gradlew lintDebug`.
+- `.\gradlew.bat assembleDebug --no-daemon` -> APK at app/build/outputs/apk/debug/app-debug.apk
+- `.\gradlew.bat testDebugUnitTest --no-daemon` (Robolectric) and `.\gradlew.bat lintDebug --no-daemon`.
 - No TODO placeholders for core paths; compile is the completion gate.
