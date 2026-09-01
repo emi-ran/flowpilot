@@ -258,8 +258,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
             Column(
                 Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
                     .imePadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp),
             ) {
             Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))

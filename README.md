@@ -192,7 +192,7 @@ app/src/main/java/com/flowpilot/app/
   engine/                     UsageStats, charger, and battery trackers, foreground reducer, schedule/rule evaluators, service, boot receiver
   actions/                    Action executors, webhook template rendering, and Shizuku UserService bridge
   permission/                 Capability and setup checks
-  ui/                         Compose screens, state, manual test run, theme, components
+  ui/                         Compose screens, state, manual test run, IME focus visibility, theme, components
 app/src/test/                 Rule, schedule, reducer, encryption, template, manual-run, and action executor tests
 ```
 
@@ -219,18 +219,18 @@ app/src/test/                 Rule, schedule, reducer, encryption, template, man
 - Send HTTP webhook action has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - NFC and Battery Saver action paths passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - Dark theme on/off (`cmd uimode night yes|no` through Shizuku) has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing through the FlowPilot rule path.
-- Sound profile (Normal/Vibrate/Silent) and webhook template variables have unit coverage; FlowPilot device smoke tests remain pending.
-- Manual test run has unit coverage and build/install verification; Xiaomi device interaction smoke test remains pending.
-- Keyboard resize fix (`adjustResize`) has build/install verification; Xiaomi device UI retest remains pending.
+- Sound profile (Normal/Vibrate/Silent) has unit coverage; Xiaomi 15T Pro maps Vibrate and Silent to the same observed ringer behavior. Other devices can differ.
+- Webhook template variables passed Xiaomi 15T Pro / HyperOS 3 device smoke testing in request headers/body, including unknown-token preservation.
+- Manual test run passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
+- Create/Edit keyboard behavior passed Xiaomi 15T Pro / HyperOS 3 device smoke testing: keyboard opens only for focused text fields, scroll remains available, and a focused field returns above the IME when typing after it was scrolled out of view.
 
 ## Next validation
 
-1. Create Sound profile rules for Normal, Vibrate, and Silent with Do Not Disturb access granted; confirm Xiaomi ringer mode changes and each action reports success. Deny access and confirm a failure result.
-2. Create a webhook rule with `${trigger}`, `${batteryPercent}`, `${isCharging}`, and `${wifiSsid}` in request headers or JSON body; verify endpoint receives rendered values and unknown `${token}` remains unchanged.
-3. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
+1. Create Sound profile rules for Normal, Vibrate, and Silent with Do Not Disturb access granted; confirm Xiaomi ringer-mode readback and document that this device maps Vibrate and Silent identically. Deny access and confirm a failure result.
+2. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
    - Search for Turkish with `Türkçe`, `Turkish`, `tr`, or `tr-TR`.
    - Hold a voice row to preview it without changing selection; reopen picker and confirm it returns to selected voice.
-4. Stop or deny Shizuku, and deny Do Not Disturb access; confirm Dark theme and DND rules report failure instead of success.
+3. Stop or deny Shizuku, and deny Do Not Disturb access; confirm Dark theme and DND rules report failure instead of success.
 
 ## License / distribution note
 

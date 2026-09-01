@@ -65,7 +65,7 @@ Do not bundle unrelated features. One feature family at a time.
 
 ### Phase 1 — App-level actions
 
-1. **HTTP webhook** (complete; template variables pending device smoke test)
+1. **HTTP webhook** (complete; Xiaomi device smoke test passed)
    - Home Assistant
    - ntfy
    - Discord webhook
@@ -97,7 +97,7 @@ Do not bundle unrelated features. One feature family at a time.
     - Configurable 0-100% music-stream level
     - Uses `AudioManager.setStreamVolume` and verifies resulting level
 
-10. **Manual test run** (implementation complete; device interaction smoke test pending)
+10. **Manual test run** (complete; Xiaomi device smoke test passed)
     - Edit automation TopAppBar action with confirmation, saved-action execution off main thread, trigger/condition bypass, unchanged rule state, and secret redaction.
 
 ### Phase 2 — HyperOS 3 system controls
@@ -132,18 +132,13 @@ Each must expose its required permission or Shizuku state. Do not show success u
 
 ## Next validation
 
-1. **Sound profile device smoke test**
-     - Run Normal, Vibrate, and Silent with Notification Policy Access granted; verify each Xiaomi ringer mode.
+1. **Sound profile permission denial smoke test**
+     - Normal, Vibrate, and Silent passed basic Xiaomi smoke testing; Xiaomi maps Vibrate and Silent to the same observed ringer behavior. Do not generalize this result to other devices.
      - Deny access and verify an honest failure result.
-2. **Webhook template variable device smoke test**
-     - Verify rendered headers/body values at an endpoint and that an unknown variable remains unchanged.
-3. **Manual test run and keyboard resize UI smoke test**
-     - Confirm saved actions execute only after confirmation, unsaved edits are excluded, and result Snackbar is readable.
-     - Confirm Create/Edit forms scroll without keyboard-created blank space.
-4. **Permission denial paths**
+2. **Permission denial paths**
      - Stop or deny Shizuku and confirm Dark theme reports failure instead of success.
      - Deny Modify system settings and Do Not Disturb access; confirm Auto-rotate and DND report failure instead of success.
-5. **HyperOS 3 system controls**
+3. **HyperOS 3 system controls**
     - One control at a time; device-state evidence required before marking complete.
 
 ## Acceptance Gate

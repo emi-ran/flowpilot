@@ -59,11 +59,11 @@ app/src/main/java/com/flowpilot/app/
     theme/                          Color/Theme (dark-first, neutral M3)
     screens/
       HomeScreen.kt                  list + FAB
-      CreateScreen.kt                WHEN -> DO flow and app picker
-      DetailScreen.kt                rule detail, manual run test action, and delete
+      CreateScreen.kt                WHEN -> DO flow, app picker, and IME-safe form scrolling
+      DetailScreen.kt                rule detail, manual run test action, delete, and IME-safe form scrolling
       PermissionsScreen.kt           setup wizard
       SettingsScreen.kt
-    components/                      toggle, cards, picker controls
+    components/                      toggle, cards, picker controls, focus-gated bring-into-view modifier
   data/
     model/Automation.kt              kotlinx.serialization data model with encrypted secret mapping
     security/SecretCipher.kt         Android Keystore AES-256-GCM authenticated encryption at rest
@@ -193,4 +193,5 @@ shows an in-picker instruction when text is missing.
 
 - `.\gradlew.bat assembleDebug --no-daemon` -> APK at app/build/outputs/apk/debug/app-debug.apk
 - `.\gradlew.bat testDebugUnitTest --no-daemon` (Robolectric) and `.\gradlew.bat lintDebug --no-daemon`.
+- Per `AGENTS.md`, the primary agent runs Gradle verification; after a successful build it installs the debug APK on the connected target and launches `com.flowpilot.app`. Subagents do not compile, test, build, install, or launch.
 - No TODO placeholders for core paths; compile is the completion gate.

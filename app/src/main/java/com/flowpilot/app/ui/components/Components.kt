@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 /**
- * Modifier to bring focused field into visible viewport on focus and typing/value change.
- * Useful when user scrolls the focused field behind the IME/off screen and continues typing.
+ * Scrolls this field into view only after it receives focus or changes while focused.
+ * It never requests focus, so it cannot summon the IME during ordinary scrolling.
  */
 @OptIn(ExperimentalFoundationApi::class)
 fun Modifier.bringIntoViewOnFocusOrChange(trigger: Any? = null): Modifier = composed {
