@@ -132,7 +132,7 @@ class CapabilityManager(private val context: Context) {
 
         CapabilityRequirement.SHIZUKU ->
             when {
-                !hasNfcHardware() -> CapabilityStatus.UNSUPPORTED
+                action.category == com.flowpilot.app.data.model.ActionCategory.NFC && !hasNfcHardware() -> CapabilityStatus.UNSUPPORTED
                 shizukuState() == ShizukuState.READY -> CapabilityStatus.AVAILABLE
                 else -> CapabilityStatus.SHIZUKU_REQUIRED
             }

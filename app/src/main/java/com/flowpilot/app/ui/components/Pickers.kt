@@ -25,11 +25,13 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DoNotDisturb
 import androidx.compose.material.icons.filled.DoNotDisturbOff
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Http
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Notifications
@@ -400,6 +402,22 @@ fun ActionPicker(
                 icon = Icons.Default.ScreenRotation,
                 iconTint = Color(0xFF4DD0E1),
                 items = listOf(
+                    PickerItem(
+                        value = ActionType.DARK_THEME_ON,
+                        title = ActionType.DARK_THEME_ON.label,
+                        subtitle = "Enable system-wide dark theme (requires Shizuku)",
+                        icon = Icons.Default.DarkMode,
+                        iconTint = Color(0xFF90CAF9),
+                        keywords = listOf("dark", "dark mode", "dark theme", "night", "night mode", "uimode", "theme"),
+                    ),
+                    PickerItem(
+                        value = ActionType.DARK_THEME_OFF,
+                        title = ActionType.DARK_THEME_OFF.label,
+                        subtitle = "Disable dark theme / switch to light mode (requires Shizuku)",
+                        icon = Icons.Default.LightMode,
+                        iconTint = Color(0xFFFFD54F),
+                        keywords = listOf("light", "light mode", "light theme", "day", "day mode", "uimode", "theme"),
+                    ),
                     PickerItem(
                         value = ActionType.AUTO_ROTATE_ON,
                         title = ActionType.AUTO_ROTATE_ON.label,

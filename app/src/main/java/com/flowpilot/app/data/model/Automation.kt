@@ -52,6 +52,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     NFC_OFF("Turn NFC off", ActionCategory.NFC, CapabilityRequirement.SHIZUKU),
     BATTERY_SAVER_ON("Turn Battery Saver on", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
     BATTERY_SAVER_OFF("Turn Battery Saver off", ActionCategory.BATTERY, CapabilityRequirement.WRITE_SECURE_SETTINGS),
+    DARK_THEME_ON("Turn Dark theme on", ActionCategory.DISPLAY, CapabilityRequirement.SHIZUKU),
+    DARK_THEME_OFF("Turn Dark theme off", ActionCategory.DISPLAY, CapabilityRequirement.SHIZUKU),
     AUTO_ROTATE_ON("Turn Auto-rotate on", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     AUTO_ROTATE_OFF("Turn Auto-rotate off", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     SHOW_NOTIFICATION("Show notification", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATIONS),

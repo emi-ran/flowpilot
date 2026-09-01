@@ -38,7 +38,7 @@ Do not bundle unrelated features. One feature family at a time.
     - Above selected percentage, such as 80%
     - Edge-triggered; must not fire repeatedly while remaining past threshold
     - Current level seeds at engine start without replay; later battery broadcasts trigger only a threshold crossing
-4. **Screen state** (implementation complete; device smoke test pending)
+4. **Screen state** (complete; Xiaomi device smoke test passed)
    - Screen on
    - Screen off
    - Dynamic broadcasts while engine runs; duplicate events deduped and no startup replay
@@ -114,7 +114,8 @@ Each must expose its required permission or Shizuku state. Do not show success u
     - Requires user-grantable `android.permission.WRITE_SETTINGS` special access (`Settings.System.canWrite(context)`)
 9. **Create alarm or timer** (complete; Xiaomi device smoke test passed)
     - `AlarmClock.ACTION_SET_ALARM` opens Clock UI; `AlarmClock.ACTION_SET_TIMER` starts in background with `AlarmClock.EXTRA_SKIP_UI = true`
-10. Dark theme on/off
+10. **Dark theme on/off** (complete; Xiaomi device smoke test passed)
+    - Shizuku `cmd uimode night yes|no`; executor verifies `Settings.Secure.ui_night_mode` (2 = dark, 1 = light).
 11. Sound profile
     - Silent
     - Vibrate
@@ -124,22 +125,18 @@ Each must expose its required permission or Shizuku state. Do not show success u
 
 - NFC: Xiaomi 15T Pro / HyperOS 3 path is `svc nfc enable|disable` through Shizuku. Do not use `cmd nfc`; it crashed the device NFC service during testing.
 - Battery Saver: use direct `WRITE_SECURE_SETTINGS` write first when granted. Shizuku fallback uses `cmd power set-mode <0|1>` with settings fallback.
+- NFC and Battery Saver action paths passed Xiaomi device smoke tests.
 
 ## Proposed Implementation Order
 
-1. **Screen device smoke test**
-    - Confirm screen on/off rules run only after a new display transition.
-2. **HTTP webhook action device smoke test**
-     - Trigger webhook rule with test endpoint and verify 2xx response, payload dispatch, and timeout/error handling on device.
-3. **Permission denial paths**
+1. **Permission denial paths**
+     - Stop or deny Shizuku and confirm Dark theme reports failure instead of success.
      - Deny Modify system settings and Do Not Disturb access; confirm Auto-rotate and DND report failure instead of success.
-4. **NFC and Battery Saver device action paths**
-     - Verify each supported permission path and failure behavior after permission changes.
-5. **Headset triggers**
+2. **Headset triggers**
    - Add wired and Bluetooth audio state one family at a time with startup baseline and duplicate-event tests.
-6. **Wi-Fi and Bluetooth device/context triggers**
+3. **Wi-Fi and Bluetooth device/context triggers**
     - Add selected Bluetooth-device persistence and unavailable-permission states.
-7. **HyperOS 3 system controls**
+4. **HyperOS 3 system controls**
     - One control at a time; device-state evidence required before marking complete.
 
 ## Acceptance Gate

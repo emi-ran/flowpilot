@@ -36,7 +36,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), notification received (selected app + optional keyword), or scheduled time -> one or more NFC on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), notification received (selected app + optional keyword), or scheduled time -> one or more NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Rule conditions (AND semantics): battery below/above, charger connected/disconnected, screen on/off, Wi-Fi connected/disconnected. Rules execute only when trigger matches AND all configured conditions match current live state.
 - Installed launchable app picker with search, display name, package ID internally.
 - Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, and NFC.
@@ -55,8 +55,9 @@ Target / compile SDK: 36 (Android 16)
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
 - Shizuku UserService AIDL command bridge. Commands run with Shizuku shell/root identity; app never claims success if the command failed.
 - Action executors:
-   - NFC ON/OFF: `svc nfc enable|disable` through Shizuku.
-   - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
+    - NFC ON/OFF: `svc nfc enable|disable` through Shizuku.
+    - Dark theme ON/OFF: `cmd uimode night yes|no` through Shizuku with `Settings.Secure.ui_night_mode` state verification.
+    - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
     - Auto-rotate ON/OFF: direct `Settings.System.ACCELEROMETER_ROTATION` write with user-grantable `android.permission.WRITE_SETTINGS` special access.
     - Do Not Disturb ON/OFF: direct `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` / `INTERRUPTION_FILTER_ALL`) with user-grantable Notification Policy Access (`android.permission.ACCESS_NOTIFICATION_POLICY`).
     - Create alarm: dispatches `AlarmClock.ACTION_SET_ALARM` with hour, minute, and optional label to the system Clock app (`FLAG_ACTIVITY_NEW_TASK`).
@@ -147,6 +148,8 @@ Shizuku is required for NFC ON/OFF because normal Android apps cannot toggle NFC
 ```text
 svc nfc enable
 svc nfc disable
+cmd uimode night yes
+cmd uimode night no
 cmd power set-mode 1
 cmd power set-mode 0
 settings put system POWER_SAVE_MODE_OPEN 1
@@ -203,7 +206,7 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Show notification rule verified on device, including visible `automation_alerts_v2` heads-up channel.
 - Launch app verified from charger-connected and app-opened rules.
 - Open URL verified on Xiaomi 15T Pro / HyperOS 3.
-- Vibration implementation has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
+- Screen on/off, vibration, and Play sound passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - Media volume implementation has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - Play sound passed Xiaomi 15T Pro / HyperOS 3 device smoke testing; screen on/off device smoke testing remains pending.
 - Speak text (offline TTS) builds, unit tests, and Xiaomi device smoke test passed.
@@ -214,15 +217,15 @@ app/src/test/                 Rule, schedule, foreground reducer, and action exe
 - Wi-Fi connected/disconnected triggers passed Xiaomi 15T Pro / HyperOS 3 device smoke tests, including an SSID selected through the nearby-network picker while cellular remained the default network.
 - Do Not Disturb on/off (Notification Policy Access) implementation has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - Send HTTP webhook action has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
+- NFC and Battery Saver action paths passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
+- Dark theme on/off (`cmd uimode night yes|no` through Shizuku) has unit coverage and passed Xiaomi 15T Pro / HyperOS 3 device smoke testing through the FlowPilot rule path.
 
 ## Next validation
 
-1. Create a screen on/off rule with notification, vibration, or sound and confirm it fires only after a new screen-state transition.
-2. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
+1. Create a TTS rule, select an offline voice, generate and preview audio, disable internet, then trigger the saved rule and confirm cached audio plays.
    - Search for Turkish with `Türkçe`, `Turkish`, `tr`, or `tr-TR`.
    - Hold a voice row to preview it without changing selection; reopen picker and confirm it returns to selected voice.
-3. Deny Do Not Disturb access and confirm the rule reports failure instead of success.
-4. NFC and Battery Saver device action paths still require per-action verification after permission changes.
+2. Stop or deny Shizuku, and deny Do Not Disturb access; confirm Dark theme and DND rules report failure instead of success.
 
 ## License / distribution note
 

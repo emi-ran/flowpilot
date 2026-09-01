@@ -22,6 +22,7 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 | Auto-rotate       | YES (WRITE_SETTINGS special access) | -                    | -                   | -       |
 | Do Not Disturb    | YES (Notification Policy Access) | -                | -                   | -       |
 | Alarm / Timer     | YES (Standard Clock intents / SET_ALARM) | -        | -                   | -       |
+| Dark Theme        | NO                  | NO (needs system uimode)     | YES (`cmd uimode night yes\|no`) | YES |
 | Battery Saver     | NO                  | YES (`pm grant` + write global low_power) | YES (`settings put global low_power`) | YES |
 | NFC               | NO (API 29+ removed NfcAdapter.enable) | NO (needs shell uid) | YES (`svc nfc enable|disable`) | YES |
 
@@ -41,6 +42,9 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 - Battery Saver is gated by `android.permission.WRITE_SECURE_SETTINGS` (development-level, grantable with
   `adb shell pm grant`, or obtained via Shizuku). FlowPilot writes `Settings.Global.low_power` when the
   app itself holds the permission, or uses Shizuku `cmd power set-mode <0|1>` with settings fallback.
+- Dark theme toggling uses Shizuku to execute `cmd uimode night yes` (dark theme on) or `cmd uimode night no`
+  (dark theme off). The executor reads `Settings.Secure.ui_night_mode` (2 for dark, 1 for light) to verify
+  the resulting state so success is never falsely reported.
 
 Root is never required anywhere.
 
@@ -79,6 +83,7 @@ app/src/main/java/com/flowpilot/app/
   actions/
     ActionExecutor.kt                interface + dispatch
     NfcExecutor.kt                   Shizuku `svc nfc enable|disable`
+    DarkThemeExecutor.kt             Shizuku `cmd uimode night yes|no`
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
     AutoRotateExecutor.kt            WRITE_SETTINGS direct write to Settings.System.ACCELEROMETER_ROTATION
     DndExecutor.kt                   NotificationManager.setInterruptionFilter (Notification Policy Access)
