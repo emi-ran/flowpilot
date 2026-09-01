@@ -14,6 +14,8 @@ All notable FlowPilot changes are documented here.
 - Persistent automation run history for engine and manual executions, with per-action outcomes, overall success/partial/failure state, and 100-entry retention.
 - Bluetooth bonded-device connected/disconnected triggers with Android 12+ `BLUETOOTH_CONNECT` gating, public ACL broadcast lifecycle, no startup replay, and per-device duplicate suppression.
 - Bluetooth on/off actions through exact allowlisted Shizuku `svc bluetooth enable|disable` commands with adapter-state readback verification.
+- NFC tag scanned trigger with normalized selected tag UID matching, transient intent handoff, and no NDEF payload or tag-tech persistence.
+- Optional per-action 0-300 second pre-execution delays, sequential action order, cancellation, and run-history recording.
 
 ### Changed
 

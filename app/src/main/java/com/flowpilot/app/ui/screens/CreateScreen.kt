@@ -51,6 +51,8 @@ import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
 import com.flowpilot.app.ui.components.WifiSsidPickerField
 import com.flowpilot.app.ui.components.bringIntoViewOnFocusOrChange
+import com.flowpilot.app.engine.NfcTagHandoff
+import com.flowpilot.app.engine.NfcTagUtils
 
 @Composable
 fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
@@ -64,6 +66,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var wifiSsid by remember { mutableStateOf("") }
     var bluetoothDeviceAddress by remember { mutableStateOf("") }
     var bluetoothDeviceName by remember { mutableStateOf("") }
+    var nfcTagId by remember { mutableStateOf("") }
     var notificationAppPackage by remember { mutableStateOf("") }
     var notificationAppName by remember { mutableStateOf("") }
     var notificationKeyword by remember { mutableStateOf("") }
@@ -115,6 +118,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
+    var actionDelays by remember { mutableStateOf(emptyList<Int>()) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
     var pkg by remember { mutableStateOf("") }
     var appName by remember { mutableStateOf("") }
@@ -124,6 +128,15 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var showLaunchApps by remember { mutableStateOf(false) }
     var showTriggers by remember { mutableStateOf(false) }
     var showActions by remember { mutableStateOf(false) }
+
+    LaunchedEffect(event) {
+        if (event == TriggerEvent.NFC_TAG_SCANNED) {
+            NfcTagHandoff.clearLatestScannedTagId()
+            NfcTagHandoff.latestScannedTagId.collect { scannedTagId ->
+                scannedTagId?.let { nfcTagId = it }
+            }
+        }
+    }
 
     if (showApps) AppPicker({ p, n -> pkg = p; appName = n; showApps = false }) { showApps = false }
     if (showNotificationApps) AppPicker({ p, n -> notificationAppPackage = p; notificationAppName = n; showNotificationApps = false }) { showNotificationApps = false }
@@ -149,6 +162,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     actions = actions.mapIndexed { i, a -> if (i == idx) chosen else a }
                 } else {
                     actions = actions + chosen
+                    actionDelays = actionDelays + 0
                 }
                 showActions = false
                 editingActionIndex = null
@@ -207,6 +221,8 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     bluetoothDeviceAddress = address
                     bluetoothDeviceName = deviceName
                 }
+            } else if (event == TriggerEvent.NFC_TAG_SCANNED) {
+                NfcTagTriggerSettings(nfcTagId) { nfcTagId = it }
             } else if (event == TriggerEvent.NOTIFICATION_RECEIVED) {
                 NotificationTriggerSettings(
                     appPackage = notificationAppPackage,
@@ -244,35 +260,50 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 actions.forEachIndexed { index, act ->
+                    val delaySec = actionDelays.getOrElse(index) { 0 }
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
                         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
                     ) {
-                        Row(
-                            Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(
-                                Modifier.weight(1f).clickable {
-                                    editingActionIndex = index
-                                    showActions = true
-                                }
+                        Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("Action ${index + 1}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.height(2.dp))
-                                Text(act.label, style = MaterialTheme.typography.titleMedium)
-                            }
-                            if (actions.size > 1) {
-                                IconButton(
-                                    onClick = {
-                                        actions = actions.filterIndexed { i, _ -> i != index }
-                                    },
-                                    modifier = Modifier.size(32.dp),
+                                Column(
+                                    Modifier.weight(1f).clickable {
+                                        editingActionIndex = index
+                                        showActions = true
+                                    }
                                 ) {
-                                    Icon(Icons.Default.Close, "Remove action", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                    Text("Action ${index + 1}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(act.label, style = MaterialTheme.typography.titleMedium)
+                                }
+                                if (actions.size > 1) {
+                                    IconButton(
+                                        onClick = {
+                                            actions = actions.filterIndexed { i, _ -> i != index }
+                                            actionDelays = actionDelays.filterIndexed { i, _ -> i != index }
+                                        },
+                                        modifier = Modifier.size(32.dp),
+                                    ) {
+                                        Icon(Icons.Default.Close, "Remove action", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                    }
                                 }
                             }
+                            Spacer(Modifier.height(8.dp))
+                            ActionDelaySetting(
+                                delaySeconds = delaySec,
+                                onDelayChange = { newDelay ->
+                                    val safeDelay = newDelay.coerceIn(0, 300)
+                                    val currentList = actionDelays.toMutableList()
+                                    while (currentList.size <= index) currentList.add(0)
+                                    currentList[index] = safeDelay
+                                    actionDelays = currentList
+                                },
+                            )
                         }
                     }
                 }
@@ -412,12 +443,14 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             appPackage = pkg,
                             appName = appName,
                             actions = actions,
+                            actionDelays = actionDelays,
                             scheduledMinute = scheduledMinute,
                             scheduledDays = scheduledDays,
                             batteryLevel = batteryLevel,
                             wifiSsid = wifiSsid,
                             bluetoothDeviceAddress = bluetoothDeviceAddress,
                             bluetoothDeviceName = bluetoothDeviceName,
+                            nfcTagId = nfcTagId.trim(),
                             notificationAppPackage = notificationAppPackage,
                             notificationAppName = notificationAppName,
                             notificationKeyword = notificationKeyword,
@@ -459,6 +492,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                         (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
                             (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
                             (event != TriggerEvent.BLUETOOTH_CONNECTED && event != TriggerEvent.BLUETOOTH_DISCONNECTED || bluetoothDeviceAddress.isNotEmpty()) &&
+                            (event != TriggerEvent.NFC_TAG_SCANNED || NfcTagUtils.isValidTagId(nfcTagId)) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
@@ -471,6 +505,54 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun NfcTagTriggerSettings(
+    tagId: String,
+    onTagIdChange: (String) -> Unit,
+) {
+    Text("NFC tag ID", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    OutlinedTextField(
+        value = tagId,
+        onValueChange = { onTagIdChange(it.uppercase()) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .bringIntoViewOnFocusOrChange(tagId),
+        shape = RoundedCornerShape(16.dp),
+        label = { Text("Tag ID (hex, e.g. 04A1B2C3D4E5F6)") },
+        placeholder = { Text("Scan or enter tag UID hex") },
+        supportingText = {
+            Text("Enter tag UID in hex or tap a tag on phone while app is open to capture.")
+        },
+        singleLine = true,
+    )
+}
+
+@Composable
+fun ActionDelaySetting(
+    delaySeconds: Int,
+    onDelayChange: (Int) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = if (delaySeconds > 0) "Delay before action: ${delaySeconds}s" else "No delay",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (delaySeconds > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    Slider(
+        value = delaySeconds.toFloat(),
+        onValueChange = { onDelayChange(it.toInt()) },
+        valueRange = 0f..300f,
+        steps = 0,
+        modifier = Modifier.padding(top = 2.dp),
+    )
 }
 
 @Composable

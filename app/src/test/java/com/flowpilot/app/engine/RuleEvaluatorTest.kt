@@ -261,4 +261,80 @@ class RuleEvaluatorTest {
         assertThat(WifiStateTracker.isValidSsid("")).isFalse()
         assertThat(WifiStateTracker.isValidSsid("   ")).isFalse()
     }
+
+    @Test fun nfc_tag_utils_normalization_and_validation() {
+        assertThat(NfcTagUtils.formatTagId(byteArrayOf(0x04, 0xA1.toByte(), 0xB2.toByte(), 0x1F))).isEqualTo("04A1B21F")
+        assertThat(NfcTagUtils.formatTagId(null)).isEqualTo("")
+        assertThat(NfcTagUtils.formatTagId(byteArrayOf())).isEqualTo("")
+
+        assertThat(NfcTagUtils.normalizeTagId("04:a1:b2:1f")).isEqualTo("04A1B21F")
+        assertThat(NfcTagUtils.normalizeTagId("04-A1-B2-1F")).isEqualTo("04A1B21F")
+        assertThat(NfcTagUtils.normalizeTagId(" 04 a1 b2 1f ")).isEqualTo("04A1B21F")
+        assertThat(NfcTagUtils.normalizeTagId(null)).isEqualTo("")
+
+        assertThat(NfcTagUtils.isValidTagId("04A1B21F")).isTrue()
+        assertThat(NfcTagUtils.isValidTagId("04:A1:B2:1F")).isTrue()
+        assertThat(NfcTagUtils.isValidTagId("04A1B21")).isFalse() // odd length
+        assertThat(NfcTagUtils.isValidTagId("04ZZ11")).isFalse() // invalid hex
+        assertThat(NfcTagUtils.isValidTagId("")).isFalse()
+    }
+
+    @Test fun nfc_tag_triggers_match_normalized_tag_id() {
+        val rTag1 = rule(TriggerEvent.NFC_TAG_SCANNED).copy(id = "tag1", nfcTagId = "04:A1:B2:1F")
+        val rTag2 = rule(TriggerEvent.NFC_TAG_SCANNED).copy(id = "tag2", nfcTagId = "12345678")
+        val rDisabled = rule(TriggerEvent.NFC_TAG_SCANNED).copy(id = "dis", nfcTagId = "04A1B21F", enabled = false)
+
+        val rules = listOf(rTag1, rTag2, rDisabled)
+
+        val event = NfcTagScannedEvent(tagId = "04A1B21F")
+        val matches = RuleEvaluator.evaluateNfcTag(rules, event)
+
+        assertThat(matches).containsExactly(rTag1)
+    }
+
+    @Test fun effective_action_delays_and_summary_formatting() {
+        val ruleWithDelays = Automation(
+            id = "delays",
+            name = "Test Delays",
+            triggerEvent = TriggerEvent.APP_OPENED,
+            actions = listOf(ActionType.NFC_ON, ActionType.VIBRATE),
+            actionDelays = listOf(0, 5),
+            createdAt = 1L,
+        )
+
+        assertThat(ruleWithDelays.effectiveActionDelays).containsExactly(0, 5).inOrder()
+        assertThat(ruleWithDelays.actionSummary).isEqualTo("Turn NFC on + Vibrate (+5s)")
+
+        val ruleBoundedDelays = Automation(
+            id = "delays2",
+            name = "Bounded Delays",
+            triggerEvent = TriggerEvent.APP_OPENED,
+            actions = listOf(ActionType.NFC_ON, ActionType.VIBRATE, ActionType.SOUND_PROFILE_SILENT),
+            actionDelays = listOf(-10, 5000),
+            createdAt = 1L,
+        )
+        // Coerces negative to 0, values > 300 to 300, missing trailing indices to 0
+        assertThat(ruleBoundedDelays.effectiveActionDelays).containsExactly(0, 300, 0).inOrder()
+        assertThat(ruleBoundedDelays.actionSummary).isEqualTo("Turn NFC on + Vibrate (+300s) + Sound profile: Silent")
+    }
+
+    @Test fun nfc_tag_handoff_queue_operations() {
+        NfcTagHandoff.clear()
+        assertThat(NfcTagHandoff.drainEvents()).isEmpty()
+
+        NfcTagHandoff.emitTagScanned(byteArrayOf(0x04, 0x12, 0x34))
+        NfcTagHandoff.emitTagId("04:ab:cd:ef")
+        NfcTagHandoff.emitTagId("")
+        NfcTagHandoff.emitTagScanned(null)
+
+        val events = NfcTagHandoff.drainEvents()
+        assertThat(events).hasSize(2)
+        assertThat(events[0].tagId).isEqualTo("041234")
+        assertThat(events[1].tagId).isEqualTo("04ABCDEF")
+        assertThat(NfcTagHandoff.latestScannedTagId.value).isEqualTo("04ABCDEF")
+        assertThat(NfcTagHandoff.drainEvents()).isEmpty()
+
+        NfcTagHandoff.clearLatestScannedTagId()
+        assertThat(NfcTagHandoff.latestScannedTagId.value).isNull()
+    }
 }

@@ -7,10 +7,12 @@ minSdk 26, JDK 17.
 ## Feature set
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
-battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | Bluetooth device connected | Bluetooth device disconnected | notification received] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [Bluetooth on | Bluetooth off | NFC on | NFC off | Battery Saver on |
+battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | Bluetooth device connected | Bluetooth device disconnected | NFC tag scanned | notification received] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [Bluetooth on | Bluetooth off | NFC on | NFC off | Battery Saver on |
 Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
+
+Actions can have a per-action pre-execution delay of 0-300 seconds. Delays preserve configured action order and are cancellable when engine stops; cancellation is recorded in execution history.
 
 Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request a one-shot nearby-network scan; scan results are transient, deduplicated, and never persisted. Android throttles scan frequency and may return cached results. The tracker reads SSID from Wi-Fi-specific `NetworkCallback` capabilities instead of `activeNetwork`, so Xiaomi can detect Wi-Fi transitions even when cellular remains the default data network.
 
@@ -82,6 +84,8 @@ app/src/main/java/com/flowpilot/app/
     ScreenStateTracker.kt            screen on/off broadcasts
     WifiStateTracker.kt              Wi-Fi NetworkCallback state + SSID transition reducer
     BluetoothDeviceTracker.kt        bonded-device ACL broadcasts + per-device transition reducer
+    NfcTagHandoff.kt                 transient tag UID intent-to-engine queue and UI capture state
+    NfcTagUtils.kt                   pure tag UID normalization and validation
     FlowPilotNotificationListener.kt transient notification listener and dedupe
     AutomationService.kt             foreground service
     BootReceiver.kt                  restart on boot
@@ -144,6 +148,8 @@ package and optional keyword, dedupes by post key/time, and never persists or lo
 BluetoothDeviceTracker dynamically receives public ACL connection broadcasts only after Android 12+ `BLUETOOTH_CONNECT` is granted. On Android 13+, it uses an exported dynamic receiver because Bluetooth stack broadcasts originate outside the system UID. It matches configured bonded-device MAC addresses without discovery or pairing, stores no device-list history, ignores duplicate consecutive state broadcasts, and does not seed current connections when engine starts. Selected device later unpaired remains visible in saved rule but produces no matching event until changed. Xiaomi 15T Pro / HyperOS 3 smoke testing confirmed selected-device connection triggers execute configured Battery Saver actions.
 
 BluetoothExecutor runs only exact allowlisted `svc bluetooth enable` or `svc bluetooth disable` through Shizuku. It returns failure when adapter, `BLUETOOTH_CONNECT`, Shizuku, command, or state readback is unavailable/mismatched, polling adapter state for up to 5 seconds after command completion. Xiaomi 15T Pro / HyperOS 3 smoke testing confirmed Bluetooth turns on and off successfully.
+
+MainActivity receives NFC tag/tech discovery intents, extracts only tag UID, and hands normalized UID to the running engine through in-memory NfcTagHandoff. Rule matching uses selected UID only. No NDEF payload or technology data is retained. Create/Edit screens can capture a tag UID while open. Unit/build and configured-tag Xiaomi 15T Pro / HyperOS 3 smoke testing passed.
 
 AutoRotateExecutor writes `Settings.System.ACCELEROMETER_ROTATION` to `1` (free rotation) or `0`
 (portrait lock), then reads back the value. It requires `android.permission.WRITE_SETTINGS` checked via

@@ -118,6 +118,31 @@ class CapabilityManager(private val context: Context) {
     fun hasNfcHardware(): Boolean =
         context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC)
 
+    /** Is NFC enabled in system settings right now? */
+    fun isNfcEnabled(): Boolean {
+        if (!hasNfcHardware()) return false
+        val nfcAdapter = try {
+            val manager = context.getSystemService(Context.NFC_SERVICE) as? android.nfc.NfcManager
+            manager?.defaultAdapter
+        } catch (_: Throwable) {
+            null
+        }
+        return nfcAdapter?.isEnabled == true
+    }
+
+    /** Open system Settings for NFC */
+    fun openNfcSettings() {
+        val intent = Intent(Settings.ACTION_NFC_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            val fallback = Intent(Settings.ACTION_SETTINGS)
+            fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(fallback)
+        }
+    }
+
     /** Is Shizuku installed, running, and granted to this app? */
     fun shizukuState(): ShizukuState = when {
         !ShizukuShell.instance.isShizukuAvailable() -> ShizukuState.NOT_INSTALLED

@@ -8,8 +8,10 @@ import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.TriggerEvent
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -66,8 +68,11 @@ class AutomationEngine(
                     pollScreenEvents(liveState)
                     pollWifiTransitions(liveState)
                     pollBluetoothTransitions(liveState)
+                    pollNfcTagEvents(liveState)
                     pollNotificationEvents(liveState)
                     pollSchedules(liveState)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.w(TAG, "Exception during engine poll: ${e.message}")
                 }
@@ -246,6 +251,19 @@ class AutomationEngine(
         }
     }
 
+    private suspend fun pollNfcTagEvents(liveState: LiveSystemState) {
+        val events = NfcTagHandoff.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (event in events) {
+            val matches = RuleEvaluator.evaluateNfcTag(rules, event, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing NFC tag scanned rules for tag ID [REDACTED_LEN_${event.tagId.length}] (${matches.size} rule(s))")
+                executeAll(matches, trigger = TriggerEvent.NFC_TAG_SCANNED, liveState = liveState)
+            }
+        }
+    }
+
     private suspend fun pollBluetoothTransitions(liveState: LiveSystemState) {
         // Permission may be granted while service stays alive; begin listening without restarting engine.
         bluetoothTracker.start()
@@ -283,59 +301,87 @@ class AutomationEngine(
             withContext(Dispatchers.IO) {
                 var anySuccess = false
                 val actionRecords = mutableListOf<ActionExecutionRecord>()
-                for (action in rule.effectiveActions) {
-                    val result = dispatcher.execute(
-                        action,
-                        com.flowpilot.app.actions.ActionParameters(
-                            notificationTitle = rule.notificationTitle,
-                            notificationBody = rule.notificationBody,
-                            vibrationPattern = rule.vibrationPattern,
-                            vibrationDurationMs = rule.vibrationDurationMs,
-                            vibrationAmplitude = rule.vibrationAmplitude,
-                            mediaVolumePercent = rule.mediaVolumePercent,
-                            soundPreset = rule.soundPreset,
-                            soundUri = rule.soundUri,
-                            soundDurationMs = rule.soundDurationMs,
-                            launchPackage = rule.launchPackage,
-                            url = rule.url,
-                            ttsText = rule.ttsText,
-                            ttsVoiceName = rule.ttsVoiceName,
-                            ttsSpeechRate = rule.ttsSpeechRate,
-                            ttsAudioFileName = rule.ttsAudioFileName,
-                            alarmHour = rule.alarmHour,
-                            alarmMinute = rule.alarmMinute,
-                            alarmMessage = rule.alarmMessage,
-                            timerDurationSeconds = rule.timerDurationSeconds,
-                            timerMessage = rule.timerMessage,
-                            webhookMethod = rule.webhookMethod,
-                            webhookUrl = rule.webhookUrl,
-                            webhookHeaders = rule.webhookHeaders,
-                            webhookBody = rule.webhookBody,
-                            webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
-                            webhookTemplateContext = templateContext,
-                        ),
-                    )
-                    Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")
-                    if (result.success) {
-                        anySuccess = true
-                    }
-                    actionRecords.add(
-                        ActionExecutionRecord.create(
-                            actionType = action,
-                            success = result.success,
-                            message = result.message,
-                        )
-                    )
-                }
+                val actions = rule.effectiveActions
+                val delays = rule.effectiveActionDelays
+                var currentAction: com.flowpilot.app.data.model.ActionType? = null
 
-                val historyEntry = ExecutionHistoryEntry.create(
-                    ruleId = rule.id,
-                    ruleName = rule.name,
-                    trigger = trigger?.name ?: rule.triggerEvent.name,
-                    timestamp = System.currentTimeMillis(),
-                    actions = actionRecords,
-                )
-                repository.appendHistory(historyEntry)
+                try {
+                    for (i in actions.indices) {
+                        val action = actions[i]
+                        currentAction = action
+                        val delaySec = delays.getOrElse(i) { 0 }
+
+                        if (delaySec > 0) {
+                            delay(delaySec * 1000L)
+                        }
+
+                        val result = dispatcher.execute(
+                            action,
+                            com.flowpilot.app.actions.ActionParameters(
+                                notificationTitle = rule.notificationTitle,
+                                notificationBody = rule.notificationBody,
+                                vibrationPattern = rule.vibrationPattern,
+                                vibrationDurationMs = rule.vibrationDurationMs,
+                                vibrationAmplitude = rule.vibrationAmplitude,
+                                mediaVolumePercent = rule.mediaVolumePercent,
+                                soundPreset = rule.soundPreset,
+                                soundUri = rule.soundUri,
+                                soundDurationMs = rule.soundDurationMs,
+                                launchPackage = rule.launchPackage,
+                                url = rule.url,
+                                ttsText = rule.ttsText,
+                                ttsVoiceName = rule.ttsVoiceName,
+                                ttsSpeechRate = rule.ttsSpeechRate,
+                                ttsAudioFileName = rule.ttsAudioFileName,
+                                alarmHour = rule.alarmHour,
+                                alarmMinute = rule.alarmMinute,
+                                alarmMessage = rule.alarmMessage,
+                                timerDurationSeconds = rule.timerDurationSeconds,
+                                timerMessage = rule.timerMessage,
+                                webhookMethod = rule.webhookMethod,
+                                webhookUrl = rule.webhookUrl,
+                                webhookHeaders = rule.webhookHeaders,
+                                webhookBody = rule.webhookBody,
+                                webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
+                                webhookTemplateContext = templateContext,
+                            ),
+                        )
+                        Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")
+                        if (result.success) {
+                            anySuccess = true
+                        }
+                        actionRecords.add(
+                            ActionExecutionRecord.create(
+                                actionType = action,
+                                success = result.success,
+                                message = result.message,
+                            )
+                        )
+                        currentAction = null
+                    }
+                } catch (ce: CancellationException) {
+                    currentAction?.let { action ->
+                        actionRecords.add(
+                            ActionExecutionRecord.create(
+                                actionType = action,
+                                success = false,
+                                message = "Execution cancelled",
+                            )
+                        )
+                    }
+                    throw ce
+                } finally {
+                    val historyEntry = ExecutionHistoryEntry.create(
+                        ruleId = rule.id,
+                        ruleName = rule.name,
+                        trigger = trigger?.name ?: rule.triggerEvent.name,
+                        timestamp = System.currentTimeMillis(),
+                        actions = actionRecords,
+                    )
+                    withContext(NonCancellable) {
+                        repository.appendHistory(historyEntry)
+                    }
+                }
 
                 if (anySuccess) {
                     repository.patchLastTriggeredAt(rule.id, System.currentTimeMillis())

@@ -138,6 +138,22 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                 ),
             ),
             PickerCategoryGroup(
+                id = TriggerCategory.NFC_TAG.name,
+                label = TriggerCategory.NFC_TAG.label,
+                icon = Icons.Default.Nfc,
+                iconTint = Color(0xFFB39DDB),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.NFC_TAG_SCANNED,
+                        title = TriggerEvent.NFC_TAG_SCANNED.label,
+                        subtitle = "When a configured NFC tag ID is tapped",
+                        icon = Icons.Default.Nfc,
+                        iconTint = Color(0xFFB39DDB),
+                        keywords = listOf("nfc", "tag", "scan", "tap", "contactless", "rfid", "uid", "ndef"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
                 id = TriggerCategory.POWER.name,
                 label = TriggerCategory.POWER.label,
                 icon = Icons.Default.Bolt,

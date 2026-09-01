@@ -44,6 +44,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val notifListener by vm.hasNotificationListener.collectAsState()
     val wifiPerms by vm.hasWifiPermissions.collectAsState()
     val bluetoothConnect by vm.hasBluetoothConnectPermission.collectAsState()
+    val hasNfcHardware by vm.hasNfcHardware.collectAsState()
+    val isNfcEnabled by vm.isNfcEnabled.collectAsState()
     val ignoresBatteryOptimizations by vm.ignoresBatteryOptimizations.collectAsState()
     val shizuku by vm.shizukuState.collectAsState()
     var showAdbDialog by remember { mutableStateOf(false) }
@@ -104,6 +106,25 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
             ) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     bluetoothLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+                }
+            }
+            PermissionCard(
+                "NFC hardware & status",
+                if (!hasNfcHardware) "NFC hardware is not available on this device."
+                else if (!isNfcEnabled) "NFC is turned off in system settings. Turn on NFC to scan tags and trigger rules."
+                else "NFC hardware is active and ready for tag triggers.",
+                granted = hasNfcHardware && isNfcEnabled,
+                pillText = if (!hasNfcHardware) "Unsupported" else "NFC disabled",
+                actionText = "Turn on",
+            ) {
+                if (hasNfcHardware) {
+                    val intent = Intent(Settings.ACTION_NFC_SETTINGS)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    try {
+                        context.startActivity(intent)
+                    } catch (_: Exception) {
+                        context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                    }
                 }
             }
             PermissionCard(

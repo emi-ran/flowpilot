@@ -27,6 +27,10 @@
     <!-- Internet permission for HTTP webhook actions. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- NFC hardware and tag discovery -->
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
+    <uses-permission android:name="android.permission.NFC" />
+
     <!-- Wi-Fi state, nearby devices (Android 13+), and fine location (required by Android 9+ to read Wi-Fi SSID / perform scans). -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
@@ -86,6 +90,15 @@
             <!-- Shizuku v13+: grant dialog is started as an activity via this filter. -->
             <intent-filter>
                 <action android:name="moe.shizuku.manager.intent.action.REQUEST_PERMISSION" />
+            </intent-filter>
+            <!-- NFC Tag Discovery: default activity launch when tag is tapped while app is not foreground -->
+            <intent-filter>
+                <action android:name="android.nfc.action.TAG_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.nfc.action.TECH_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 

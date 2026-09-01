@@ -89,6 +89,7 @@ enum class TriggerCategory(val label: String) {
     TIME("Time"),
     NETWORK("Network"),
     BLUETOOTH("Bluetooth"),
+    NFC_TAG("NFC"),
     NOTIFICATION("Notification"),
 }
 
@@ -152,6 +153,7 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     WIFI_DISCONNECTED("Disconnected from Wi-Fi", TriggerCategory.NETWORK),
     BLUETOOTH_CONNECTED("Bluetooth device connected", TriggerCategory.BLUETOOTH),
     BLUETOOTH_DISCONNECTED("Bluetooth device disconnected", TriggerCategory.BLUETOOTH),
+    NFC_TAG_SCANNED("NFC tag scanned", TriggerCategory.NFC_TAG),
     NOTIFICATION_RECEIVED("Notification received", TriggerCategory.NOTIFICATION);
 
     companion object {
@@ -188,6 +190,8 @@ data class Automation(
     val bluetoothDeviceAddress: String = "",
     /** Cached Bluetooth device name for readable rule UI; address remains matcher. */
     val bluetoothDeviceName: String = "",
+    /** Normalized NFC tag ID (hex string, uppercase, without colons) selected for NFC tag trigger matching. */
+    val nfcTagId: String = "",
     val notificationAppPackage: String = "",
     val notificationAppName: String = "",
     val notificationKeyword: String = "",
@@ -221,14 +225,30 @@ data class Automation(
     val webhookTimeoutSeconds: Int = 10,
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
+    /** Per-action optional delay in seconds (0..300), sequential with matching index in actions. */
+    val actionDelays: List<Int> = emptyList(),
     val createdAt: Long,
     val lastTriggeredAt: Long = 0L,
 ) {
     val effectiveActions: List<ActionType>
         get() = if (actions.isNotEmpty()) actions else listOf(action)
 
+    val effectiveActionDelays: List<Int>
+        get() {
+            val count = effectiveActions.size
+            return List(count) { i ->
+                actionDelays.getOrNull(i)?.coerceIn(0, 300) ?: 0
+            }
+        }
+
     val actionSummary: String
-        get() = effectiveActions.joinToString(" + ") { it.label }
+        get() {
+            val delays = effectiveActionDelays
+            return effectiveActions.mapIndexed { idx, act ->
+                val delaySec = delays.getOrElse(idx) { 0 }
+                if (delaySec > 0) "${act.label} (+${delaySec}s)" else act.label
+            }.joinToString(" + ")
+        }
 
     /**
      * Returns a copy with sensitive webhook fields encrypted for storage.

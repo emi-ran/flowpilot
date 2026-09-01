@@ -227,6 +227,7 @@ private fun RuleCard(
                     TriggerEvent.WIFI_DISCONNECTED -> Icons.Default.Bolt
                     TriggerEvent.BLUETOOTH_CONNECTED -> Icons.Default.Bluetooth
                     TriggerEvent.BLUETOOTH_DISCONNECTED -> Icons.Default.BluetoothDisabled
+                    TriggerEvent.NFC_TAG_SCANNED -> Icons.Default.Bolt
                     TriggerEvent.NOTIFICATION_RECEIVED -> Icons.Default.Bolt
                 },
                 null,
@@ -243,6 +244,7 @@ private fun RuleCard(
                     TriggerEvent.WIFI_DISCONNECTED -> if (item.rule.wifiSsid.isNotBlank()) "SSID: ${item.rule.wifiSsid}" else "Any Wi-Fi"
                     TriggerEvent.BLUETOOTH_CONNECTED,
                     TriggerEvent.BLUETOOTH_DISCONNECTED -> item.rule.bluetoothDeviceName.ifBlank { item.rule.bluetoothDeviceAddress }
+                    TriggerEvent.NFC_TAG_SCANNED -> "Tag ID: ${item.rule.nfcTagId}"
                     TriggerEvent.NOTIFICATION_RECEIVED -> {
                         val app = item.rule.notificationAppName.ifBlank { item.rule.notificationAppPackage }
                         if (item.rule.notificationKeyword.isNotBlank()) "$app · Keyword: \"${item.rule.notificationKeyword}\"" else app

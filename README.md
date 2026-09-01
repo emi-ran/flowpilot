@@ -34,7 +34,7 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), Bluetooth device connected/disconnected (selected bonded device), notification received (selected app + optional keyword), or scheduled time -> one or more Bluetooth on/off, NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Sound profile (Normal/Vibrate/Silent), Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), Bluetooth device connected/disconnected (selected bonded device), NFC tag scanned (selected tag UID), notification received (selected app + optional keyword), or scheduled time -> one or more Bluetooth on/off, NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Sound profile (Normal/Vibrate/Silent), Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Rule conditions (AND semantics): battery below/above, charger connected/disconnected, screen on/off, Wi-Fi connected/disconnected. Rules execute only when trigger matches AND all configured conditions match current live state.
 - Installed launchable app picker with search, display name, package ID internally.
 - Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, Bluetooth, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, Connectivity, and NFC. Connectivity contains Bluetooth on/off through Shizuku.
@@ -51,6 +51,8 @@ Target / compile SDK: 36 (Android 16)
 - Battery threshold triggers: below/above a selected percentage; only a crossing triggers an action and current level is seeded without replay after engine start.
 - Screen triggers: on/off broadcasts while engine runs; duplicate consecutive broadcasts are deduped and current screen state is not replayed after engine start.
 - Bluetooth device triggers: public ACL connected/disconnected broadcasts while engine runs, matching only selected bonded device address. Per-device consecutive state broadcasts are deduped; no initial connection state is queried or replayed on engine start. Picker never scans or stores paired-device history.
+- NFC tag triggers: match a user-selected normalized tag UID. Tag payloads and technologies are never persisted; UID is retained only in the rule needed for matching. NFC scans route to the engine only while it runs.
+- Per-action delays: each action can wait 0-300 seconds before it runs. Actions remain sequential in configured order; engine stop cancels a pending delay and records cancellation in run history.
 - Show notification action: per-rule title and message, posted through visible `Automation alerts` channel.
 - Boot/app-update receiver restarts the engine only when Run engine on device startup is enabled.
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
@@ -127,7 +129,13 @@ On Android 12+, open FlowPilot -> Settings -> Advanced permissions -> **Bluetoot
 
 Reason: `BLUETOOTH_CONNECT` is required to list bonded devices and read device data from public ACL connect/disconnect broadcasts. FlowPilot uses bonded-device selection only; it does not start discovery, pair devices, or persist device-list history. If selected device is later unpaired, rule remains saved but matches no future ACL event until a bonded device is selected again.
 
-### 9. Battery Saver actions: ADB path
+### 9. NFC tag trigger
+
+Turn NFC on. Create or edit an automation, choose **NFC tag scanned**, then tap the tag while FlowPilot is open to fill its UID. Save rule and keep engine running for tag scans to execute actions.
+
+Reason: Android delivers tag discovery through activity intents. FlowPilot keeps only normalized UID needed to match configured rule; it does not read or store NDEF payloads or tag technology data.
+
+### 10. Battery Saver actions: ADB path
 
 With USB debugging enabled and device connected:
 
@@ -143,7 +151,7 @@ adb -s <device-serial> shell dumpsys package com.flowpilot.app
 
 This gives FlowPilot direct Battery Saver access. NFC still needs Shizuku.
 
-### 10. Shizuku path
+### 11. Shizuku path
 
 Install Shizuku from its official source:
 
@@ -176,6 +184,7 @@ No root is required. Bluetooth on/off uses only `svc bluetooth enable|disable` t
 - Normal apps cannot toggle NFC on Android 10+; `NfcAdapter.enable()` / `disable()` are privileged/system/DPC operations. FlowPilot therefore marks NFC as Shizuku-required.
 - Normal apps cannot reliably toggle Bluetooth on modern Android. Bluetooth on/off requires active Shizuku access and `BLUETOOTH_CONNECT` on Android 12+; FlowPilot runs only `svc bluetooth enable|disable` and waits up to 5 seconds for adapter readback. This path passed Xiaomi 15T Pro / HyperOS 3 smoke testing.
 - Bluetooth device triggers use public `BluetoothDevice.ACTION_ACL_CONNECTED` / `ACTION_ACL_DISCONNECTED` broadcasts only while engine runs. Android 12+ requires `BLUETOOTH_CONNECT`. No existing connection is synthesized at engine start; selected-device trigger execution passed Xiaomi 15T Pro / HyperOS 3 smoke testing.
+- NFC tag triggers require NFC hardware and NFC enabled. A configured rule matches tag UID only; tag UIDs can be cloned on some tag types and must not be treated as authentication. Configured-tag Xiaomi 15T Pro / HyperOS 3 smoke testing passed.
 - Battery Saver is a protected global setting. `WRITE_SECURE_SETTINGS` gives FlowPilot direct access; Shizuku provides a supported fallback action path.
 - UsageStatsManager polling is Android-supported but not an instantaneous callback API. Event timing can vary by device and OEM, especially HyperOS.
 - Scheduled rules do not need Usage Access. App opened/closed rules still require Usage Access. A rule created at the current or past minute waits for its next valid day; missed times are not replayed after the engine starts.
@@ -237,6 +246,7 @@ app/src/test/                 Rule, schedule, reducer, encryption, template, man
 - Manual test run passed Xiaomi 15T Pro / HyperOS 3 device smoke testing.
 - Bluetooth on/off through Shizuku passed Xiaomi 15T Pro / HyperOS 3 device smoke testing; state changes can settle asynchronously, so executor waits up to 5 seconds for adapter-state readback.
 - Bluetooth selected-bonded-device connection trigger passed Xiaomi 15T Pro / HyperOS 3 device smoke testing by executing a configured Battery Saver action.
+- NFC tag trigger and per-action delay build and unit tests passed; debug APK installed and launched on Xiaomi 15T Pro / HyperOS 3. Configured NFC tag scan smoke testing passed; delayed-action device smoke testing remains pending.
 - Create/Edit keyboard behavior passed Xiaomi 15T Pro / HyperOS 3 device smoke testing: keyboard opens only for focused text fields, scroll remains available, and a focused field returns above the IME when typing after it was scrolled out of view.
 
 ## Next validation
@@ -247,6 +257,7 @@ app/src/test/                 Rule, schedule, reducer, encryption, template, man
    - Hold a voice row to preview it without changing selection; reopen picker and confirm it returns to selected voice.
 3. Stop or deny Shizuku, and deny Do Not Disturb access; confirm Dark theme and DND rules report failure instead of success.
 4. Grant `BLUETOOTH_CONNECT`, select bonded device, then verify ACL connect/disconnect rules fire once per transition and do not fire on engine restart while already connected. Test unpairing selected device, permission denial, stopped Shizuku, shell failure, and Bluetooth adapter readback mismatch on Xiaomi 15T Pro / HyperOS 3.
+5. Create an NFC tag rule, scan selected tag with engine running, and confirm only matching UID executes once. Scan while engine is stopped, a different tag, NFC disabled, and after app relaunch. Add 5-second delay before a visible action; confirm action order, stop-engine cancellation, and history record.
 
 ## License / distribution note
 

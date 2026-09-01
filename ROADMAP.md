@@ -63,6 +63,10 @@ Do not bundle unrelated features. One feature family at a time.
     - Selected bonded device MAC address matching; cached name for UI
     - Android public ACL broadcasts only while engine runs; no discovery, pairing, scan history, or startup replay
     - Android 12+ `BLUETOOTH_CONNECT` runtime permission required
+9. **NFC tag scanned** (complete; Xiaomi configured-tag smoke test passed)
+    - Selected normalized tag UID matching, with no NDEF payload or tag-tech persistence
+    - Tag UID capture in Create/Edit while FlowPilot is open
+    - Tag/tech discovery intent handoff evaluates only while engine runs
 
 ## Planned Actions
 
@@ -102,6 +106,9 @@ Do not bundle unrelated features. One feature family at a time.
 
 10. **Manual test run** (complete; Xiaomi device smoke test passed)
     - Edit automation TopAppBar action with confirmation, saved-action execution off main thread, trigger/condition bypass, unchanged rule state, and secret redaction.
+11. **Per-action delay** (implementation complete; Xiaomi smoke test pending)
+    - Optional 0-300 second delay before each action
+    - Actions remain sequential; engine stop cancels delay and records cancellation
 
 ### Phase 2 — HyperOS 3 system controls
 
@@ -150,6 +157,10 @@ Each must expose its required permission or Shizuku state. Do not show success u
      - Restart engine while device remains connected; verify no replay.
      - Unpair selected device; verify no crash and no false match.
      - Stop/deny Shizuku and verify Bluetooth on/off failures remain explicit.
+5. **NFC tag and action delay**
+     - Scan different tag UID with engine running; verify it does not fire.
+     - Scan with engine stopped and NFC disabled; verify no action or false success.
+     - Add a visible action after 5 seconds; verify timing, order, stop cancellation, and history.
 
 ## Acceptance Gate
 

@@ -50,6 +50,8 @@ import com.flowpilot.app.ui.components.TtsSettings
 import com.flowpilot.app.ui.components.bringIntoViewOnFocusOrChange
 import com.flowpilot.app.ui.screens.AlarmSettings
 import com.flowpilot.app.ui.screens.TimerSettings
+import com.flowpilot.app.engine.NfcTagHandoff
+import com.flowpilot.app.engine.NfcTagUtils
 import kotlinx.coroutines.launch
 
 @Composable
@@ -63,6 +65,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var wifiSsid by remember(initialRule.id) { mutableStateOf(initialRule.wifiSsid) }
     var bluetoothDeviceAddress by remember(initialRule.id) { mutableStateOf(initialRule.bluetoothDeviceAddress) }
     var bluetoothDeviceName by remember(initialRule.id) { mutableStateOf(initialRule.bluetoothDeviceName) }
+    var nfcTagId by remember(initialRule.id) { mutableStateOf(initialRule.nfcTagId) }
     var notificationAppPackage by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppPackage) }
     var notificationAppName by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppName) }
     var notificationKeyword by remember(initialRule.id) { mutableStateOf(initialRule.notificationKeyword) }
@@ -113,6 +116,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActions.distinct()) }
+    var actionDelays by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActionDelays) }
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
     var pkg by remember(initialRule.id) { mutableStateOf(initialRule.appPackage) }
     var appName by remember(initialRule.id) { mutableStateOf(initialRule.appName) }
@@ -126,6 +130,15 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var showRunConfirm by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(event) {
+        if (event == TriggerEvent.NFC_TAG_SCANNED) {
+            NfcTagHandoff.clearLatestScannedTagId()
+            NfcTagHandoff.latestScannedTagId.collect { scannedTagId ->
+                scannedTagId?.let { nfcTagId = it }
+            }
+        }
+    }
 
     if (showApps) AppPicker({ p, n -> pkg = p; appName = n; showApps = false }) { showApps = false }
     if (showNotificationApps) AppPicker({ p, n -> notificationAppPackage = p; notificationAppName = n; showNotificationApps = false }) { showNotificationApps = false }
@@ -151,6 +164,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     actions = actions.mapIndexed { i, a -> if (i == idx) chosen else a }
                 } else {
                     actions = actions + chosen
+                    actionDelays = actionDelays + 0
                 }
                 showActions = false
                 editingActionIndex = null
@@ -295,6 +309,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     bluetoothDeviceAddress = address
                     bluetoothDeviceName = deviceName
                 }
+            } else if (event == TriggerEvent.NFC_TAG_SCANNED) {
+                NfcTagTriggerSettings(nfcTagId) { nfcTagId = it }
             } else if (event == TriggerEvent.NOTIFICATION_RECEIVED) {
                 NotificationTriggerSettings(
                     appPackage = notificationAppPackage,
@@ -332,35 +348,50 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 actions.forEachIndexed { index, act ->
+                    val delaySec = actionDelays.getOrElse(index) { 0 }
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
                         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
                     ) {
-                        Row(
-                            Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(
-                                Modifier.weight(1f).clickable {
-                                    editingActionIndex = index
-                                    showActions = true
-                                }
+                        Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("Action ${index + 1}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.height(2.dp))
-                                Text(act.label, style = MaterialTheme.typography.titleMedium)
-                            }
-                            if (actions.size > 1) {
-                                IconButton(
-                                    onClick = {
-                                        actions = actions.filterIndexed { i, _ -> i != index }
-                                    },
-                                    modifier = Modifier.size(32.dp),
+                                Column(
+                                    Modifier.weight(1f).clickable {
+                                        editingActionIndex = index
+                                        showActions = true
+                                    }
                                 ) {
-                                    Icon(Icons.Default.Close, "Remove action", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                    Text("Action ${index + 1}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(act.label, style = MaterialTheme.typography.titleMedium)
+                                }
+                                if (actions.size > 1) {
+                                    IconButton(
+                                        onClick = {
+                                            actions = actions.filterIndexed { i, _ -> i != index }
+                                            actionDelays = actionDelays.filterIndexed { i, _ -> i != index }
+                                        },
+                                        modifier = Modifier.size(32.dp),
+                                    ) {
+                                        Icon(Icons.Default.Close, "Remove action", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                    }
                                 }
                             }
+                            Spacer(Modifier.height(8.dp))
+                            ActionDelaySetting(
+                                delaySeconds = delaySec,
+                                onDelayChange = { newDelay ->
+                                    val safeDelay = newDelay.coerceIn(0, 300)
+                                    val currentList = actionDelays.toMutableList()
+                                    while (currentList.size <= index) currentList.add(0)
+                                    currentList[index] = safeDelay
+                                    actionDelays = currentList
+                                },
+                            )
                         }
                     }
                 }
@@ -545,6 +576,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 TriggerEvent.WIFI_DISCONNECTED -> "${event.label} ${wifiSsid.ifBlank { "Any Wi-Fi" }} · $summary"
                                 TriggerEvent.BLUETOOTH_CONNECTED,
                                 TriggerEvent.BLUETOOTH_DISCONNECTED -> "${event.label} ${bluetoothDeviceName.ifBlank { bluetoothDeviceAddress }} · $summary"
+                                TriggerEvent.NFC_TAG_SCANNED -> "NFC Tag ($nfcTagId) · $summary"
                                 TriggerEvent.NOTIFICATION_RECEIVED -> "Notification (${notificationAppName.ifBlank { notificationAppPackage }}) · $summary"
                                 else -> "${appName.ifBlank { pkg }} · $summary"
                             }
@@ -561,6 +593,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 wifiSsid = wifiSsid,
                                 bluetoothDeviceAddress = bluetoothDeviceAddress,
                                 bluetoothDeviceName = bluetoothDeviceName,
+                                nfcTagId = nfcTagId.trim(),
                                 notificationAppPackage = notificationAppPackage,
                                 notificationAppName = notificationAppName,
                                 notificationKeyword = notificationKeyword,
@@ -594,6 +627,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 webhookTimeoutSeconds = webhookTimeoutSeconds,
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
+                                actionDelays = actionDelays,
                             )
                         )
                         back()
@@ -604,6 +638,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                         (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
                             (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
                             (event != TriggerEvent.BLUETOOTH_CONNECTED && event != TriggerEvent.BLUETOOTH_DISCONNECTED || bluetoothDeviceAddress.isNotEmpty()) &&
+                            (event != TriggerEvent.NFC_TAG_SCANNED || NfcTagUtils.isValidTagId(nfcTagId)) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&

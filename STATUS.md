@@ -22,6 +22,8 @@ Last updated: 2026-09-01
 
 - Sound profile denied Notification Policy Access behavior.
 - Run history screen smoke test on Xiaomi 15T Pro / HyperOS 3.
+- NFC tag trigger non-matching/engine-stopped paths.
+- Per-action delay timing, order, and engine-stop cancellation on Xiaomi 15T Pro / HyperOS 3.
 
 ## Current constraints
 
@@ -29,6 +31,8 @@ Last updated: 2026-09-01
 - Battery Saver needs `WRITE_SECURE_SETTINGS` or Shizuku.
 - Webhook secrets are Android Keystore AES-256-GCM encrypted at rest; Android backups are disabled.
 - Bluetooth triggers use selected bonded devices, public ACL broadcasts, and `BLUETOOTH_CONNECT` on Android 12+; no discovery, pairing, scan history, or startup replay. Bluetooth device/profile behavior can still differ on other OEMs.
+- NFC tag rules match a persisted tag UID, not tag payload. UID is identifier only, not authentication; cloned tags can match.
+- Per-action delay is bounded to 300 seconds in UI. Engine cancellation during delay creates failed run-history record.
 - Xiaomi 15T Pro maps Sound profile Vibrate and Silent to the same observed ringer behavior; other devices can differ.
 
 ## Next validation

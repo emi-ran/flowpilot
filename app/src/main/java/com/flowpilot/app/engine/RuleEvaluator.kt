@@ -174,6 +174,21 @@ object RuleEvaluator {
         }
     }
 
+    fun evaluateNfcTag(
+        rules: List<Automation>,
+        event: NfcTagScannedEvent,
+        liveState: LiveSystemState = LiveSystemState(),
+    ): List<Automation> {
+        val normalizedEventId = NfcTagUtils.normalizeTagId(event.tagId)
+        if (normalizedEventId.isEmpty()) return emptyList()
+        return rules.filter { rule ->
+            rule.enabled &&
+                rule.triggerEvent == TriggerEvent.NFC_TAG_SCANNED &&
+                NfcTagUtils.normalizeTagId(rule.nfcTagId).equals(normalizedEventId, ignoreCase = true) &&
+                matchesConditions(rule.conditions, liveState)
+        }
+    }
+
     fun evaluate(
         rules: List<Automation>,
         event: AppEvent,
