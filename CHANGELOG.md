@@ -14,12 +14,15 @@ All notable FlowPilot changes are documented here.
 - Persistent automation run history for engine and manual executions, with per-action outcomes, overall success/partial/failure state, and 100-entry retention.
 - Bluetooth bonded-device connected/disconnected triggers with Android 12+ `BLUETOOTH_CONNECT` gating, public ACL broadcast lifecycle, no startup replay, and per-device duplicate suppression.
 - Bluetooth on/off actions through exact allowlisted Shizuku `svc bluetooth enable|disable` commands with adapter-state readback verification.
-- NFC tag scanned trigger with normalized selected tag UID matching, transient intent handoff, and no NDEF payload or tag-tech persistence.
-- Optional per-action 0-300 second pre-execution delays, sequential action order, cancellation, and run-history recording.
-- Per-rule cooldown options (None, 1m, 5m, 15m, 60m) for all automatic triggers after successful execution; manual tests bypass cooldown and skipped runs create no history spam.
+- Phone call automations feature family:
+  - Triggers: Incoming call ringing (`CALL_RINGING`), call answered (`CALL_ANSWERED`), outgoing call placed (`CALL_OUTGOING`), and call ended (`CALL_ENDED`) with TelephonyCallback / PhoneStateListener integration and edge-triggered transition deduplication. Triggers match on state only without phone-number filtering due to Android 12+ outgoing number limitations for non-default dialers; legacy filter-configured rules operate as state-only / any-number rules. Device validation for this removal has not been run on device.
+  - Actions: Open dialer (`OPEN_DIALER`), Prepare dialer with number (`DIAL_NUMBER`), and Direct automated call (`CALL_NUMBER` with `android.permission.CALL_PHONE`).
+  - Privacy and data minimization: phone numbers for dial/call actions are masked in UI and rule summaries; execution history, action results, logcat, and diagnostics contain no phone numbers; no call logs or contacts are accessed.
+  - Confirmation dialog warning in Create, Detail, and Manual Test Run dialogs for direct call actions.
 
 ### Changed
 
+- Removed phone-number filtering from phone call triggers (`CALL_RINGING`, `CALL_ANSWERED`, `CALL_OUTGOING`, `CALL_ENDED`). Android 12+ does not provide outgoing numbers to non-default dialers, so call triggers now match purely on call state. Existing legacy rules with configured number filters are preserved through DataStore JSON deserialization and operate as state-only / any-number rules.
 - Android backup is disabled to prevent webhook credential exposure through backup snapshots.
 - Create/Edit form keyboard behavior uses Android `adjustResize`, IME-aware padding, and focus-gated bring-into-view scrolling. Keyboard opens only on text-field focus; focused fields return above the IME while typing.
 - Webhook logging and execution failures redact sensitive values.

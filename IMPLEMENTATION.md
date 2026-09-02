@@ -7,9 +7,9 @@ minSdk 26, JDK 17.
 ## Feature set
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
-battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | Bluetooth device connected | Bluetooth device disconnected | NFC tag scanned | notification received] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [Bluetooth on | Bluetooth off | NFC on | NFC off | Battery Saver on |
-Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
-UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
+battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | Bluetooth device connected | Bluetooth device disconnected | NFC tag scanned | notification received | phone call ringing | phone call answered | phone call outgoing | phone call ended] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [Bluetooth on | Bluetooth off | NFC on | NFC off | Battery Saver on |
+Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | Open dialer | Dial number | Call number | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, phone call transitions via TelephonyCallback / PhoneStateListener, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
 Actions can have a per-action pre-execution delay of 0-300 seconds. Delays preserve configured action order and are cancellable when engine stops; cancellation is recorded in execution history.
@@ -23,6 +23,9 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 | Action            | Plain app           | ADB (WRITE_SECURE_SETTINGS) | Shizuku             | Root    |
 |-------------------|---------------------|------------------------------|---------------------|---------|
 | Detect app        | Yes (Usage Access)  | -                            | -                   | -       |
+| Detect call state | YES (READ_PHONE_STATE) | -                         | -                   | -       |
+| Open dialer / Dial | YES (Standard ACTION_DIAL intent) | -             | -                   | -       |
+| Direct phone call | YES (CALL_PHONE runtime permission) | -            | -                   | -       |
 | Auto-rotate       | YES (WRITE_SETTINGS special access) | -                    | -                   | -       |
 | Do Not Disturb    | YES (Notification Policy Access) | -                | -                   | -       |
 | Sound Profile     | YES (Notification Policy Access) | -                | -                   | -       |
@@ -31,12 +34,6 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 | Battery Saver     | NO                  | YES (`pm grant` + write global low_power) | YES (`settings put global low_power`) | YES |
 | NFC               | NO (API 29+ removed NfcAdapter.enable) | NO (needs shell uid) | YES (`svc nfc enable|disable`) | YES |
 | Bluetooth on/off  | NO (modern Android restriction) | NO | YES: Shizuku `svc bluetooth enable|disable` + bounded `BluetoothAdapter.isEnabled` readback; Xiaomi smoke test passed | YES |
-
-- Auto-rotate toggling modifies `Settings.System.ACCELEROMETER_ROTATION` (1 for on, 0 for off / portrait lock).
-  It uses Android's standard user-grantable special app access `android.permission.WRITE_SETTINGS` checked via
-  `Settings.System.canWrite(context)` and opened with `Settings.ACTION_MANAGE_WRITE_SETTINGS`.
-- Do Not Disturb toggling uses `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` for on,
-  `INTERRUPTION_FILTER_ALL` for off). It requires Android's standard user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY`
   special access checked via `NotificationManager.isNotificationPolicyAccessGranted` and opened with
   `Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS`.
 - Alarm creation and Timer start use Android's standard `AlarmClock.ACTION_SET_ALARM` and `AlarmClock.ACTION_SET_TIMER`
@@ -152,6 +149,8 @@ BluetoothDeviceTracker dynamically receives public ACL connection broadcasts onl
 BluetoothExecutor runs only exact allowlisted `svc bluetooth enable` or `svc bluetooth disable` through Shizuku. It returns failure when adapter, `BLUETOOTH_CONNECT`, Shizuku, command, or state readback is unavailable/mismatched, polling adapter state for up to 5 seconds after command completion. Xiaomi 15T Pro / HyperOS 3 smoke testing confirmed Bluetooth turns on and off successfully.
 
 MainActivity receives NFC tag/tech discovery intents, extracts only tag UID, and hands normalized UID to the running engine through in-memory NfcTagHandoff. Rule matching uses selected UID only. No NDEF payload or technology data is retained. Create/Edit screens can capture a tag UID while open. Unit/build and configured-tag Xiaomi 15T Pro / HyperOS 3 smoke testing passed.
+
+Phone call triggers (`CALL_RINGING`, `CALL_ANSWERED`, `CALL_OUTGOING`, `CALL_ENDED`) evaluate state transitions without phone-number filtering. Android 12+ / HyperOS does not expose outgoing numbers to apps without the default-dialer role; call triggers match every call of that state. Legacy filter-configured rules operate as state-only / any-number rules. Device validation for this removal has not been run on device. Direct call and dial actions (`CALL_NUMBER`, `DIAL_NUMBER`) preserve phone number inputs and normalization/masking safeguards.
 
 AutoRotateExecutor writes `Settings.System.ACCELEROMETER_ROTATION` to `1` (free rotation) or `0`
 (portrait lock), then reads back the value. It requires `android.permission.WRITE_SETTINGS` checked via

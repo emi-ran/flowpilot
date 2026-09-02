@@ -29,6 +29,9 @@ enum class CapabilityRequirement {
     /** Needs a device vibrator. */
     VIBRATION,
 
+    /** Needs android.permission.CALL_PHONE runtime permission to initiate phone calls directly. */
+    CALL_PHONE,
+
     /** Not possible on this device at all (e.g. no NFC hardware). */
     UNSUPPORTED,
 }
@@ -44,6 +47,7 @@ enum class ActionCategory(val label: String) {
     AUDIO("Audio"),
     APPS_LINKS("Apps & Links"),
     CLOCK("Clock"),
+    PHONE("Phone"),
 }
 
 /** A concrete system action a rule can perform. */
@@ -73,7 +77,10 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     START_TIMER("Start timer", ActionCategory.CLOCK, CapabilityRequirement.NONE),
     LAUNCH_APP("Launch app", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_URL("Open URL", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
-    HTTP_WEBHOOK("Send HTTP webhook", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE);
+    HTTP_WEBHOOK("Send HTTP webhook", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
+    OPEN_DIALER("Open dialer", ActionCategory.PHONE, CapabilityRequirement.NONE),
+    DIAL_NUMBER("Dial phone number", ActionCategory.PHONE, CapabilityRequirement.NONE),
+    CALL_NUMBER("Call phone number directly", ActionCategory.PHONE, CapabilityRequirement.CALL_PHONE);
 
     companion object {
         fun fromId(id: String): ActionType? = entries.firstOrNull { it.name == id }
@@ -91,6 +98,7 @@ enum class TriggerCategory(val label: String) {
     BLUETOOTH("Bluetooth"),
     NFC_TAG("NFC"),
     NOTIFICATION("Notification"),
+    PHONE("Phone"),
 }
 
 @Serializable
@@ -154,7 +162,11 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     BLUETOOTH_CONNECTED("Bluetooth device connected", TriggerCategory.BLUETOOTH),
     BLUETOOTH_DISCONNECTED("Bluetooth device disconnected", TriggerCategory.BLUETOOTH),
     NFC_TAG_SCANNED("NFC tag scanned", TriggerCategory.NFC_TAG),
-    NOTIFICATION_RECEIVED("Notification received", TriggerCategory.NOTIFICATION);
+    NOTIFICATION_RECEIVED("Notification received", TriggerCategory.NOTIFICATION),
+    CALL_RINGING("Incoming call ringing", TriggerCategory.PHONE),
+    CALL_ANSWERED("Call active / answered", TriggerCategory.PHONE),
+    CALL_OUTGOING("Outgoing call started", TriggerCategory.PHONE),
+    CALL_ENDED("Call ended", TriggerCategory.PHONE);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }
@@ -167,7 +179,7 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
  * @property id stable identifier
  * @property name user-facing name
  * @property enabled whether the engine considers this rule
- * @property triggerEvent opened / closed
+ * @property triggerEvent opened / closed / call / etc.
  * @property appPackage package that must open/close
  * @property appName cached display name for UI
  * @property action what to do when triggered
@@ -223,6 +235,8 @@ data class Automation(
     val webhookHeaders: String = "",
     val webhookBody: String = "",
     val webhookTimeoutSeconds: Int = 10,
+    /** Telephone number used for DIAL_NUMBER and CALL_NUMBER actions. */
+    val phoneNumber: String = "",
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     /** Per-action optional delay in seconds (0..300), sequential with matching index in actions. */

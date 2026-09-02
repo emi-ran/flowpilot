@@ -44,6 +44,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val notifListener by vm.hasNotificationListener.collectAsState()
     val wifiPerms by vm.hasWifiPermissions.collectAsState()
     val bluetoothConnect by vm.hasBluetoothConnectPermission.collectAsState()
+    val readPhoneState by vm.hasReadPhoneStatePermission.collectAsState()
+    val callPhone by vm.hasCallPhonePermission.collectAsState()
     val hasNfcHardware by vm.hasNfcHardware.collectAsState()
     val isNfcEnabled by vm.isNfcEnabled.collectAsState()
     val ignoresBatteryOptimizations by vm.ignoresBatteryOptimizations.collectAsState()
@@ -68,6 +70,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
     val wifiLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vm.refreshPermissions() }
     val bluetoothLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
+    val phoneStateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
+    val callPhoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -85,6 +89,20 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
             }
             PermissionCard("Notifications", "Shows engine status while automation runs.", notif) {
                 notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            PermissionCard(
+                "Phone call state access",
+                "Required to detect incoming, answered, outgoing, and ended phone calls. FlowPilot never reads call log, never accesses contacts, and never records audio.",
+                readPhoneState,
+            ) {
+                phoneStateLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+            }
+            PermissionCard(
+                "Make direct phone calls",
+                "Required for the Call number automation action to place real telephone calls automatically without manual dialer confirmation.",
+                callPhone,
+            ) {
+                callPhoneLauncher.launch(Manifest.permission.CALL_PHONE)
             }
             PermissionCard(
                 "Notification listener access",

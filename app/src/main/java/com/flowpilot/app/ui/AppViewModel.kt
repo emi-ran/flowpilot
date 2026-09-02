@@ -52,6 +52,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasNotificationListener = MutableStateFlow(false)
     val hasWifiPermissions = MutableStateFlow(false)
     val hasBluetoothConnectPermission = MutableStateFlow(false)
+    val hasReadPhoneStatePermission = MutableStateFlow(false)
+    val hasCallPhonePermission = MutableStateFlow(false)
     val hasNfcHardware = MutableStateFlow(false)
     val isNfcEnabled = MutableStateFlow(false)
     val ignoresBatteryOptimizations = MutableStateFlow(false)
@@ -93,7 +95,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             .map { rule ->
                 val actionStatuses = rule.effectiveActions.map { capabilities.statusFor(it) }
 
-                // Check trigger/condition prerequisites for Wi-Fi and Notifications
+                // Check trigger/condition prerequisites for Wi-Fi, Bluetooth, NFC, Notifications, Phone Calls
                 val hasWifiTriggerOrCond = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.WIFI_CONNECTED ||
                     rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.WIFI_DISCONNECTED ||
                     rule.conditions.any { it.type == com.flowpilot.app.data.model.ConditionType.WIFI_CONNECTED || it.type == com.flowpilot.app.data.model.ConditionType.WIFI_DISCONNECTED }
@@ -102,6 +104,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val hasBluetoothTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED ||
                     rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED
                 val hasNfcTagTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.NFC_TAG_SCANNED
+                val hasCallTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_RINGING ||
+                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED ||
+                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING ||
+                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED
 
                 val triggerStatus = when {
                     hasWifiTriggerOrCond && !capabilities.hasWifiPermissions() -> CapabilityStatus.PERMISSION_REQUIRED
@@ -110,6 +116,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     hasNotificationTrigger && !capabilities.hasNotificationListenerAccess() -> CapabilityStatus.PERMISSION_REQUIRED
                     hasNfcTagTrigger && !capabilities.hasNfcHardware() -> CapabilityStatus.UNSUPPORTED
                     hasNfcTagTrigger && !capabilities.isNfcEnabled() -> CapabilityStatus.PERMISSION_REQUIRED
+                    hasCallTrigger && !capabilities.hasReadPhoneStatePermission() -> CapabilityStatus.PERMISSION_REQUIRED
                     else -> CapabilityStatus.AVAILABLE
                 }
 
@@ -138,6 +145,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         hasNotificationListener.value = c.hasNotificationListenerAccess()
         hasWifiPermissions.value = c.hasWifiPermissions()
         hasBluetoothConnectPermission.value = c.hasBluetoothConnectPermission()
+        hasReadPhoneStatePermission.value = c.hasReadPhoneStatePermission()
+        hasCallPhonePermission.value = c.hasCallPhonePermission()
         hasNfcHardware.value = c.hasNfcHardware()
         isNfcEnabled.value = c.isNfcEnabled()
         ignoresBatteryOptimizations.value = c.isIgnoringBatteryOptimizations()
@@ -212,6 +221,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         webhookHeaders: String = "",
         webhookBody: String = "",
         webhookTimeoutSeconds: Int = 10,
+        phoneNumber: String = "",
         ruleId: String = UUID.randomUUID().toString(),
     ) {
         viewModelScope.launch {
@@ -261,6 +271,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 webhookHeaders = webhookHeaders,
                 webhookBody = webhookBody,
                 webhookTimeoutSeconds = webhookTimeoutSeconds,
+                phoneNumber = phoneNumber,
                 id = ruleId,
             )
             startEngine()
@@ -356,6 +367,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 webhookBody = rule.webhookBody,
                 webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
                 webhookTemplateContext = templateContext,
+                phoneNumber = rule.phoneNumber,
             )
             val dispatcher = com.flowpilot.app.actions.ActionDispatcher.get(app)
             var successCount = 0

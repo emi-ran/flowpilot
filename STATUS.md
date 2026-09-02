@@ -21,6 +21,10 @@ Last updated: 2026-09-01
 
 ## Implemented; device validation pending
 
+- Phone call automations family on Xiaomi 15T Pro / HyperOS 3:
+  - Triggers: `CALL_RINGING`, `CALL_ANSWERED`, `CALL_OUTGOING`, `CALL_ENDED` (state-only matching; phone-number filtering removed because Android 12+ does not provide outgoing numbers without default-dialer role; legacy filter-configured rules operate as state-only / any-number rules). Device validation for this removal has not been run on device.
+  - Actions: `OPEN_DIALER`, `DIAL_NUMBER`, `CALL_NUMBER` (direct call with `CALL_PHONE` permission).
+  - Privacy safeguards: UI number masking for dial/call actions, log redaction, zero call-log / contact storage.
 - Sound profile denied Notification Policy Access behavior.
 - Run history screen smoke test on Xiaomi 15T Pro / HyperOS 3.
 - NFC tag trigger non-matching/engine-stopped paths.
@@ -28,6 +32,8 @@ Last updated: 2026-09-01
 
 ## Current constraints
 
+- Phone call triggers require `android.permission.READ_PHONE_STATE`. Direct call action (`CALL_NUMBER`) requires `android.permission.CALL_PHONE`. FlowPilot does not request the default dialer role or change the default Phone app.
+- Phone numbers are masked in UI and rule summaries (`+905 •••• 567`). Execution history, action results, logcat, and diagnostic messages contain no phone numbers.
 - Dark theme, NFC, and Bluetooth on/off require active Shizuku permission. Bluetooth on/off also requires `BLUETOOTH_CONNECT` on Android 12+ and verifies adapter state after exact allowlisted `svc bluetooth enable|disable`.
 - Battery Saver needs `WRITE_SECURE_SETTINGS` or Shizuku.
 - Webhook secrets are Android Keystore AES-256-GCM encrypted at rest; Android backups are disabled.

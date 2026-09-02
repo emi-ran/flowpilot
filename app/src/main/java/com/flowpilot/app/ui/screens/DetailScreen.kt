@@ -69,6 +69,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var notificationAppPackage by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppPackage) }
     var notificationAppName by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppName) }
     var notificationKeyword by remember(initialRule.id) { mutableStateOf(initialRule.notificationKeyword) }
+    var phoneNumber by remember(initialRule.id) { mutableStateOf(initialRule.phoneNumber) }
     var conditions by remember(initialRule.id) { mutableStateOf(initialRule.conditions) }
     var showConditionPicker by remember { mutableStateOf(false) }
     var notificationTitle by remember(initialRule.id) { mutableStateOf(initialRule.notificationTitle) }
@@ -196,6 +197,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     }
 
     if (showRunConfirm) {
+        val hasDirectCall = initialRule.effectiveActions.any { it == ActionType.CALL_NUMBER }
         AlertDialog(
             onDismissRequest = { showRunConfirm = false },
             title = { Text("Run automation now?") },
@@ -204,7 +206,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     "This will immediately run the saved actions for '${initialRule.name}'.\n\n" +
                         "• Trigger and conditions will be bypassed\n" +
                         "• Unsaved edits on this screen are not included\n" +
-                        "• Automation enabled state and last trigger time will not change"
+                        "• Automation enabled state and last trigger time will not change" +
+                        if (hasDirectCall) "\n\n⚠️ WARNING: This rule contains a direct phone call action. Running it now will place a real phone call immediately." else ""
                 )
             },
             confirmButton = {
@@ -320,6 +323,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     chooseApp = { showNotificationApps = true },
                     setKeyword = { notificationKeyword = it },
                 )
+            } else if (event == TriggerEvent.CALL_RINGING || event == TriggerEvent.CALL_ANSWERED || event == TriggerEvent.CALL_OUTGOING || event == TriggerEvent.CALL_ENDED) {
+                PhoneCallTriggerExplanation()
             }
 
             Text(
@@ -480,6 +485,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 Text("$mediaVolumePercent%", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 4.dp))
                 Slider(value = mediaVolumePercent.toFloat(), onValueChange = { mediaVolumePercent = it.toInt() }, valueRange = 0f..100f, steps = 0)
             }
+            if (ActionType.DIAL_NUMBER in actions || ActionType.CALL_NUMBER in actions) {
+                val actType = if (ActionType.CALL_NUMBER in actions) ActionType.CALL_NUMBER else ActionType.DIAL_NUMBER
+                PhoneActionSettings(actType, phoneNumber) { phoneNumber = it }
+            }
             if (ActionType.LAUNCH_APP in actions) {
                 Text("Launch app", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
                 SelectionRow(
@@ -584,6 +593,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 TriggerEvent.BLUETOOTH_DISCONNECTED -> "${event.label} ${bluetoothDeviceName.ifBlank { bluetoothDeviceAddress }} · $summary"
                                 TriggerEvent.NFC_TAG_SCANNED -> "NFC Tag ($nfcTagId) · $summary"
                                 TriggerEvent.NOTIFICATION_RECEIVED -> "Notification (${notificationAppName.ifBlank { notificationAppPackage }}) · $summary"
+                                TriggerEvent.CALL_RINGING,
+                                TriggerEvent.CALL_ANSWERED,
+                                TriggerEvent.CALL_OUTGOING,
+                                TriggerEvent.CALL_ENDED -> "${event.label} · $summary"
                                 else -> "${appName.ifBlank { pkg }} · $summary"
                             }
                         }
@@ -631,6 +644,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 webhookHeaders = webhookHeaders,
                                 webhookBody = webhookBody,
                                 webhookTimeoutSeconds = webhookTimeoutSeconds,
+                                phoneNumber = phoneNumber.trim(),
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
                                 actionDelays = actionDelays,
@@ -651,6 +665,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || (ttsAudioFileName.isNotEmpty() && ttsManager.getCacheFile(ttsAudioFileName)?.exists() == true && ttsAudioFileName == ttsManager.computeCacheFileName(initialRule.id, ttsText.trim(), ttsVoiceName, ttsSpeechRate))) &&
+                            (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
                             actions.isNotEmpty(),
                 ) {
                     Text("Save changes")

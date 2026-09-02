@@ -18,12 +18,14 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BatteryAlert
-import androidx.compose.material.icons.filled.Bluetooth
-import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.BatterySaver
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
@@ -35,16 +37,20 @@ import androidx.compose.material.icons.filled.Http
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MarkEmailUnread
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.PhoneForwarded
+import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.PowerOff
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.RotateLeft
 import androidx.compose.material.icons.filled.RotateRight
-import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Smartphone
@@ -54,7 +60,6 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -120,36 +125,50 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.APP_CLOSED,
                         title = TriggerEvent.APP_CLOSED.label,
-                        subtitle = "When foreground app closes or leaves focus",
+                        subtitle = "When selected foreground app exits",
                         icon = Icons.Default.Close,
-                        iconTint = Color(0xFF90CAF9),
-                        keywords = listOf("exit", "close", "quit", "leave", "background", "stop"),
+                        iconTint = Color(0xFFF28B82),
+                        keywords = listOf("exit", "close", "leave", "background", "quit", "application"),
                     ),
                 ),
             ),
             PickerCategoryGroup(
-                id = TriggerCategory.BLUETOOTH.name,
-                label = TriggerCategory.BLUETOOTH.label,
-                icon = Icons.Default.Bluetooth,
-                iconTint = Color(0xFF80CBC4),
-                items = listOf(
-                    PickerItem(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_CONNECTED.label, "When selected bonded Bluetooth device connects", Icons.Default.Bluetooth, Color(0xFF80CBC4), listOf("bluetooth", "paired", "bonded", "device", "connect", "acl")),
-                    PickerItem(TriggerEvent.BLUETOOTH_DISCONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED.label, "When selected bonded Bluetooth device disconnects", Icons.Default.BluetoothDisabled, Color(0xFFB2DFDB), listOf("bluetooth", "paired", "bonded", "device", "disconnect", "acl")),
-                ),
-            ),
-            PickerCategoryGroup(
-                id = TriggerCategory.NFC_TAG.name,
-                label = TriggerCategory.NFC_TAG.label,
-                icon = Icons.Default.Nfc,
-                iconTint = Color(0xFFB39DDB),
+                id = TriggerCategory.PHONE.name,
+                label = TriggerCategory.PHONE.label,
+                icon = Icons.Default.PhoneInTalk,
+                iconTint = Color(0xFF81C784),
                 items = listOf(
                     PickerItem(
-                        value = TriggerEvent.NFC_TAG_SCANNED,
-                        title = TriggerEvent.NFC_TAG_SCANNED.label,
-                        subtitle = "When a configured NFC tag ID is tapped",
-                        icon = Icons.Default.Nfc,
-                        iconTint = Color(0xFFB39DDB),
-                        keywords = listOf("nfc", "tag", "scan", "tap", "contactless", "rfid", "uid", "ndef"),
+                        value = TriggerEvent.CALL_RINGING,
+                        title = TriggerEvent.CALL_RINGING.label,
+                        subtitle = "When an incoming call starts ringing",
+                        icon = Icons.Default.PhoneInTalk,
+                        iconTint = Color(0xFF81C784),
+                        keywords = listOf("phone", "call", "incoming", "ringing", "ring", "caller", "telephony"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.CALL_ANSWERED,
+                        title = TriggerEvent.CALL_ANSWERED.label,
+                        subtitle = "When an incoming call is picked up (off-hook)",
+                        icon = Icons.Default.Phone,
+                        iconTint = Color(0xFF66BB6A),
+                        keywords = listOf("phone", "call", "answered", "answer", "offhook", "pickup", "in-call"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.CALL_OUTGOING,
+                        title = TriggerEvent.CALL_OUTGOING.label,
+                        subtitle = "When an outgoing phone call is placed / dialed",
+                        icon = Icons.Default.PhoneForwarded,
+                        iconTint = Color(0xFF4CAF50),
+                        keywords = listOf("phone", "call", "outgoing", "dialed", "dial", "place", "started"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.CALL_ENDED,
+                        title = TriggerEvent.CALL_ENDED.label,
+                        subtitle = "When an active or ringing call ends (returns to idle)",
+                        icon = Icons.Default.CallEnd,
+                        iconTint = Color(0xFFE57373),
+                        keywords = listOf("phone", "call", "ended", "hangup", "idle", "disconnect", "finished"),
                     ),
                 ),
             ),
@@ -162,41 +181,81 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CHARGER_CONNECTED,
                         title = TriggerEvent.CHARGER_CONNECTED.label,
-                        subtitle = "When AC or wireless power source is plugged in",
+                        subtitle = "When device is plugged into AC or USB charger",
                         icon = Icons.Default.Power,
-                        iconTint = Color(0xFFFBC65E),
-                        keywords = listOf("charge", "plug", "cable", "ac", "usb", "power on", "charging"),
+                        iconTint = Color(0xFF81C784),
+                        keywords = listOf("charger", "plug", "charging", "connected", "power", "ac", "usb"),
                     ),
                     PickerItem(
                         value = TriggerEvent.CHARGER_DISCONNECTED,
                         title = TriggerEvent.CHARGER_DISCONNECTED.label,
-                        subtitle = "When device is unplugged from power",
+                        subtitle = "When device is unplugged from power source",
                         icon = Icons.Default.PowerOff,
                         iconTint = Color(0xFFFFB74D),
-                        keywords = listOf("unplug", "discharge", "cable", "power off", "disconnected"),
+                        keywords = listOf("charger", "unplug", "disconnected", "battery", "off"),
                     ),
                     PickerItem(
                         value = TriggerEvent.BATTERY_BELOW,
                         title = TriggerEvent.BATTERY_BELOW.label,
-                        subtitle = "When charge percentage drops past threshold",
+                        subtitle = "When battery drops to or below configured percentage",
                         icon = Icons.Default.BatteryAlert,
-                        iconTint = Color(0xFFFFB4AB),
-                        keywords = listOf("battery", "level", "drop", "low", "percent", "threshold"),
+                        iconTint = Color(0xFFE57373),
+                        keywords = listOf("battery", "level", "percentage", "low", "drain", "below", "percent"),
                     ),
                     PickerItem(
                         value = TriggerEvent.BATTERY_ABOVE,
                         title = TriggerEvent.BATTERY_ABOVE.label,
-                        subtitle = "When charge percentage rises above threshold",
-                        icon = Icons.Default.BatteryChargingFull,
+                        subtitle = "When battery charges to or above configured percentage",
+                        icon = Icons.Default.BatteryFull,
                         iconTint = Color(0xFF81C784),
-                        keywords = listOf("battery", "level", "high", "full", "percent", "threshold", "charged"),
+                        keywords = listOf("battery", "level", "percentage", "high", "full", "above", "percent"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = TriggerCategory.BLUETOOTH.name,
+                label = TriggerCategory.BLUETOOTH.label,
+                icon = Icons.Default.Bluetooth,
+                iconTint = Color(0xFF80CBC4),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.BLUETOOTH_CONNECTED,
+                        title = TriggerEvent.BLUETOOTH_CONNECTED.label,
+                        subtitle = "When a specific paired Bluetooth device connects",
+                        icon = Icons.Default.Bluetooth,
+                        iconTint = Color(0xFF80CBC4),
+                        keywords = listOf("bluetooth", "bt", "device", "connect", "paired", "headphones", "speaker", "car"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.BLUETOOTH_DISCONNECTED,
+                        title = TriggerEvent.BLUETOOTH_DISCONNECTED.label,
+                        subtitle = "When a specific paired Bluetooth device disconnects",
+                        icon = Icons.Default.BluetoothDisabled,
+                        iconTint = Color(0xFFB2DFDB),
+                        keywords = listOf("bluetooth", "bt", "device", "disconnect", "unpair", "leave", "off"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = TriggerCategory.NFC_TAG.name,
+                label = TriggerCategory.NFC_TAG.label,
+                icon = Icons.Default.Nfc,
+                iconTint = Color(0xFFB39DDB),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.NFC_TAG_SCANNED,
+                        title = TriggerEvent.NFC_TAG_SCANNED.label,
+                        subtitle = "When a physical NFC tag is scanned against the phone",
+                        icon = Icons.Default.Nfc,
+                        iconTint = Color(0xFFB39DDB),
+                        keywords = listOf("nfc", "tag", "scan", "rfid", "contactless", "tap", "card"),
                     ),
                 ),
             ),
             PickerCategoryGroup(
                 id = TriggerCategory.DISPLAY.name,
                 label = TriggerCategory.DISPLAY.label,
-                icon = Icons.Default.Smartphone,
+                icon = Icons.Default.ScreenRotation,
                 iconTint = Color(0xFF4DD0E1),
                 items = listOf(
                     PickerItem(
@@ -278,7 +337,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
 
     ModernChoiceDialog(
         title = "Choose trigger",
-        searchPlaceholder = "Search triggers (e.g. battery, screen, time)...",
+        searchPlaceholder = "Search triggers (e.g. battery, call, screen, time)...",
         groups = groups,
         isSelected = { it == selected },
         onSelect = { select(it) },
@@ -296,6 +355,38 @@ fun ActionPicker(
 ) {
     val allGroups = remember {
         listOf(
+            PickerCategoryGroup(
+                id = ActionCategory.PHONE.name,
+                label = ActionCategory.PHONE.label,
+                icon = Icons.Default.Phone,
+                iconTint = Color(0xFF81C784),
+                items = listOf(
+                    PickerItem(
+                        value = ActionType.OPEN_DIALER,
+                        title = ActionType.OPEN_DIALER.label,
+                        subtitle = "Open default phone dialer app",
+                        icon = Icons.Default.Phone,
+                        iconTint = Color(0xFF81C784),
+                        keywords = listOf("phone", "dialer", "call", "keypad", "open dialer"),
+                    ),
+                    PickerItem(
+                        value = ActionType.DIAL_NUMBER,
+                        title = ActionType.DIAL_NUMBER.label,
+                        subtitle = "Prepare number in dialer for user confirmation",
+                        icon = Icons.Default.PhoneInTalk,
+                        iconTint = Color(0xFF66BB6A),
+                        keywords = listOf("phone", "dial", "number", "keypad", "prepare", "fill"),
+                    ),
+                    PickerItem(
+                        value = ActionType.CALL_NUMBER,
+                        title = ActionType.CALL_NUMBER.label,
+                        subtitle = "Directly initiates a phone call automatically (requires CALL_PHONE)",
+                        icon = Icons.Default.Call,
+                        iconTint = Color(0xFF4CAF50),
+                        keywords = listOf("phone", "call", "direct", "call phone", "auto call"),
+                    ),
+                ),
+            ),
             PickerCategoryGroup(
                 id = ActionCategory.ALERTS.name,
                 label = ActionCategory.ALERTS.label,
@@ -500,15 +591,15 @@ fun ActionPicker(
                         subtitle = "Enable Android low-power saver mode",
                         icon = Icons.Default.BatterySaver,
                         iconTint = Color(0xFFAED581),
-                        keywords = listOf("battery saver", "power save", "low power", "save battery", "saver on"),
+                        keywords = listOf("battery", "power saver", "battery saver", "save power", "energy", "saver on"),
                     ),
                     PickerItem(
                         value = ActionType.BATTERY_SAVER_OFF,
                         title = ActionType.BATTERY_SAVER_OFF.label,
-                        subtitle = "Disable battery saver mode",
-                        icon = Icons.Default.BatteryFull,
-                        iconTint = Color(0xFFC5E1A5),
-                        keywords = listOf("battery saver", "normal power", "saver off", "disable battery saver"),
+                        subtitle = "Disable Android low-power saver mode",
+                        icon = Icons.Default.Bolt,
+                        iconTint = Color(0xFFFFD54F),
+                        keywords = listOf("battery", "power saver", "battery saver", "normal power", "energy", "saver off"),
                     ),
                 ),
             ),
@@ -560,7 +651,7 @@ fun ActionPicker(
 
     ModernChoiceDialog(
         title = "Choose action",
-        searchPlaceholder = "Search actions (e.g. sound, app, notify, nfc)...",
+        searchPlaceholder = "Search actions (e.g. phone, sound, app, notify, nfc)...",
         groups = availableGroups,
         isSelected = { selected != null && it == selected },
         onSelect = { select(it) },

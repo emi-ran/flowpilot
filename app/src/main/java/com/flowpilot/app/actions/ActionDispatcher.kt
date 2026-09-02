@@ -20,9 +20,10 @@ class ActionDispatcher private constructor(
     private val dnd: DndExecutor,
     private val clock: ClockExecutor,
     private val webhook: WebhookExecutor,
+    private val phone: PhoneExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
-        listOf(nfc, bluetooth, powerSaver, darkTheme, autoRotate, notification, vibration, sound, soundProfile, mediaVolume, launcher, tts, dnd, clock, webhook)
+        listOf(nfc, bluetooth, powerSaver, darkTheme, autoRotate, notification, vibration, sound, soundProfile, mediaVolume, launcher, tts, dnd, clock, webhook, phone)
             .flatMap { e -> e.supportedTypes.map { it to e } }
             .toMap()
     }
@@ -54,6 +55,7 @@ class ActionDispatcher private constructor(
                     DndExecutor(context.applicationContext),
                     ClockExecutor(context.applicationContext),
                     WebhookExecutor(),
+                    PhoneExecutor(context.applicationContext),
                 ).also { instance = it }
             }
     }

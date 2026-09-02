@@ -68,6 +68,12 @@ Do not bundle unrelated features. One feature family at a time.
     - Tag UID capture in Create/Edit while FlowPilot is open
     - Tag/tech discovery intent handoff evaluates only while engine runs
 
+10. **Phone call triggers** (implementation complete; Xiaomi device smoke test pending)
+    - Incoming call ringing (`CALL_RINGING`), answered (`CALL_ANSWERED`), outgoing call placed (`CALL_OUTGOING`), and call ended (`CALL_ENDED`).
+    - State-only trigger matching every call of that state. Phone-number filtering removed because Android 12+ does not provide outgoing numbers to normal apps without default-dialer role; legacy filter-configured rules operate as state-only / any-number rules. Device validation for this removal has not been run on device.
+    - Uses `TelephonyCallback` (API 31+) and `PhoneStateListener` (< 31) with edge transition deduplication and no startup replay.
+    - Requires `android.permission.READ_PHONE_STATE`. Zero access to call logs or contacts.
+
 ## Planned Actions
 
 ### Phase 1 — App-level actions
@@ -103,13 +109,18 @@ Do not bundle unrelated features. One feature family at a time.
 9. **Set media volume** (complete; Xiaomi device smoke test passed)
     - Configurable 0-100% music-stream level
     - Uses `AudioManager.setStreamVolume` and verifies resulting level
+10. **Phone call actions** (implementation complete; Xiaomi device smoke test pending)
+    - Open dialer (`OPEN_DIALER` via `Intent.ACTION_DIAL`).
+    - Prepare dialer with number (`DIAL_NUMBER` via `Intent.ACTION_DIAL` with `tel:URI`).
+    - Direct phone call (`CALL_NUMBER` via `Intent.ACTION_CALL` with `tel:URI` and `android.permission.CALL_PHONE`).
+    - Requires explicit user warning card and dialogs; phone numbers are masked in UI and omitted from logs, action results, and history.
 
-10. **Manual test run** (complete; Xiaomi device smoke test passed)
+11. **Manual test run** (complete; Xiaomi device smoke test passed)
     - Edit automation TopAppBar action with confirmation, saved-action execution off main thread, trigger/condition bypass, unchanged rule state, and secret redaction.
-11. **Per-action delay** (implementation complete; Xiaomi smoke test pending)
+12. **Per-action delay** (implementation complete; Xiaomi smoke test pending)
     - Optional 0-300 second delay before each action
     - Actions remain sequential; engine stop cancels delay and records cancellation
-12. **Per-rule cooldown** (complete; Xiaomi smoke test passed)
+13. **Per-rule cooldown** (complete; Xiaomi smoke test passed)
     - None, 1m, 5m, 15m, or 60m options
     - Applies after successful automatic runs across every trigger type; manual tests bypass it
 
@@ -147,7 +158,15 @@ Each must expose its required permission or Shizuku state. Do not show success u
 
 ## Next validation
 
-1. **Sound profile permission denial smoke test**
+1. **Phone call automations device smoke test**
+   - Place incoming test call to device; verify `CALL_RINGING` trigger fires (e.g. shows notification or vibrates).
+   - Answer incoming call; verify `CALL_ANSWERED` trigger fires.
+   - Hang up; verify `CALL_ENDED` trigger fires.
+   - Test call triggers matching broadly on state regardless of incoming/outgoing number.
+   - Test `OPEN_DIALER`, `DIAL_NUMBER`, and `CALL_NUMBER` actions on Xiaomi 15T Pro / HyperOS 3.
+   - Verify permission denial path for `READ_PHONE_STATE` and `CALL_PHONE`.
+    - Verify execution history records no phone numbers, raw or masked; summaries and home show state-only summaries for call triggers and masked numbers only for dial/call actions (`+905 •••• 567`).
+2. **Sound profile permission denial smoke test**
      - Normal, Vibrate, and Silent passed basic Xiaomi smoke testing; Xiaomi maps Vibrate and Silent to the same observed ringer behavior. Do not generalize this result to other devices.
      - Deny access and verify an honest failure result.
 2. **Permission denial paths**

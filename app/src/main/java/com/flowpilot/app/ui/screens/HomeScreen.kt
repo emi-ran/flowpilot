@@ -23,6 +23,10 @@ import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -229,6 +233,10 @@ private fun RuleCard(
                     TriggerEvent.BLUETOOTH_DISCONNECTED -> Icons.Default.BluetoothDisabled
                     TriggerEvent.NFC_TAG_SCANNED -> Icons.Default.Bolt
                     TriggerEvent.NOTIFICATION_RECEIVED -> Icons.Default.Bolt
+                    TriggerEvent.CALL_RINGING -> Icons.Default.Notifications
+                    TriggerEvent.CALL_ANSWERED -> Icons.Default.PlayArrow
+                    TriggerEvent.CALL_OUTGOING -> Icons.Default.Info
+                    TriggerEvent.CALL_ENDED -> Icons.Default.Stop
                 },
                 null,
                 Modifier.size(40.dp),
@@ -252,6 +260,10 @@ private fun RuleCard(
                         val app = item.rule.notificationAppName.ifBlank { item.rule.notificationAppPackage }
                         if (item.rule.notificationKeyword.isNotBlank()) "$app · Keyword: \"${item.rule.notificationKeyword}\"" else app
                     }
+                    TriggerEvent.CALL_RINGING,
+                    TriggerEvent.CALL_ANSWERED,
+                    TriggerEvent.CALL_OUTGOING,
+                    TriggerEvent.CALL_ENDED -> "Any call"
                     else -> item.rule.appName.ifBlank { item.rule.appPackage }
                 }
                 if (detail.isNotBlank()) Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)

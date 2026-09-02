@@ -32,6 +32,7 @@ class AutomationEngine(
     private val screenTracker: ScreenStateTracker = ScreenStateTracker(context.applicationContext),
     private val wifiTracker: WifiStateTracker = WifiStateTracker(context.applicationContext),
     private val bluetoothTracker: BluetoothDeviceTracker = BluetoothDeviceTracker(context.applicationContext),
+    private val callTracker: CallStateTracker = CallStateTracker(context.applicationContext),
 ) {
 
     private val appContext = context.applicationContext
@@ -57,6 +58,7 @@ class AutomationEngine(
         screenTracker.start()
         wifiTracker.start()
         bluetoothTracker.start()
+        callTracker.start()
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         job = scope.launch {
             while (isActive) {
@@ -68,6 +70,7 @@ class AutomationEngine(
                     pollScreenEvents(liveState)
                     pollWifiTransitions(liveState)
                     pollBluetoothTransitions(liveState)
+                    pollCallTransitions(liveState)
                     pollNfcTagEvents(liveState)
                     pollNotificationEvents(liveState)
                     pollSchedules(liveState)
@@ -91,6 +94,7 @@ class AutomationEngine(
         screenTracker.stop()
         wifiTracker.stop()
         bluetoothTracker.stop()
+        callTracker.stop()
     }
 
     private fun getLiveSystemState(): LiveSystemState {
@@ -285,6 +289,20 @@ class AutomationEngine(
         }
     }
 
+    private suspend fun pollCallTransitions(liveState: LiveSystemState) {
+        callTracker.start()
+        val transitions = callTracker.drainTransitions()
+        if (transitions.isEmpty()) return
+        val rules = repository.automations.first()
+        for (transition in transitions) {
+            val matches = RuleEvaluator.evaluateCall(rules, transition, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing ${transition.triggerEvent.name} call rules (${matches.size} rule(s))")
+                executeAll(matches, trigger = transition.triggerEvent, liveState = liveState)
+            }
+        }
+    }
+
     private suspend fun executeAll(
         rules: List<com.flowpilot.app.data.model.Automation>,
         trigger: TriggerEvent? = null,
@@ -344,6 +362,7 @@ class AutomationEngine(
                                 webhookBody = rule.webhookBody,
                                 webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
                                 webhookTemplateContext = templateContext,
+                                phoneNumber = rule.phoneNumber,
                             ),
                         )
                         Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")

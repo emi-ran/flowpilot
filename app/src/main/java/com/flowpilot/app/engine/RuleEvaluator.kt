@@ -208,6 +208,20 @@ object RuleEvaluator {
         }
     }
 
+    fun evaluateCall(
+        rules: List<Automation>,
+        transition: CallTransition,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> {
+        return rules.filter { rule ->
+            rule.enabled &&
+                rule.triggerEvent == transition.triggerEvent &&
+                !rule.isCoolingDown(nowMs) &&
+                matchesConditions(rule.conditions, liveState)
+        }
+    }
+
     fun evaluate(
         rules: List<Automation>,
         event: AppEvent,

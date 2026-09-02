@@ -37,6 +37,7 @@ data class ActionParameters(
     val webhookBody: String = "",
     val webhookTimeoutSeconds: Int = 10,
     val webhookTemplateContext: WebhookTemplateContext? = null,
+    val phoneNumber: String = "",
 )
 
 /** A capability-aware executor for one family of system actions. */

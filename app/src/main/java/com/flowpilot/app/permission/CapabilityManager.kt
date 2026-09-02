@@ -22,11 +22,10 @@ enum class CapabilityStatus(val label: String) {
 
 /**
  * Central place deciding whether an action can run right now.
- * Reads real device state: Usage Access, WRITE_SECURE_SETTINGS, Shizuku, NFC hardware.
+ * Reads real device state: Usage Access, WRITE_SECURE_SETTINGS, Shizuku, NFC hardware, Phone permissions.
  */
 class CapabilityManager(private val context: Context) {
 
-    /** Is this device currently running under a foreground-user device policy controller? Not ours to use. */
     /** Has the user granted Usage Access to this app? */
     fun hasUsageAccess(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return false
@@ -151,6 +150,14 @@ class CapabilityManager(private val context: Context) {
         else -> ShizukuState.READY
     }
 
+    /** Has the app been granted READ_PHONE_STATE permission to detect call state transitions? */
+    fun hasReadPhoneStatePermission(): Boolean =
+        context.checkSelfPermission(android.Manifest.permission.READ_PHONE_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    /** Has the app been granted CALL_PHONE permission to initiate phone calls directly? */
+    fun hasCallPhonePermission(): Boolean =
+        context.checkSelfPermission(android.Manifest.permission.CALL_PHONE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
     /**
      * Effective status for an action, given the current device state and the
      * optional override "granted via ADB" flag (recomputed from the permission itself).
@@ -189,6 +196,9 @@ class CapabilityManager(private val context: Context) {
             if ((context.getSystemService(android.os.Vibrator::class.java))?.hasVibrator() == true) {
                 CapabilityStatus.AVAILABLE
             } else CapabilityStatus.UNSUPPORTED
+
+        CapabilityRequirement.CALL_PHONE ->
+            if (hasCallPhonePermission()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
 
         CapabilityRequirement.UNSUPPORTED -> CapabilityStatus.UNSUPPORTED
     }

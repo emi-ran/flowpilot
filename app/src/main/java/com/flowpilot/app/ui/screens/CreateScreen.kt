@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -70,6 +71,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var notificationAppPackage by remember { mutableStateOf("") }
     var notificationAppName by remember { mutableStateOf("") }
     var notificationKeyword by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
     var conditions by remember { mutableStateOf(emptyList<RuleCondition>()) }
     var showConditionPicker by remember { mutableStateOf(false) }
     var notificationTitle by remember { mutableStateOf("FlowPilot") }
@@ -232,6 +234,8 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     chooseApp = { showNotificationApps = true },
                     setKeyword = { notificationKeyword = it },
                 )
+            } else if (event == TriggerEvent.CALL_RINGING || event == TriggerEvent.CALL_ANSWERED || event == TriggerEvent.CALL_OUTGOING || event == TriggerEvent.CALL_ENDED) {
+                PhoneCallTriggerExplanation()
             }
 
             Text(
@@ -354,6 +358,10 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             }
             if (ActionType.SET_MEDIA_VOLUME in actions) {
                 MediaVolumeSettings(mediaVolumePercent) { mediaVolumePercent = it }
+            }
+            if (ActionType.DIAL_NUMBER in actions || ActionType.CALL_NUMBER in actions) {
+                val actType = if (ActionType.CALL_NUMBER in actions) ActionType.CALL_NUMBER else ActionType.DIAL_NUMBER
+                PhoneActionSettings(actType, phoneNumber) { phoneNumber = it }
             }
             if (ActionType.LAUNCH_APP in actions) {
                 Text("Launch app", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
@@ -489,6 +497,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             webhookHeaders = webhookHeaders,
                             webhookBody = webhookBody,
                             webhookTimeoutSeconds = webhookTimeoutSeconds,
+                            phoneNumber = phoneNumber.trim(),
                             ruleId = newRuleId,
                         )
                         done()
@@ -505,6 +514,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || (ttsAudioFileName.isNotEmpty() && ttsManager.getCacheFile(ttsAudioFileName)?.exists() == true && ttsAudioFileName == ttsManager.computeCacheFileName(newRuleId, ttsText.trim(), ttsVoiceName, ttsSpeechRate))) &&
+                            (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
                             actions.isNotEmpty(),
                 ) {
                     Text("Save")
@@ -512,6 +522,74 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun PhoneCallTriggerExplanation() {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.PlayArrow,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                "Phone-number filters are unavailable. Android 12+ does not provide outgoing numbers to normal apps; this trigger matches every call of this state.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+fun PhoneActionSettings(
+    actionType: ActionType,
+    phoneNumber: String,
+    onPhoneNumberChange: (String) -> Unit,
+) {
+    Text(
+        if (actionType == ActionType.CALL_NUMBER) "Call recipient" else "Dialer number",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 16.dp),
+    )
+    if (actionType == ActionType.CALL_NUMBER) {
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)),
+        ) {
+            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "⚠️ Starts a real phone call automatically. Requires Make phone calls permission.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        }
+    }
+    OutlinedTextField(
+        value = phoneNumber,
+        onValueChange = onPhoneNumberChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .bringIntoViewOnFocusOrChange(phoneNumber),
+        shape = RoundedCornerShape(16.dp),
+        label = { Text("Phone number") },
+        placeholder = { Text("+905551234567") },
+        singleLine = true,
+    )
 }
 
 @Composable

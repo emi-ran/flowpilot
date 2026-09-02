@@ -118,6 +118,7 @@ class AutomationRepository(private val context: Context) {
         webhookHeaders: String = "",
         webhookBody: String = "",
         webhookTimeoutSeconds: Int = 10,
+        phoneNumber: String = "",
         id: String = UUID.randomUUID().toString(),
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
@@ -144,6 +145,11 @@ class AutomationRepository(private val context: Context) {
                         "NFC Tag ($nfcTagId) · $summary"
                     com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED ->
                         "Notification (${notificationAppName.ifBlank { notificationAppPackage }}) · $summary"
+                    com.flowpilot.app.data.model.TriggerEvent.CALL_RINGING,
+                    com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED,
+                    com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING,
+                    com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED ->
+                        "${triggerEvent.label} · $summary"
                     else -> "${appName.ifBlank { appPackage }} · $summary"
                 }
             },
@@ -188,6 +194,7 @@ class AutomationRepository(private val context: Context) {
             webhookHeaders = webhookHeaders,
             webhookBody = webhookBody,
             webhookTimeoutSeconds = webhookTimeoutSeconds,
+            phoneNumber = phoneNumber,
             action = primaryAction,
             actions = actions,
             actionDelays = actionDelays,

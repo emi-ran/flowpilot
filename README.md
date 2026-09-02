@@ -28,18 +28,22 @@ adb -s <device-serial> install -r app/build/outputs/apk/debug/app-debug.apk
 
 Package ID: `com.flowpilot.app`
 Version: `1.0.0` / versionCode `1`
+```
+
+Package ID: `com.flowpilot.app`
+Version: `1.0.0` / versionCode `1`
 Min SDK: 26
 Target / compile SDK: 36 (Android 16)
 
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), Bluetooth device connected/disconnected (selected bonded device), NFC tag scanned (selected tag UID), notification received (selected app + optional keyword), or scheduled time -> one or more Bluetooth on/off, NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Sound profile (Normal/Vibrate/Silent), Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), Bluetooth device connected/disconnected (selected bonded device), NFC tag scanned (selected tag UID), notification received (selected app + optional keyword), phone call ringing/answered/outgoing/ended (state-only trigger matching every call of that state; phone-number filtering is unavailable on Android 12+ without the default-dialer role; legacy filter-configured rules operate as state-only / any-number rules), or scheduled time -> one or more Bluetooth on/off, NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Sound profile (Normal/Vibrate/Silent), Open dialer, Dial number, Call number, Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Rule conditions (AND semantics): battery below/above, charger connected/disconnected, screen on/off, Wi-Fi connected/disconnected. Rules execute only when trigger matches AND all configured conditions match current live state.
 - Installed launchable app picker with search, display name, package ID internally.
-- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Power, Display, Time, Network, Bluetooth, and Notification; actions use Alerts, Clock, Audio, Apps & Links, Display, Battery, Connectivity, and NFC. Connectivity contains Bluetooth on/off through Shizuku.
+- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Phone, Power, Display, Time, Network, Bluetooth, and Notification; actions use Phone, Alerts, Clock, Audio, Apps & Links, Display, Battery, Connectivity, and NFC. Connectivity contains Bluetooth on/off through Shizuku.
 - Rule detail and delete.
-- Automation run history: persistent log of rule executions (engine-triggered and manual test runs) retained up to the newest 100 entries in DataStore. Displays readable local timestamp, rule name, trigger source (`MANUAL` or trigger event name), overall execution status (Success, Partial success, Failure), and individual action outcomes. Sensitive credentials (tokens, query parameters, auth headers) in action messages are safely redacted before persistence, and action parameters/webhook payloads are never persisted in history. Users can view history from Settings -> Run history and clear it with confirmation.
+- Automation run history: persistent log of rule executions (engine-triggered and manual test runs) retained up to the newest 100 entries in DataStore. Displays readable local timestamp, rule name, trigger source (`MANUAL` or trigger event name), overall execution status (Success, Partial success, Failure), and individual action outcomes. History never stores phone numbers; action results and log messages use generic phone-action outcomes. Sensitive credentials are redacted, and action parameters/webhook payloads are never persisted. Users can view history from Settings -> Run history and clear it with confirmation.
 - Manual automation test run: in Edit automation TopAppBar, Play icon prompts confirmation (bypassing triggers/conditions, excluding unsaved edits, leaving rule state untouched), runs actions immediately on IO dispatcher with safe live system context (`trigger = MANUAL`), records a manual history entry, and displays summary feedback via Snackbar.
 - Persistent rules through DataStore JSON.
 - Enable/disable switches.
@@ -52,6 +56,7 @@ Target / compile SDK: 36 (Android 16)
 - Screen triggers: on/off broadcasts while engine runs; duplicate consecutive broadcasts are deduped and current screen state is not replayed after engine start.
 - Bluetooth device triggers: public ACL connected/disconnected broadcasts while engine runs, matching only selected bonded device address. Per-device consecutive state broadcasts are deduped; no initial connection state is queried or replayed on engine start. Picker never scans or stores paired-device history.
 - NFC tag triggers: match a user-selected normalized tag UID. Tag payloads and technologies are never persisted; UID is retained only in the rule needed for matching. NFC scans route to the engine only while it runs.
+- Phone call triggers: incoming call ringing (`CALL_RINGING`), call answered (`CALL_ANSWERED`), outgoing call placed (`CALL_OUTGOING`), and call ended (`CALL_ENDED`) using TelephonyCallback / PhoneStateListener with state transition deduplication and no startup replay. Phone-number filtering is unavailable because Android 12+ does not expose outgoing numbers to non-default dialers; triggers match every call of that state, and legacy filter-configured rules operate as state-only / any-number rules. Device validation for phone-number filter removal has not been run on device.
 - Per-action delays: each action can wait 0-300 seconds before it runs. Actions remain sequential in configured order; engine stop cancels a pending delay and records cancellation in run history.
 - Per-rule cooldown: choose None, 1m, 5m, 15m, or 60m. After a successful automatic run, matching events are skipped until cooldown expires; manual test runs bypass cooldown without resetting `lastTriggeredAt`.
 - Show notification action: per-rule title and message, posted through visible `Automation alerts` channel.
@@ -59,6 +64,10 @@ Target / compile SDK: 36 (Android 16)
 - Capability labels: Available, Permission required, Shizuku required, Unsupported on this device.
 - Shizuku UserService AIDL command bridge. Commands run with Shizuku shell/root identity; app never claims success if the command failed.
 - Action executors:
+    - Phone:
+        - Open dialer: launches default dialer via `Intent.ACTION_DIAL`.
+        - Dial number: prepares phone dialer with specified number via `Intent.ACTION_DIAL` and `tel:URI`.
+        - Call number: directly places a real telephone call via `Intent.ACTION_CALL` and `tel:URI` (requires user-granted `android.permission.CALL_PHONE`).
     - NFC ON/OFF: `svc nfc enable|disable` through Shizuku.
     - Dark theme ON/OFF: `cmd uimode night yes|no` through Shizuku with `Settings.Secure.ui_night_mode` state verification.
     - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
@@ -70,11 +79,11 @@ Target / compile SDK: 36 (Android 16)
     - Launch app: starts selected installed launchable app.
     - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
     - Send HTTP webhook: dispatches outbound HTTP/HTTPS request (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, body, dynamic template variable expansion in headers/body only (`${time}`, `${timestamp}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${trigger}`), bounded 1-60s timeout, secret redaction, strict 2xx success verification, and at-rest AES-256-GCM Keystore encryption for webhook URLs, headers, and payloads. URL templates are intentionally unsupported because URL encoding context differs; unknown or malformed variables remain unchanged and expansion is one pass only.
-- Security & data protection: Android app backup is disabled (`android:allowBackup="false"`) to prevent credential leakage via ADB/cloud backup snapshots. Keystore keys remain on-device and never export to backups. In-app data migration transparently upgrades legacy plaintext webhook configurations on load and save.
+- Security & data protection: Android app backup is disabled (`android:allowBackup="false"`) to prevent credential leakage via ADB/cloud backup snapshots. Keystore keys remain on-device and never export to backups. In-app data migration transparently upgrades legacy plaintext webhook configurations on load and save. Raw phone numbers are masked in all UI views and never logged.
     - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
    - Play sound: selected current notification, alarm, ringtone, or a user-selected audio file, limited to selected first 1-60 seconds with preview and stop controls.
     - Speak text (TTS): offline-first pre-synthesized audio caching to app-private storage with voice filter (`isNetworkConnectionRequired = false`), rate adjustment, preview/stop lifecycle, and offline playback during rule execution. Search voices by name or language (`Türkçe`, `Turkish`, `tr-TR`); hold a voice row to preview it without selecting it.
-- Unit tests for rule matching, schedule matching, foreground reduction, action executors, and disabled rules.
+- Unit tests for rule matching, schedule matching, foreground reduction, telephony state transitions, action executors, and disabled rules. Action executors retain phone number normalization, masking, and validation coverage.
 
 ## Setup permissions
 
