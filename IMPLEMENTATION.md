@@ -85,9 +85,9 @@ app/src/main/java/com/flowpilot/app/
     BluetoothDeviceTracker.kt        bonded-device ACL broadcasts + per-device transition reducer
     NfcTagHandoff.kt                 transient tag UID intent-to-engine queue and UI capture state
     NfcTagUtils.kt                   pure tag UID normalization and validation
-    FlowPilotNotificationListener.kt transient notification listener and dedupe
-    AutomationService.kt             foreground service
-    BootReceiver.kt                  restart on boot
+    FlowPilotNotificationListener.kt transient notification listener, dedupe, and engine watchdog
+    AutomationService.kt             foreground service (stopWithTask="false", onTaskRemoved resilience)
+    BootReceiver.kt                  restart on boot and quickboot
   actions/
     ActionExecutor.kt                interface + dispatch
     NfcExecutor.kt                   Shizuku `svc nfc enable|disable`
@@ -107,7 +107,7 @@ app/src/main/java/com/flowpilot/app/
     WebhookTemplateRenderer.kt        pure one-pass header/body substitution for known webhook variables
     TtsManager.kt                     offline voice discovery and pre-synthesized cache management
     TtsExecutor.kt                    offline cached TTS playback
-    ShizukuShell.kt                  Shizuku connection + run shell command via UserService
+    ShizukuShell.kt                  Shizuku connection, safe permission check, and non-daemon UserService
   permission/
     CapabilityManager.kt             per-action and setup checks
 tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foreground reduction, encrypted persistence, webhook templates, manual execution summaries, and action executors.

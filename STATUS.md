@@ -1,12 +1,22 @@
 # FlowPilot Status
 
-Last updated: 2026-09-01
+Last updated: 2026-09-03
 
 ## Build state
 
-- Debug build and unit tests passed: `.\gradlew.bat testDebugUnitTest assembleDebug --no-daemon`.
-- Latest debug APK was installed and launched on Xiaomi 15T Pro / HyperOS 3.
+- Debug build and unit tests passed: `.\gradlew.bat testDebugUnitTest assembleDebug`.
+- Latest debug APK was installed and launched on Xiaomi (2506BPN68G) / HyperOS (Android 16).
+- Background resilience and Shizuku startup safety fixes verified on connected device.
 - Current source changes are ready to commit.
+
+## Background stability & engine keepalive
+
+- Resolved fatal crash loop on background launch (`IllegalStateException: Not an attached client` / `binder haven't been received` in `ShizukuShell.hasPermission()`).
+- `AutomationService` configured with `android:stopWithTask="false"` and `onTaskRemoved` handling to prevent termination when app task is swiped from Recent Apps.
+- `FlowPilotNotificationListener` acts as an active watchdog to restart `AutomationService` if killed by system memory pressure.
+- `BootReceiver` enhanced with `QUICKBOOT_POWERON` actions for Chinese OEM fast boot.
+- Shizuku `CommandUserService` switched from `daemon(true)` to `daemon(false)` to eliminate orphaned zombie shell processes.
+- Shizuku automatically optimizes background flags (`cmd deviceidle whitelist` and Xiaomi autostart/background appops `10008`/`10017`).
 
 ## Device-verified features
 
