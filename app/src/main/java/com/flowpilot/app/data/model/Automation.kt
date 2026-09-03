@@ -120,6 +120,8 @@ enum class ConditionType(val label: String) {
     SCREEN_OFF("Screen is off"),
     WIFI_CONNECTED("Connected to Wi-Fi"),
     WIFI_DISCONNECTED("Disconnected from Wi-Fi"),
+    TIME_BETWEEN("Time is between"),
+    DAYS_OF_WEEK("Days of week"),
 }
 
 @Serializable
@@ -127,6 +129,9 @@ data class RuleCondition(
     val type: ConditionType,
     val batteryLevel: Int = 50,
     val wifiSsid: String = "",
+    val startMinute: Int = 23 * 60,
+    val endMinute: Int = 7 * 60,
+    val days: Set<Int> = emptySet(),
 )
 
 @Serializable

@@ -19,7 +19,7 @@ object ScheduleEvaluator {
                 !rule.isCoolingDown(nowMs) &&
                 rule.scheduledMinute == minute &&
                 (rule.scheduledDays.isEmpty() || day in rule.scheduledDays) &&
-                RuleEvaluator.matchesConditions(rule.conditions, liveState)
+                RuleEvaluator.matchesConditions(rule.conditions, liveState, nowMs)
         }
     }
 }

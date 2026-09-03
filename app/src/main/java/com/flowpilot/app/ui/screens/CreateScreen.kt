@@ -49,6 +49,7 @@ import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.ActionPicker
 import com.flowpilot.app.ui.components.AppPicker
 import com.flowpilot.app.ui.components.BluetoothDevicePickerField
+import com.flowpilot.app.ui.components.ConditionPicker
 import com.flowpilot.app.ui.components.SelectionRow
 import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
@@ -1025,6 +1026,31 @@ fun ConditionsSection(
     onRemoveCondition: (Int) -> Unit,
     onUpdateCondition: (Int, RuleCondition) -> Unit,
 ) {
+    var timePickerTarget by remember { mutableStateOf<Triple<Int, Boolean, Int>?>(null) } // (index, isStart, initialMinute)
+
+    if (timePickerTarget != null) {
+        val (condIdx, isStart, initialMin) = timePickerTarget!!
+        val pickerState = rememberTimePickerState(initialMin / 60, initialMin % 60, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { timePickerTarget = null },
+            confirmButton = {
+                TextButton({
+                    val selectedMin = pickerState.hour * 60 + pickerState.minute
+                    val cond = conditions.getOrNull(condIdx)
+                    if (cond != null) {
+                        val updated = if (isStart) cond.copy(startMinute = selectedMin) else cond.copy(endMinute = selectedMin)
+                        onUpdateCondition(condIdx, updated)
+                    }
+                    timePickerTarget = null
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton({ timePickerTarget = null }) { Text("Cancel") }
+            },
+            text = { TimePicker(pickerState) },
+        )
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         conditions.forEachIndexed { index, cond ->
             Card(
@@ -1058,6 +1084,83 @@ fun ConditionsSection(
                             onSsidChange = { onUpdateCondition(index, cond.copy(wifiSsid = it)) },
                             label = "Wi-Fi SSID (empty for any)",
                         )
+                    } else if (cond.type == ConditionType.TIME_BETWEEN) {
+                        val startH = cond.startMinute / 60
+                        val startM = cond.startMinute % 60
+                        val endH = cond.endMinute / 60
+                        val endM = cond.endMinute % 60
+                        val isOvernight = cond.startMinute > cond.endMinute
+
+                        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Card(
+                                    onClick = { timePickerTarget = Triple(index, true, cond.startMinute) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                ) {
+                                    Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                                        Text("Start time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("%02d:%02d".format(startH, startM), style = MaterialTheme.typography.titleMedium)
+                                    }
+                                }
+                                Card(
+                                    onClick = { timePickerTarget = Triple(index, false, cond.endMinute) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                ) {
+                                    Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                                        Text("End time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("%02d:%02d".format(endH, endM), style = MaterialTheme.typography.titleMedium)
+                                    }
+                                }
+                            }
+                            if (isOvernight) {
+                                Text(
+                                    "🌙 Overnight window (crosses midnight)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 2.dp, top = 2.dp),
+                                )
+                            }
+                        }
+                    } else if (cond.type == ConditionType.DAYS_OF_WEEK) {
+                        Column(Modifier.padding(top = 8.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = cond.days.isEmpty(),
+                                    onClick = { onUpdateCondition(index, cond.copy(days = emptySet())) },
+                                    label = { Text("Daily") },
+                                )
+                                FilterChip(
+                                    selected = cond.days == setOf(1, 2, 3, 4, 5),
+                                    onClick = { onUpdateCondition(index, cond.copy(days = setOf(1, 2, 3, 4, 5))) },
+                                    label = { Text("Weekdays") },
+                                )
+                                FilterChip(
+                                    selected = cond.days == setOf(6, 7),
+                                    onClick = { onUpdateCondition(index, cond.copy(days = setOf(6, 7))) },
+                                    label = { Text("Weekends") },
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
+                                listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { dayIdx, label ->
+                                    val day = dayIdx + 1
+                                    FilterChip(
+                                        selected = cond.days.isNotEmpty() && day in cond.days,
+                                        onClick = {
+                                            val next = if (day in cond.days) cond.days - day else cond.days + day
+                                            onUpdateCondition(index, cond.copy(days = next))
+                                        },
+                                        label = { Text(label) },
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1082,30 +1185,9 @@ fun ConditionPickerDialog(
     onAdd: (RuleCondition) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add condition") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ConditionType.entries.forEach { type ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            onAdd(RuleCondition(type = type))
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    ) {
-                        Text(
-                            type.label,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
+    ConditionPicker(
+        onAdd = onAdd,
+        onDismiss = onDismiss,
     )
 }
 

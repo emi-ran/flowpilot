@@ -711,6 +711,142 @@ fun ActionPicker(
     )
 }
 
+/** Full-screen modal picker for conditions, grouped by category with search and icons. */
+@Composable
+fun ConditionPicker(
+    onAdd: (RuleCondition) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val groups = remember {
+        listOf(
+            PickerCategoryGroup(
+                id = "TIME",
+                label = "Time & Schedule",
+                icon = Icons.Default.Schedule,
+                iconTint = Color(0xFF64B5F6),
+                items = listOf(
+                    PickerItem(
+                        value = ConditionType.TIME_BETWEEN,
+                        title = ConditionType.TIME_BETWEEN.label,
+                        subtitle = "Run only during a specific time interval (e.g. 23:00 to 07:00)",
+                        icon = Icons.Default.Schedule,
+                        iconTint = Color(0xFF64B5F6),
+                        keywords = listOf("time", "hour", "minute", "between", "window", "night", "overnight", "clock", "saat"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.DAYS_OF_WEEK,
+                        title = ConditionType.DAYS_OF_WEEK.label,
+                        subtitle = "Run only on selected days (weekdays, weekends, or custom days)",
+                        icon = Icons.Default.Tune,
+                        iconTint = Color(0xFF81C784),
+                        keywords = listOf("day", "days", "week", "weekdays", "weekends", "monday", "sunday", "schedule", "gün"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = "POWER",
+                label = "Power & Battery",
+                icon = Icons.Default.Bolt,
+                iconTint = Color(0xFFFFD54F),
+                items = listOf(
+                    PickerItem(
+                        value = ConditionType.BATTERY_BELOW,
+                        title = ConditionType.BATTERY_BELOW.label,
+                        subtitle = "Run only when battery level is at or below percentage",
+                        icon = Icons.Default.BatteryAlert,
+                        iconTint = Color(0xFFE57373),
+                        keywords = listOf("battery", "level", "percentage", "low", "below", "pil"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.BATTERY_ABOVE,
+                        title = ConditionType.BATTERY_ABOVE.label,
+                        subtitle = "Run only when battery level is at or above percentage",
+                        icon = Icons.Default.BatteryFull,
+                        iconTint = Color(0xFF81C784),
+                        keywords = listOf("battery", "level", "percentage", "high", "above", "pil"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.CHARGER_CONNECTED,
+                        title = ConditionType.CHARGER_CONNECTED.label,
+                        subtitle = "Run only while phone is plugged into power",
+                        icon = Icons.Default.BatteryChargingFull,
+                        iconTint = Color(0xFFFFD54F),
+                        keywords = listOf("charger", "plugged", "charging", "power", "connected", "şarj"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.CHARGER_DISCONNECTED,
+                        title = ConditionType.CHARGER_DISCONNECTED.label,
+                        subtitle = "Run only while phone is unplugged and discharging",
+                        icon = Icons.Default.PowerOff,
+                        iconTint = Color(0xFFFFB74D),
+                        keywords = listOf("charger", "unplugged", "discharging", "battery", "disconnected", "şarj"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = "DISPLAY",
+                label = "Display",
+                icon = Icons.Default.ScreenRotation,
+                iconTint = Color(0xFF4DD0E1),
+                items = listOf(
+                    PickerItem(
+                        value = ConditionType.SCREEN_ON,
+                        title = ConditionType.SCREEN_ON.label,
+                        subtitle = "Run only while device screen is on or awake",
+                        icon = Icons.Default.StayCurrentPortrait,
+                        iconTint = Color(0xFF4DD0E1),
+                        keywords = listOf("screen", "display", "on", "awake", "unlocked", "ekran"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.SCREEN_OFF,
+                        title = ConditionType.SCREEN_OFF.label,
+                        subtitle = "Run only while screen is turned off or locked",
+                        icon = Icons.Default.StayCurrentLandscape,
+                        iconTint = Color(0xFF80DEEA),
+                        keywords = listOf("screen", "display", "off", "locked", "sleep", "ekran"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = "NETWORK",
+                label = "Network",
+                icon = Icons.Default.Wifi,
+                iconTint = Color(0xFF81D4FA),
+                items = listOf(
+                    PickerItem(
+                        value = ConditionType.WIFI_CONNECTED,
+                        title = ConditionType.WIFI_CONNECTED.label,
+                        subtitle = "Run only when connected to Wi-Fi (optional specific SSID)",
+                        icon = Icons.Default.Wifi,
+                        iconTint = Color(0xFF4FC3F7),
+                        keywords = listOf("wifi", "wi-fi", "ssid", "wireless", "connected", "network", "wlan"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.WIFI_DISCONNECTED,
+                        title = ConditionType.WIFI_DISCONNECTED.label,
+                        subtitle = "Run only when disconnected from Wi-Fi or specific SSID",
+                        icon = Icons.Default.WifiOff,
+                        iconTint = Color(0xFF81D4FA),
+                        keywords = listOf("wifi", "wi-fi", "ssid", "disconnected", "off", "network", "wlan"),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    ModernChoiceDialog(
+        title = "Choose condition",
+        searchPlaceholder = "Search conditions (e.g. time, battery, wifi, screen)...",
+        groups = groups,
+        isSelected = { false },
+        onSelect = { type ->
+            onAdd(RuleCondition(type = type))
+            onDismiss()
+        },
+        onDismiss = onDismiss,
+    )
+}
+
 /** Full-screen modal picker with search, category grouping, colored icons, and rich cards. */
 @Composable
 fun <T> ModernChoiceDialog(

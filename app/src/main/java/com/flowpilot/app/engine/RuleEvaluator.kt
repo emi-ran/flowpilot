@@ -36,7 +36,12 @@ object RuleEvaluator {
      * Checks if all configured conditions on a rule match the live state (AND semantics).
      * If rule has no conditions, returns true (existing behavior unchanged).
      */
-    fun matchesConditions(conditions: List<RuleCondition>, state: LiveSystemState): Boolean {
+    fun matchesConditions(
+        conditions: List<RuleCondition>,
+        state: LiveSystemState,
+        nowMs: Long = System.currentTimeMillis(),
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
+    ): Boolean {
         if (conditions.isEmpty()) return true
         return conditions.all { condition ->
             when (condition.type) {
@@ -68,6 +73,25 @@ object RuleEvaluator {
                     else if (condition.wifiSsid.isBlank()) false
                     else !state.connectedWifiSsid.trim().equals(condition.wifiSsid.trim(), ignoreCase = true)
                 }
+                ConditionType.TIME_BETWEEN -> {
+                    val zdt = java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId)
+                    val currentMinute = zdt.hour * 60 + zdt.minute
+                    if (condition.startMinute <= condition.endMinute) {
+                        currentMinute in condition.startMinute..condition.endMinute
+                    } else {
+                        // Overnight span (e.g. 23:00 to 07:00)
+                        currentMinute >= condition.startMinute || currentMinute <= condition.endMinute
+                    }
+                }
+                ConditionType.DAYS_OF_WEEK -> {
+                    if (condition.days.isEmpty()) {
+                        true
+                    } else {
+                        val zdt = java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId)
+                        val dayOfWeek = zdt.dayOfWeek.value // 1 (Mon) .. 7 (Sun)
+                        dayOfWeek in condition.days
+                    }
+                }
             }
         }
     }
@@ -87,7 +111,7 @@ object RuleEvaluator {
             it.enabled &&
                 it.triggerEvent == triggerEvent &&
                 !it.isCoolingDown(nowMs) &&
-                matchesConditions(it.conditions, effectiveState)
+                matchesConditions(it.conditions, effectiveState, nowMs)
         }
     }
 
@@ -105,7 +129,7 @@ object RuleEvaluator {
                 TriggerEvent.BATTERY_ABOVE -> transition.previous < rule.batteryLevel && transition.current >= rule.batteryLevel
                 else -> false
             }
-            triggerMatches && matchesConditions(rule.conditions, effectiveState)
+            triggerMatches && matchesConditions(rule.conditions, effectiveState, nowMs)
         }
     }
 
@@ -124,7 +148,7 @@ object RuleEvaluator {
             it.enabled &&
                 it.triggerEvent == trigger &&
                 !it.isCoolingDown(nowMs) &&
-                matchesConditions(it.conditions, effectiveState)
+                matchesConditions(it.conditions, effectiveState, nowMs)
         }
     }
 
@@ -145,7 +169,7 @@ object RuleEvaluator {
             if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@filter false
             val ssidMatches = if (rule.wifiSsid.isBlank()) true
             else rule.wifiSsid.trim().equals(transition.ssid.trim(), ignoreCase = true)
-            ssidMatches && matchesConditions(rule.conditions, effectiveState)
+            ssidMatches && matchesConditions(rule.conditions, effectiveState, nowMs)
         }
     }
 
@@ -164,7 +188,7 @@ object RuleEvaluator {
                 rule.triggerEvent == trigger &&
                 !rule.isCoolingDown(nowMs) &&
                 rule.bluetoothDeviceAddress.trim().equals(transition.address.trim(), ignoreCase = true) &&
-                matchesConditions(rule.conditions, liveState)
+                matchesConditions(rule.conditions, liveState, nowMs)
         }
     }
 
@@ -187,7 +211,7 @@ object RuleEvaluator {
                 val inText = event.text.lowercase().contains(kw)
                 if (!inTitle && !inText) return@filter false
             }
-            matchesConditions(rule.conditions, liveState)
+            matchesConditions(rule.conditions, liveState, nowMs)
         }
     }
 
@@ -204,7 +228,7 @@ object RuleEvaluator {
                 rule.triggerEvent == TriggerEvent.NFC_TAG_SCANNED &&
                 !rule.isCoolingDown(nowMs) &&
                 NfcTagUtils.normalizeTagId(rule.nfcTagId).equals(normalizedEventId, ignoreCase = true) &&
-                matchesConditions(rule.conditions, liveState)
+                matchesConditions(rule.conditions, liveState, nowMs)
         }
     }
 
@@ -218,7 +242,7 @@ object RuleEvaluator {
             rule.enabled &&
                 rule.triggerEvent == transition.triggerEvent &&
                 !rule.isCoolingDown(nowMs) &&
-                matchesConditions(rule.conditions, liveState)
+                matchesConditions(rule.conditions, liveState, nowMs)
         }
     }
 
@@ -240,7 +264,7 @@ object RuleEvaluator {
                 r.triggerEvent == triggerEvent &&
                 r.appPackage == pkg &&
                 !r.isCoolingDown(nowMs) &&
-                matchesConditions(r.conditions, liveState)
+                matchesConditions(r.conditions, liveState, nowMs)
         }
 
         val toExecute = when (event) {
@@ -265,7 +289,7 @@ object RuleEvaluator {
             if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@filter false
             // If screen is off and rule does not permit screen-off evaluation, filter out
             if (liveState.isScreenOn == false && !rule.flipScreenOffDetection) return@filter false
-            matchesConditions(rule.conditions, liveState)
+            matchesConditions(rule.conditions, liveState, nowMs)
         }
     }
 }

@@ -6,6 +6,7 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 
+- Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions: rules can now be restricted to specific time intervals (e.g. 23:00 - 07:00, with full overnight midnight-crossing support) and/or specific days of the week (Weekdays, Weekends, or custom day toggles), evaluated alongside any trigger.
 - Sound profile actions for Normal, Vibrate, and Silent with Notification Policy Access checks and ringer-mode readback.
 - Dark theme actions through Shizuku with post-command state verification.
 - Webhook header/body template variables for live automation context.
