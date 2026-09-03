@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -69,6 +70,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         try {
             rikka.shizuku.Shizuku.addBinderReceivedListenerSticky {
                 refreshPermissions()
+                if (capabilities.shizukuState() == ShizukuState.READY) {
+                    optimizeBackgroundWithShizuku()
+                }
             }
         } catch (_: Throwable) {}
     }
@@ -170,8 +174,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun grantSecureSettingsViaShizuku(done: (Boolean) -> Unit) {
         viewModelScope.launch {
             val ok = ShizukuShell.instance.run("pm grant ${app.packageName} android.permission.WRITE_SECURE_SETTINGS").first == 0
+            optimizeBackgroundWithShizuku()
             if (ok) refreshPermissions()
             done(ok)
+        }
+    }
+
+    private fun optimizeBackgroundWithShizuku() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (ShizukuShell.instance.hasPermission()) {
+                    ShizukuShell.instance.run("cmd deviceidle whitelist +${app.packageName}")
+                    ShizukuShell.instance.run("cmd appops set ${app.packageName} 10008 allow")
+                    ShizukuShell.instance.run("cmd appops set ${app.packageName} 10017 allow")
+                }
+            } catch (_: Throwable) {}
         }
     }
 

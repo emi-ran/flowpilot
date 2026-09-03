@@ -3,6 +3,7 @@ package com.flowpilot.app.engine
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.flowpilot.app.data.AutomationRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,15 +14,23 @@ import kotlinx.coroutines.launch
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
-        if (action == Intent.ACTION_BOOT_COMPLETED || action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+        if (action == Intent.ACTION_BOOT_COMPLETED ||
+            action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            action == "android.intent.action.QUICKBOOT_POWERON" ||
+            action == "com.htc.intent.action.QUICKBOOT_POWERON"
+        ) {
             val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     if (AutomationRepository(context.applicationContext).isEngineEnabled.first()) {
                         AutomationService.start(context.applicationContext)
                     }
+                } catch (t: Throwable) {
+                    Log.e("BootReceiver", "Failed to start AutomationService on boot: ${t.message}", t)
                 } finally {
-                    pendingResult.finish()
+                    try {
+                        pendingResult.finish()
+                    } catch (_: Throwable) {}
                 }
             }
         }

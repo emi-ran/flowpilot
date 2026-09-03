@@ -2,6 +2,11 @@ package com.flowpilot.app.engine
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.flowpilot.app.data.AutomationRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -56,7 +61,10 @@ class NotificationDeduplicator(private val ttlMs: Long = 60_000L, private val ma
  */
 class FlowPilotNotificationListener : NotificationListenerService() {
 
+    private var lastWatchdogCheckMs = 0L
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
+        checkWatchdog()
         sbn ?: return
         val pkg = sbn.packageName ?: return
         // Ignore own notifications to prevent loops
@@ -89,11 +97,26 @@ class FlowPilotNotificationListener : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         isConnected = true
+        checkWatchdog(force = true)
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         isConnected = false
+    }
+
+    private fun checkWatchdog(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (force || now - lastWatchdogCheckMs > 60_000L) {
+            lastWatchdogCheckMs = now
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    if (AutomationRepository(applicationContext).isEngineEnabled.first()) {
+                        AutomationService.start(applicationContext)
+                    }
+                } catch (_: Throwable) {}
+            }
+        }
     }
 
     companion object {

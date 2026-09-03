@@ -11,6 +11,7 @@ import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import com.flowpilot.app.MainActivity
 import com.flowpilot.app.R
 
@@ -31,11 +32,21 @@ class AutomationService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForegroundCompat()
         // (Re)start the engine if it died.
         if (engine?.running != true) {
             engine = AutomationEngine(this).also { it.start() }
         }
         return START_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        // Ensure service and engine remain active even if the task/activity is swiped away from Recents
+        startForegroundCompat()
+        if (engine?.running != true) {
+            engine = AutomationEngine(this).also { it.start() }
+        }
     }
 
     override fun onDestroy() {
@@ -63,11 +74,15 @@ class AutomationService : Service() {
     }
 
     private fun startForegroundCompat() {
-        val notification = buildNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIF_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(NOTIF_ID, notification)
+        try {
+            val notification = buildNotification()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(NOTIF_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(NOTIF_ID, notification)
+            }
+        } catch (t: Throwable) {
+            Log.e("AutomationService", "startForegroundCompat failed: ${t.message}", t)
         }
     }
 
@@ -100,12 +115,24 @@ class AutomationService : Service() {
         private const val NOTIF_ID = 1001
 
         fun start(context: Context) {
-            val intent = Intent(context, AutomationService::class.java)
-            context.startForegroundService(intent)
+            try {
+                val intent = Intent(context, AutomationService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (t: Throwable) {
+                Log.e("AutomationService", "Failed to start AutomationService: ${t.message}", t)
+            }
         }
 
         fun stop(context: Context) {
-            context.stopService(Intent(context, AutomationService::class.java))
+            try {
+                context.stopService(Intent(context, AutomationService::class.java))
+            } catch (t: Throwable) {
+                Log.e("AutomationService", "Failed to stop AutomationService: ${t.message}", t)
+            }
         }
     }
 }

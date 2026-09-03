@@ -44,9 +44,11 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
         appContext = context.applicationContext
         try {
             Shizuku.addBinderReceivedListenerSticky {
-                if (hasPermission()) {
-                    ensureBound()
-                }
+                try {
+                    if (hasPermission()) {
+                        ensureBound()
+                    }
+                } catch (_: Throwable) {}
             }
             Shizuku.addBinderDeadListener {
                 synchronized(bindLock) {
@@ -56,14 +58,16 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
                 }
             }
         } catch (_: Throwable) {}
-        if (hasPermission()) {
-            ensureBound()
-        }
     }
 
     fun isShizukuAvailable(): Boolean = try { Shizuku.pingBinder() } catch (_: Throwable) { false }
     override fun isShizukuRunning(): Boolean = isShizukuAvailable()
-    override fun hasPermission(): Boolean = isShizukuRunning() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+    override fun hasPermission(): Boolean = try {
+        isShizukuRunning() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+    } catch (_: Throwable) {
+        false
+    }
+
     fun canRequestPermission(): Boolean = try {
         isShizukuRunning() && !hasPermission() && !Shizuku.shouldShowRequestPermissionRationale()
     } catch (_: Throwable) { false }
@@ -140,7 +144,7 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
         try {
             val args = Shizuku.UserServiceArgs(
                 ComponentName(BuildConfig.APPLICATION_ID, CommandUserService::class.java.name),
-            ).daemon(true).tag("flowpilot-command").version(BuildConfig.VERSION_CODE).debuggable(BuildConfig.DEBUG).processNameSuffix("command")
+            ).daemon(false).tag("flowpilot-command").version(BuildConfig.VERSION_CODE).debuggable(BuildConfig.DEBUG).processNameSuffix("command")
             Shizuku.bindUserService(args, connection)
             latch
         } catch (t: Throwable) {
