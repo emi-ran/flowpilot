@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,11 +48,13 @@ import com.flowpilot.app.actions.TtsManager
 import com.flowpilot.app.actions.VibrationExecutor
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.ui.AppViewModel
+import com.flowpilot.app.ui.components.ActionCardItem
 import com.flowpilot.app.ui.components.ActionPicker
 import com.flowpilot.app.ui.components.AppPicker
 import com.flowpilot.app.ui.components.BluetoothDevicePickerField
 import com.flowpilot.app.ui.components.ConditionPicker
 import com.flowpilot.app.ui.components.SelectionRow
+import com.flowpilot.app.ui.components.TriggerCardItem
 import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
 import com.flowpilot.app.ui.components.WifiSsidPickerField
@@ -320,40 +324,52 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
         ) {
+            var showAdvanced by remember { mutableStateOf(false) }
+
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+                    .bringIntoViewOnFocusOrChange(name),
+                shape = RoundedCornerShape(16.dp),
+                label = { Text("Automation name") },
+                placeholder = { Text(if (appName.isNotEmpty()) "When $appName opened..." else "${event.label}...") },
+                singleLine = true,
+            )
+
             Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
-            SelectionRow("Trigger", event.label) { showTriggers = true }
-            Spacer(Modifier.height(10.dp))
-            if (event == TriggerEvent.TIME_SCHEDULE) {
-                ScheduleSettings(scheduledMinute, scheduledDays, { showTimePicker = true }) { scheduledDays = it }
-            } else if (event == TriggerEvent.BATTERY_BELOW || event == TriggerEvent.BATTERY_ABOVE) {
-                BatteryThresholdSettings(batteryLevel) { batteryLevel = it }
-            } else if (event == TriggerEvent.APP_OPENED || event == TriggerEvent.APP_CLOSED) {
-                SelectionRow(if (pkg.isEmpty()) "App" else appName, if (pkg.isEmpty()) "Choose an app" else pkg) { showApps = true }
-            } else if (event == TriggerEvent.WIFI_CONNECTED || event == TriggerEvent.WIFI_DISCONNECTED) {
-                WifiTriggerSettings(wifiSsid) { wifiSsid = it }
-            } else if (event == TriggerEvent.BLUETOOTH_CONNECTED || event == TriggerEvent.BLUETOOTH_DISCONNECTED) {
-                BluetoothTriggerSettings(bluetoothDeviceAddress, bluetoothDeviceName) { address, deviceName ->
-                    bluetoothDeviceAddress = address
-                    bluetoothDeviceName = deviceName
-                }
-            } else if (event == TriggerEvent.NFC_TAG_SCANNED) {
-                NfcTagTriggerSettings(nfcTagId) { nfcTagId = it }
-            } else if (event == TriggerEvent.NOTIFICATION_RECEIVED) {
-                NotificationTriggerSettings(
-                    appPackage = notificationAppPackage,
-                    appName = notificationAppName,
-                    keyword = notificationKeyword,
-                    chooseApp = { showNotificationApps = true },
-                    setKeyword = { notificationKeyword = it },
-                )
-            } else if (event == TriggerEvent.CALL_RINGING || event == TriggerEvent.CALL_ANSWERED || event == TriggerEvent.CALL_OUTGOING || event == TriggerEvent.CALL_ENDED) {
-                PhoneCallTriggerExplanation()
-            } else if (event == TriggerEvent.DEVICE_FLIPPED_DOWN || event == TriggerEvent.DEVICE_FLIPPED_UP) {
-                DeviceFlipTriggerSettings(
-                    allowScreenOff = flipScreenOffDetection,
-                    onToggleAllowScreenOff = { flipScreenOffDetection = it },
-                )
-            }
+            TriggerCardItem(
+                event = event,
+                onChangeTrigger = { showTriggers = true },
+                pkg = pkg,
+                appName = appName,
+                onOpenAppPicker = { showApps = true },
+                scheduledMinute = scheduledMinute,
+                scheduledDays = scheduledDays,
+                onOpenTimePicker = { showTimePicker = true },
+                onDaysChange = { scheduledDays = it },
+                batteryLevel = batteryLevel,
+                onBatteryLevelChange = { batteryLevel = it },
+                wifiSsid = wifiSsid,
+                onWifiSsidChange = { wifiSsid = it },
+                bluetoothAddress = bluetoothDeviceAddress,
+                bluetoothName = bluetoothDeviceName,
+                onBluetoothChange = { addr, devName ->
+                    bluetoothDeviceAddress = addr
+                    bluetoothDeviceName = devName
+                },
+                nfcTagId = nfcTagId,
+                onNfcTagChange = { nfcTagId = it },
+                notificationAppPackage = notificationAppPackage,
+                notificationAppName = notificationAppName,
+                notificationKeyword = notificationKeyword,
+                onOpenNotificationAppPicker = { showNotificationApps = true },
+                onNotificationKeywordChange = { notificationKeyword = it },
+                flipScreenOffDetection = flipScreenOffDetection,
+                onFlipScreenOffChange = { flipScreenOffDetection = it },
+            )
 
             Text(
                 "CONDITIONS (optional, all must match)",
@@ -377,61 +393,123 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 "DO (${actions.size} action${if (actions.size > 1) "s" else ""})",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+                modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
             )
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 actions.forEachIndexed { index, act ->
-                    val delaySec = actionDelays.getOrElse(index) { 0 }
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
-                    ) {
-                        Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(
-                                    Modifier.weight(1f).clickable {
-                                        editingActionIndex = index
-                                        showActions = true
-                                    }
-                                ) {
-                                    Text("Action ${index + 1}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                    Spacer(Modifier.height(2.dp))
-                                    Text(act.label, style = MaterialTheme.typography.titleMedium)
-                                }
-                                if (actions.size > 1) {
-                                    IconButton(
-                                        onClick = {
-                                            actions = actions.filterIndexed { i, _ -> i != index }
-                                            actionDelays = actionDelays.filterIndexed { i, _ -> i != index }
-                                        },
-                                        modifier = Modifier.size(32.dp),
-                                    ) {
-                                        Icon(Icons.Default.Close, "Remove action", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-                                    }
-                                }
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            ActionDelaySetting(
-                                delaySeconds = delaySec,
-                                onDelayChange = { newDelay ->
-                                    val safeDelay = newDelay.coerceIn(0, 300)
-                                    val currentList = actionDelays.toMutableList()
-                                    while (currentList.size <= index) currentList.add(0)
-                                    currentList[index] = safeDelay
-                                    actionDelays = currentList
-                                },
+                    ActionCardItem(
+                        index = index,
+                        action = act,
+                        delaySeconds = actionDelays.getOrElse(index) { 0 },
+                        totalActions = actions.size,
+                        onDelayChange = { newDelay ->
+                            val safeDelay = newDelay.coerceIn(0, 300)
+                            val currentList = actionDelays.toMutableList()
+                            while (currentList.size <= index) currentList.add(0)
+                            currentList[index] = safeDelay
+                            actionDelays = currentList
+                        },
+                        onChangeAction = {
+                            editingActionIndex = index
+                            showActions = true
+                        },
+                        onRemoveAction = {
+                            actions = actions.filterIndexed { i, _ -> i != index }
+                            actionDelays = actionDelays.filterIndexed { i, _ -> i != index }
+                        },
+                        // Notification
+                        notificationTitle = notificationTitle,
+                        notificationBody = notificationBody,
+                        onNotificationTitleChange = { notificationTitle = it },
+                        onNotificationBodyChange = { notificationBody = it },
+                        // Vibration
+                        vibrationPattern = vibrationPattern,
+                        vibrationDurationMs = vibrationDurationMs,
+                        vibrationAmplitude = vibrationAmplitude,
+                        onVibrationPatternChange = { vibrationPattern = it },
+                        onVibrationDurationChange = { vibrationDurationMs = it },
+                        onVibrationAmplitudeChange = { vibrationAmplitude = it },
+                        onPreviewVibration = { pattern, dur, amp ->
+                            previewVibration.execute(
+                                ActionType.VIBRATE,
+                                ActionParameters(vibrationPattern = pattern, vibrationDurationMs = dur, vibrationAmplitude = amp),
                             )
-                        }
-                    }
+                        },
+                        // Sound
+                        soundPreset = soundPreset,
+                        soundName = soundName,
+                        soundDurationMs = soundDurationMs,
+                        sourceSoundDurationMs = sourceSoundDurationMs,
+                        onSoundPresetChange = { preset ->
+                            soundPreset = preset
+                            if (preset != SoundPreset.CUSTOM) soundUri = ""
+                        },
+                        onSoundDurationChange = { soundDurationMs = it },
+                        onPreviewSound = {
+                            previewSound.execute(
+                                ActionType.PLAY_SOUND,
+                                ActionParameters(soundPreset = soundPreset, soundUri = soundUri, soundDurationMs = soundDurationMs),
+                            )
+                        },
+                        onStopPreviewSound = previewSound::stopPreview,
+                        onChooseCustomSound = { soundPicker.launch(arrayOf("audio/*")) },
+                        // Volume
+                        mediaVolumePercent = mediaVolumePercent,
+                        onMediaVolumeChange = { mediaVolumePercent = it },
+                        // Launch app
+                        launchAppName = launchAppName,
+                        launchPackage = launchPackage,
+                        onChooseLaunchApp = { showLaunchApps = true },
+                        // URL
+                        url = url,
+                        onUrlChange = { url = it },
+                        // Alarm
+                        alarmHour = alarmHour,
+                        alarmMinute = alarmMinute,
+                        alarmMessage = alarmMessage,
+                        onChooseAlarmTime = { showAlarmTimePicker = true },
+                        onAlarmMessageChange = { alarmMessage = it },
+                        // Timer
+                        timerDurationSeconds = timerDurationSeconds,
+                        timerMessage = timerMessage,
+                        onTimerDurationChange = { timerDurationSeconds = it },
+                        onTimerMessageChange = { timerMessage = it },
+                        // Webhook
+                        webhookMethod = webhookMethod,
+                        webhookUrl = webhookUrl,
+                        webhookHeaders = webhookHeaders,
+                        webhookBody = webhookBody,
+                        webhookTimeoutSeconds = webhookTimeoutSeconds,
+                        onWebhookMethodChange = { webhookMethod = it },
+                        onWebhookUrlChange = { webhookUrl = it },
+                        onWebhookHeadersChange = { webhookHeaders = it },
+                        onWebhookBodyChange = { webhookBody = it },
+                        onWebhookTimeoutChange = { webhookTimeoutSeconds = it },
+                        // TTS
+                        ttsContent = {
+                            TtsSettings(
+                                text = ttsText,
+                                voiceName = ttsVoiceName,
+                                speechRate = ttsSpeechRate,
+                                audioFileName = ttsAudioFileName,
+                                ruleId = newRuleId,
+                                setText = { ttsText = it },
+                                setVoiceName = { ttsVoiceName = it },
+                                setSpeechRate = { ttsSpeechRate = it },
+                                setAudioFileName = { ttsAudioFileName = it },
+                                ttsManager = ttsManager,
+                                ttsExecutor = previewTts,
+                            )
+                        },
+                        // Phone
+                        phoneNumber = phoneNumber,
+                        onPhoneNumberChange = { phoneNumber = it },
+                    )
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -461,123 +539,44 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 }
             }
 
-            if (ActionType.SHOW_NOTIFICATION in actions) {
-                NotificationSettings(
-                    title = notificationTitle,
-                    body = notificationBody,
-                    setTitle = { notificationTitle = it },
-                    setBody = { notificationBody = it },
-                )
-            }
-            if (ActionType.VIBRATE in actions) {
-                VibrationSettings(
-                    vibrationPattern,
-                    vibrationDurationMs,
-                    vibrationAmplitude,
-                    { vibrationPattern = it },
-                    { vibrationDurationMs = it },
-                    { vibrationAmplitude = it },
-                    { pattern, duration, amplitude ->
-                        previewVibration.execute(
-                            ActionType.VIBRATE,
-                            ActionParameters(vibrationPattern = pattern, vibrationDurationMs = duration, vibrationAmplitude = amplitude),
-                        )
-                    },
-                )
-            }
-            if (ActionType.PLAY_SOUND in actions) {
-                SoundSettings(soundPreset, soundName, soundDurationMs, sourceSoundDurationMs, { preset -> soundPreset = preset; if (preset != SoundPreset.CUSTOM) soundUri = "" }, { soundDurationMs = it }, { previewSound.execute(ActionType.PLAY_SOUND, ActionParameters(soundPreset = soundPreset, soundUri = soundUri, soundDurationMs = soundDurationMs)) }, previewSound::stopPreview, { soundPicker.launch(arrayOf("audio/*")) })
-            }
-            if (ActionType.SET_MEDIA_VOLUME in actions) {
-                MediaVolumeSettings(mediaVolumePercent) { mediaVolumePercent = it }
-            }
-            if (ActionType.DIAL_NUMBER in actions || ActionType.CALL_NUMBER in actions) {
-                val actType = if (ActionType.CALL_NUMBER in actions) ActionType.CALL_NUMBER else ActionType.DIAL_NUMBER
-                PhoneActionSettings(actType, phoneNumber) { phoneNumber = it }
-            }
-            if (ActionType.LAUNCH_APP in actions) {
-                Text("Launch app", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
-                SelectionRow(
-                    if (launchPackage.isEmpty()) "App" else launchAppName,
-                    if (launchPackage.isEmpty()) "Choose an app to launch" else launchPackage,
-                ) { showLaunchApps = true }
-            }
-            if (ActionType.OPEN_URL in actions) {
-                Text("Open URL", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                        .bringIntoViewOnFocusOrChange(url),
-                    label = { Text("https://example.com") },
-                    singleLine = true,
-                )
-            }
-            if (ActionType.SPEAK_TEXT in actions) {
-                TtsSettings(
-                    text = ttsText,
-                    voiceName = ttsVoiceName,
-                    speechRate = ttsSpeechRate,
-                    audioFileName = ttsAudioFileName,
-                    ruleId = newRuleId,
-                    setText = { ttsText = it },
-                    setVoiceName = { ttsVoiceName = it },
-                    setSpeechRate = { ttsSpeechRate = it },
-                    setAudioFileName = { ttsAudioFileName = it },
-                    ttsManager = ttsManager,
-                    ttsExecutor = previewTts,
-                )
-            }
-            if (ActionType.CREATE_ALARM in actions) {
-                AlarmSettings(
-                    hour = alarmHour,
-                    minute = alarmMinute,
-                    message = alarmMessage,
-                    chooseTime = { showAlarmTimePicker = true },
-                    setMessage = { alarmMessage = it },
-                )
-            }
-            if (ActionType.START_TIMER in actions) {
-                TimerSettings(
-                    durationSeconds = timerDurationSeconds,
-                    message = timerMessage,
-                    setDurationSeconds = { timerDurationSeconds = it },
-                    setMessage = { timerMessage = it },
-                )
-            }
-            if (ActionType.HTTP_WEBHOOK in actions) {
-                WebhookSettings(
-                    method = webhookMethod,
-                    url = webhookUrl,
-                    headers = webhookHeaders,
-                    body = webhookBody,
-                    timeoutSeconds = webhookTimeoutSeconds,
-                    setMethod = { webhookMethod = it },
-                    setUrl = { webhookUrl = it },
-                    setHeaders = { webhookHeaders = it },
-                    setBody = { webhookBody = it },
-                    setTimeoutSeconds = { webhookTimeoutSeconds = it },
-                )
-            }
+            Spacer(Modifier.height(16.dp))
 
-            RuleCooldownSettings(
-                cooldownMinutes = cooldownMinutes,
-                onCooldownChange = { cooldownMinutes = it },
-            )
-
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp)
-                    .bringIntoViewOnFocusOrChange(name),
+            Card(
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                label = { Text("Name (optional)") },
-                singleLine = true,
-            )
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
+            ) {
+                Column(Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showAdvanced = !showAdvanced },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Default.Tune, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text("Advanced options", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Text(
+                            if (cooldownMinutes == 0) "Cooldown: None" else "Cooldown: ${cooldownMinutes}m",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            if (showAdvanced) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (showAdvanced) {
+                        Spacer(Modifier.height(12.dp))
+                        Text("Execution cooldown", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(6.dp))
+                        RuleCooldownSettings(cooldownMinutes) { cooldownMinutes = it }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
