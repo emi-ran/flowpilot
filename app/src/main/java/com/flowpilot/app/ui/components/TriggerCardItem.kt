@@ -88,12 +88,26 @@ fun TriggerCardItem(
                         .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        triggerIcon(event),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp),
-                    )
+                    if ((event == TriggerEvent.APP_OPENED || event == TriggerEvent.APP_CLOSED) && pkg.isNotEmpty()) {
+                        AppIconImage(
+                            packageName = pkg,
+                            modifier = Modifier.size(28.dp),
+                            fallbackIcon = triggerIcon(event),
+                        )
+                    } else if (event == TriggerEvent.NOTIFICATION_RECEIVED && notificationAppPackage.isNotEmpty()) {
+                        AppIconImage(
+                            packageName = notificationAppPackage,
+                            modifier = Modifier.size(28.dp),
+                            fallbackIcon = triggerIcon(event),
+                        )
+                    } else {
+                        Icon(
+                            triggerIcon(event),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
@@ -144,7 +158,11 @@ fun TriggerCardItem(
                         shape = RoundedCornerShape(12.dp),
                     ) {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Apps, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            AppIconImage(
+                                packageName = pkg,
+                                modifier = Modifier.size(28.dp),
+                                fallbackIcon = Icons.Default.Apps,
+                            )
                             Spacer(Modifier.width(10.dp))
                             Text(
                                 if (pkg.isEmpty()) "Tap to choose target app" else "$appName ($pkg)",
@@ -254,7 +272,11 @@ fun TriggerCardItem(
                         shape = RoundedCornerShape(12.dp),
                     ) {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.NotificationsActive, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            AppIconImage(
+                                packageName = notificationAppPackage,
+                                modifier = Modifier.size(28.dp),
+                                fallbackIcon = Icons.Default.NotificationsActive,
+                            )
                             Spacer(Modifier.width(10.dp))
                             Text(
                                 if (notificationAppPackage.isEmpty()) "Tap to select app" else "$notificationAppName ($notificationAppPackage)",

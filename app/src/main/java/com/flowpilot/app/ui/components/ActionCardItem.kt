@@ -5,6 +5,13 @@
 
 package com.flowpilot.app.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -150,12 +157,20 @@ fun ActionCardItem(
                     )
                 }
                 Spacer(Modifier.width(10.dp))
-                Icon(
-                    actionIcon(action),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
-                )
+                if (action == ActionType.LAUNCH_APP && launchPackage.isNotEmpty()) {
+                    AppIconImage(
+                        packageName = launchPackage,
+                        modifier = Modifier.size(20.dp),
+                        fallbackIcon = actionIcon(action),
+                    )
+                } else {
+                    Icon(
+                        actionIcon(action),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
                 Spacer(Modifier.width(10.dp))
                 Column(
                     modifier = Modifier
@@ -216,7 +231,15 @@ fun ActionCardItem(
                 }
             }
 
-            if (showDelaySlider) {
+            AnimatedVisibility(
+                visible = showDelaySlider,
+                enter = expandVertically(
+                    animationSpec = tween(durationMillis = 250, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
+                ) + fadeIn(animationSpec = tween(150)),
+                exit = shrinkVertically(
+                    animationSpec = tween(durationMillis = 200, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
+                ) + fadeOut(animationSpec = tween(100)),
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -396,7 +419,11 @@ fun ActionCardItem(
                         shape = RoundedCornerShape(12.dp),
                     ) {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Apps, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            AppIconImage(
+                                packageName = launchPackage,
+                                modifier = Modifier.size(28.dp),
+                                fallbackIcon = Icons.Default.Apps,
+                            )
                             Spacer(Modifier.width(10.dp))
                             Text(
                                 if (launchPackage.isEmpty()) "Tap to select target app" else "$launchAppName ($launchPackage)",

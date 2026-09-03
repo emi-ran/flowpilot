@@ -16,6 +16,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.ui.draw.rotate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -541,6 +550,12 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
 
             Spacer(Modifier.height(16.dp))
 
+            val advancedChevronRotation by animateFloatAsState(
+                targetValue = if (showAdvanced) 180f else 0f,
+                animationSpec = tween(durationMillis = 250, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)),
+                label = "advancedChevronRotation",
+            )
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -563,16 +578,31 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                         )
                         Spacer(Modifier.width(4.dp))
                         Icon(
-                            if (showAdvanced) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            Icons.Default.KeyboardArrowDown,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.rotate(advancedChevronRotation),
                         )
                     }
-                    if (showAdvanced) {
-                        Spacer(Modifier.height(12.dp))
-                        Text("Execution cooldown", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.height(6.dp))
-                        RuleCooldownSettings(cooldownMinutes) { cooldownMinutes = it }
+                    AnimatedVisibility(
+                        visible = showAdvanced,
+                        enter = expandVertically(
+                            animationSpec = tween(durationMillis = 350, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
+                        ) + fadeIn(
+                            animationSpec = tween(durationMillis = 250)
+                        ),
+                        exit = shrinkVertically(
+                            animationSpec = tween(durationMillis = 250, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
+                        ) + fadeOut(
+                            animationSpec = tween(durationMillis = 150)
+                        ),
+                    ) {
+                        Column {
+                            Spacer(Modifier.height(12.dp))
+                            Text("Execution cooldown", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(6.dp))
+                            RuleCooldownSettings(cooldownMinutes) { cooldownMinutes = it }
+                        }
                     }
                 }
             }

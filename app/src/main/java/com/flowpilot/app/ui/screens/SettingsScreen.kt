@@ -21,14 +21,25 @@ fun SettingsScreen(
     vm: AppViewModel,
     permissions: () -> Unit,
     history: () -> Unit = {},
+    bottomBar: @Composable () -> Unit = {},
 ) {
     val engine by vm.engineRunning.collectAsState()
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("Settings", fontWeight = FontWeight.Bold) },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-        )
-        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            )
+        },
+        bottomBar = bottomBar,
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { innerPadding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 20.dp)
+        ) {
             Text("Manage your FlowPilot preferences.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 20.dp))
             Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
                 SettingRow("Dark theme", Icons.Default.DarkMode, true) {}

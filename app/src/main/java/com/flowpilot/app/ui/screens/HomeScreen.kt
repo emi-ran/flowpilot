@@ -8,26 +8,20 @@ package com.flowpilot.app.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Bluetooth
-import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Hub
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.ScreenRotation
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,6 +35,8 @@ import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.AutomationUI
 import com.flowpilot.app.ui.components.CapabilityPill
 import com.flowpilot.app.ui.components.FollowSwitch
+import com.flowpilot.app.ui.components.triggerIcon
+import com.flowpilot.app.ui.components.AppIconImage
 
 @Composable
 fun HomeScreen(
@@ -49,6 +45,7 @@ fun HomeScreen(
     create: () -> Unit,
     settings: () -> Unit,
     permissions: () -> Unit,
+    bottomBar: @Composable () -> Unit = {},
 ) {
     val rules by vm.automations.collectAsState()
     val engine by vm.engineRunning.collectAsState()
@@ -80,45 +77,116 @@ fun HomeScreen(
         )
     }
 
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = {
-                Text(
-                    if (isSelectionMode) "${selectedRuleIds.size} selected" else "Automations",
-                    fontWeight = FontWeight.Bold,
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        if (isSelectionMode) "${selectedRuleIds.size} selected" else "Automations",
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                navigationIcon = {
+                    if (isSelectionMode) {
+                        IconButton({ selectedRuleIds = emptySet() }) {
+                            Icon(Icons.Default.Close, "Cancel selection")
+                        }
+                    } else {
+                        Icon(Icons.Default.Hub, null, modifier = Modifier.padding(start = 16.dp))
+                    }
+                },
+                actions = {
+                    if (isSelectionMode) {
+                        TextButton({
+                            selectedRuleIds = if (selectedRuleIds.size == rules.size) emptySet() else rules.map { it.rule.id }.toSet()
+                        }) {
+                            Text(if (selectedRuleIds.size == rules.size) "Deselect all" else "Select all")
+                        }
+                        IconButton({ showDeleteConfirmDialog = true }) {
+                            Icon(Icons.Default.Delete, "Delete selected", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            )
+        },
+        bottomBar = bottomBar,
+        floatingActionButton = {
+            // Only show FAB when there are rules in the list and not in multi-selection mode
+            if (!isSelectionMode && rules.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                    onClick = create,
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("New automation", fontWeight = FontWeight.SemiBold) },
+                    shape = RoundedCornerShape(18.dp),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 )
-            },
-            navigationIcon = {
-                if (isSelectionMode) {
-                    IconButton({ selectedRuleIds = emptySet() }) {
-                        Icon(Icons.Default.Close, "Cancel selection")
-                    }
-                } else {
-                    Icon(Icons.Default.Hub, null, modifier = Modifier.padding(start = 16.dp))
-                }
-            },
-            actions = {
-                if (isSelectionMode) {
-                    TextButton({
-                        selectedRuleIds = if (selectedRuleIds.size == rules.size) emptySet() else rules.map { it.rule.id }.toSet()
-                    }) {
-                        Text(if (selectedRuleIds.size == rules.size) "Deselect all" else "Select all")
-                    }
-                    IconButton({ showDeleteConfirmDialog = true }) {
-                        Icon(Icons.Default.Delete, "Delete selected", tint = MaterialTheme.colorScheme.error)
-                    }
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-        )
-
-        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-            Text("Make your phone react automatically", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Automation engine", style = MaterialTheme.typography.titleMedium)
-                FollowSwitch(engine, { if (it) vm.startEngine() else vm.stopEngine() })
             }
-            Spacer(Modifier.height(12.dp))
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { innerPadding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 20.dp)
+        ) {
+            // Hero Status Card for Automation Engine
+            val heroContainerColor by animateColorAsState(
+                targetValue = if (engine) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                else MaterialTheme.colorScheme.surfaceContainerHigh,
+                animationSpec = tween(250),
+                label = "heroColor",
+            )
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(heroContainerColor),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(
+                                if (engine) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                                CircleShape,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Default.Bolt,
+                            contentDescription = null,
+                            tint = if (engine) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            if (engine) "FlowPilot Active" else "Engine Paused",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        val activeCount = rules.count { it.rule.enabled }
+                        Text(
+                            if (engine) "$activeCount of ${rules.size} automations active"
+                            else "Automations will not trigger",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    FollowSwitch(engine, { if (it) vm.startEngine() else vm.stopEngine() })
+                }
+            }
 
             if (rules.isEmpty()) {
                 EmptyState(create)
@@ -126,6 +194,7 @@ fun HomeScreen(
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp),
                 ) {
                     items(rules, key = { it.rule.id }) { item ->
                         val isSelected = item.rule.id in selectedRuleIds
@@ -149,27 +218,34 @@ fun HomeScreen(
                     }
                 }
             }
-
-            Button(
-                onClick = create,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Icon(Icons.Default.Add, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Create automation")
-            }
         }
     }
 }
 
 @Composable
 private fun EmptyState(create: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 80.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Default.Bolt, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
-        Text("No automations yet", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp))
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 60.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Default.Bolt, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
+        }
+        Text("No automations yet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 18.dp))
         Text("Create a rule to make your phone react automatically", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
-        OutlinedButton(create, shape = RoundedCornerShape(16.dp)) { Text("Create your first rule") }
+        Spacer(Modifier.height(12.dp))
+        Button(create, shape = RoundedCornerShape(16.dp)) {
+            Icon(Icons.Default.Add, null)
+            Spacer(Modifier.width(8.dp))
+            Text("Create your first rule")
+        }
     }
 }
 
@@ -183,14 +259,22 @@ private fun RuleCard(
     enabled: (Boolean) -> Unit,
     onPermission: () -> Unit,
 ) {
+    val isRuleEnabled = item.rule.enabled
     val containerColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-        else MaterialTheme.colorScheme.surfaceContainer,
+        targetValue = when {
+            isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+            isRuleEnabled -> MaterialTheme.colorScheme.surfaceContainer
+            else -> MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.65f)
+        },
         animationSpec = tween(150),
         label = "cardColor",
     )
     val borderColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.Transparent,
+        targetValue = when {
+            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            isRuleEnabled -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            else -> Color.Transparent
+        },
         animationSpec = tween(150),
         label = "cardBorder",
     )
@@ -199,17 +283,21 @@ private fun RuleCard(
         modifier = Modifier
             .fillMaxWidth()
             .border(
-                1.5.dp,
-                borderColor,
-                shape = CardDefaults.shape,
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(20.dp),
             )
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
             ),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor),
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             if (isSelectionMode) {
                 Checkbox(
                     checked = isSelected,
@@ -217,40 +305,58 @@ private fun RuleCard(
                     modifier = Modifier.padding(end = 8.dp),
                 )
             }
-            Icon(
-                when (item.rule.triggerEvent) {
-                    TriggerEvent.APP_OPENED -> Icons.Default.Apps
-                    TriggerEvent.APP_CLOSED -> Icons.Default.Close
-                    TriggerEvent.CHARGER_CONNECTED,
-                    TriggerEvent.CHARGER_DISCONNECTED -> Icons.Default.Bolt
-                    TriggerEvent.BATTERY_BELOW,
-                    TriggerEvent.BATTERY_ABOVE -> Icons.Default.Bolt
-                    TriggerEvent.SCREEN_ON,
-                    TriggerEvent.SCREEN_OFF -> Icons.Default.Bolt
-                    TriggerEvent.TIME_SCHEDULE -> Icons.Default.Bolt
-                    TriggerEvent.WIFI_CONNECTED,
-                    TriggerEvent.WIFI_DISCONNECTED -> Icons.Default.Bolt
-                    TriggerEvent.BLUETOOTH_CONNECTED -> Icons.Default.Bluetooth
-                    TriggerEvent.BLUETOOTH_DISCONNECTED -> Icons.Default.BluetoothDisabled
-                    TriggerEvent.NFC_TAG_SCANNED -> Icons.Default.Bolt
-                    TriggerEvent.NOTIFICATION_RECEIVED -> Icons.Default.Bolt
-                    TriggerEvent.CALL_RINGING -> Icons.Default.Notifications
-                    TriggerEvent.CALL_ANSWERED -> Icons.Default.PlayArrow
-                    TriggerEvent.CALL_OUTGOING -> Icons.Default.Info
-                    TriggerEvent.CALL_ENDED -> Icons.Default.Stop
-                    TriggerEvent.DEVICE_FLIPPED_DOWN,
-                    TriggerEvent.DEVICE_FLIPPED_UP -> Icons.Default.ScreenRotation
-                },
-                null,
-                Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
-                Text(item.rule.name, style = MaterialTheme.typography.titleMedium)
-                Text("${item.rule.triggerEvent.label} → ${item.rule.actionSummary}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                if (item.rule.effectiveCooldownMinutes > 0) {
-                    Text("Cooldown: ${item.rule.effectiveCooldownMinutes}m", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+
+            // Contextual Tinted Trigger Icon Badge
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(
+                        color = if (isRuleEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(14.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if ((item.rule.triggerEvent == TriggerEvent.APP_OPENED || item.rule.triggerEvent == TriggerEvent.APP_CLOSED) && item.rule.appPackage.isNotEmpty()) {
+                    AppIconImage(
+                        packageName = item.rule.appPackage,
+                        modifier = Modifier.size(28.dp),
+                        fallbackIcon = triggerIcon(item.rule.triggerEvent),
+                    )
+                } else if (item.rule.triggerEvent == TriggerEvent.NOTIFICATION_RECEIVED && item.rule.notificationAppPackage.isNotEmpty()) {
+                    AppIconImage(
+                        packageName = item.rule.notificationAppPackage,
+                        modifier = Modifier.size(28.dp),
+                        fallbackIcon = triggerIcon(item.rule.triggerEvent),
+                    )
+                } else {
+                    Icon(
+                        imageVector = triggerIcon(item.rule.triggerEvent),
+                        contentDescription = null,
+                        tint = if (isRuleEnabled) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(22.dp),
+                    )
                 }
+            }
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = item.rule.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isRuleEnabled) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "${item.rule.triggerEvent.label} → ${item.rule.actionSummary}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
                 val detail = when (item.rule.triggerEvent) {
                     TriggerEvent.BATTERY_BELOW,
                     TriggerEvent.BATTERY_ABOVE -> "Threshold: ${item.rule.batteryLevel}%"
@@ -261,7 +367,7 @@ private fun RuleCard(
                     TriggerEvent.NFC_TAG_SCANNED -> "Tag ID: ${item.rule.nfcTagId}"
                     TriggerEvent.NOTIFICATION_RECEIVED -> {
                         val app = item.rule.notificationAppName.ifBlank { item.rule.notificationAppPackage }
-                        if (item.rule.notificationKeyword.isNotBlank()) "$app · Keyword: \"${item.rule.notificationKeyword}\"" else app
+                        if (item.rule.notificationKeyword.isNotBlank()) "$app · \"${item.rule.notificationKeyword}\"" else app
                     }
                     TriggerEvent.CALL_RINGING,
                     TriggerEvent.CALL_ANSWERED,
@@ -271,11 +377,41 @@ private fun RuleCard(
                     TriggerEvent.DEVICE_FLIPPED_UP -> if (item.rule.flipScreenOffDetection) "Screen on & off" else "Screen on only"
                     else -> item.rule.appName.ifBlank { item.rule.appPackage }
                 }
-                if (detail.isNotBlank()) Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-                CapabilityPill(item.capability.label, Modifier.padding(top = 6.dp), onClick = onPermission)
+
+                if (detail.isNotBlank()) {
+                    Text(
+                        text = detail,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CapabilityPill(item.capability.label, onClick = onPermission)
+                    if (item.rule.effectiveCooldownMinutes > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        ) {
+                            Text(
+                                text = "⏱ ${item.rule.effectiveCooldownMinutes}m cooldown",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                }
             }
+
             if (!isSelectionMode) {
-                FollowSwitch(item.rule.enabled, enabled)
+                Spacer(Modifier.width(10.dp))
+                FollowSwitch(isRuleEnabled, enabled)
             }
         }
     }
