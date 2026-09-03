@@ -74,6 +74,13 @@ Do not bundle unrelated features. One feature family at a time.
     - Uses `TelephonyCallback` (API 31+) and `PhoneStateListener` (< 31) with edge transition deduplication and no startup replay.
     - Requires `android.permission.READ_PHONE_STATE`. Zero access to call logs or contacts.
 
+11. **Device motion / flip triggers** (complete; Xiaomi device smoke test passed)
+    - Phone placed face down on surface (`DEVICE_FLIPPED_DOWN`) and turned face up back to normal (`DEVICE_FLIPPED_UP`).
+    - Dual physical verification: Proximity (NEAR) + Gravity/Accelerometer Z-axis ($Z \le -6.5 m/s^2$) + lateral horizontal stability ($\le 6.0 m/s^2$).
+    - 500ms stability debounce prevents spurious triggers during hand rotation; startup seeding prevents immediate execution on engine start.
+    - Dynamic sensor registration: sensors completely detached when no flip rules are enabled or when screen turns off (unless `flipScreenOffDetection = true`).
+    - User-configurable screen-off detection with `SENSOR_DELAY_NORMAL` (~5Hz) and background battery-exemption notice.
+
 ## Planned Actions
 
 ### Phase 1 — App-level actions

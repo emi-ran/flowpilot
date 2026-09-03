@@ -33,6 +33,7 @@ class AutomationEngine(
     private val wifiTracker: WifiStateTracker = WifiStateTracker(context.applicationContext),
     private val bluetoothTracker: BluetoothDeviceTracker = BluetoothDeviceTracker(context.applicationContext),
     private val callTracker: CallStateTracker = CallStateTracker(context.applicationContext),
+    private val flipTracker: DeviceFlipTracker = DeviceFlipTracker(context.applicationContext),
 ) {
 
     private val appContext = context.applicationContext
@@ -59,11 +60,13 @@ class AutomationEngine(
         wifiTracker.start()
         bluetoothTracker.start()
         callTracker.start()
+        flipTracker.start()
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         job = scope.launch {
             while (isActive) {
                 try {
                     val liveState = getLiveSystemState()
+                    updateFlipListeningPolicy(liveState)
                     poll(liveState)
                     pollChargerEvents(liveState)
                     pollBatteryTransitions(liveState)
@@ -71,6 +74,7 @@ class AutomationEngine(
                     pollWifiTransitions(liveState)
                     pollBluetoothTransitions(liveState)
                     pollCallTransitions(liveState)
+                    pollDeviceFlipEvents(liveState)
                     pollNfcTagEvents(liveState)
                     pollNotificationEvents(liveState)
                     pollSchedules(liveState)
@@ -95,6 +99,7 @@ class AutomationEngine(
         wifiTracker.stop()
         bluetoothTracker.stop()
         callTracker.stop()
+        flipTracker.stop()
     }
 
     private fun getLiveSystemState(): LiveSystemState {
@@ -264,6 +269,35 @@ class AutomationEngine(
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing NFC tag scanned rules for tag ID [REDACTED_LEN_${event.tagId.length}] (${matches.size} rule(s))")
                 executeAll(matches, trigger = TriggerEvent.NFC_TAG_SCANNED, liveState = liveState)
+            }
+        }
+    }
+
+    private suspend fun updateFlipListeningPolicy(liveState: LiveSystemState) {
+        val rules = repository.automations.first()
+        val flipRules = rules.filter {
+            it.enabled && (it.triggerEvent == TriggerEvent.DEVICE_FLIPPED_DOWN || it.triggerEvent == TriggerEvent.DEVICE_FLIPPED_UP)
+        }
+        flipTracker.updateListeningPolicy(
+            hasActiveRules = flipRules.isNotEmpty(),
+            anyAllowScreenOff = flipRules.any { it.flipScreenOffDetection },
+            isScreenOn = liveState.isScreenOn != false,
+        )
+    }
+
+    private suspend fun pollDeviceFlipEvents(liveState: LiveSystemState) {
+        val events = flipTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (event in events) {
+            val matches = RuleEvaluator.evaluateFlip(rules, event, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing device flip rules for $event (${matches.size} rule(s))")
+                val trigger = when (event) {
+                    FlipEvent.FLIPPED_DOWN -> TriggerEvent.DEVICE_FLIPPED_DOWN
+                    FlipEvent.FLIPPED_UP -> TriggerEvent.DEVICE_FLIPPED_UP
+                }
+                executeAll(matches, trigger = trigger, liveState = liveState)
             }
         }
     }

@@ -112,6 +112,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED ||
                     rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING ||
                     rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED
+                val hasFlipTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_DOWN ||
+                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_UP
 
                 val triggerStatus = when {
                     hasWifiTriggerOrCond && !capabilities.hasWifiPermissions() -> CapabilityStatus.PERMISSION_REQUIRED
@@ -121,6 +123,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     hasNfcTagTrigger && !capabilities.hasNfcHardware() -> CapabilityStatus.UNSUPPORTED
                     hasNfcTagTrigger && !capabilities.isNfcEnabled() -> CapabilityStatus.PERMISSION_REQUIRED
                     hasCallTrigger && !capabilities.hasReadPhoneStatePermission() -> CapabilityStatus.PERMISSION_REQUIRED
+                    hasFlipTrigger && !capabilities.hasFlipSensors() -> CapabilityStatus.UNSUPPORTED
                     else -> CapabilityStatus.AVAILABLE
                 }
 
@@ -200,6 +203,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         actions: List<com.flowpilot.app.data.model.ActionType>,
         actionDelays: List<Int> = emptyList(),
         cooldownMinutes: Int = 0,
+        flipScreenOffDetection: Boolean = false,
         scheduledMinute: Int = 0,
         scheduledDays: Set<Int> = emptySet(),
         batteryLevel: Int = 50,
@@ -250,6 +254,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 actions = actions,
                 actionDelays = actionDelays,
                 cooldownMinutes = cooldownMinutes,
+                flipScreenOffDetection = flipScreenOffDetection,
                 scheduledMinute = scheduledMinute,
                 scheduledDays = scheduledDays,
                 batteryLevel = batteryLevel,

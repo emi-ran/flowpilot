@@ -250,4 +250,22 @@ object RuleEvaluator {
 
         return EvaluationResult(toExecute = toExecute, matched = matching)
     }
+
+    fun evaluateFlip(
+        rules: List<Automation>,
+        event: FlipEvent,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> {
+        val trigger = when (event) {
+            FlipEvent.FLIPPED_DOWN -> TriggerEvent.DEVICE_FLIPPED_DOWN
+            FlipEvent.FLIPPED_UP -> TriggerEvent.DEVICE_FLIPPED_UP
+        }
+        return rules.filter { rule ->
+            if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@filter false
+            // If screen is off and rule does not permit screen-off evaluation, filter out
+            if (liveState.isScreenOn == false && !rule.flipScreenOffDetection) return@filter false
+            matchesConditions(rule.conditions, liveState)
+        }
+    }
 }

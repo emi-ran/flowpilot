@@ -80,6 +80,7 @@ class AutomationRepository(private val context: Context) {
         actions: List<com.flowpilot.app.data.model.ActionType>,
         actionDelays: List<Int> = emptyList(),
         cooldownMinutes: Int = 0,
+        flipScreenOffDetection: Boolean = false,
         scheduledMinute: Int = 0,
         scheduledDays: Set<Int> = emptySet(),
         batteryLevel: Int = 50,
@@ -148,7 +149,9 @@ class AutomationRepository(private val context: Context) {
                     com.flowpilot.app.data.model.TriggerEvent.CALL_RINGING,
                     com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED,
                     com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING,
-                    com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED ->
+                    com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED,
+                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_DOWN,
+                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_UP ->
                         "${triggerEvent.label} · $summary"
                     else -> "${appName.ifBlank { appPackage }} · $summary"
                 }
@@ -199,6 +202,7 @@ class AutomationRepository(private val context: Context) {
             actions = actions,
             actionDelays = actionDelays,
             cooldownMinutes = cooldownMinutes,
+            flipScreenOffDetection = flipScreenOffDetection,
             createdAt = System.currentTimeMillis(),
         )
         context.dataStore.edit { prefs ->

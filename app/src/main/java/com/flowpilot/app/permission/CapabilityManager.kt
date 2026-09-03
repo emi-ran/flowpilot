@@ -270,6 +270,15 @@ class CapabilityManager(private val context: Context) {
         val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
         return pm.isIgnoringBatteryOptimizations(context.packageName)
     }
+
+    /** Does this device have the necessary sensors for flip detection (Accelerometer/Gravity + Proximity)? */
+    fun hasFlipSensors(): Boolean {
+        val sm = context.getSystemService(Context.SENSOR_SERVICE) as? android.hardware.SensorManager ?: return false
+        val hasAccelerometer = sm.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER) != null ||
+            sm.getDefaultSensor(android.hardware.Sensor.TYPE_GRAVITY) != null
+        val hasProximity = sm.getDefaultSensor(android.hardware.Sensor.TYPE_PROXIMITY) != null
+        return hasAccelerometer && hasProximity
+    }
 }
 
 enum class ShizukuState { NOT_INSTALLED, NOT_RUNNING, NOT_GRANTED, READY }

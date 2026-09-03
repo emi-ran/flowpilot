@@ -332,6 +332,30 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     ),
                 ),
             ),
+            PickerCategoryGroup(
+                id = TriggerCategory.MOTION.name,
+                label = TriggerCategory.MOTION.label,
+                icon = Icons.Default.ScreenRotation,
+                iconTint = Color(0xFFFF8A65),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.DEVICE_FLIPPED_DOWN,
+                        title = TriggerEvent.DEVICE_FLIPPED_DOWN.label,
+                        subtitle = "When device is placed face down on a table or surface",
+                        icon = Icons.Default.StayCurrentLandscape,
+                        iconTint = Color(0xFFFF8A65),
+                        keywords = listOf("flip", "face down", "down", "sensor", "motion", "dnd", "mute", "table", "surface"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.DEVICE_FLIPPED_UP,
+                        title = TriggerEvent.DEVICE_FLIPPED_UP.label,
+                        subtitle = "When device is turned face up back to normal position",
+                        icon = Icons.Default.StayCurrentPortrait,
+                        iconTint = Color(0xFFFFAB91),
+                        keywords = listOf("flip", "face up", "up", "sensor", "motion", "normal", "lift"),
+                    ),
+                ),
+            ),
         )
     }
 

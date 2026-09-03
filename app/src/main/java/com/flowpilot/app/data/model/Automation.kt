@@ -99,6 +99,7 @@ enum class TriggerCategory(val label: String) {
     NFC_TAG("NFC"),
     NOTIFICATION("Notification"),
     PHONE("Phone"),
+    MOTION("Motion"),
 }
 
 @Serializable
@@ -166,7 +167,9 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     CALL_RINGING("Incoming call ringing", TriggerCategory.PHONE),
     CALL_ANSWERED("Call active / answered", TriggerCategory.PHONE),
     CALL_OUTGOING("Outgoing call started", TriggerCategory.PHONE),
-    CALL_ENDED("Call ended", TriggerCategory.PHONE);
+    CALL_ENDED("Call ended", TriggerCategory.PHONE),
+    DEVICE_FLIPPED_DOWN("Device flipped face down", TriggerCategory.MOTION),
+    DEVICE_FLIPPED_UP("Device flipped face up", TriggerCategory.MOTION);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }
@@ -243,6 +246,8 @@ data class Automation(
     val actionDelays: List<Int> = emptyList(),
     /** Cooldown duration in minutes (0 means disabled, stored values clamp to 1440). Blocks automatic trigger evaluation when (now - lastTriggeredAt) < cooldown. */
     val cooldownMinutes: Int = 0,
+    /** Whether motion/flip triggers should listen and evaluate even when the device screen is off. */
+    val flipScreenOffDetection: Boolean = false,
     val createdAt: Long,
     val lastTriggeredAt: Long = 0L,
 ) {

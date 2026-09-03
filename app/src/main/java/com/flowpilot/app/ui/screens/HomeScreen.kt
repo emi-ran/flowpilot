@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -237,6 +238,8 @@ private fun RuleCard(
                     TriggerEvent.CALL_ANSWERED -> Icons.Default.PlayArrow
                     TriggerEvent.CALL_OUTGOING -> Icons.Default.Info
                     TriggerEvent.CALL_ENDED -> Icons.Default.Stop
+                    TriggerEvent.DEVICE_FLIPPED_DOWN,
+                    TriggerEvent.DEVICE_FLIPPED_UP -> Icons.Default.ScreenRotation
                 },
                 null,
                 Modifier.size(40.dp),
@@ -264,6 +267,8 @@ private fun RuleCard(
                     TriggerEvent.CALL_ANSWERED,
                     TriggerEvent.CALL_OUTGOING,
                     TriggerEvent.CALL_ENDED -> "Any call"
+                    TriggerEvent.DEVICE_FLIPPED_DOWN,
+                    TriggerEvent.DEVICE_FLIPPED_UP -> if (item.rule.flipScreenOffDetection) "Screen on & off" else "Screen on only"
                     else -> item.rule.appName.ifBlank { item.rule.appPackage }
                 }
                 if (detail.isNotBlank()) Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)

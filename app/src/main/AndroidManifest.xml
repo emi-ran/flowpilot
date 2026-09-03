@@ -31,6 +31,10 @@
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <uses-permission android:name="android.permission.NFC" />
 
+    <!-- Motion / Flip sensor triggers -->
+    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.proximity" android:required="false" />
+
     <!-- Wi-Fi state, nearby devices (Android 13+), and fine location (required by Android 9+ to read Wi-Fi SSID / perform scans). -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />

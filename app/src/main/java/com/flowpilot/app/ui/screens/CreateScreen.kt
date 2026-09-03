@@ -72,6 +72,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var notificationAppName by remember { mutableStateOf("") }
     var notificationKeyword by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
+    var flipScreenOffDetection by remember { mutableStateOf(false) }
     var conditions by remember { mutableStateOf(emptyList<RuleCondition>()) }
     var showConditionPicker by remember { mutableStateOf(false) }
     var notificationTitle by remember { mutableStateOf("FlowPilot") }
@@ -236,6 +237,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 )
             } else if (event == TriggerEvent.CALL_RINGING || event == TriggerEvent.CALL_ANSWERED || event == TriggerEvent.CALL_OUTGOING || event == TriggerEvent.CALL_ENDED) {
                 PhoneCallTriggerExplanation()
+            } else if (event == TriggerEvent.DEVICE_FLIPPED_DOWN || event == TriggerEvent.DEVICE_FLIPPED_UP) {
+                DeviceFlipTriggerSettings(
+                    allowScreenOff = flipScreenOffDetection,
+                    onToggleAllowScreenOff = { flipScreenOffDetection = it },
+                )
             }
 
             Text(
@@ -459,6 +465,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             actions = actions,
                             actionDelays = actionDelays,
                             cooldownMinutes = cooldownMinutes,
+                            flipScreenOffDetection = flipScreenOffDetection,
                             scheduledMinute = scheduledMinute,
                             scheduledDays = scheduledDays,
                             batteryLevel = batteryLevel,
@@ -547,6 +554,60 @@ fun PhoneCallTriggerExplanation() {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@Composable
+fun DeviceFlipTriggerSettings(
+    allowScreenOff: Boolean,
+    onToggleAllowScreenOff: (Boolean) -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text(
+                        "Allow detection when screen is off",
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        if (allowScreenOff) "Sensors will evaluate flip orientation while screen is locked."
+                        else "Sensors only listen while screen is on to save battery (Recommended).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = allowScreenOff,
+                    onCheckedChange = onToggleAllowScreenOff,
+                )
+            }
+            if (allowScreenOff) {
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        "⚠️ Battery Notice: Background sensor listening uses SENSOR_DELAY_NORMAL (~5Hz) to minimize drain. For reliable execution on HyperOS, ensure FlowPilot is exempted from battery optimization.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.padding(10.dp),
+                    )
+                }
+            }
         }
     }
 }

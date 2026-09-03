@@ -7,9 +7,9 @@ minSdk 26, JDK 17.
 ## Feature set
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
-battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | Bluetooth device connected | Bluetooth device disconnected | NFC tag scanned | notification received | phone call ringing | phone call answered | phone call outgoing | phone call ended] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [Bluetooth on | Bluetooth off | NFC on | NFC off | Battery Saver on |
+battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | Bluetooth device connected | Bluetooth device disconnected | NFC tag scanned | notification received | phone call ringing | phone call answered | phone call outgoing | phone call ended | device flipped face down | device flipped face up] (AND optional conditions: battery, charger, screen, Wi-Fi) DO one or more [Bluetooth on | Bluetooth off | NFC on | NFC off | Battery Saver on |
 Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | Open dialer | Dial number | Call number | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
-UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, phone call transitions via TelephonyCallback / PhoneStateListener, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
+UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, phone call transitions via TelephonyCallback / PhoneStateListener, device orientation transitions via Proximity and Accelerometer/Gravity sensors, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
 Actions can have a per-action pre-execution delay of 0-300 seconds. Delays preserve configured action order and are cancellable when engine stops; cancellation is recorded in execution history.
@@ -24,6 +24,7 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 |-------------------|---------------------|------------------------------|---------------------|---------|
 | Detect app        | Yes (Usage Access)  | -                            | -                   | -       |
 | Detect call state | YES (READ_PHONE_STATE) | -                         | -                   | -       |
+| Detect flip state | YES (SensorManager) | -                            | -                   | -       |
 | Open dialer / Dial | YES (Standard ACTION_DIAL intent) | -             | -                   | -       |
 | Direct phone call | YES (CALL_PHONE runtime permission) | -            | -                   | -       |
 | Auto-rotate       | YES (WRITE_SETTINGS special access) | -                    | -                   | -       |
@@ -83,6 +84,8 @@ app/src/main/java/com/flowpilot/app/
     ScreenStateTracker.kt            screen on/off broadcasts
     WifiStateTracker.kt              Wi-Fi NetworkCallback state + SSID transition reducer
     BluetoothDeviceTracker.kt        bonded-device ACL broadcasts + per-device transition reducer
+    DeviceFlipState.kt               pure flip orientation models and debounce state reducer
+    DeviceFlipTracker.kt             motion sensor listener with dynamic lifecycle and battery-saving unregistering
     NfcTagHandoff.kt                 transient tag UID intent-to-engine queue and UI capture state
     NfcTagUtils.kt                   pure tag UID normalization and validation
     FlowPilotNotificationListener.kt transient notification listener, dedupe, and engine watchdog
@@ -151,6 +154,8 @@ BluetoothExecutor runs only exact allowlisted `svc bluetooth enable` or `svc blu
 MainActivity receives NFC tag/tech discovery intents, extracts only tag UID, and hands normalized UID to the running engine through in-memory NfcTagHandoff. Rule matching uses selected UID only. No NDEF payload or technology data is retained. Create/Edit screens can capture a tag UID while open. Unit/build and configured-tag Xiaomi 15T Pro / HyperOS 3 smoke testing passed.
 
 Phone call triggers (`CALL_RINGING`, `CALL_ANSWERED`, `CALL_OUTGOING`, `CALL_ENDED`) evaluate state transitions without phone-number filtering. Android 12+ / HyperOS does not expose outgoing numbers to apps without the default-dialer role; call triggers match every call of that state. Legacy filter-configured rules operate as state-only / any-number rules. Device validation for this removal has not been run on device. Direct call and dial actions (`CALL_NUMBER`, `DIAL_NUMBER`) preserve phone number inputs and normalization/masking safeguards.
+
+DeviceFlipTracker tracks device physical placement and orientation changes using Sensor.TYPE_PROXIMITY and Sensor.TYPE_GRAVITY / Sensor.TYPE_ACCELEROMETER. DeviceFlipReducer verifies both proximity coverage (isNear) and earth-gravity Z-axis pull (Z <= -6.5 m/s^2 with lateral horizontal stability <= 6.0 m/s^2) to classify DEVICE_FLIPPED_DOWN, and reverse orientation with clear proximity to classify DEVICE_FLIPPED_UP. A 500ms debounce stability window avoids false triggers during casual hand movements. The tracker uses a demand-driven lifecycle: sensors are unmounted when no active flip rules exist, automatically unregistered when screen turns off (unless flipScreenOffDetection is enabled), and sample at low-power SENSOR_DELAY_NORMAL (~5Hz). Unit tests and Xiaomi 15T Pro / HyperOS 3 device smoke testing passed.
 
 AutoRotateExecutor writes `Settings.System.ACCELEROMETER_ROTATION` to `1` (free rotation) or `0`
 (portrait lock), then reads back the value. It requires `android.permission.WRITE_SETTINGS` checked via

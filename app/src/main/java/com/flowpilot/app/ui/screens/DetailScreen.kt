@@ -70,6 +70,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var notificationAppName by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppName) }
     var notificationKeyword by remember(initialRule.id) { mutableStateOf(initialRule.notificationKeyword) }
     var phoneNumber by remember(initialRule.id) { mutableStateOf(initialRule.phoneNumber) }
+    var flipScreenOffDetection by remember(initialRule.id) { mutableStateOf(initialRule.flipScreenOffDetection) }
     var conditions by remember(initialRule.id) { mutableStateOf(initialRule.conditions) }
     var showConditionPicker by remember { mutableStateOf(false) }
     var notificationTitle by remember(initialRule.id) { mutableStateOf(initialRule.notificationTitle) }
@@ -325,6 +326,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 )
             } else if (event == TriggerEvent.CALL_RINGING || event == TriggerEvent.CALL_ANSWERED || event == TriggerEvent.CALL_OUTGOING || event == TriggerEvent.CALL_ENDED) {
                 PhoneCallTriggerExplanation()
+            } else if (event == TriggerEvent.DEVICE_FLIPPED_DOWN || event == TriggerEvent.DEVICE_FLIPPED_UP) {
+                DeviceFlipTriggerSettings(
+                    allowScreenOff = flipScreenOffDetection,
+                    onToggleAllowScreenOff = { flipScreenOffDetection = it },
+                )
             }
 
             Text(
@@ -596,7 +602,9 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 TriggerEvent.CALL_RINGING,
                                 TriggerEvent.CALL_ANSWERED,
                                 TriggerEvent.CALL_OUTGOING,
-                                TriggerEvent.CALL_ENDED -> "${event.label} · $summary"
+                                TriggerEvent.CALL_ENDED,
+                                TriggerEvent.DEVICE_FLIPPED_DOWN,
+                                TriggerEvent.DEVICE_FLIPPED_UP -> "${event.label} · $summary"
                                 else -> "${appName.ifBlank { pkg }} · $summary"
                             }
                         }
@@ -613,6 +621,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 bluetoothDeviceAddress = bluetoothDeviceAddress,
                                 bluetoothDeviceName = bluetoothDeviceName,
                                 nfcTagId = nfcTagId.trim(),
+                                flipScreenOffDetection = flipScreenOffDetection,
                                 notificationAppPackage = notificationAppPackage,
                                 notificationAppName = notificationAppName,
                                 notificationKeyword = notificationKeyword,
