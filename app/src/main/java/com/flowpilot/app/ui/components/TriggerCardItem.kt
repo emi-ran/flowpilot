@@ -233,19 +233,18 @@ fun TriggerCardItem(
                 }
                 TriggerEvent.NFC_TAG_SCANNED -> {
                     Spacer(Modifier.height(10.dp))
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = nfcTagId,
-                            onValueChange = onNfcTagChange,
-                            modifier = Modifier.weight(1f),
-                            label = { Text("NFC Tag UID") },
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                        )
-                        FilledTonalButton(onClick = onScanNfcTag, shape = RoundedCornerShape(12.dp)) {
-                            Text("Scan")
-                        }
-                    }
+                    OutlinedTextField(
+                        value = nfcTagId,
+                        onValueChange = { onNfcTagChange(it.uppercase()) },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("NFC Tag UID (hex)") },
+                        placeholder = { Text("e.g. 04A1B2C3D4E5F6") },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        supportingText = {
+                            Text("Tap a tag to the phone while app is open to auto-capture UID.")
+                        },
+                    )
                 }
                 TriggerEvent.NOTIFICATION_RECEIVED -> {
                     Spacer(Modifier.height(10.dp))

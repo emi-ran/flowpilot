@@ -347,18 +347,28 @@ fun ActionCardItem(
                         }
                     }
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("Play for ${soundDurationMs / 1000}s", style = MaterialTheme.typography.bodySmall)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilledTonalButton(onClick = onPreviewSound, shape = RoundedCornerShape(10.dp)) {
-                                Text("Play")
-                            }
-                            TextButton(onClick = onStopPreviewSound) {
-                                Text("Stop")
-                            }
+                        Text("Duration: ${soundDurationMs / 1000}s", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(80.dp))
+                        Slider(
+                            value = soundDurationMs.toFloat(),
+                            onValueChange = { onSoundDurationChange(it.toInt().coerceIn(1_000, 60_000)) },
+                            valueRange = 1_000f..60_000f,
+                            steps = 59,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        FilledTonalButton(onClick = onPreviewSound, shape = RoundedCornerShape(10.dp)) {
+                            Text("Play")
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(onClick = onStopPreviewSound) {
+                            Text("Stop")
                         }
                     }
                 }
@@ -445,6 +455,25 @@ fun ActionCardItem(
                             )
                         }
                     }
+                    val timerMinutes = timerDurationSeconds / 60
+                    val timerSecs = timerDurationSeconds % 60
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            if (timerSecs == 0) "${timerMinutes}m" else "${timerMinutes}m ${timerSecs}s",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.width(60.dp),
+                        )
+                        Slider(
+                            value = timerDurationSeconds.toFloat(),
+                            onValueChange = { onTimerDurationChange(it.toInt().coerceIn(10, 3600)) },
+                            valueRange = 10f..3600f,
+                            steps = 0,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                     Spacer(Modifier.height(6.dp))
                     OutlinedTextField(
                         value = timerMessage,
@@ -456,11 +485,32 @@ fun ActionCardItem(
                     )
                 }
                 ActionType.HTTP_WEBHOOK -> {
+                    var showVariablesDialog by remember { mutableStateOf(false) }
+
+                    if (showVariablesDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showVariablesDialog = false },
+                            title = { Text("Webhook variables") },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("\${trigger} - Event that ran this rule", style = MaterialTheme.typography.bodySmall)
+                                    Text("\${batteryPercent} - Current battery percentage", style = MaterialTheme.typography.bodySmall)
+                                    Text("\${isCharging} - Charger connection status", style = MaterialTheme.typography.bodySmall)
+                                    Text("\${wifiSsid} - Current Wi-Fi name", style = MaterialTheme.typography.bodySmall)
+                                    Text("\${timestamp} - Epoch milliseconds", style = MaterialTheme.typography.bodySmall)
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { showVariablesDialog = false }) { Text("OK") }
+                            },
+                        )
+                    }
+
                     Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("POST", "GET", "PUT").forEach { method ->
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf("POST", "GET", "PUT", "PATCH", "DELETE").forEach { method ->
                             FilterChip(
-                                selected = webhookMethod == method,
+                                selected = webhookMethod.equals(method, ignoreCase = true),
                                 onClick = { onWebhookMethodChange(method) },
                                 label = { Text(method) },
                             )
@@ -475,6 +525,49 @@ fun ActionCardItem(
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
+                    Spacer(Modifier.height(6.dp))
+                    val headerError = WebhookExecutor.validateHeaders(webhookHeaders)
+                    OutlinedTextField(
+                        value = webhookHeaders,
+                        onValueChange = onWebhookHeadersChange,
+                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(webhookHeaders),
+                        label = { Text("Headers (Key: Value, one per line)") },
+                        shape = RoundedCornerShape(12.dp),
+                        isError = headerError != null,
+                        supportingText = headerError?.let { err -> { Text(err, color = MaterialTheme.colorScheme.error) } },
+                        minLines = 2,
+                    )
+                    if (webhookMethod.uppercase() in listOf("POST", "PUT", "PATCH")) {
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = webhookBody,
+                            onValueChange = onWebhookBodyChange,
+                            modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(webhookBody),
+                            label = { Text("Request body") },
+                            placeholder = { Text("{\"event\": \"\${trigger}\"}") },
+                            shape = RoundedCornerShape(12.dp),
+                            minLines = 2,
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Timeout: ${webhookTimeoutSeconds}s", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(80.dp))
+                        Slider(
+                            value = webhookTimeoutSeconds.toFloat(),
+                            onValueChange = { onWebhookTimeoutChange(it.toInt().coerceIn(1, 60)) },
+                            valueRange = 1f..60f,
+                            steps = 58,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    TextButton(
+                        onClick = { showVariablesDialog = true },
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        Text("View supported variables", style = MaterialTheme.typography.labelSmall)
+                    }
                 }
                 ActionType.SPEAK_TEXT -> {
                     Spacer(Modifier.height(8.dp))
