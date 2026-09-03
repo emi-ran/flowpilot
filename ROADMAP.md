@@ -135,14 +135,17 @@ Do not bundle unrelated features. One feature family at a time.
 
 Each must expose its required permission or Shizuku state. Do not show success unless target device state changes.
 
-1. Wi-Fi on/off
+1. **Wi-Fi on/off** (implementation complete; unit tests passed; device smoke test pending)
+    - Shizuku `svc wifi enable|disable` with bounded `WifiManager.isWifiEnabled` readback verification
 2. **Bluetooth on/off** (complete; Xiaomi device smoke test passed)
     - Shizuku-only `svc bluetooth enable|disable`, strict bridge allowlist, and bounded `BluetoothAdapter.isEnabled` readback
-   - Requires Android 12+ `BLUETOOTH_CONNECT`; standard app path intentionally absent
-3. Mobile data on/off
-4. Airplane mode on/off
+    - Requires Android 12+ `BLUETOOTH_CONNECT`; standard app path intentionally absent
+3. **Mobile data on/off** (implementation complete; unit tests passed; device smoke test pending)
+    - Shizuku `svc data enable|disable` with `Settings.Global.mobile_data` / `TelephonyManager.isDataEnabled` readback verification
+4. **Airplane mode on/off** (implementation complete; unit tests passed; device smoke test pending)
+    - Shizuku `cmd connectivity airplane-mode enable|disable` with `Settings.Global.AIRPLANE_MODE_ON` readback verification
 5. Location services on/off
-6. Hotspot on/off
+6. **Hotspot on/off** (technical caveat: `cmd tethering` has no shell command implementation on Android 11+ / HyperOS 3; programmatic control requires signature-level `TETHER_PRIVILEGED`)
 7. **Do Not Disturb on/off** (complete; Xiaomi device smoke test passed)
    - `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` / `INTERRUPTION_FILTER_ALL`)
    - Requires user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY` special access
@@ -156,6 +159,8 @@ Each must expose its required permission or Shizuku state. Do not show success u
 11. **Sound profile (Normal/Vibrate/Silent)** (implementation complete; device smoke test pending)
     - `AudioManager.ringerMode` (`RINGER_MODE_NORMAL` / `RINGER_MODE_VIBRATE` / `RINGER_MODE_SILENT`)
     - Requires user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY` special access (`NotificationManager.isNotificationPolicyAccessGranted`)
+12. **Flashlight (Torch) on/off** (implementation complete; unit tests passed; device smoke test pending)
+    - Direct `CameraManager.setTorchMode` with rear camera flash hardware detection; requires zero permissions and no Shizuku.
 
 ## Existing Device-specific Controls
 

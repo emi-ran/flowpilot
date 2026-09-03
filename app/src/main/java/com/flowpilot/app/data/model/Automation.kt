@@ -80,7 +80,15 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     HTTP_WEBHOOK("Send HTTP webhook", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_DIALER("Open dialer", ActionCategory.PHONE, CapabilityRequirement.NONE),
     DIAL_NUMBER("Dial phone number", ActionCategory.PHONE, CapabilityRequirement.NONE),
-    CALL_NUMBER("Call phone number directly", ActionCategory.PHONE, CapabilityRequirement.CALL_PHONE);
+    CALL_NUMBER("Call phone number directly", ActionCategory.PHONE, CapabilityRequirement.CALL_PHONE),
+    MOBILE_DATA_ON("Turn Mobile Data on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    MOBILE_DATA_OFF("Turn Mobile Data off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    WIFI_ON("Turn Wi-Fi on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    WIFI_OFF("Turn Wi-Fi off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    AIRPLANE_MODE_ON("Turn Airplane mode on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    AIRPLANE_MODE_OFF("Turn Airplane mode off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    TORCH_ON("Turn Flashlight on", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
+    TORCH_OFF("Turn Flashlight off", ActionCategory.DISPLAY, CapabilityRequirement.NONE);
 
     companion object {
         fun fromId(id: String): ActionType? = entries.firstOrNull { it.name == id }

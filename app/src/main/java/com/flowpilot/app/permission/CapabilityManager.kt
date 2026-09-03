@@ -158,12 +158,20 @@ class CapabilityManager(private val context: Context) {
     fun hasCallPhonePermission(): Boolean =
         context.checkSelfPermission(android.Manifest.permission.CALL_PHONE) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
+    /** Has the device camera flash hardware for torch actions? */
+    fun hasCameraFlash(): Boolean =
+        context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_FLASH)
+
     /**
      * Effective status for an action, given the current device state and the
      * optional override "granted via ADB" flag (recomputed from the permission itself).
      */
     fun statusFor(action: ActionType): CapabilityStatus = when (action.requirement) {
-        CapabilityRequirement.NONE -> CapabilityStatus.AVAILABLE
+        CapabilityRequirement.NONE -> when (action) {
+            ActionType.TORCH_ON, ActionType.TORCH_OFF ->
+                if (hasCameraFlash()) CapabilityStatus.AVAILABLE else CapabilityStatus.UNSUPPORTED
+            else -> CapabilityStatus.AVAILABLE
+        }
 
         CapabilityRequirement.WRITE_SETTINGS ->
             if (hasWriteSettings()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
@@ -178,8 +186,8 @@ class CapabilityManager(private val context: Context) {
         CapabilityRequirement.SHIZUKU ->
             when {
                 action.category == com.flowpilot.app.data.model.ActionCategory.NFC && !hasNfcHardware() -> CapabilityStatus.UNSUPPORTED
-                action.category == com.flowpilot.app.data.model.ActionCategory.CONNECTIVITY && !hasBluetoothAdapter() -> CapabilityStatus.UNSUPPORTED
-                action.category == com.flowpilot.app.data.model.ActionCategory.CONNECTIVITY && !hasBluetoothConnectPermission() -> CapabilityStatus.PERMISSION_REQUIRED
+                (action == ActionType.BLUETOOTH_ON || action == ActionType.BLUETOOTH_OFF) && !hasBluetoothAdapter() -> CapabilityStatus.UNSUPPORTED
+                (action == ActionType.BLUETOOTH_ON || action == ActionType.BLUETOOTH_OFF) && !hasBluetoothConnectPermission() -> CapabilityStatus.PERMISSION_REQUIRED
                 shizukuState() == ShizukuState.READY -> CapabilityStatus.AVAILABLE
                 else -> CapabilityStatus.SHIZUKU_REQUIRED
             }

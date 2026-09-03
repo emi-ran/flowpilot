@@ -38,10 +38,10 @@ Target / compile SDK: 36 (Android 16)
 ## Implemented
 
 - Automations list matching supplied dark Stitch design.
-- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), Bluetooth device connected/disconnected (selected bonded device), NFC tag scanned (selected tag UID), notification received (selected app + optional keyword), phone call ringing/answered/outgoing/ended (state-only trigger matching every call of that state), device flipped face down / face up, or scheduled time -> one or more Bluetooth on/off, NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Sound profile (Normal/Vibrate/Silent), Open dialer, Dial number, Call number, Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
+- Create rule flow: app opened/closed, charger connected/disconnected, battery threshold, screen on/off, Wi-Fi connected/disconnected (selected SSID), Bluetooth device connected/disconnected (selected bonded device), NFC tag scanned (selected tag UID), notification received (selected app + optional keyword), phone call ringing/answered/outgoing/ended (state-only trigger matching every call of that state), device flipped face down / face up, or scheduled time -> one or more Bluetooth on/off, Wi-Fi on/off, Mobile Data on/off, Airplane Mode on/off, Flashlight on/off, NFC on/off, Dark theme on/off, Battery Saver on/off, Auto-rotate on/off, Do Not Disturb on/off, Sound profile (Normal/Vibrate/Silent), Open dialer, Dial number, Call number, Create alarm, Start timer, Send HTTP webhook, notification, vibrate, play sound, set media volume, launch app, open URL, and Speak text (offline TTS) actions.
 - Rule conditions (AND semantics): battery below/above, charger connected/disconnected, screen on/off, Wi-Fi connected/disconnected. Rules execute only when trigger matches AND all configured conditions match current live state.
 - Installed launchable app picker with search, display name, package ID internally.
-- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Phone, Power, Display, Time, Network, Bluetooth, Notification, and Motion; actions use Phone, Alerts, Clock, Audio, Apps & Links, Display, Battery, Connectivity, and NFC. Connectivity contains Bluetooth on/off through Shizuku.
+- Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Phone, Power, Display, Time, Network, Bluetooth, Notification, and Motion; actions use Phone, Alerts, Clock, Audio, Apps & Links, Display, Battery, Connectivity, and NFC. Connectivity contains Bluetooth, Wi-Fi, Mobile Data, and Airplane Mode on/off through Shizuku. Display includes Flashlight (Torch) on/off.
 - Rule detail and delete.
 - Automation run history: persistent log of rule executions (engine-triggered and manual test runs) retained up to the newest 100 entries in DataStore. Displays readable local timestamp, rule name, trigger source (`MANUAL` or trigger event name), overall execution status (Success, Partial success, Failure), and individual action outcomes. History never stores phone numbers; action results and log messages use generic phone-action outcomes. Sensitive credentials are redacted, and action parameters/webhook payloads are never persisted. Users can view history from Settings -> Run history and clear it with confirmation.
 - Manual automation test run: in Edit automation TopAppBar, Play icon prompts confirmation (bypassing triggers/conditions, excluding unsaved edits, leaving rule state untouched), runs actions immediately on IO dispatcher with safe live system context (`trigger = MANUAL`), records a manual history entry, and displays summary feedback via Snackbar.
@@ -69,8 +69,16 @@ Target / compile SDK: 36 (Android 16)
         - Open dialer: launches default dialer via `Intent.ACTION_DIAL`.
         - Dial number: prepares phone dialer with specified number via `Intent.ACTION_DIAL` and `tel:URI`.
         - Call number: directly places a real telephone call via `Intent.ACTION_CALL` and `tel:URI` (requires user-granted `android.permission.CALL_PHONE`).
+    - Connectivity:
+        - Wi-Fi ON/OFF: `svc wifi enable|disable` through Shizuku with `WifiManager.isWifiEnabled` state verification.
+        - Mobile Data ON/OFF: `svc data enable|disable` through Shizuku with `Settings.Global.mobile_data` / `TelephonyManager.isDataEnabled` verification.
+        - Airplane Mode ON/OFF: `cmd connectivity airplane-mode enable|disable` through Shizuku with `Settings.Global.AIRPLANE_MODE_ON` verification.
+        - Bluetooth ON/OFF: `svc bluetooth enable|disable` through Shizuku with `BluetoothAdapter.isEnabled` verification.
+    - Display & Tools:
+        - Flashlight (Torch) ON/OFF: direct `CameraManager.setTorchMode` with camera flash hardware detection.
+        - Dark theme ON/OFF: `cmd uimode night yes|no` through Shizuku with `Settings.Secure.ui_night_mode` state verification.
+        - Auto-rotate ON/OFF: direct `Settings.System.ACCELEROMETER_ROTATION` write with user-grantable `android.permission.WRITE_SETTINGS` special access.
     - NFC ON/OFF: `svc nfc enable|disable` through Shizuku.
-    - Dark theme ON/OFF: `cmd uimode night yes|no` through Shizuku with `Settings.Secure.ui_night_mode` state verification.
     - Battery Saver ON/OFF: direct `Settings.Global` write with `WRITE_SECURE_SETTINGS`, or Shizuku `cmd power set-mode <0|1>` with settings fallback.
     - Auto-rotate ON/OFF: direct `Settings.System.ACCELEROMETER_ROTATION` write with user-grantable `android.permission.WRITE_SETTINGS` special access.
     - Do Not Disturb ON/OFF: direct `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` / `INTERRUPTION_FILTER_ALL`) with user-grantable Notification Policy Access (`android.permission.ACCESS_NOTIFICATION_POLICY`).

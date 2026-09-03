@@ -27,14 +27,19 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 | Detect flip state | YES (SensorManager) | -                            | -                   | -       |
 | Open dialer / Dial | YES (Standard ACTION_DIAL intent) | -             | -                   | -       |
 | Direct phone call | YES (CALL_PHONE runtime permission) | -            | -                   | -       |
+| Flashlight (Torch)| YES (CameraManager.setTorchMode) | -             | -                   | -       |
 | Auto-rotate       | YES (WRITE_SETTINGS special access) | -                    | -                   | -       |
 | Do Not Disturb    | YES (Notification Policy Access) | -                | -                   | -       |
 | Sound Profile     | YES (Notification Policy Access) | -                | -                   | -       |
 | Alarm / Timer     | YES (Standard Clock intents / SET_ALARM) | -        | -                   | -       |
 | Dark Theme        | NO                  | NO (needs system uimode)     | YES (`cmd uimode night yes\|no`) | YES |
 | Battery Saver     | NO                  | YES (`pm grant` + write global low_power) | YES (`settings put global low_power`) | YES |
-| NFC               | NO (API 29+ removed NfcAdapter.enable) | NO (needs shell uid) | YES (`svc nfc enable|disable`) | YES |
-| Bluetooth on/off  | NO (modern Android restriction) | NO | YES: Shizuku `svc bluetooth enable|disable` + bounded `BluetoothAdapter.isEnabled` readback; Xiaomi smoke test passed | YES |
+| NFC               | NO (API 29+ removed NfcAdapter.enable) | NO (needs shell uid) | YES (`svc nfc enable\|disable`) | YES |
+| Bluetooth on/off  | NO (modern Android restriction) | NO | YES: Shizuku `svc bluetooth enable\|disable` + bounded `BluetoothAdapter.isEnabled` readback; Xiaomi smoke test passed | YES |
+| Wi-Fi on/off      | NO (modern Android restriction) | NO | YES: Shizuku `svc wifi enable\|disable` + bounded `WifiManager.isWifiEnabled` readback | YES |
+| Mobile Data on/off| NO (modern Android restriction) | NO | YES: Shizuku `svc data enable\|disable` + `Settings.Global.mobile_data` readback | YES |
+| Airplane mode     | NO (modern Android restriction) | NO | YES: Shizuku `cmd connectivity airplane-mode enable\|disable` + `Settings.Global` readback | YES |
+
   special access checked via `NotificationManager.isNotificationPolicyAccessGranted` and opened with
   `Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS`.
 - Alarm creation and Timer start use Android's standard `AlarmClock.ACTION_SET_ALARM` and `AlarmClock.ACTION_SET_TIMER`
@@ -95,6 +100,10 @@ app/src/main/java/com/flowpilot/app/
     ActionExecutor.kt                interface + dispatch
     NfcExecutor.kt                   Shizuku `svc nfc enable|disable`
     BluetoothExecutor.kt             Shizuku `svc bluetooth enable|disable` + adapter readback
+    WifiExecutor.kt                  Shizuku `svc wifi enable|disable` + WifiManager readback
+    MobileDataExecutor.kt            Shizuku `svc data enable|disable` + Telephony/Global readback
+    AirplaneModeExecutor.kt          Shizuku `cmd connectivity airplane-mode` + Settings.Global readback
+    TorchExecutor.kt                 CameraManager.setTorchMode native camera flash toggle
     DarkThemeExecutor.kt             Shizuku `cmd uimode night yes|no`
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
     AutoRotateExecutor.kt            WRITE_SETTINGS direct write to Settings.System.ACCELEROMETER_ROTATION

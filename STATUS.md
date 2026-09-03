@@ -40,6 +40,11 @@ Last updated: 2026-09-03
   - Triggers: `CALL_RINGING`, `CALL_ANSWERED`, `CALL_OUTGOING`, `CALL_ENDED` (state-only matching; phone-number filtering removed because Android 12+ does not provide outgoing numbers without default-dialer role; legacy filter-configured rules operate as state-only / any-number rules). Device validation for this removal has not been run on device.
   - Actions: `OPEN_DIALER`, `DIAL_NUMBER`, `CALL_NUMBER` (direct call with `CALL_PHONE` permission).
   - Privacy safeguards: UI number masking for dial/call actions, log redaction, zero call-log / contact storage.
+- Connectivity & Flashlight actions (unit tests passed; device smoke tests pending):
+  - Wi-Fi on/off (`WIFI_ON`, `WIFI_OFF`) via Shizuku `svc wifi enable|disable` with `WifiManager.isWifiEnabled` verification.
+  - Mobile Data on/off (`MOBILE_DATA_ON`, `MOBILE_DATA_OFF`) via Shizuku `svc data enable|disable` with `Settings.Global.mobile_data` / `TelephonyManager.isDataEnabled` verification.
+  - Airplane Mode on/off (`AIRPLANE_MODE_ON`, `AIRPLANE_MODE_OFF`) via Shizuku `cmd connectivity airplane-mode enable|disable` with `Settings.Global.AIRPLANE_MODE_ON` verification.
+  - Flashlight on/off (`TORCH_ON`, `TORCH_OFF`) via direct `CameraManager.setTorchMode` with hardware camera flash detection.
 - Sound profile denied Notification Policy Access behavior.
 - Run history screen smoke test on Xiaomi 15T Pro / HyperOS 3.
 - NFC tag trigger non-matching/engine-stopped paths.

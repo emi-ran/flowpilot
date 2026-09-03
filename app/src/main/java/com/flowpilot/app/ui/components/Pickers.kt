@@ -17,6 +17,8 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.AirplanemodeActive
+import androidx.compose.material.icons.filled.AirplanemodeInactive
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatteryFull
@@ -32,6 +34,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DoNotDisturb
 import androidx.compose.material.icons.filled.DoNotDisturbOff
+import androidx.compose.material.icons.filled.FlashlightOff
+import androidx.compose.material.icons.filled.FlashlightOn
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Http
 import androidx.compose.material.icons.filled.Language
@@ -53,6 +57,8 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.material.icons.filled.SignalCellularOff
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.StayCurrentLandscape
 import androidx.compose.material.icons.filled.StayCurrentPortrait
@@ -601,6 +607,22 @@ fun ActionPicker(
                         iconTint = Color(0xFF80DEEA),
                         keywords = listOf("rotate", "rotation", "lock rotation", "portrait lock", "orientation", "screen lock", "disable auto rotate"),
                     ),
+                    PickerItem(
+                        value = ActionType.TORCH_ON,
+                        title = ActionType.TORCH_ON.label,
+                        subtitle = "Turn camera flash on as flashlight",
+                        icon = Icons.Default.FlashlightOn,
+                        iconTint = Color(0xFFFFD54F),
+                        keywords = listOf("flashlight", "torch", "flash", "light", "camera", "on", "enable"),
+                    ),
+                    PickerItem(
+                        value = ActionType.TORCH_OFF,
+                        title = ActionType.TORCH_OFF.label,
+                        subtitle = "Turn camera flash / flashlight off",
+                        icon = Icons.Default.FlashlightOff,
+                        iconTint = Color(0xFFFFF59D),
+                        keywords = listOf("flashlight", "torch", "flash", "light", "camera", "off", "disable"),
+                    ),
                 ),
             ),
             PickerCategoryGroup(
@@ -635,6 +657,12 @@ fun ActionPicker(
                 items = listOf(
                     PickerItem(ActionType.BLUETOOTH_ON, ActionType.BLUETOOTH_ON.label, "Turn Bluetooth radio on (requires Shizuku)", Icons.Default.Bluetooth, Color(0xFF80CBC4), listOf("bluetooth", "radio", "connectivity", "on", "enable", "shizuku")),
                     PickerItem(ActionType.BLUETOOTH_OFF, ActionType.BLUETOOTH_OFF.label, "Turn Bluetooth radio off (requires Shizuku)", Icons.Default.BluetoothDisabled, Color(0xFFB2DFDB), listOf("bluetooth", "radio", "connectivity", "off", "disable", "shizuku")),
+                    PickerItem(ActionType.WIFI_ON, ActionType.WIFI_ON.label, "Turn Wi-Fi radio on (requires Shizuku)", Icons.Default.Wifi, Color(0xFF64B5F6), listOf("wifi", "wlan", "internet", "wireless", "on", "enable", "shizuku")),
+                    PickerItem(ActionType.WIFI_OFF, ActionType.WIFI_OFF.label, "Turn Wi-Fi radio off (requires Shizuku)", Icons.Default.WifiOff, Color(0xFF90CAF9), listOf("wifi", "wlan", "internet", "wireless", "off", "disable", "shizuku")),
+                    PickerItem(ActionType.MOBILE_DATA_ON, ActionType.MOBILE_DATA_ON.label, "Turn mobile cellular data on (requires Shizuku)", Icons.Default.SignalCellularAlt, Color(0xFF81C784), listOf("mobile data", "data", "cellular", "lte", "5g", "internet", "on", "enable", "shizuku")),
+                    PickerItem(ActionType.MOBILE_DATA_OFF, ActionType.MOBILE_DATA_OFF.label, "Turn mobile cellular data off (requires Shizuku)", Icons.Default.SignalCellularOff, Color(0xFFA5D6A7), listOf("mobile data", "data", "cellular", "lte", "5g", "internet", "off", "disable", "shizuku")),
+                    PickerItem(ActionType.AIRPLANE_MODE_ON, ActionType.AIRPLANE_MODE_ON.label, "Turn Airplane mode on (requires Shizuku)", Icons.Default.AirplanemodeActive, Color(0xFFFFB74D), listOf("airplane", "flight", "mode", "connectivity", "offline", "on", "enable", "shizuku")),
+                    PickerItem(ActionType.AIRPLANE_MODE_OFF, ActionType.AIRPLANE_MODE_OFF.label, "Turn Airplane mode off (requires Shizuku)", Icons.Default.AirplanemodeInactive, Color(0xFFFFCC80), listOf("airplane", "flight", "mode", "connectivity", "online", "off", "disable", "shizuku")),
                 ),
             ),
             PickerCategoryGroup(

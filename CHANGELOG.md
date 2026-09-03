@@ -25,6 +25,12 @@ All notable FlowPilot changes are documented here.
   - 500ms stability debounce prevents spurious triggers during hand rotation; startup seeding prevents immediate execution on engine start.
   - Battery-optimized sensor lifecycle: dynamic demand-driven registration (sensors detached when no flip rules exist), automatic sleep when screen turns off, and user-configurable screen-off detection (`flipScreenOffDetection`) with low-frequency `SENSOR_DELAY_NORMAL` (~5Hz).
   - Pure deterministic state reducer (`DeviceFlipReducer`) and unit test suite covering state transitions, debounce, screen-off gating, cooldown suppression, and environmental condition matching.
+- System connectivity and flashlight control actions:
+  - Wi-Fi on/off (`WIFI_ON`, `WIFI_OFF`) through Shizuku `svc wifi enable|disable` with bounded `WifiManager.isWifiEnabled` readback.
+  - Mobile Data on/off (`MOBILE_DATA_ON`, `MOBILE_DATA_OFF`) through Shizuku `svc data enable|disable` with `Settings.Global.mobile_data` / `TelephonyManager.isDataEnabled` readback.
+  - Airplane Mode on/off (`AIRPLANE_MODE_ON`, `AIRPLANE_MODE_OFF`) through Shizuku `cmd connectivity airplane-mode enable|disable` with `Settings.Global.AIRPLANE_MODE_ON` readback.
+  - Flashlight on/off (`TORCH_ON`, `TORCH_OFF`) using standard `CameraManager.setTorchMode` and hardware flash detection, requiring no special permissions or Shizuku.
+  - Unit test suite for all new executors and 100% action dispatcher coverage.
 
 ### Changed
 
