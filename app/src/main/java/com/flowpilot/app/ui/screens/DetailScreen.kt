@@ -198,23 +198,73 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     }
 
     if (showRunConfirm) {
-        val hasDirectCall = initialRule.effectiveActions.any { it == ActionType.CALL_NUMBER }
+        val hasDirectCall = actions.any { it == ActionType.CALL_NUMBER }
         AlertDialog(
             onDismissRequest = { showRunConfirm = false },
-            title = { Text("Run automation now?") },
+            title = { Text("Test actions now?") },
             text = {
                 Text(
-                    "This will immediately run the saved actions for '${initialRule.name}'.\n\n" +
+                    "This will immediately run the actions configured on this screen.\n\n" +
                         "• Trigger and conditions will be bypassed\n" +
-                        "• Unsaved edits on this screen are not included\n" +
-                        "• Automation enabled state and last trigger time will not change" +
+                        "• Runs with your current edits without needing to save first\n" +
+                        "• Automation saved state and history trigger timestamps will not change" +
                         if (hasDirectCall) "\n\n⚠️ WARNING: This rule contains a direct phone call action. Running it now will place a real phone call immediately." else ""
                 )
             },
             confirmButton = {
                 TextButton({
                     showRunConfirm = false
-                    vm.runRuleNow(initialRule) { result ->
+                    val currentFormRule = initialRule.copy(
+                        name = name.ifBlank { initialRule.name },
+                        triggerEvent = event,
+                        appPackage = pkg,
+                        appName = appName,
+                        action = actions.firstOrNull() ?: initialRule.action,
+                        actions = actions,
+                        actionDelays = actions.indices.map { actionDelays.getOrElse(it) { 0 } },
+                        scheduledMinute = scheduledMinute,
+                        scheduledDays = scheduledDays,
+                        batteryLevel = batteryLevel,
+                        wifiSsid = wifiSsid,
+                        bluetoothDeviceAddress = bluetoothDeviceAddress,
+                        bluetoothDeviceName = bluetoothDeviceName,
+                        nfcTagId = nfcTagId.trim(),
+                        flipScreenOffDetection = flipScreenOffDetection,
+                        notificationAppPackage = notificationAppPackage,
+                        notificationAppName = notificationAppName,
+                        notificationKeyword = notificationKeyword,
+                        conditions = conditions,
+                        notificationTitle = notificationTitle,
+                        notificationBody = notificationBody,
+                        vibrationPattern = vibrationPattern,
+                        vibrationDurationMs = vibrationDurationMs,
+                        vibrationAmplitude = vibrationAmplitude,
+                        mediaVolumePercent = mediaVolumePercent,
+                        soundPreset = soundPreset,
+                        soundUri = soundUri,
+                        soundName = soundName,
+                        soundDurationMs = soundDurationMs,
+                        launchPackage = launchPackage,
+                        launchAppName = launchAppName,
+                        url = url,
+                        alarmHour = alarmHour,
+                        alarmMinute = alarmMinute,
+                        alarmMessage = alarmMessage,
+                        timerDurationSeconds = timerDurationSeconds,
+                        timerMessage = timerMessage,
+                        cooldownMinutes = cooldownMinutes,
+                        webhookMethod = webhookMethod,
+                        webhookUrl = webhookUrl,
+                        webhookHeaders = webhookHeaders,
+                        webhookBody = webhookBody,
+                        webhookTimeoutSeconds = webhookTimeoutSeconds,
+                        ttsText = ttsText,
+                        ttsVoiceName = ttsVoiceName,
+                        ttsSpeechRate = ttsSpeechRate,
+                        ttsAudioFileName = ttsAudioFileName,
+                        phoneNumber = phoneNumber.trim(),
+                    )
+                    vm.runRuleNow(currentFormRule) { result ->
                         scope.launch {
                             val msg = if (result.failureCount == 0) {
                                 "Executed ${result.successCount} action(s) successfully"
@@ -267,8 +317,22 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 title = { Text("Edit automation", fontWeight = FontWeight.Bold) },
                 navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
                 actions = {
-                    IconButton({ showRunConfirm = true }) {
-                        Icon(Icons.Default.PlayArrow, "Run now", tint = MaterialTheme.colorScheme.primary)
+                    IconButton(
+                        onClick = {
+                            if (actions.isNotEmpty()) {
+                                showRunConfirm = true
+                            } else {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Add at least one action to test")
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            "Run now",
+                            tint = if (actions.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                        )
                     }
                     IconButton({ showDeleteConfirm = true }) {
                         Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
@@ -411,17 +475,32 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
 
             Spacer(Modifier.height(8.dp))
 
-            OutlinedButton(
-                onClick = {
-                    editingActionIndex = null
-                    showActions = true
-                },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(Icons.Default.Add, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Add action")
+                OutlinedButton(
+                    onClick = {
+                        editingActionIndex = null
+                        showActions = true
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Icon(Icons.Default.Add, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add action")
+                }
+                if (actions.isNotEmpty()) {
+                    FilledTonalButton(
+                        onClick = { showRunConfirm = true },
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Icon(Icons.Default.PlayArrow, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Test")
+                    }
+                }
             }
 
             if (ActionType.SHOW_NOTIFICATION in actions) {

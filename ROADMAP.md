@@ -122,8 +122,8 @@ Do not bundle unrelated features. One feature family at a time.
     - Direct phone call (`CALL_NUMBER` via `Intent.ACTION_CALL` with `tel:URI` and `android.permission.CALL_PHONE`).
     - Requires explicit user warning card and dialogs; phone numbers are masked in UI and omitted from logs, action results, and history.
 
-11. **Manual test run** (complete; Xiaomi device smoke test passed)
-    - Edit automation TopAppBar action with confirmation, saved-action execution off main thread, trigger/condition bypass, unchanged rule state, and secret redaction.
+11. **Manual test run** (complete; updated for in-progress action testing in both Create and Edit screens)
+    - Available in both Create automation and Edit automation screens (TopAppBar Play icon and "Test" button beside Add action). Tests current on-screen form edits without saving first, with confirmation, trigger/condition bypass, unchanged saved rule state, direct-call warning, and secret redaction.
 12. **Per-action delay** (implementation complete; Xiaomi smoke test pending)
     - Optional 0-300 second delay before each action
     - Actions remain sequential; engine stop cancels delay and records cancellation

@@ -31,6 +31,8 @@ import android.media.MediaMetadataRetriever
 import android.media.RingtoneManager
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Tune
+import kotlinx.coroutines.launch
+import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.ActionType
@@ -59,6 +61,9 @@ import com.flowpilot.app.engine.NfcTagUtils
 fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     BackHandler(onBack = done)
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var showRunConfirm by remember { mutableStateOf(false) }
     var event by remember { mutableStateOf(TriggerEvent.APP_OPENED) }
     val now = java.time.LocalTime.now()
     var scheduledMinute by remember { mutableIntStateOf(now.hour * 60 + now.minute) }
@@ -196,12 +201,117 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
         )
     }
 
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("Create automation", fontWeight = FontWeight.Bold) },
-            navigationIcon = { IconButton(done) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+    if (showRunConfirm) {
+        val hasDirectCall = actions.any { it == ActionType.CALL_NUMBER }
+        AlertDialog(
+            onDismissRequest = { showRunConfirm = false },
+            title = { Text("Test actions now?") },
+            text = {
+                Text(
+                    "This will immediately run the actions configured on this screen.\n\n" +
+                        "• Trigger and conditions will be bypassed\n" +
+                        "• Tests actions before creating or saving\n" +
+                        "• Automation will not be saved" +
+                        if (hasDirectCall) "\n\n⚠️ WARNING: This rule contains a direct phone call action. Running it now will place a real phone call immediately." else ""
+                )
+            },
+            confirmButton = {
+                TextButton({
+                    showRunConfirm = false
+                    val currentFormRule = Automation(
+                        id = newRuleId,
+                        name = name.ifBlank { "New automation" },
+                        enabled = true,
+                        triggerEvent = event,
+                        appPackage = pkg,
+                        appName = appName,
+                        action = actions.firstOrNull() ?: ActionType.SHOW_NOTIFICATION,
+                        actions = actions,
+                        actionDelays = actions.indices.map { actionDelays.getOrElse(it) { 0 } },
+                        scheduledMinute = scheduledMinute,
+                        scheduledDays = scheduledDays,
+                        batteryLevel = batteryLevel,
+                        wifiSsid = wifiSsid,
+                        bluetoothDeviceAddress = bluetoothDeviceAddress,
+                        bluetoothDeviceName = bluetoothDeviceName,
+                        nfcTagId = nfcTagId.trim(),
+                        flipScreenOffDetection = flipScreenOffDetection,
+                        notificationAppPackage = notificationAppPackage,
+                        notificationAppName = notificationAppName,
+                        notificationKeyword = notificationKeyword,
+                        conditions = conditions,
+                        notificationTitle = notificationTitle,
+                        notificationBody = notificationBody,
+                        vibrationPattern = vibrationPattern,
+                        vibrationDurationMs = vibrationDurationMs,
+                        vibrationAmplitude = vibrationAmplitude,
+                        mediaVolumePercent = mediaVolumePercent,
+                        soundPreset = soundPreset,
+                        soundUri = soundUri,
+                        soundName = soundName,
+                        soundDurationMs = soundDurationMs,
+                        launchPackage = launchPackage,
+                        launchAppName = launchAppName,
+                        url = url,
+                        alarmHour = alarmHour,
+                        alarmMinute = alarmMinute,
+                        alarmMessage = alarmMessage,
+                        timerDurationSeconds = timerDurationSeconds,
+                        timerMessage = timerMessage,
+                        cooldownMinutes = cooldownMinutes,
+                        webhookMethod = webhookMethod,
+                        webhookUrl = webhookUrl,
+                        webhookHeaders = webhookHeaders,
+                        webhookBody = webhookBody,
+                        webhookTimeoutSeconds = webhookTimeoutSeconds,
+                        ttsText = ttsText,
+                        ttsVoiceName = ttsVoiceName,
+                        ttsSpeechRate = ttsSpeechRate,
+                        ttsAudioFileName = ttsAudioFileName,
+                        phoneNumber = phoneNumber.trim(),
+                        createdAt = System.currentTimeMillis(),
+                    )
+                    vm.runRuleNow(currentFormRule) { result ->
+                        scope.launch {
+                            val msg = if (result.failureCount == 0) {
+                                "Executed ${result.successCount} action(s) successfully"
+                            } else {
+                                "Ran with errors: ${result.successCount} succeeded, ${result.failureCount} failed (${result.failureMessages.joinToString(", ")})"
+                            }
+                            snackbarHostState.showSnackbar(msg)
+                        }
+                    }
+                }) {
+                    Text("Run now")
+                }
+            },
+            dismissButton = {
+                TextButton({ showRunConfirm = false }) { Text("Cancel") }
+            },
         )
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) { padding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            TopAppBar(
+                title = { Text("Create automation", fontWeight = FontWeight.Bold) },
+                navigationIcon = { IconButton(done) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
+                actions = {
+                    if (actions.isNotEmpty()) {
+                        IconButton({ showRunConfirm = true }) {
+                            Icon(Icons.Default.PlayArrow, "Test actions now", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            )
         Column(
             Modifier
                 .fillMaxSize()
@@ -322,17 +432,32 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
 
             Spacer(Modifier.height(8.dp))
 
-            OutlinedButton(
-                onClick = {
-                    editingActionIndex = null
-                    showActions = true
-                },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(Icons.Default.Add, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Add action")
+                OutlinedButton(
+                    onClick = {
+                        editingActionIndex = null
+                        showActions = true
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Icon(Icons.Default.Add, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add action")
+                }
+                if (actions.isNotEmpty()) {
+                    FilledTonalButton(
+                        onClick = { showRunConfirm = true },
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Icon(Icons.Default.PlayArrow, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Test")
+                    }
+                }
             }
 
             if (ActionType.SHOW_NOTIFICATION in actions) {
@@ -529,6 +654,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             }
         }
     }
+}
 }
 
 @Composable

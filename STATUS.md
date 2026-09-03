@@ -23,7 +23,7 @@ Last updated: 2026-09-03
 - Time schedules, charger, battery threshold, screen, Wi-Fi, and notification triggers.
 - Notifications, app launch, URL opening, alarm, timer, offline TTS, media volume, vibration, Play sound, webhook base action, NFC, Battery Saver, Auto-rotate, Do Not Disturb, and Dark theme actions.
 - Webhook header/body template variables and unknown-token preservation.
-- Manual test run from Edit automation, including confirmation, saved-action execution, result feedback, and unchanged rule state.
+- Manual in-progress test run from both Create and Edit automation screens, including confirmation, direct-call warnings, immediate execution with on-screen unsaved edits, result feedback, and unchanged rule/store state.
 - Persistent run history for engine and manual executions: action-level outcomes, 100-entry newest-first retention, and redacted diagnostics.
 - Bluetooth bonded-device connected/disconnected triggers and Bluetooth on/off Shizuku actions, including delayed adapter-state readback.
 - Per-rule cooldown: matching trigger runs once, suppresses repeated matching event during cooldown, and runs again after expiry.
