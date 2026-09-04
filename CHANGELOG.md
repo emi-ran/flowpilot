@@ -30,8 +30,15 @@ All notable FlowPilot changes are documented here.
   - Wi-Fi on/off (`WIFI_ON`, `WIFI_OFF`) through Shizuku `svc wifi enable|disable` with bounded `WifiManager.isWifiEnabled` readback.
   - Mobile Data on/off (`MOBILE_DATA_ON`, `MOBILE_DATA_OFF`) through Shizuku `svc data enable|disable` with `Settings.Global.mobile_data` / `TelephonyManager.isDataEnabled` readback.
   - Airplane Mode on/off (`AIRPLANE_MODE_ON`, `AIRPLANE_MODE_OFF`) through Shizuku `cmd connectivity airplane-mode enable|disable` with `Settings.Global.AIRPLANE_MODE_ON` readback.
-  - Flashlight on/off (`TORCH_ON`, `TORCH_OFF`) using standard `CameraManager.setTorchMode` and hardware flash detection, requiring no special permissions or Shizuku.
+  - Flashlight on/off (`TORCH_OFF`, `TORCH_ON`) using standard `CameraManager.setTorchMode` and hardware flash detection, requiring no special permissions or Shizuku.
   - Unit test suite for all new executors and 100% action dispatcher coverage.
+- Action list reordering: users can reorder configured actions directly in Create and Edit automation screens via Move Up / Move Down buttons (`ReorderableActionList`, `ActionCardItem`). Execution sequence strictly follows the configured order with per-action delay preservation; covered by unit tests in `ActionsReorderStateTest`.
+- Active GPS and background location support:
+  - Live GPS/network coordinate acquisition via multi-tier `LocationFetcher`: checks recent cache (<60s, <50m accuracy), triggers active GPS/network fix with 5-second timeout, and falls back to best available cached location.
+  - Background location permission flow (`ACCESS_BACKGROUND_LOCATION`) with dedicated setup card and guidance dialog in Permissions screen redirecting users to system app info for "Allow all the time" selection.
+  - `FOREGROUND_SERVICE_LOCATION` declaration and `foregroundServiceType="specialUse|location"` attached to `AutomationService` for Android 14+ background compliance.
+  - Dynamic template variables for location: `${location.lat}`, `${location.lng}`, `${location.coords}`, and `${location.maps_url}` in `WebhookTemplateRenderer`.
+  - Live location coordinates injected during in-app manual test runs (`runRuleNow`).
 
 ### Changed
 

@@ -48,11 +48,15 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val callPhone by vm.hasCallPhonePermission.collectAsState()
     val sendSms by vm.hasSendSmsPermission.collectAsState()
     val receiveSms by vm.hasReceiveSmsPermission.collectAsState()
+    val hasFineLocation by vm.hasFineLocation.collectAsState()
+    val hasBackgroundLocation by vm.hasBackgroundLocation.collectAsState()
+    val isLocationServiceEnabled by vm.isLocationServiceEnabled.collectAsState()
     val hasNfcHardware by vm.hasNfcHardware.collectAsState()
     val isNfcEnabled by vm.isNfcEnabled.collectAsState()
     val ignoresBatteryOptimizations by vm.ignoresBatteryOptimizations.collectAsState()
     val shizuku by vm.shizukuState.collectAsState()
     var showAdbDialog by remember { mutableStateOf(false) }
+    var showBackgroundLocationDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.refreshPermissions()
@@ -71,6 +75,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
 
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
     val wifiLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vm.refreshPermissions() }
+    val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vm.refreshPermissions() }
+    val backgroundLocationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
     val bluetoothLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
     val phoneStateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
     val callPhoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
@@ -193,6 +199,44 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
+                "Background Location ('Allow all the time')",
+                if (!hasFineLocation) {
+                    "FlowPilot needs foreground location permission first. Tap to grant location access."
+                } else if (!isLocationServiceEnabled) {
+                    "Device GPS / Location service is turned off. Tap to open system Location settings and turn on Location."
+                } else if (!hasBackgroundLocation) {
+                    "Required so FlowPilot can read your GPS coordinates (\${location.lat}, \${location.lng}) in the background (e.g. for incoming SMS triggers or automations when the screen is locked). Tap to select 'Allow all the time' (Her zaman izin ver)."
+                } else {
+                    "FlowPilot has full background GPS access. Automations can read \${location.lat} and \${location.lng} anytime, even when the screen is locked."
+                },
+                granted = hasBackgroundLocation && isLocationServiceEnabled,
+                pillText = if (!hasFineLocation) "Location needed" else if (!isLocationServiceEnabled) "GPS disabled" else if (!hasBackgroundLocation) "Foreground only" else "Granted",
+                actionText = if (!hasFineLocation) "Grant" else if (!isLocationServiceEnabled) "Turn on GPS" else if (!hasBackgroundLocation) "Allow all the time" else "Settings",
+            ) {
+                if (!hasFineLocation) {
+                    locationLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        )
+                    )
+                } else if (!isLocationServiceEnabled) {
+                    val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    try {
+                        context.startActivity(intent)
+                    } catch (_: Exception) {
+                        context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                    }
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        showBackgroundLocationDialog = true
+                    } else {
+                        backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                    }
+                }
+            }
+            PermissionCard(
                 "Do Not Disturb access",
                 "Allows FlowPilot to turn Do Not Disturb on or off. Grant Notification Policy Access in Android settings.",
                 notifPolicy,
@@ -286,6 +330,40 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
             title = { Text("Grant via ADB") },
             text = { Text("Connect the phone over USB with debugging enabled, then run:\n\nadb shell pm grant ${context.packageName} android.permission.WRITE_SECURE_SETTINGS\n\nOr start Shizuku, tap Setup here and FlowPilot grants it for you.") },
             confirmButton = { TextButton({ showAdbDialog = false }) { Text("OK") } },
+        )
+    }
+
+    if (showBackgroundLocationDialog) {
+        AlertDialog(
+            onDismissRequest = { showBackgroundLocationDialog = false },
+            title = { Text("Allow all the time (Her zaman izin ver)") },
+            text = {
+                Text(
+                    "To send your GPS location while the app is in the background or screen is off, Android requires the 'Allow all the time' (Her zaman izin ver) permission.\n\n" +
+                        "1. Tap 'Open settings' below\n" +
+                        "2. Tap 'Permissions' > 'Location'\n" +
+                        "3. Select 'Allow all the time' (Her zaman izin ver)"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showBackgroundLocationDialog = false
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text("Open settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackgroundLocationDialog = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }

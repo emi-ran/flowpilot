@@ -38,11 +38,16 @@
     <!-- Camera flash for torch action -->
     <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
 
-    <!-- Wi-Fi state, nearby devices (Android 13+), and fine location (required by Android 9+ to read Wi-Fi SSID / perform scans). -->
+    <!-- Wi-Fi state and network state permissions -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Location permissions for Wi-Fi SSID, triggers, and GPS coordinates in background/foreground. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission
         android:name="android.permission.NEARBY_WIFI_DEVICES"
         android:usesPermissionFlags="neverForLocation"
@@ -117,12 +122,12 @@
             </intent-filter>
         </activity>
 
-        <!-- Automation engine foreground service (special use). -->
+        <!-- Automation engine foreground service (special use and location). -->
         <service
             android:name=".engine.AutomationService"
             android:exported="false"
             android:stopWithTask="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse|location">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Detects foreground app changes and applies user-configured automations (NFC, battery saver)." />

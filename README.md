@@ -25,11 +25,6 @@ Install:
 ```bash
 adb -s <device-serial> install -r app/build/outputs/apk/debug/app-debug.apk
 ```
-
-Package ID: `com.flowpilot.app`
-Version: `1.0.0` / versionCode `1`
-```
-
 Package ID: `com.flowpilot.app`
 Version: `1.0.0` / versionCode `1`
 Min SDK: 26
@@ -43,6 +38,7 @@ Target / compile SDK: 36 (Android 16)
 - Installed launchable app picker with search, display name, package ID internally.
 - Trigger and action pickers: searchable icon cards grouped by purpose. Triggers use App, Phone, Power, Display, Time, Network, Bluetooth, Notification, and Motion; actions use Phone, Alerts, Clock, Audio, Apps & Links, Display, Battery, Connectivity, and NFC. Connectivity contains Bluetooth, Wi-Fi, Mobile Data, and Airplane Mode on/off through Shizuku. Display includes Flashlight (Torch) on/off.
 - Rule detail and delete.
+- Action reordering: reorder configured actions in Create and Edit screens using Move Up / Move Down buttons. Actions execute strictly sequentially in this specified order, each waiting for its own configured delay before executing.
 - Automation run history: persistent log of rule executions (engine-triggered and manual test runs) retained up to the newest 100 entries in DataStore. Displays readable local timestamp, rule name, trigger source (`MANUAL` or trigger event name), overall execution status (Success, Partial success, Failure), and individual action outcomes. History never stores phone numbers; action results and log messages use generic phone-action outcomes. Sensitive credentials are redacted, and action parameters/webhook payloads are never persisted. Users can view history from Settings -> Run history and clear it with confirmation.
 - Manual automation test run: available in both Create automation and Edit automation screens (via TopAppBar Play icon and an in-form "Test" button beside Add action). Prompts confirmation with direct-call safeguards, bypasses triggers and conditions, immediately executes currently configured in-progress actions with all on-screen edits without requiring saving first, records a manual history entry, and displays summary feedback via Snackbar.
 - Persistent rules through DataStore JSON.
@@ -88,7 +84,7 @@ Target / compile SDK: 36 (Android 16)
     - Start timer: dispatches `AlarmClock.ACTION_SET_TIMER` with bounded duration (1s-24h), optional label, and `EXTRA_SKIP_UI = true` to start the timer in the background without opening the Clock app UI (`FLAG_ACTIVITY_NEW_TASK`).
     - Launch app: starts selected installed launchable app.
     - Open URL: opens a validated `http` or `https` URL through Android intent resolution.
-    - Send HTTP webhook: dispatches outbound HTTP/HTTPS request (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, body, dynamic template variable expansion in headers/body only (`${time}`, `${timestamp}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${trigger}`), bounded 1-60s timeout, secret redaction, strict 2xx success verification, and at-rest AES-256-GCM Keystore encryption for webhook URLs, headers, and payloads. URL templates are intentionally unsupported because URL encoding context differs; unknown or malformed variables remain unchanged and expansion is one pass only.
+    - Send HTTP webhook: dispatches outbound HTTP/HTTPS request (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, body, dynamic template variable expansion in headers/body only (`${time}`, `${timestamp}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${trigger}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`), bounded 1-60s timeout, secret redaction, strict 2xx success verification, and at-rest AES-256-GCM Keystore encryption for webhook URLs, headers, and payloads. URL templates are intentionally unsupported because URL encoding context differs; unknown or malformed variables remain unchanged and expansion is one pass only. Location coordinates are resolved live via `LocationFetcher` (with 5s active GPS/network timeout and cached fallback).
 - Security & data protection: Android app backup is disabled (`android:allowBackup="false"`) to prevent credential leakage via ADB/cloud backup snapshots. Keystore keys remain on-device and never export to backups. In-app data migration transparently upgrades legacy plaintext webhook configurations on load and save. Raw phone numbers are masked in all UI views and never logged.
     - Set media volume: maps configured 0-100% to device music-stream range and verifies resulting level.
    - Play sound: selected current notification, alarm, ringtone, or a user-selected audio file, limited to selected first 1-60 seconds with preview and stop controls.
@@ -139,23 +135,29 @@ Reason: Detecting incoming notifications from selected applications requires And
 
 Open FlowPilot -> Settings -> Advanced permissions -> Wi-Fi & Location permissions -> allow FlowPilot.
 
-Reason: Android requires `ACCESS_FINE_LOCATION`, `ACCESS_WIFI_STATE`, and device Location enabled to identify connected Wi-Fi SSIDs for Wi-Fi triggers and live condition checks. Android 13+ also requires Nearby devices (`NEARBY_WIFI_DEVICES`) for on-demand nearby-network scans.
+Reason: Android requires `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_WIFI_STATE`, and device Location enabled to identify connected Wi-Fi SSIDs for Wi-Fi triggers and live condition checks. Android 13+ also requires Nearby devices (`NEARBY_WIFI_DEVICES`) for on-demand nearby-network scans.
 
 Use a Wi-Fi trigger or Wi-Fi condition's scan icon / **Scan nearby** control to select an SSID from nearby scan results, or type it manually. Scans are user-initiated; Android throttles scan frequency and may return recently cached results. FlowPilot persists only the SSID selected for a rule, not scan-result history.
 
-### 8. Bluetooth paired-device access
+### 8. Background Location ('Allow all the time')
+
+Open FlowPilot -> Settings -> Advanced permissions -> Background Location -> tap "Change in Settings" -> Permissions -> Location -> choose **"Allow all the time"** (`ACCESS_BACKGROUND_LOCATION`).
+
+Reason: When rules trigger while the screen is off or while FlowPilot is in the background (e.g. reacting to SMS, charger events, or automated schedules), Android 10+ (API 29+) forbids background location access unless granted "Allow all the time". Android 14+ additionally requires `FOREGROUND_SERVICE_LOCATION` attached to the running `AutomationService`. FlowPilot uses this to actively resolve live GPS coordinates for `${location.lat}`, `${location.lng}`, `${location.coords}`, and `${location.maps_url}` template variables without stale cache lockups.
+
+### 9. Bluetooth paired-device access
 
 On Android 12+, open FlowPilot -> Settings -> Advanced permissions -> **Bluetooth paired-device access** and allow Nearby devices, or grant permission when selecting Bluetooth trigger device.
 
 Reason: `BLUETOOTH_CONNECT` is required to list bonded devices and read device data from public ACL connect/disconnect broadcasts. FlowPilot uses bonded-device selection only; it does not start discovery, pair devices, or persist device-list history. If selected device is later unpaired, rule remains saved but matches no future ACL event until a bonded device is selected again.
 
-### 9. NFC tag trigger
+### 10. NFC tag trigger
 
 Turn NFC on. Create or edit an automation, choose **NFC tag scanned**, then tap the tag while FlowPilot is open to fill its UID. Save rule and keep engine running for tag scans to execute actions.
 
 Reason: Android delivers tag discovery through activity intents. FlowPilot keeps only normalized UID needed to match configured rule; it does not read or store NDEF payloads or tag technology data.
 
-### 10. Battery Saver actions: ADB path
+### 11. Battery Saver actions: ADB path
 
 With USB debugging enabled and device connected:
 
@@ -171,7 +173,7 @@ adb -s <device-serial> shell dumpsys package com.flowpilot.app
 
 This gives FlowPilot direct Battery Saver access. NFC still needs Shizuku.
 
-### 11. Shizuku path
+### 12. Shizuku path
 
 Install Shizuku from its official source:
 
@@ -231,10 +233,10 @@ app/src/main/java/com/flowpilot/app/
   data/model/                 Serializable rule model and action/trigger catalog
   data/security/              Android Keystore secret encryption
   data/                       DataStore repository and legacy secret migration
-  engine/                     UsageStats, charger, battery, screen, Wi-Fi, and Bluetooth ACL trackers, reducers/evaluators, service, boot receiver
+  engine/                     UsageStats, charger, battery, screen, Wi-Fi, Bluetooth ACL, motion trackers, location fetcher, reducers/evaluators, service, boot receiver
   actions/                    Action executors, webhook template rendering, and Shizuku UserService bridge
   permission/                 Capability and setup checks
-  ui/                         Compose screens, state, manual test run, IME focus visibility, theme, components
+  ui/                         Compose screens, state, manual test run, action reordering, IME focus visibility, theme, components
 app/src/test/                 Rule, schedule, reducer, encryption, template, manual-run, and action executor tests
 ```
 

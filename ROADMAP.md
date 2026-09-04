@@ -130,6 +130,15 @@ Do not bundle unrelated features. One feature family at a time.
 13. **Per-rule cooldown** (complete; Xiaomi smoke test passed)
     - None, 1m, 5m, 15m, or 60m options
     - Applies after successful automatic runs across every trigger type; manual tests bypass it
+14. **Action list reordering** (complete; unit tests passed)
+    - Move Up / Move Down controls on action cards in Create and Edit automation screens (`ReorderableActionList`, `ActionCardItem`)
+    - Execution sequence strictly honors reordered list, with each action awaiting its configured delay
+    - Covered by pure unit tests in `ActionsReorderStateTest`
+15. **Background Location & live GPS lock** (implementation complete; unit tests passed; device smoke test pending)
+    - Multi-tier `LocationFetcher` (<60s cache -> 5s active GPS/network fix -> fallback to best available cache)
+    - Background location permission card and system app settings redirection for "Allow all the time" (`ACCESS_BACKGROUND_LOCATION`)
+    - Foreground service type `location` attached to `AutomationService` with `FOREGROUND_SERVICE_LOCATION`
+    - Dynamic template variables (`${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`) and test run injection
 
 ### Phase 2 — HyperOS 3 system controls
 
@@ -181,20 +190,27 @@ Each must expose its required permission or Shizuku state. Do not show success u
 2. **Sound profile permission denial smoke test**
      - Normal, Vibrate, and Silent passed basic Xiaomi smoke testing; Xiaomi maps Vibrate and Silent to the same observed ringer behavior. Do not generalize this result to other devices.
      - Deny access and verify an honest failure result.
-2. **Permission denial paths**
+3. **Permission denial paths**
      - Stop or deny Shizuku and confirm Dark theme reports failure instead of success.
      - Deny Modify system settings and Do Not Disturb access; confirm Auto-rotate and DND report failure instead of success.
-3. **HyperOS 3 system controls**
+4. **HyperOS 3 system controls**
      - One control at a time; device-state evidence required before marking complete.
-4. **Bluetooth negative paths**
+5. **Bluetooth negative paths**
      - Deny `BLUETOOTH_CONNECT`; verify bonded-device picker and rules show permission-required state.
      - Restart engine while device remains connected; verify no replay.
      - Unpair selected device; verify no crash and no false match.
      - Stop/deny Shizuku and verify Bluetooth on/off failures remain explicit.
-5. **NFC tag and action delay**
+6. **NFC tag and action delay**
      - Scan different tag UID with engine running; verify it does not fire.
      - Scan with engine stopped and NFC disabled; verify no action or false success.
      - Add a visible action after 5 seconds; verify timing, order, stop cancellation, and history.
+7. **Action reordering and delay sequence validation**
+     - Add multiple actions with distinct delays (e.g. Action A with 3s delay, Action B with 2s delay).
+     - Use Move Up / Move Down controls to swap orders; verify execution timing proceeds strictly sequentially in configured order (A runs at 3s, then B runs at 5s total elapsed).
+8. **Background location & GPS lock validation**
+     - Configure webhook/notification rule using `${location.lat}`, `${location.lng}`, and `${location.maps_url}`.
+     - Test rule execution while device screen is off and app is in background; verify live GPS coordinates resolve without blank output.
+     - Test with background location permission denied vs granted ("Allow all the time"). Verify GPS timeout (5s) fallback when satellite fix is unavailable.
 
 ## Acceptance Gate
 

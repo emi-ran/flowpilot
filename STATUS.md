@@ -1,13 +1,13 @@
 # FlowPilot Status
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
 
 ## Build state
 
 - Debug build and unit tests passed: `.\gradlew.bat testDebugUnitTest assembleDebug`.
 - Latest debug APK was installed and launched on Xiaomi (2506BPN68G) / HyperOS (Android 16).
 - Background resilience and Shizuku startup safety fixes verified on connected device.
-- Current source changes are ready to commit.
+- Action reordering and live location fetcher unit tests passed.
 
 ## Background stability & engine keepalive
 
@@ -48,6 +48,12 @@ Last updated: 2026-09-03
   - Mobile Data on/off (`MOBILE_DATA_ON`, `MOBILE_DATA_OFF`) via Shizuku `svc data enable|disable` with `Settings.Global.mobile_data` / `TelephonyManager.isDataEnabled` verification.
   - Airplane Mode on/off (`AIRPLANE_MODE_ON`, `AIRPLANE_MODE_OFF`) via Shizuku `cmd connectivity airplane-mode enable|disable` with `Settings.Global.AIRPLANE_MODE_ON` verification.
   - Flashlight on/off (`TORCH_ON`, `TORCH_OFF`) via direct `CameraManager.setTorchMode` with hardware camera flash detection.
+- Action list reordering in Create and Edit screens (`ReorderableActionList`, `ActionCardItem`) with Move Up / Move Down controls; execution preserves exact order and per-action delay sequence; unit tests passed (`ActionsReorderStateTest`).
+- Active Location & Background GPS Support (unit tests passed; device smoke test pending):
+  - Multi-tier `LocationFetcher`: fresh cache (<60s, <50m) -> 5s active GPS fix timeout -> best cached fallback.
+  - Background location permission flow (`ACCESS_BACKGROUND_LOCATION`) with system app settings guidance for "Allow all the time".
+  - Foreground service location type (`FOREGROUND_SERVICE_LOCATION`) attached to `AutomationService`.
+  - Dynamic template variables: `${location.lat}`, `${location.lng}`, `${location.coords}`, and `${location.maps_url}` in `WebhookTemplateRenderer` and manual run context.
 - Sound profile denied Notification Policy Access behavior.
 - Run history screen smoke test on Xiaomi 15T Pro / HyperOS 3.
 - NFC tag trigger non-matching/engine-stopped paths.

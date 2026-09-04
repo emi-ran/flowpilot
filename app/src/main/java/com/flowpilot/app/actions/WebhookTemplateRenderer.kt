@@ -65,6 +65,8 @@ object WebhookTemplateRenderer {
                 "smsOtp", "sms.otp" -> context.smsOtp ?: (extractOtp(context.smsBody) ?: "")
                 "locationLat", "location.lat" -> context.locationLat?.let { String.format(java.util.Locale.US, "%.6f", it) } ?: ""
                 "locationLng", "location.lng" -> context.locationLng?.let { String.format(java.util.Locale.US, "%.6f", it) } ?: ""
+                "location.maps_url", "maps_url" -> if (context.locationLat != null && context.locationLng != null) String.format(java.util.Locale.US, "https://maps.google.com/?q=%.6f,%.6f", context.locationLat, context.locationLng) else ""
+                "location.coords", "coords" -> if (context.locationLat != null && context.locationLng != null) String.format(java.util.Locale.US, "%.6f,%.6f", context.locationLat, context.locationLng) else ""
                 else -> matchResult.value // Unknown/unsupported token left unchanged
             }
         }

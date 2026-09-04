@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.DragHandle
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.ActionType
@@ -61,6 +62,9 @@ import com.flowpilot.app.ui.components.TriggerCardItem
 import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
 import com.flowpilot.app.ui.components.bringIntoViewOnFocusOrChange
+import com.flowpilot.app.ui.components.rememberActionsReorderState
+import com.flowpilot.app.ui.components.actionDragTarget
+import com.flowpilot.app.ui.components.actionDragHandle
 import com.flowpilot.app.ui.screens.AlarmSettings
 import com.flowpilot.app.ui.screens.TimerSettings
 import com.flowpilot.app.engine.NfcTagHandoff
@@ -143,6 +147,24 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActions.distinct()) }
     var actionDelays by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActionDelays) }
+    val onReorderActions: (Int, Int) -> Unit = { fromIndex, toIndex ->
+        if (fromIndex != toIndex && fromIndex in actions.indices && toIndex in actions.indices) {
+            val newActions = actions.toMutableList()
+            val item = newActions.removeAt(fromIndex)
+            newActions.add(toIndex, item)
+            actions = newActions
+
+            val newDelays = actionDelays.toMutableList()
+            while (newDelays.size < actions.size) newDelays.add(0)
+            val delayItem = newDelays.removeAt(fromIndex)
+            newDelays.add(toIndex, delayItem)
+            actionDelays = newDelays
+        }
+    }
+    val reorderState = rememberActionsReorderState(
+        actionsCount = { actions.size },
+        onReorder = onReorderActions,
+    )
     var editingActionIndex by remember { mutableStateOf<Int?>(null) }
     var pkg by remember(initialRule.id) { mutableStateOf(initialRule.appPackage) }
     var appName by remember(initialRule.id) { mutableStateOf(initialRule.appName) }
@@ -453,135 +475,176 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 },
             )
 
-            Text(
-                "DO (${actions.size} action${if (actions.size > 1) "s" else ""})",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
-            )
+            if (actions.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        "DO (${actions.size} actions)",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 4.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.DragHandle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "Hold to reorder",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    "DO (${actions.size} action)",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
+                )
+            }
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 actions.forEachIndexed { index, act ->
-                    ActionCardItem(
-                        index = index,
-                        action = act,
-                        delaySeconds = actionDelays.getOrElse(index) { 0 },
-                        totalActions = actions.size,
-                        onDelayChange = { newDelay ->
-                            val safeDelay = newDelay.coerceIn(0, 300)
-                            val currentList = actionDelays.toMutableList()
-                            while (currentList.size <= index) currentList.add(0)
-                            currentList[index] = safeDelay
-                            actionDelays = currentList
-                        },
-                        onChangeAction = {
-                            editingActionIndex = index
-                            showActions = true
-                        },
-                        onRemoveAction = {
-                            actions = actions.filterIndexed { i, _ -> i != index }
-                            actionDelays = actionDelays.filterIndexed { i, _ -> i != index }
-                        },
-                        // Notification
-                        notificationTitle = notificationTitle,
-                        notificationBody = notificationBody,
-                        onNotificationTitleChange = { notificationTitle = it },
-                        onNotificationBodyChange = { notificationBody = it },
-                        // Vibration
-                        vibrationPattern = vibrationPattern,
-                        vibrationDurationMs = vibrationDurationMs,
-                        vibrationAmplitude = vibrationAmplitude,
-                        onVibrationPatternChange = { vibrationPattern = it },
-                        onVibrationDurationChange = { vibrationDurationMs = it },
-                        onVibrationAmplitudeChange = { vibrationAmplitude = it },
-                        onPreviewVibration = { pattern, dur, amp ->
-                            previewVibration.execute(
-                                ActionType.VIBRATE,
-                                ActionParameters(vibrationPattern = pattern, vibrationDurationMs = dur, vibrationAmplitude = amp),
-                            )
-                        },
-                        // Sound
-                        soundPreset = soundPreset,
-                        soundName = soundName,
-                        soundDurationMs = soundDurationMs,
-                        sourceSoundDurationMs = sourceSoundDurationMs,
-                        onSoundPresetChange = { preset ->
-                            soundPreset = preset
-                            if (preset != SoundPreset.CUSTOM) soundUri = ""
-                        },
-                        onSoundDurationChange = { soundDurationMs = it },
-                        onPreviewSound = {
-                            previewSound.execute(
-                                ActionType.PLAY_SOUND,
-                                ActionParameters(soundPreset = soundPreset, soundUri = soundUri, soundDurationMs = soundDurationMs),
-                            )
-                        },
-                        onStopPreviewSound = previewSound::stopPreview,
-                        onChooseCustomSound = { soundPicker.launch(arrayOf("audio/*")) },
-                        // Volume
-                        mediaVolumePercent = mediaVolumePercent,
-                        onMediaVolumeChange = { mediaVolumePercent = it },
-                        // Launch app
-                        launchAppName = launchAppName,
-                        launchPackage = launchPackage,
-                        onChooseLaunchApp = { showLaunchApps = true },
-                        // URL
-                        url = url,
-                        onUrlChange = { url = it },
-                        // Alarm
-                        alarmHour = alarmHour,
-                        alarmMinute = alarmMinute,
-                        alarmMessage = alarmMessage,
-                        onChooseAlarmTime = { showAlarmTimePicker = true },
-                        onAlarmMessageChange = { alarmMessage = it },
-                        // Timer
-                        timerDurationSeconds = timerDurationSeconds,
-                        timerMessage = timerMessage,
-                        onTimerDurationChange = { timerDurationSeconds = it },
-                        onTimerMessageChange = { timerMessage = it },
-                        // Webhook
-                        webhookMethod = webhookMethod,
-                        webhookUrl = webhookUrl,
-                        webhookHeaders = webhookHeaders,
-                        webhookBody = webhookBody,
-                        webhookTimeoutSeconds = webhookTimeoutSeconds,
-                        onWebhookMethodChange = { webhookMethod = it },
-                        onWebhookUrlChange = { webhookUrl = it },
-                        onWebhookHeadersChange = { webhookHeaders = it },
-                        onWebhookBodyChange = { webhookBody = it },
-                        onWebhookTimeoutChange = { webhookTimeoutSeconds = it },
-                        // TTS
-                        ttsContent = {
-                            TtsSettings(
-                                text = ttsText,
-                                voiceName = ttsVoiceName,
-                                speechRate = ttsSpeechRate,
-                                audioFileName = ttsAudioFileName,
-                                ruleId = initialRule.id,
-                                setText = { ttsText = it },
-                                setVoiceName = { ttsVoiceName = it },
-                                setSpeechRate = { ttsSpeechRate = it },
-                                setAudioFileName = { ttsAudioFileName = it },
-                                ttsManager = ttsManager,
-                                ttsExecutor = previewTts,
-                            )
-                        },
-                        // Phone
-                        phoneNumber = phoneNumber,
-                        onPhoneNumberChange = { phoneNumber = it },
-                        // Brightness
-                        screenBrightnessPercent = screenBrightnessPercent,
-                        onScreenBrightnessChange = { screenBrightnessPercent = it },
-                        // Force stop app
-                        forceStopAppName = forceStopAppName,
-                        forceStopPackage = forceStopPackage,
-                        onOpenForceStopAppPicker = { showForceStopApps = true },
-                        // SMS
-                        smsRecipient = smsRecipient,
-                        onSmsRecipientChange = { smsRecipient = it },
-                        smsMessage = smsMessage,
-                        onSmsMessageChange = { smsMessage = it },
-                    )
+                    key(act) {
+                        ActionCardItem(
+                            index = index,
+                            action = act,
+                            delaySeconds = actionDelays.getOrElse(index) { 0 },
+                            totalActions = actions.size,
+                            cardModifier = Modifier.actionDragTarget(index, reorderState),
+                            dragModifier = Modifier.actionDragHandle({ index }, reorderState),
+                            isDragging = reorderState.draggedIndex == index,
+                            onMoveUp = if (index > 0) { { onReorderActions(index, index - 1) } } else null,
+                            onMoveDown = if (index < actions.size - 1) { { onReorderActions(index, index + 1) } } else null,
+                            onDelayChange = { newDelay ->
+                                val safeDelay = newDelay.coerceIn(0, 300)
+                                val currentList = actionDelays.toMutableList()
+                                while (currentList.size <= index) currentList.add(0)
+                                currentList[index] = safeDelay
+                                actionDelays = currentList
+                            },
+                            onChangeAction = {
+                                editingActionIndex = index
+                                showActions = true
+                            },
+                            onRemoveAction = {
+                                actions = actions.filterIndexed { i, _ -> i != index }
+                                actionDelays = actionDelays.filterIndexed { i, _ -> i != index }
+                            },
+                            // Notification
+                            notificationTitle = notificationTitle,
+                            notificationBody = notificationBody,
+                            onNotificationTitleChange = { notificationTitle = it },
+                            onNotificationBodyChange = { notificationBody = it },
+                            // Vibration
+                            vibrationPattern = vibrationPattern,
+                            vibrationDurationMs = vibrationDurationMs,
+                            vibrationAmplitude = vibrationAmplitude,
+                            onVibrationPatternChange = { vibrationPattern = it },
+                            onVibrationDurationChange = { vibrationDurationMs = it },
+                            onVibrationAmplitudeChange = { vibrationAmplitude = it },
+                            onPreviewVibration = { pattern, dur, amp ->
+                                previewVibration.execute(
+                                    ActionType.VIBRATE,
+                                    ActionParameters(vibrationPattern = pattern, vibrationDurationMs = dur, vibrationAmplitude = amp),
+                                )
+                            },
+                            // Sound
+                            soundPreset = soundPreset,
+                            soundName = soundName,
+                            soundDurationMs = soundDurationMs,
+                            sourceSoundDurationMs = sourceSoundDurationMs,
+                            onSoundPresetChange = { preset ->
+                                soundPreset = preset
+                                if (preset != SoundPreset.CUSTOM) soundUri = ""
+                            },
+                            onSoundDurationChange = { soundDurationMs = it },
+                            onPreviewSound = {
+                                previewSound.execute(
+                                    ActionType.PLAY_SOUND,
+                                    ActionParameters(soundPreset = soundPreset, soundUri = soundUri, soundDurationMs = soundDurationMs),
+                                )
+                            },
+                            onStopPreviewSound = previewSound::stopPreview,
+                            onChooseCustomSound = { soundPicker.launch(arrayOf("audio/*")) },
+                            // Volume
+                            mediaVolumePercent = mediaVolumePercent,
+                            onMediaVolumeChange = { mediaVolumePercent = it },
+                            // Launch app
+                            launchAppName = launchAppName,
+                            launchPackage = launchPackage,
+                            onChooseLaunchApp = { showLaunchApps = true },
+                            // URL
+                            url = url,
+                            onUrlChange = { url = it },
+                            // Alarm
+                            alarmHour = alarmHour,
+                            alarmMinute = alarmMinute,
+                            alarmMessage = alarmMessage,
+                            onChooseAlarmTime = { showAlarmTimePicker = true },
+                            onAlarmMessageChange = { alarmMessage = it },
+                            // Timer
+                            timerDurationSeconds = timerDurationSeconds,
+                            timerMessage = timerMessage,
+                            onTimerDurationChange = { timerDurationSeconds = it },
+                            onTimerMessageChange = { timerMessage = it },
+                            // Webhook
+                            webhookMethod = webhookMethod,
+                            webhookUrl = webhookUrl,
+                            webhookHeaders = webhookHeaders,
+                            webhookBody = webhookBody,
+                            webhookTimeoutSeconds = webhookTimeoutSeconds,
+                            onWebhookMethodChange = { webhookMethod = it },
+                            onWebhookUrlChange = { webhookUrl = it },
+                            onWebhookHeadersChange = { webhookHeaders = it },
+                            onWebhookBodyChange = { webhookBody = it },
+                            onWebhookTimeoutChange = { webhookTimeoutSeconds = it },
+                            // TTS
+                            ttsContent = {
+                                TtsSettings(
+                                    text = ttsText,
+                                    voiceName = ttsVoiceName,
+                                    speechRate = ttsSpeechRate,
+                                    audioFileName = ttsAudioFileName,
+                                    ruleId = initialRule.id,
+                                    setText = { ttsText = it },
+                                    setVoiceName = { ttsVoiceName = it },
+                                    setSpeechRate = { ttsSpeechRate = it },
+                                    setAudioFileName = { ttsAudioFileName = it },
+                                    ttsManager = ttsManager,
+                                    ttsExecutor = previewTts,
+                                )
+                            },
+                            // Phone
+                            phoneNumber = phoneNumber,
+                            onPhoneNumberChange = { phoneNumber = it },
+                            // Brightness
+                            screenBrightnessPercent = screenBrightnessPercent,
+                            onScreenBrightnessChange = { screenBrightnessPercent = it },
+                            // Force stop app
+                            forceStopAppName = forceStopAppName,
+                            forceStopPackage = forceStopPackage,
+                            onOpenForceStopAppPicker = { showForceStopApps = true },
+                            // SMS
+                            smsRecipient = smsRecipient,
+                            onSmsRecipientChange = { smsRecipient = it },
+                            smsMessage = smsMessage,
+                            onSmsMessageChange = { smsMessage = it },
+                        )
+                    }
                 }
             }
 

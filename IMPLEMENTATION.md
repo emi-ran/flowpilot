@@ -12,7 +12,7 @@ Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotat
 UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, phone call transitions via TelephonyCallback / PhoneStateListener, device orientation transitions via Proximity and Accelerometer/Gravity sensors, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
-Actions can have a per-action pre-execution delay of 0-300 seconds. Delays preserve configured action order and are cancellable when engine stops; cancellation is recorded in execution history.
+Actions can have a per-action pre-execution delay of 0-300 seconds. Configured actions can be reordered in Create and Edit screens using Move Up / Move Down controls (`ReorderableActionList`). Actions execute strictly sequentially in the configured order; each action waits for its own configured delay before executing. Engine stop cancels any pending delay and records cancellation in execution history.
 
 Rules can have a 0, 1, 5, 15, or 60-minute cooldown. Cooldown applies to all automatic trigger evaluators after a successful run updates `lastTriggeredAt`; manual test runs bypass it. A future `lastTriggeredAt` blocks safely until wall clock catches up.
 
@@ -40,6 +40,7 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 | Mobile Data on/off| NO (modern Android restriction) | NO | YES: Shizuku `svc data enable\|disable` + `Settings.Global.mobile_data` readback | YES |
 | Airplane mode     | NO (modern Android restriction) | NO | YES: Shizuku `cmd connectivity airplane-mode enable\|disable` + `Settings.Global` readback | YES |
 
+- Do Not Disturb and Sound Profile toggling require user-grantable Notification Policy Access
   special access checked via `NotificationManager.isNotificationPolicyAccessGranted` and opened with
   `Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS`.
 - Alarm creation and Timer start use Android's standard `AlarmClock.ACTION_SET_ALARM` and `AlarmClock.ACTION_SET_TIMER`
@@ -71,15 +72,16 @@ app/src/main/java/com/flowpilot/app/
       HomeScreen.kt                  list + FAB
       CreateScreen.kt                WHEN -> DO flow, app picker, and IME-safe form scrolling
       DetailScreen.kt                rule detail, manual run test action, delete, and IME-safe form scrolling
-      PermissionsScreen.kt           setup wizard
+      PermissionsScreen.kt           setup wizard and background location guide
       SettingsScreen.kt
-    components/                      toggle, cards, picker controls, focus-gated bring-into-view modifier
+    components/                      toggle, cards, picker controls, action reordering (ReorderableActionList), focus-gated bring-into-view modifier
   data/
     model/Automation.kt              kotlinx.serialization data model with encrypted secret mapping
     security/SecretCipher.kt         Android Keystore AES-256-GCM authenticated encryption at rest
     AutomationRepository.kt          DataStore persistence (Flow) with automatic crypto migration
   engine/
     AutomationEngine.kt              foreground/charger/battery/schedule evaluate -> execute loop + dedupe
+    LocationFetcher.kt               multi-tier live GPS lock (5s timeout) with cached fallback
     RuleEvaluator.kt                 pure logic (unit-testable)
     ScheduleEvaluator.kt             pure schedule matching
     ForegroundReducer.kt             foreground transition batch reduction
@@ -94,7 +96,7 @@ app/src/main/java/com/flowpilot/app/
     NfcTagHandoff.kt                 transient tag UID intent-to-engine queue and UI capture state
     NfcTagUtils.kt                   pure tag UID normalization and validation
     FlowPilotNotificationListener.kt transient notification listener, dedupe, and engine watchdog
-    AutomationService.kt             foreground service (stopWithTask="false", onTaskRemoved resilience)
+    AutomationService.kt             foreground service (specialUse|location, stopWithTask="false", onTaskRemoved resilience)
     BootReceiver.kt                  restart on boot and quickboot
   actions/
     ActionExecutor.kt                interface + dispatch
@@ -188,9 +190,9 @@ URL. Both intents carry `FLAG_ACTIVITY_NEW_TASK` because the automation engine r
 Launch failure is logged and returned to the engine; target app removal, missing URL resolver, and OEM
 background-activity restrictions remain explicit failure cases.
 
-WebhookExecutor dispatches HTTP/HTTPS requests via standard `HttpURLConnection`. Validates strict `http` or `https` schemes with host, enforces bounded timeouts (1-60s), renders known variables in headers/body only, sets headers and request body, and considers strictly HTTP 2xx status codes as success. URL templates are excluded because URL encoding context differs; unknown and malformed variables are preserved and rendering is non-recursive. Sensitive headers (`Authorization`, `Cookie`, tokens, secrets) and sensitive parameter values are redacted from log entries and execution failure messages to prevent credential leakage.
+WebhookExecutor dispatches HTTP/HTTPS requests via standard `HttpURLConnection`. Validates strict `http` or `https` schemes with host, enforces bounded timeouts (1-60s), renders known variables in headers/body only (`${time}`, `${timestamp}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${trigger}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`), sets headers and request body, and considers strictly HTTP 2xx status codes as success. Location coordinates are obtained live via `LocationFetcher` which checks for fresh cache (<60s, <50m accuracy), triggers an active GPS/network fix with 5-second timeout, and falls back to best cached coordinates. URL templates are excluded because URL encoding context differs; unknown and malformed variables are preserved and rendering is non-recursive. Sensitive headers (`Authorization`, `Cookie`, tokens, secrets) and sensitive parameter values are redacted from log entries and execution failure messages to prevent credential leakage.
 
-Manual test runs execute a saved rule's effective actions on `Dispatchers.IO`, bypassing its trigger and conditions without altering `enabled` or `lastTriggeredAt`. The manual webhook context uses `MANUAL` as its trigger and reads current battery, charger, and Wi-Fi state; result summaries redact sensitive error values before reaching UI.
+Manual test runs execute a saved rule's effective actions on `Dispatchers.IO`, bypassing its trigger and conditions without altering `enabled` or `lastTriggeredAt`. The manual webhook context uses `MANUAL` as its trigger and reads current battery, charger, Wi-Fi state, and live GPS coordinates via `LocationFetcher`; result summaries redact sensitive error values before reaching UI.
 
 MediaVolumeExecutor converts stored 0-100% configuration to the current device's `STREAM_MUSIC` range,
 sets volume without a system UI overlay, then reads the resulting level. A mismatch reports failure rather

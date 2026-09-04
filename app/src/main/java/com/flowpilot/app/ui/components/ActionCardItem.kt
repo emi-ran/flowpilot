@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -62,7 +63,7 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.LOCK_SCREEN -> Icons.Default.Lock
     ActionType.FORCE_STOP_APP -> Icons.Default.Cancel
     ActionType.LOCATION_ON, ActionType.LOCATION_OFF -> Icons.Default.LocationOn
-    ActionType.SEND_SMS -> Icons.Default.Send
+    ActionType.SEND_SMS -> Icons.AutoMirrored.Filled.Send
     ActionType.DRAFT_SMS -> Icons.Default.Drafts
 }
 
@@ -147,31 +148,47 @@ fun ActionCardItem(
     onSmsRecipientChange: (String) -> Unit = {},
     smsMessage: String = "",
     onSmsMessageChange: (String) -> Unit = {},
+    // Reorder modifiers & callbacks
+    cardModifier: Modifier = Modifier,
+    dragModifier: Modifier = Modifier,
+    isDragging: Boolean = false,
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null,
 ) {
     var showDelaySlider by remember { mutableStateOf(delaySeconds > 0) }
+    var showReorderMenu by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(cardModifier),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDragging) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer
+        ),
     ) {
         Column(Modifier.padding(16.dp)) {
             // Header Row: Badge, Icon, Title, Actions
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(dragModifier),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
                     modifier = Modifier
                         .size(24.dp)
-                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                        .background(
+                            if (isDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                            CircleShape
+                        ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         "${index + 1}",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = if (isDragging) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
                 Spacer(Modifier.width(10.dp))
@@ -202,6 +219,47 @@ fun ActionCardItem(
                     )
                 }
                 if (totalActions > 1) {
+                    Box {
+                        IconButton(
+                            onClick = { showReorderMenu = true },
+                            modifier = Modifier
+                                .size(28.dp)
+                                .then(dragModifier),
+                        ) {
+                            Icon(
+                                Icons.Default.DragHandle,
+                                contentDescription = "Reorder action (hold to drag)",
+                                tint = if (isDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showReorderMenu,
+                            onDismissRequest = { showReorderMenu = false },
+                        ) {
+                            if (onMoveUp != null) {
+                                DropdownMenuItem(
+                                    text = { Text("Move up") },
+                                    leadingIcon = { Icon(Icons.Default.ArrowUpward, contentDescription = null) },
+                                    onClick = {
+                                        showReorderMenu = false
+                                        onMoveUp()
+                                    }
+                                )
+                            }
+                            if (onMoveDown != null) {
+                                DropdownMenuItem(
+                                    text = { Text("Move down") },
+                                    leadingIcon = { Icon(Icons.Default.ArrowDownward, contentDescription = null) },
+                                    onClick = {
+                                        showReorderMenu = false
+                                        onMoveDown()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.width(4.dp))
                     IconButton(
                         onClick = onRemoveAction,
                         modifier = Modifier.size(28.dp),

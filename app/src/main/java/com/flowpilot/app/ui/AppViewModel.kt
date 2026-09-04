@@ -52,6 +52,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasNotificationPolicy = MutableStateFlow(false)
     val hasNotificationListener = MutableStateFlow(false)
     val hasWifiPermissions = MutableStateFlow(false)
+    val hasFineLocation = MutableStateFlow(false)
+    val hasBackgroundLocation = MutableStateFlow(false)
+    val isLocationServiceEnabled = MutableStateFlow(false)
     val hasBluetoothConnectPermission = MutableStateFlow(false)
     val hasReadPhoneStatePermission = MutableStateFlow(false)
     val hasCallPhonePermission = MutableStateFlow(false)
@@ -153,6 +156,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         hasNotificationPolicy.value = c.hasNotificationPolicyAccess()
         hasNotificationListener.value = c.hasNotificationListenerAccess()
         hasWifiPermissions.value = c.hasWifiPermissions()
+        hasFineLocation.value = c.hasFineLocation()
+        hasBackgroundLocation.value = c.hasBackgroundLocation()
+        isLocationServiceEnabled.value = c.isLocationServiceEnabled()
         hasBluetoothConnectPermission.value = c.hasBluetoothConnectPermission()
         hasReadPhoneStatePermission.value = c.hasReadPhoneStatePermission()
         hasCallPhonePermission.value = c.hasCallPhonePermission()
@@ -377,12 +383,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun runRuleNow(rule: Automation, callback: (ManualRunResult) -> Unit) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val liveState = getLiveSystemState()
+            val coords = com.flowpilot.app.engine.LocationFetcher.getCoordinates(app)
             val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
                 trigger = "MANUAL",
                 timestamp = System.currentTimeMillis(),
                 batteryPercent = liveState.batteryPercent,
                 isCharging = liveState.isChargerConnected,
                 wifiSsid = liveState.connectedWifiSsid,
+                locationLat = coords?.first,
+                locationLng = coords?.second,
             )
             val actionParams = com.flowpilot.app.actions.ActionParameters(
                 notificationTitle = rule.notificationTitle,

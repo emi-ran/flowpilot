@@ -78,17 +78,38 @@ class CapabilityManager(private val context: Context) {
         return flat.split(":").any { it.trim().equals(myComponent, ignoreCase = true) || it.trim().startsWith("${context.packageName}/") }
     }
 
+    /** Has the app been granted fine location permission? */
+    fun hasFineLocation(): Boolean =
+        context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    /** Has the app been granted coarse location permission? */
+    fun hasCoarseLocation(): Boolean =
+        context.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    /** Has the app been granted background location ("Allow all the time") on Android 10+? */
+    fun hasBackgroundLocation(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            context.checkSelfPermission(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            hasFineLocation() || hasCoarseLocation()
+        }
+
+    /** Is device location service enabled in system settings? */
+    fun isLocationServiceEnabled(): Boolean {
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            lm.isLocationEnabled
+        } else {
+            lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+                lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+        }
+    }
+
     /** Has the app been granted Location / Wi-Fi permissions and is Location service enabled to read SSID? */
     fun hasWifiPermissions(): Boolean {
-        val hasFine = context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val hasFine = hasFineLocation()
         val hasWifi = context.checkSelfPermission(android.Manifest.permission.ACCESS_WIFI_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        val lm = context.getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager
-        val locationEnabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            lm?.isLocationEnabled == true
-        } else {
-            lm?.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) == true ||
-                lm?.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER) == true
-        }
+        val locationEnabled = isLocationServiceEnabled()
         return hasFine && hasWifi && locationEnabled
     }
 
