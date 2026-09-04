@@ -6,6 +6,7 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.Inet6Address
 import java.net.InetAddress
+import javax.net.ssl.HttpsURLConnection
 import java.net.URI
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -15,7 +16,17 @@ import java.nio.charset.StandardCharsets
  * Validates URLs, bounds timeouts, handles headers/bodies, redacts secrets in logs and failure messages.
  */
 class WebhookExecutor(
-    private val connectionFactory: (URL) -> HttpURLConnection = { url -> url.openConnection() as HttpURLConnection },
+    private val connectionFactory: (URL, InetAddress) -> HttpURLConnection = { url, address ->
+        val pinnedUrl = url.withAddress(address)
+        (pinnedUrl.openConnection() as HttpURLConnection).apply {
+            setRequestProperty("Host", url.host)
+            if (this is HttpsURLConnection) {
+                hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier().let { verifier ->
+                    javax.net.ssl.HostnameVerifier { _, session -> verifier.verify(url.host, session) }
+                }
+            }
+        }
+    },
     private val addressLookup: (String) -> Array<InetAddress> = InetAddress::getAllByName,
 ) : ActionExecutor {
 
@@ -45,10 +56,8 @@ class WebhookExecutor(
         var connection: HttpURLConnection? = null
         return try {
             val url = URI(rawUrl).toURL()
-            validateResolvedAddresses(url.host)
-            // Resolve again immediately before opening connection to narrow DNS-rebinding window.
-            validateResolvedAddresses(url.host)
-            connection = connectionFactory(url).apply {
+            val address = validateResolvedAddresses(url.host)
+            connection = connectionFactory(url, address).apply {
                 requestMethod = method
                 connectTimeout = timeoutMs
                 readTimeout = timeoutMs
@@ -94,11 +103,17 @@ class WebhookExecutor(
         }
     }
 
-    private fun validateResolvedAddresses(host: String) {
+    private fun validateResolvedAddresses(host: String): InetAddress {
         val addresses = addressLookup(host)
         if (addresses.isEmpty() || addresses.any { !isPublicAddress(it) }) {
             throw SecurityException("Webhook URL resolves to a non-public address")
         }
+        return addresses.first()
+    }
+
+    private fun URL.withAddress(address: InetAddress): URL {
+        val hostAddress = address.hostAddress.let { if (address is Inet6Address) "[$it]" else it }
+        return URL(protocol, hostAddress, port, file)
     }
 
     companion object {
@@ -121,6 +136,12 @@ class WebhookExecutor(
                 if (first == 198 && second == 51 && third == 100) return false
                 if (first == 203 && second == 0 && third == 113) return false
             } else if (address is Inet6Address) {
+                if (bytes.size >= 12 && bytes.copyOfRange(0, 10).all { it == 0.toByte() } &&
+                    bytes[10].toInt() and 0xff == 0xff && bytes[11].toInt() and 0xff == 0xff
+                ) {
+                    val mappedIpv4 = InetAddress.getByAddress(bytes.copyOfRange(12, 16))
+                    return isPublicAddress(mappedIpv4)
+                }
                 val first = bytes[0].toInt() and 0xff
                 if (first and 0xfe == 0xfc) return false
                 if (address.isIPv4CompatibleAddress) return false

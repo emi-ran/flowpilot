@@ -53,7 +53,7 @@ class WebhookExecutorTest {
     @Test
     fun execute_httpUrl_returnsFailureBeforeConnection() {
         var connectionFactoryCalled = false
-        val executor = WebhookExecutor(connectionFactory = {
+        val executor = WebhookExecutor(connectionFactory = { _, _ ->
             connectionFactoryCalled = true
             error("HTTP webhook must not open connection")
         })
@@ -73,7 +73,7 @@ class WebhookExecutorTest {
         listOf("127.0.0.1", "10.0.0.1", "169.254.169.254").forEach { addressText ->
             var connectionFactoryCalled = false
             val executor = WebhookExecutor(
-                connectionFactory = {
+                connectionFactory = { _, _ ->
                     connectionFactoryCalled = true
                     error("SSRF target must not open connection")
                 },
@@ -92,10 +92,50 @@ class WebhookExecutorTest {
     }
 
     @Test
+    fun execute_mappedLoopbackPrivateAndMetadataTargets_areRejectedBeforeConnection() {
+        listOf("::ffff:127.0.0.1", "::ffff:10.0.0.1", "::ffff:169.254.169.254").forEach { addressText ->
+            var connectionFactoryCalled = false
+            val executor = WebhookExecutor(
+                connectionFactory = { _, _ ->
+                    connectionFactoryCalled = true
+                    error("SSRF target must not open connection")
+                },
+                addressLookup = { arrayOf(InetAddress.getByName(addressText)) },
+            )
+
+            val result = executor.execute(
+                ActionType.HTTP_WEBHOOK,
+                ActionParameters(webhookUrl = "https://target.example/webhook"),
+            )
+
+            assertThat(result.success).isFalse()
+            assertThat(result.message).contains("non-public address")
+            assertThat(connectionFactoryCalled).isFalse()
+        }
+    }
+
+    @Test
+    fun execute_mappedPublicTarget_allowsConnection() {
+        val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
+        val executor = WebhookExecutor(
+            connectionFactory = { _, _ -> mockConnection },
+            addressLookup = { arrayOf(InetAddress.getByName("::ffff:93.184.216.34")) },
+        )
+
+        val result = executor.execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(webhookUrl = "https://target.example/webhook"),
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(result.message).contains("status 204")
+    }
+
+    @Test
     fun execute_publicHttpsTarget_allowsConnection() {
         val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
         val executor = WebhookExecutor(
-            connectionFactory = { mockConnection },
+            connectionFactory = { _, _ -> mockConnection },
             addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
         )
 
@@ -106,6 +146,34 @@ class WebhookExecutorTest {
 
         assertThat(result.success).isTrue()
         assertThat(result.message).contains("status 204")
+    }
+
+    @Test
+    fun execute_pinsConnectionToValidatedAddress_withoutSecondDnsLookup() {
+        val validatedAddress = InetAddress.getByName("93.184.216.34")
+        val redirectedAddress = InetAddress.getByName("10.0.0.1")
+        var lookupCount = 0
+        var connectedAddress: InetAddress? = null
+        val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
+        val executor = WebhookExecutor(
+            connectionFactory = { _, address ->
+                connectedAddress = address
+                mockConnection
+            },
+            addressLookup = {
+                lookupCount++
+                if (lookupCount == 1) arrayOf(validatedAddress) else arrayOf(redirectedAddress)
+            },
+        )
+
+        val result = executor.execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(webhookUrl = "https://target.example/webhook"),
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(lookupCount).isEqualTo(1)
+        assertThat(connectedAddress).isEqualTo(validatedAddress)
     }
 
     @Test
@@ -126,7 +194,7 @@ class WebhookExecutorTest {
     @Test
     fun execute_rendersTemplateVariablesInHeadersAndBody() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 200)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(connectionFactory = { _, _ -> mockConnection })
         val templateContext = WebhookTemplateContext(
             trigger = "CHARGER_CONNECTED",
             timestamp = 1700000000000L,
@@ -157,7 +225,7 @@ class WebhookExecutorTest {
     @Test
     fun execute_successful200Response_returnsSuccess() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 200)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(connectionFactory = { _, _ -> mockConnection })
 
         val result = executor.execute(
             ActionType.HTTP_WEBHOOK,
@@ -184,7 +252,7 @@ class WebhookExecutorTest {
     @Test
     fun execute_204NoContent_returnsSuccess() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 204)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(connectionFactory = { _, _ -> mockConnection })
 
         val result = executor.execute(
             ActionType.HTTP_WEBHOOK,
@@ -201,7 +269,7 @@ class WebhookExecutorTest {
     @Test
     fun execute_http400Response_returnsFailure() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 400)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(connectionFactory = { _, _ -> mockConnection })
 
         val result = executor.execute(
             ActionType.HTTP_WEBHOOK,
@@ -218,7 +286,7 @@ class WebhookExecutorTest {
     @Test
     fun execute_http500Response_returnsFailure() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 500)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(connectionFactory = { _, _ -> mockConnection })
 
         val result = executor.execute(
             ActionType.HTTP_WEBHOOK,
@@ -234,7 +302,7 @@ class WebhookExecutorTest {
 
     @Test
     fun execute_networkExceptionWithSensitiveAuth_redactsAuthInFailureMessage() {
-        val executor = WebhookExecutor(connectionFactory = {
+        val executor = WebhookExecutor(connectionFactory = { _, _ ->
             throw IOException("Failed to connect with Authorization: Bearer my_super_secret_token and key=secret123")
         })
 
