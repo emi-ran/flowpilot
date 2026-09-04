@@ -8,7 +8,7 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
-    <!-- Needed on Android 11+ to enumerate installed apps for the App Picker. -->
+    <!-- Restricted permission retained: App Picker uses getInstalledApplications() to list launchable apps. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
@@ -64,7 +64,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
 
-    <!-- SMS triggers and actions. -->
+    <!-- Restricted permissions retained: incoming SMS receiver and user-configured direct SMS actions use them. -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.SEND_SMS" />
 
@@ -137,7 +137,8 @@
         <receiver
             android:name=".engine.BootReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="true"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
@@ -168,7 +169,7 @@
             </intent-filter>
         </service>
 
-        <!-- Shizuku provider (needed so Shizuku can bind and grant binder access). -->
+        <!-- Exported by Shizuku contract; INTERACT_ACROSS_USERS_FULL limits bind callers. -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
