@@ -22,21 +22,24 @@ import com.flowpilot.app.R
  */
 class AutomationService : Service() {
 
+    private val lifecycleLock = Any()
     private var engine: AutomationEngine? = null
 
     override fun onCreate() {
         super.onCreate()
         createChannel()
         startForegroundCompat()
-        engine = AutomationEngine(this).also { it.start() }
+        synchronized(lifecycleLock) {
+            ensureEngineRunning()
+        }
         com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForegroundCompat()
         // (Re)start the engine if it died.
-        if (engine?.running != true) {
-            engine = AutomationEngine(this).also { it.start() }
+        synchronized(lifecycleLock) {
+            ensureEngineRunning()
         }
         com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
         return START_STICKY
@@ -46,19 +49,27 @@ class AutomationService : Service() {
         super.onTaskRemoved(rootIntent)
         // Ensure service and engine remain active even if the task/activity is swiped away from Recents
         startForegroundCompat()
-        if (engine?.running != true) {
-            engine = AutomationEngine(this).also { it.start() }
+        synchronized(lifecycleLock) {
+            ensureEngineRunning()
         }
     }
 
     override fun onDestroy() {
-        engine?.stop()
-        engine = null
+        synchronized(lifecycleLock) {
+            engine?.stop()
+            engine = null
+        }
         com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun ensureEngineRunning() {
+        if (engine?.running != true) {
+            engine = AutomationEngine(this).also { it.start() }
+        }
+    }
 
     private fun createChannel() {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
