@@ -35,16 +35,20 @@ class MainActivity : ComponentActivity() {
         setContent {
             val vm: com.flowpilot.app.ui.AppViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
             val appLanguage by vm.appLanguage.collectAsState()
+            val appTheme by vm.appTheme.collectAsState()
+
+            val isDark = when (appTheme.lowercase()) {
+                "light" -> false
+                "dark" -> true
+                else -> androidx.compose.foundation.isSystemInDarkTheme()
+            }
+
             com.flowpilot.app.ui.util.AppLocaleProvider(appLanguage) {
-                FlowPilotTheme { FlowPilotRoot(vm) }
+                FlowPilotTheme(darkTheme = isDark) {
+                    FlowPilotRoot(vm)
+                }
             }
         }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        handleNfcIntent(intent)
     }
 
     override fun onResume() {

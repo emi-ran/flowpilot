@@ -1,9 +1,11 @@
 package com.flowpilot.app.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,41 @@ private val DarkColors = darkColorScheme(
     surfaceDim = Color(0xFF131313),
 )
 
+private val LightColors = lightColorScheme(
+    primary = Color(0xFF2B5EA7),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFD7E2FF),
+    onPrimaryContainer = Color(0xFF001B3F),
+    inversePrimary = Color(0xFFABC7FF),
+    secondary = Color(0xFF565E71),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFDAE2F9),
+    onSecondaryContainer = Color(0xFF131C2C),
+    tertiary = Color(0xFF705B2E),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFBDFA6),
+    onTertiaryContainer = Color(0xFF261A00),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
+    background = Color(0xFFF8F9FA),
+    onBackground = Color(0xFF191C1E),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF191C1E),
+    surfaceVariant = Color(0xFFE1E2EC),
+    onSurfaceVariant = Color(0xFF44474F),
+    outline = Color(0xFF74777F),
+    outlineVariant = Color(0xFFC4C6D0),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF2F3F6),
+    surfaceContainer = Color(0xFFECEEF2),
+    surfaceContainerHigh = Color(0xFFE6E8ED),
+    surfaceContainerHighest = Color(0xFFE0E2E7),
+    surfaceBright = Color(0xFFF8F9FA),
+    surfaceDim = Color(0xFFD8D9DE),
+)
+
 private val FlowPilotShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),
@@ -54,9 +91,13 @@ private val FlowPilotShapes = Shapes(
 )
 
 @Composable
-fun FlowPilotTheme(content: @Composable () -> Unit) {
+fun FlowPilotTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    val colorScheme = if (darkTheme) DarkColors else LightColors
     MaterialTheme(
-        colorScheme = DarkColors,
+        colorScheme = colorScheme,
         shapes = FlowPilotShapes,
         content = content,
     )

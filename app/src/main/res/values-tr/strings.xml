@@ -40,6 +40,11 @@
     <string name="settings_history">Çalıştırma geçmişi</string>
     <string name="settings_about">Hakkında</string>
     <string name="settings_dark_theme">Koyu tema</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_system">Sistem varsayılanı</string>
+    <string name="settings_theme_dark">Koyu</string>
+    <string name="settings_theme_light">Aydınlık</string>
+    <string name="settings_select_theme">Tema seçin</string>
 
     <!-- Home Screen -->
     <string name="home_engine_running">Otomasyon motoru etkin</string>

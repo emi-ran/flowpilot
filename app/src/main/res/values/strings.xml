@@ -40,6 +40,11 @@
     <string name="settings_history">Run history</string>
     <string name="settings_about">About</string>
     <string name="settings_dark_theme">Dark theme</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System default</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_select_theme">Select theme</string>
 
     <!-- Home Screen -->
     <string name="home_engine_running">Automation engine active</string>

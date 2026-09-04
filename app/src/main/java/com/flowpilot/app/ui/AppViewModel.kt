@@ -76,6 +76,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    val appTheme: StateFlow<String> = repository.appTheme
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "dark")
+
+    fun setAppTheme(theme: String) {
+        viewModelScope.launch {
+            repository.setAppTheme(theme)
+        }
+    }
+
     private val app get() = getApplication<Application>()
 
     init {

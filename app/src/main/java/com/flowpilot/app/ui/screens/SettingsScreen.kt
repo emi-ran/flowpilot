@@ -42,6 +42,8 @@ fun SettingsScreen(
     val engine by vm.engineRunning.collectAsState()
     val appLanguage by vm.appLanguage.collectAsState()
     var showLanguagePicker by remember { mutableStateOf(false) }
+    val appTheme by vm.appTheme.collectAsState()
+    var showThemePicker by remember { mutableStateOf(false) }
 
     // Backup & Restore states
     var pendingImportJson by remember { mutableStateOf<String?>(null) }
@@ -109,6 +111,18 @@ fun SettingsScreen(
         else -> stringResource(R.string.settings_language_system)
     }
 
+    val isDarkTheme = when (appTheme.lowercase()) {
+        "light" -> false
+        "dark" -> true
+        else -> androidx.compose.foundation.isSystemInDarkTheme()
+    }
+
+    val currentThemeLabel = when (appTheme.lowercase()) {
+        "light" -> stringResource(R.string.settings_theme_light)
+        "dark" -> stringResource(R.string.settings_theme_dark)
+        else -> stringResource(R.string.settings_theme_system)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -142,7 +156,16 @@ fun SettingsScreen(
                     onClick = { showLanguagePicker = true },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
-                SettingRow(stringResource(R.string.settings_dark_theme), Icons.Default.DarkMode, true) {}
+                SettingThemeRow(
+                    label = stringResource(R.string.settings_dark_theme),
+                    subtitle = currentThemeLabel,
+                    icon = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
+                    checked = isDarkTheme,
+                    onCheckedChange = { checked ->
+                        vm.setAppTheme(if (checked) "dark" else "light")
+                    },
+                    onClick = { showThemePicker = true },
+                )
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
                 SettingRow(stringResource(R.string.settings_startup), Icons.Default.RocketLaunch, engine) {
                     if (it) vm.startEngine() else vm.stopEngine()
@@ -234,6 +257,17 @@ fun SettingsScreen(
             onDismiss = { showLanguagePicker = false },
         )
     }
+
+    if (showThemePicker) {
+        ThemePickerDialog(
+            currentTheme = appTheme,
+            onSelectTheme = { selected ->
+                vm.setAppTheme(selected)
+                showThemePicker = false
+            },
+            onDismiss = { showThemePicker = false },
+        )
+    }
 }
 
 @Composable
@@ -278,6 +312,84 @@ private fun LanguagePickerDialog(
             }
         },
     )
+}
+
+@Composable
+private fun ThemePickerDialog(
+    currentTheme: String,
+    onSelectTheme: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val themes = listOf(
+        "system" to stringResource(R.string.settings_theme_system),
+        "dark" to stringResource(R.string.settings_theme_dark),
+        "light" to stringResource(R.string.settings_theme_light),
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_select_theme), fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                themes.forEach { (code, label) ->
+                    val isSelected = (currentTheme.isBlank() && code == "dark") ||
+                        currentTheme.equals(code, ignoreCase = true)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelectTheme(code) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { onSelectTheme(code) },
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.btn_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+fun SettingThemeRow(
+    label: String,
+    subtitle: String,
+    icon: ImageVector,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(
+            Modifier
+                .weight(1f)
+                .padding(horizontal = 16.dp)
+        ) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        FollowSwitch(checked = checked, onCheckedChange = onCheckedChange)
+    }
 }
 
 @Composable
