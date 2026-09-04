@@ -8,8 +8,8 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
-    <!-- Restricted permission: App Picker and app-targeted automations enumerate installed launchable apps.
-         Keep only for this user-facing installed-app selection feature; Play distribution requires policy declaration/review. -->
+    <!-- Restricted permission: App Picker calls PackageManager.getInstalledApplications and filters launchable apps.
+         Required by core app-target selection; distribution owner must complete Play declaration/review. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 

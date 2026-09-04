@@ -207,6 +207,12 @@ FlowPilot **sıfır-güven (zero-trust)** gizlilik prensibiyle geliştirilmişti
 - **Konum Verisi:** Yalnızca yerel olarak bağlı olunan Wi-Fi adını tespit etmek ve kullanıcının özel olarak kurguladığı SMS/Webhook şablonlarına koordinat sağlamak için kullanılır.
 - **Telefon & SMS:** Yalnızca kuralları tetiklemek için kullanılır; numara ve içerikler geçmişte veya loglarda asla ham halde tutulmaz.
 
+### Dağıtım ve kısıtlı izinler
+
+FlowPilot, kullanıcıya gösterilen Uygulama Seçici içinde `PackageManager.getInstalledApplications()` çağırıp başlatılabilir paketleri filtrelediği için `QUERY_ALL_PACKAGES` bildirir. Bu izin kaldırılırsa, paket görünürlüğünün sınırlandığı Android sürümlerinde temel uygulama seçici bozulur. `RECEIVE_SMS`, gelen SMS tetikleyicileri için `SmsReceiver` tarafından; `SEND_SMS`, kullanıcının yapılandırdığı doğrudan SMS eylemleri için `SmsExecutor` tarafından kullanılır. `ACCESS_BACKGROUND_LOCATION`, etkin kurallar etkinlik görünür değilken koordinat istediğinde `LocationFetcher` tarafından; `FOREGROUND_SERVICE_LOCATION` ise konum ön plan hizmeti alt türünü yetkilendirmek için kullanılır. Kural istemediğinde konum sürekli toplanmaz.
+
+Bu izinler Google Play'de kısıtlı veya politika açısından hassastır. Bu depo Play uyumluluğu ya da onay garantisi iddia etmez. Kısıtlı izinleri kaldıran Play'e özel bir flavor yoktur; kaldırmak temel özellikleri devre dışı bırakır. Play sürümü için güncel politika incelemesi, gerekli beyanlar, doğru Veri güvenliği açıklamaları ve Google onayı gerekir. Bunlar tamamlanana kadar derlemeleri GitHub sürümleri, F-Droid veya sideloading üzerinden dağıtın. Yalnızca güvendiğiniz kaynaklardan yükleyin.
+
 ---
 
 ## 🤝 Katkıda Bulunma

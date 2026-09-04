@@ -209,9 +209,9 @@ FlowPilot operates on a **zero-trust privacy model**:
 
 ### Distribution and restricted permissions
 
-FlowPilot declares `QUERY_ALL_PACKAGES` because its user-facing App Picker enumerates installed launchable apps for app triggers and app-targeted actions. It declares `RECEIVE_SMS` for incoming SMS triggers and `SEND_SMS` for user-configured direct SMS actions. It declares `ACCESS_BACKGROUND_LOCATION` and `FOREGROUND_SERVICE_LOCATION` so enabled rules can acquire GPS coordinates while automation service runs outside the visible activity; location is not collected continuously when no rule needs it.
+FlowPilot declares `QUERY_ALL_PACKAGES` because its user-facing App Picker calls `PackageManager.getInstalledApplications()` and filters launchable packages for app triggers and app-targeted actions. Removing it breaks this core picker on Android versions that limit package visibility. `RECEIVE_SMS` is used by `SmsReceiver` for incoming SMS triggers; `SEND_SMS` is used by `SmsExecutor` for user-configured direct SMS actions. `ACCESS_BACKGROUND_LOCATION` is used by `LocationFetcher` when active rules need coordinates while the activity is not visible; `FOREGROUND_SERVICE_LOCATION` authorizes the location foreground-service subtype. Location is not collected continuously when no rule needs it.
 
-These permissions are restricted or policy-sensitive on Google Play. This repository does **not** claim Play compliance or guaranteed approval. Any Play release requires current policy review, required declarations, and Google approval; otherwise distribute through GitHub releases, F-Droid, or sideloading. Users should install only builds from sources they trust.
+These permissions are restricted or policy-sensitive on Google Play. This repository does **not** claim Play compliance or guaranteed approval. No Play-specific permission-reduced flavor exists: removing these declarations would disable core features. Any Play release requires current policy review, required declarations, accurate Data safety disclosures, and Google approval. Until then, distribute builds through GitHub releases, F-Droid, or sideloading. Users should install only builds from sources they trust.
 
 ---
 
