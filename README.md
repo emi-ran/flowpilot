@@ -6,7 +6,7 @@
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![Android Min SDK](https://img.shields.io/badge/Android-8.0%2B%20(API%2026--36)-brightgreen.svg)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.0-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-purple.svg)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4.svg)](https://developer.android.com/jetpack/compose)
 [![Shizuku](https://img.shields.io/badge/Shizuku-Supported-orange.svg)](https://shizuku.rikka.app)
 [![Tested On](https://img.shields.io/badge/Tested%20On-Xiaomi%20HyperOS-FF6900.svg)](https://mi.com)
@@ -30,7 +30,7 @@ Most popular automation tools on Android are burdened with cloud requirements, a
 
 **FlowPilot** takes a completely different approach:
 
-- 🔒 **100% Offline & Private:** Zero network analytics, no third-party SDKs, no user accounts. Your rules and sensitive data never leave your phone.
+- 🔒 **Private by Default:** No telemetry or cloud sync. Configured Webhooks, SMS, and exports can send only data you choose.
 - ⚡ **Battery-Efficient & Event-Driven:** No constant CPU wake-locks. Sensors (accelerometer, proximity, ambient light) and broadcast receivers register only on-demand when active rules require them.
 - 🛡️ **Shizuku Integration:** Execute system-level tasks (toggle Mobile Data, Airplane Mode, GPS, Dark Mode) securely with user-granted ADB permissions—without requiring root access.
 - 🎨 **Modern Material 3 Design:** Fully native Jetpack Compose architecture supporting dynamic Dark & Light themes, fluid animations, and high accessibility standards.
@@ -101,7 +101,7 @@ Chain multiple sequential actions within a single rule, complete with custom dra
 - **Clock & Alarms:** Create system alarm, start background timer (1s–24h with `EXTRA_SKIP_UI`).
 - **Apps & Web:** Launch installed application, open website URL.
 - **Phone & SMS:** Open dialer, dial phone number, directly place phone call, send direct automated background SMS, prepare SMS draft.
-- **HTTP Webhook:** Send outbound HTTP/HTTPS requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with headers, body, AES-256-GCM Keystore encrypted secrets, and live template variables (`${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`).
+- **HTTPS Webhook:** Send outbound HTTPS requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with headers, body, AES-256-GCM Keystore encrypted secrets, and live template variables (`${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`).
 
 ---
 
@@ -202,10 +202,10 @@ Certain privileged actions (toggling Mobile Data, Airplane Mode, GPS, Dark Mode,
 ## 🔒 Privacy & Permissions Notice
 
 FlowPilot operates on a **zero-trust privacy model**:
-- **No Internet Telemetry:** The app contains no crash reporters, analytics endpoints, or remote ad SDKs.
+- **No Telemetry or Cloud Sync:** The app contains no crash reporters, analytics endpoints, remote ad SDKs, or cloud synchronization.
+- **Configured Data Sharing:** User-configured Webhooks, SMS actions, and exports can send only data you choose.
 - **Location:** Used strictly locally to read current Wi-Fi SSID and optionally inject coordinates into user-defined Webhooks or SMS replies.
 - **Phone & SMS:** Used only to trigger automations on call states or user-specified SMS text patterns. Phone numbers are masked in all logs and history.
-- **No Cloud Sync:** Your automations belong to you. Use the built-in **Backup & Restore** feature to export or import your rules as JSON files.
 
 ---
 

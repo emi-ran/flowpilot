@@ -6,7 +6,7 @@
 
 [![Lisans: GPL-3.0](https://img.shields.io/badge/Lisans-GPL--3.0-blue.svg)](LICENSE)
 [![Android Min SDK](https://img.shields.io/badge/Android-8.0%2B%20(API%2026--36)-brightgreen.svg)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.0-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-purple.svg)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4.svg)](https://developer.android.com/jetpack/compose)
 [![Shizuku](https://img.shields.io/badge/Shizuku-Destekli-orange.svg)](https://shizuku.rikka.app)
 [![Test Edilen Cihaz](https://img.shields.io/badge/Geliştirilen%20%26%20Test%20Edilen-Xiaomi%20HyperOS-FF6900.svg)](https://mi.com)
@@ -30,7 +30,7 @@ Android ekosistemindeki popüler otomasyon araçlarının büyük kısmı zorunl
 
 **FlowPilot** bu durumu kökten değiştirir:
 
-- 🔒 **%100 Çevrimdışı & Gizli:** Sıfır analitik, sıfır üçüncü taraf takip kütüphanesi, hesap zorunluluğu yok. Kurallarınız ve cihaz verileriniz telefonunuzdan asla dışarı çıkmaz.
+- 🔒 **Varsayılan Olarak Gizli:** Telemetri veya bulut eşitlemesi yoktur. Yapılandırılmış Webhook, SMS ve dışa aktarma işlemleri yalnızca seçtiğiniz verileri gönderebilir.
 - ⚡ **Pil Dostu & Olay Odaklı:** İşlemciyi sürekli uyanık tutan gereksiz döngüler yoktur. Sensörler (ivmeölçer, yakınlık, ortam ışığı) ve yayın alıcıları yalnızca aktif bir kural ihtiyaç duyduğunda dinamik olarak devreye girer.
 - 🛡️ **Shizuku Entegrasyonu:** Mobil Veri, Uçak Modu, GPS ve Koyu Tema gibi sistem düzeyindeki ayarları root erişimine gerek kalmadan güvenli ADB yetkileriyle kontrol edin.
 - 🎨 **Modern Material 3 Tasarımı:** Dinamik Aydınlık ve Koyu tema, akıcı animasyonlar ve yüksek erişilebilirlik standartlarına sahip saf Jetpack Compose mimarisi.
@@ -101,7 +101,7 @@ Tek bir kural içerisinde birden fazla eylemi sıralayabilir, sürükleyip bıra
 - **Saat & Sayaç:** Sistem alarmı kurma, arka planda sessiz sayaç/zamanlayıcı başlatma (1 sn – 24 saat).
 - **Uygulama & Web:** Cihazdaki bir uygulamayı açma, web bağlantısı (URL) açma.
 - **Telefon & SMS:** Arama ekranını açma, numara çevirme, doğrudan telefon araması başlatma, doğrudan arka planda SMS gönderme, SMS taslağı hazırlama.
-- **HTTP Webhook:** Dinamik şablon değişkenleriyle (`${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.maps_url}`) dış sunuculara HTTP/HTTPS isteği gönderme (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`). Hassas başlık ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir.
+- **HTTPS Webhook:** Dinamik şablon değişkenleriyle (`${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.maps_url}`) dış sunuculara HTTPS isteği gönderme (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`). Hassas başlık ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir.
 
 ---
 
@@ -202,10 +202,10 @@ Mobil Veri, Uçak Modu, GPS ve Koyu Tema kontrolü gibi yetkili eylemler root er
 ## 🔒 Gizlilik Politikası
 
 FlowPilot **sıfır-güven (zero-trust)** gizlilik prensibiyle geliştirilmiştir:
-- **İnternet Telemetrisi Yoktur:** Uygulama içinde çökme raporlayıcıları, analitik kodları veya reklam kütüphaneleri bulunmaz.
+- **Telemetri veya Bulut Eşitlemesi Yoktur:** Uygulama içinde çökme raporlayıcıları, analitik kodları, reklam kütüphaneleri veya bulut eşitlemesi bulunmaz.
+- **Yapılandırılmış Veri Paylaşımı:** Kullanıcı tarafından yapılandırılan Webhook, SMS eylemleri ve dışa aktarma işlemleri yalnızca seçtiğiniz verileri gönderebilir.
 - **Konum Verisi:** Yalnızca yerel olarak bağlı olunan Wi-Fi adını tespit etmek ve kullanıcının özel olarak kurguladığı SMS/Webhook şablonlarına koordinat sağlamak için kullanılır.
 - **Telefon & SMS:** Yalnızca kuralları tetiklemek için kullanılır; numara ve içerikler geçmişte veya loglarda asla ham halde tutulmaz.
-- **Bulut Eşitlemesi Yoktur:** Verileriniz tamamen sizindir. Kurallarınızı yedeklemek veya başka cihaza aktarmak için dahili **Yedekle & Geri Yükle** özelliğini kullanabilirsiniz.
 
 ---
 
