@@ -13,36 +13,37 @@ import java.net.Socket
 import java.net.URI
 import java.net.URL
 
-private class PinnedSocketFactory(
+internal class PinnedSocketFactory(
     private val delegate: SSLSocketFactory,
     private val address: InetAddress,
+    private val hostname: String,
 ) : SSLSocketFactory() {
-    override fun createSocket(host: String, port: Int): Socket = delegate.createSocket().let {
-        it.connect(InetSocketAddress(address, port))
-        delegate.createSocket(it, host, port, true)
-    }
+    private fun connect(port: Int, localAddress: InetAddress? = null, localPort: Int = 0): Socket =
+        delegate.createSocket().apply {
+            if (localAddress != null) bind(InetSocketAddress(localAddress, localPort))
+            connect(InetSocketAddress(address, port))
+        }
+
+    private fun layer(socket: Socket, port: Int, autoClose: Boolean = true): Socket =
+        delegate.createSocket(socket, hostname, port, autoClose)
+
+    override fun createSocket(host: String, port: Int): Socket = layer(connect(port), port)
 
     override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket =
-        delegate.createSocket().let {
-            it.bind(InetSocketAddress(localHost, localPort))
-            it.connect(InetSocketAddress(address, port))
-            delegate.createSocket(it, host, port, true)
-        }
+        layer(connect(port, localHost, localPort), port)
 
-    override fun createSocket(address: InetAddress, port: Int): Socket = delegate.createSocket().let {
-        it.connect(InetSocketAddress(this.address, port))
-        delegate.createSocket(it, this.address.hostName, port, true)
-    }
+    override fun createSocket(address: InetAddress, port: Int): Socket = layer(connect(port), port)
 
     override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket =
-        delegate.createSocket().let {
-            it.bind(InetSocketAddress(localAddress, localPort))
-            it.connect(InetSocketAddress(this.address, port))
-            delegate.createSocket(it, this.address.hostName, port, true)
-        }
+        layer(connect(port, localAddress, localPort), port)
 
-    override fun createSocket(socket: Socket, host: String, port: Int, autoClose: Boolean): Socket =
-        delegate.createSocket(socket, host, port, autoClose)
+    override fun createSocket(socket: Socket, host: String, port: Int, autoClose: Boolean): Socket {
+        if (socket.isConnected && socket.inetAddress != address) {
+            throw SecurityException("Socket is not connected to validated address")
+        }
+        if (!socket.isConnected) socket.connect(InetSocketAddress(address, port))
+        return layer(socket, port, autoClose)
+    }
 
     override fun getDefaultCipherSuites(): Array<String> = delegate.defaultCipherSuites
     override fun getSupportedCipherSuites(): Array<String> = delegate.supportedCipherSuites
@@ -58,7 +59,7 @@ class WebhookExecutor(
     private val connectionFactory: (URL, InetAddress) -> HttpURLConnection = { url, address ->
         (url.openConnection() as HttpURLConnection).apply {
             if (this is HttpsURLConnection) {
-                sslSocketFactory = PinnedSocketFactory(sslSocketFactory, address)
+                sslSocketFactory = PinnedSocketFactory(sslSocketFactory, address, url.host)
             }
         }
     },
@@ -162,11 +163,11 @@ class WebhookExecutor(
                 val second = bytes[1].toInt() and 0xff
                 val third = bytes[2].toInt() and 0xff
                 val fourth = bytes[3].toInt() and 0xff
-                if (first >= 240) return false
+                if (first == 0 || first >= 224) return false
                 if (first == 100 && second in 64..127) return false
-                if (first == 100 && second == 100 && third == 100 && fourth == 200) return false
                 if (first == 192 && second == 0 && third == 0) return false
                 if (first == 192 && second == 0 && third == 2) return false
+                if (first == 192 && second == 88 && third == 99) return false
                 if (first == 198 && second in 18..19) return false
                 if (first == 198 && second == 51 && third == 100) return false
                 if (first == 203 && second == 0 && third == 113) return false
@@ -178,7 +179,12 @@ class WebhookExecutor(
                     return isPublicAddress(mappedIpv4)
                 }
                 val first = bytes[0].toInt() and 0xff
-                if (first and 0xfe == 0xfc) return false
+                val firstWord = (first shl 8) or (bytes[1].toInt() and 0xff)
+                val secondWord = ((bytes[2].toInt() and 0xff) shl 8) or (bytes[3].toInt() and 0xff)
+                if (first and 0xfe == 0xfc || firstWord == 0x2001 && secondWord == 0x0000 ||
+                    firstWord == 0x2001 && secondWord in 0x0010..0x002f || firstWord == 0x2001 && secondWord == 0x0db8 ||
+                    firstWord == 0x2002 || firstWord == 0x0064 && secondWord == 0xff9b || firstWord == 0x0100
+                ) return false
                 if (address.isIPv4CompatibleAddress) return false
             }
             return true

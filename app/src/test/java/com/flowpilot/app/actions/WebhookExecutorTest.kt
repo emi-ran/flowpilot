@@ -177,6 +177,68 @@ class WebhookExecutorTest {
     }
 
     @Test
+    fun pinnedSocketFactory_allOverloadsConnectValidatedAddressAndPreserveTlsHost() {
+        val validated = InetAddress.getByName("93.184.216.34")
+        val delegate = RecordingSslSocketFactory()
+        val factory = PinnedSocketFactory(delegate, validated, "original.example")
+
+        factory.createSocket("original.example", 443)
+        factory.createSocket("original.example", 443, InetAddress.getByName("192.0.2.1"), 0)
+        factory.createSocket(InetAddress.getByName("10.0.0.1"), 443)
+        factory.createSocket(InetAddress.getByName("10.0.0.1"), 443, InetAddress.getByName("192.0.2.1"), 0)
+        factory.createSocket(RecordingSocket(delegate.connectedAddresses), "original.example", 443, true)
+
+        assertThat(delegate.connectedAddresses).containsExactly(validated).inOrder()
+        assertThat(delegate.layeredHosts).containsExactly("original.example", "original.example", "original.example", "original.example", "original.example").inOrder()
+    }
+
+    @Test
+    fun pinnedSocketFactory_rejectsAlreadyConnectedSocketToOtherAddress() {
+        val validated = InetAddress.getByName("93.184.216.34")
+        val server = java.net.ServerSocket(0)
+        val socket = Socket("127.0.0.1", server.localPort)
+        val factory = PinnedSocketFactory(RecordingSslSocketFactory(), validated, "original.example")
+
+        try {
+            factory.createSocket(socket, "original.example", 443, true)
+            throw AssertionError("connected socket must be rejected")
+        } catch (expected: SecurityException) {
+            assertThat(expected).hasMessageThat().contains("validated address")
+        } finally {
+            socket.close()
+        }
+    }
+
+    @Test
+    fun execute_allKnownNonGlobalSpecialUseRanges_areRejected() {
+        listOf(
+            "0.1.2.3", "100.64.0.1", "192.0.0.1", "192.0.2.1", "192.88.99.1",
+            "198.18.0.1", "198.51.100.1", "203.0.113.1", "224.0.0.1", "240.0.0.1",
+            "::", "::1", "2001:db8::1", "2001:10::1", "2001:20::1", "2001:0000::1",
+            "64:ff9b::1", "100::1", "2002::1", "fc00::1", "fe80::1", "ff02::1",
+            "::ffff:192.0.2.1",
+        ).forEach { addressText ->
+            var opened = false
+            val result = WebhookExecutor(
+                connectionFactory = { _, _ -> opened = true; error("special-use target opened") },
+                addressLookup = { arrayOf(InetAddress.getByName(addressText)) },
+            ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/webhook"))
+            assertThat(result.success).isFalse()
+            assertThat(opened).isFalse()
+        }
+    }
+
+    @Test
+    fun execute_globalAddress_remainsAllowed() {
+        val connection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
+        val result = WebhookExecutor(
+            connectionFactory = { _, _ -> connection },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/webhook"))
+        assertThat(result.success).isTrue()
+    }
+
+    @Test
     fun execute_unsupportedMethod_returnsFailure() {
         val executor = WebhookExecutor()
         val result = executor.execute(
@@ -419,6 +481,32 @@ class WebhookExecutorTest {
 
         val malformedError = WebhookExecutor.validateHeaders("MalformedHeader")
         assertThat(malformedError).contains("Invalid header format on line 1")
+    }
+
+    private class RecordingSslSocketFactory : javax.net.ssl.SSLSocketFactory() {
+        val connectedAddresses = mutableListOf<InetAddress>()
+        val layeredHosts = mutableListOf<String>()
+
+        override fun createSocket(): Socket = RecordingSocket(connectedAddresses)
+        override fun createSocket(socket: Socket, host: String, port: Int, autoClose: Boolean): Socket {
+            layeredHosts += host
+            return socket
+        }
+        override fun createSocket(host: String, port: Int): Socket = error("unexpected direct delegate call")
+        override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket = error("unexpected direct delegate call")
+        override fun createSocket(address: InetAddress, port: Int): Socket = error("unexpected direct delegate call")
+        override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket = error("unexpected direct delegate call")
+        override fun getDefaultCipherSuites(): Array<String> = emptyArray()
+        override fun getSupportedCipherSuites(): Array<String> = emptyArray()
+    }
+
+    private class RecordingSocket(private val connectedAddresses: MutableList<InetAddress>) : Socket() {
+        override fun connect(endpoint: java.net.SocketAddress?) {
+            connectedAddresses += (endpoint as java.net.InetSocketAddress).address
+        }
+        override fun connect(endpoint: java.net.SocketAddress?, timeout: Int) = connect(endpoint)
+        override fun bind(endpoint: java.net.SocketAddress?) {}
+        override fun isConnected(): Boolean = false
     }
 
     private class FakeHttpURLConnection(url: URL, private val responseCodeStub: Int) : HttpURLConnection(url) {
