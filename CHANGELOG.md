@@ -6,6 +6,7 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 
+- Ready-to-use Automation Presets (Templates) in CreateScreen: Users can browse categorized pre-configured recipes (Bedtime Routine, Full Battery Protection, Battery Saver Emergency, Flip to Silence, Shake for Torch, Cinema/Low Light Mode, Leaving Home, Welcome Home, and SMS Location Responder with 5-second satellite GPS lock delay before sending SMS). Presets populate the creation form with full trigger, condition, multi-action, delay, and parameter states for quick editing and saving.
 - Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions: rules can now be restricted to specific time intervals (e.g. 23:00 - 07:00, with full overnight midnight-crossing support) and/or specific days of the week (Weekdays, Weekends, or custom day toggles), evaluated alongside any trigger.
 - Sound profile actions for Normal, Vibrate, and Silent with Notification Policy Access checks and ringer-mode readback.
 - Dark theme actions through Shizuku with post-command state verification.

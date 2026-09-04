@@ -8,10 +8,12 @@ package com.flowpilot.app.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -25,6 +27,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.ui.draw.rotate
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -33,6 +37,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,6 +49,7 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Tune
 import kotlinx.coroutines.launch
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.AutomationPreset
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.ActionType
@@ -183,6 +189,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var showLaunchApps by remember { mutableStateOf(false) }
     var showTriggers by remember { mutableStateOf(false) }
     var showActions by remember { mutableStateOf(false) }
+    var showPresets by remember { mutableStateOf(false) }
 
     LaunchedEffect(event) {
         if (event == TriggerEvent.NFC_TAG_SCANNED) {
@@ -191,6 +198,75 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 scannedTagId?.let { nfcTagId = it }
             }
         }
+    }
+
+    if (showPresets) {
+        com.flowpilot.app.ui.components.PresetsBottomSheet(
+            onSelectPreset = { preset ->
+                val t = preset.template
+                name = t.name
+                event = t.triggerEvent
+                pkg = t.appPackage
+                appName = t.appName
+                scheduledMinute = t.scheduledMinute
+                scheduledDays = t.scheduledDays
+                batteryLevel = t.batteryLevel
+                wifiSsid = t.wifiSsid
+                bluetoothDeviceAddress = t.bluetoothDeviceAddress
+                bluetoothDeviceName = t.bluetoothDeviceName
+                nfcTagId = t.nfcTagId
+                notificationAppPackage = t.notificationAppPackage
+                notificationAppName = t.notificationAppName
+                notificationKeyword = t.notificationKeyword
+                phoneNumber = t.phoneNumber
+                flipScreenOffDetection = t.flipScreenOffDetection
+                lightLux = t.lightLux
+                smsSenderFilter = t.smsSenderFilter
+                smsMatchMode = t.smsMatchMode
+                smsKeyword = t.smsKeyword
+                smsRecipient = t.smsRecipient
+                smsMessage = t.smsMessage
+                conditions = t.conditions
+                actions = t.effectiveActions
+                actionDelays = t.effectiveActionDelays
+                cooldownMinutes = t.cooldownMinutes
+                notificationTitle = t.notificationTitle
+                notificationBody = t.notificationBody
+                vibrationPattern = t.vibrationPattern
+                vibrationDurationMs = t.vibrationDurationMs
+                vibrationAmplitude = t.vibrationAmplitude
+                mediaVolumePercent = t.mediaVolumePercent
+                soundPreset = t.soundPreset
+                soundUri = t.soundUri
+                soundName = t.soundName
+                soundDurationMs = t.soundDurationMs
+                launchPackage = t.launchPackage
+                launchAppName = t.launchAppName
+                url = t.url
+                alarmHour = t.alarmHour
+                alarmMinute = t.alarmMinute
+                alarmMessage = t.alarmMessage
+                timerDurationSeconds = t.timerDurationSeconds
+                timerMessage = t.timerMessage
+                webhookMethod = t.webhookMethod
+                webhookUrl = t.webhookUrl
+                webhookHeaders = t.webhookHeaders
+                webhookBody = t.webhookBody
+                webhookTimeoutSeconds = t.webhookTimeoutSeconds
+                ttsText = t.ttsText
+                ttsVoiceName = t.ttsVoiceName
+                ttsSpeechRate = t.ttsSpeechRate
+                ttsAudioFileName = t.ttsAudioFileName
+                screenBrightnessPercent = t.screenBrightnessPercent
+                forceStopPackage = t.forceStopPackage
+                forceStopAppName = t.forceStopAppName
+
+                scope.launch {
+                    snackbarHostState.showSnackbar("'${preset.title}' şablonu uygulandı.")
+                }
+            },
+            onDismiss = { showPresets = false },
+        )
     }
 
     if (showApps) AppPicker(select = { p, n -> pkg = p; appName = n; showApps = false }, selectedPackage = pkg, onDismiss = { showApps = false })
@@ -360,6 +436,9 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 title = { Text("Create automation", fontWeight = FontWeight.Bold) },
                 navigationIcon = { IconButton(done) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
                 actions = {
+                    IconButton({ showPresets = true }) {
+                        Icon(Icons.Default.AutoAwesome, "Hazır Şablonlar", tint = MaterialTheme.colorScheme.primary)
+                    }
                     if (actions.isNotEmpty()) {
                         IconButton({ showRunConfirm = true }) {
                             Icon(Icons.Default.PlayArrow, "Test actions now", tint = MaterialTheme.colorScheme.primary)
@@ -376,6 +455,58 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 .padding(horizontal = 20.dp),
         ) {
             var showAdvanced by remember { mutableStateOf(false) }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+                    .clickable { showPresets = true },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                ),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Hazır Şablonlar (Presets)",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = "Popüler senaryolardan birini tek tıkla seçin",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
 
             OutlinedTextField(
                 value = name,

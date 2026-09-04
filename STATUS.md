@@ -7,7 +7,7 @@ Last updated: 2026-09-04
 - Debug build and unit tests passed: `.\gradlew.bat testDebugUnitTest assembleDebug`.
 - Latest debug APK was installed and launched on Xiaomi (2506BPN68G) / HyperOS (Android 16).
 - Background resilience and Shizuku startup safety fixes verified on connected device.
-- Action reordering and live location fetcher unit tests passed.
+- Action reordering, live location fetcher, and Automation Presets (9 categorized templates with delayed GPS SMS) unit tests passed.
 
 ## Background stability & engine keepalive
 
