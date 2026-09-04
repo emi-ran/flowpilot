@@ -1,0 +1,70 @@
+name: Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Decode Release Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$GITHUB_WORKSPACE/release.jks"
+
+      - name: Build Signed Release APK
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Rename APK & Generate Checksum
+        run: |
+          VERSION_TAG=${GITHUB_REF_NAME:-"release"}
+          cd app/build/outputs/apk/release/
+          # Find the generated release APK
+          RELEASE_APK=$(ls -1 app-*-release.apk app-release.apk 2>/dev/null | head -n 1)
+          if [ -n "$RELEASE_APK" ]; then
+            FINAL_NAME="FlowPilot-${VERSION_TAG}.apk"
+            mv "$RELEASE_APK" "$FINAL_NAME"
+            sha256sum "$FINAL_NAME" > "${FINAL_NAME}.sha256"
+            echo "RELEASE_APK_NAME=$FINAL_NAME" >> $GITHUB_ENV
+          else
+            echo "ERROR: Release APK not found!" && exit 1
+          fi
+
+      - name: Create GitHub Release & Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app/build/outputs/apk/release/FlowPilot-*.apk
+            app/build/outputs/apk/release/FlowPilot-*.apk.sha256
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

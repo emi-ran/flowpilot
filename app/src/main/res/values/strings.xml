@@ -683,4 +683,20 @@
     <string name="wifi_service_unavailable">Wi-Fi service unavailable on device.</string>
     <string name="wifi_scan_throttled">Wi-Fi scan throttled or location disabled. You can still type the SSID manually.</string>
     <string name="btn_retry">Retry</string>
+
+    <!-- About Dialog -->
+    <string name="about_dialog_title">About FlowPilot</string>
+    <string name="about_app_motto">Privacy-first, offline, and lightweight Android automation engine.</string>
+    <string name="about_badge_version">v%1$s (Build %2$d)</string>
+    <string name="about_badge_license">GPL-3.0 License</string>
+    <string name="about_feat_offline_title">100% Offline &amp; Private</string>
+    <string name="about_feat_offline_desc">Zero trackers, no analytics, no cloud account. All rules and sensor data strictly remain on your device.</string>
+    <string name="about_feat_battery_title">Optimized &amp; Battery-Friendly</string>
+    <string name="about_feat_battery_desc">Event-driven architecture. Sensors and listeners activate only when matching rules require them.</string>
+    <string name="about_feat_shizuku_title">Shizuku Integration</string>
+    <string name="about_feat_shizuku_desc">Manage system-level toggles (Mobile Data, Airplane mode, GPS, Dark Mode) securely without root.</string>
+    <string name="about_feat_extensible_title">Powerful Automation</string>
+    <string name="about_feat_extensible_desc">Offline TTS speech synthesis, NFC, SMS matching, Webhooks, Home Screen widget &amp; Quick Settings tile.</string>
+    <string name="about_btn_github">GitHub Repository</string>
+    <string name="about_btn_issues">Report Issue / Feedback</string>
 </resources>

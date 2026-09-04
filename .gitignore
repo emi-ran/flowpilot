@@ -51,6 +51,7 @@ captures/
 # Keystore & Signing files
 *.jks
 *.keystore
+*base64.txt
 
 # Google Services (if applicable)
 # google-services.json

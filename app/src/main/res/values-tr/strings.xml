@@ -683,4 +683,20 @@
     <string name="wifi_service_unavailable">Cihazda Wi-Fi hizmeti kullanılamıyor.</string>
     <string name="wifi_scan_throttled">Wi-Fi taraması kısıtlandı veya konum kapalı. SSID adını elle de yazabilirsiniz.</string>
     <string name="btn_retry">Yeniden Dene</string>
+
+    <!-- About Dialog -->
+    <string name="about_dialog_title">FlowPilot Hakkında</string>
+    <string name="about_app_motto">Gizlilik odaklı, çevrimdışı ve hafif Android otomasyon motoru.</string>
+    <string name="about_badge_version">v%1$s (Derleme %2$d)</string>
+    <string name="about_badge_license">GPL-3.0 Lisansı</string>
+    <string name="about_feat_offline_title">%100 Çevrimdışı &amp; Gizli</string>
+    <string name="about_feat_offline_desc">Sıfır izleyici, telemetri yok, bulut hesabı yok. Tüm kurallarınız ve verileriniz yalnızca cihazınızda kalır.</string>
+    <string name="about_feat_battery_title">Optimize &amp; Pil Dostu</string>
+    <string name="about_feat_battery_desc">Olay odaklı mimari. Sensörler ve dinleyiciler yalnızca eşleşen kurallar aktif olduğunda çalışır.</string>
+    <string name="about_feat_shizuku_title">Shizuku Entegrasyonu</string>
+    <string name="about_feat_shizuku_desc">Mobil Veri, Uçak Modu, GPS ve Koyu Tema gibi sistem ayarlarını root gerektirmeden yetkili API ile yönetin.</string>
+    <string name="about_feat_extensible_title">Güçlü Otomasyon</string>
+    <string name="about_feat_extensible_desc">Çevrimdışı TTS metin okuma, NFC, SMS filtreleme, Webhook\'lar, Ana Ekran widget\'ı ve Hızlı Ayar kutusu.</string>
+    <string name="about_btn_github">GitHub Deposu</string>
+    <string name="about_btn_issues">Sorun Bildir / Geri Bildirim</string>
 </resources>
