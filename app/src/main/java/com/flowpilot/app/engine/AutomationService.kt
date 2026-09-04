@@ -94,6 +94,7 @@ class AutomationService : Service() {
             lockscreenVisibility = Notification.VISIBILITY_SECRET
         }
         nm.createNotificationChannel(channel)
+        ensureFailureChannel(this)
     }
 
     private fun startForegroundCompat(): Boolean {
@@ -114,8 +115,7 @@ class AutomationService : Service() {
                 .edit().remove(STARTUP_FAILURE_KEY).apply()
             return true
         } catch (t: Throwable) {
-            getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
-                .edit().putString(STARTUP_FAILURE_KEY, t.javaClass.simpleName + ": " + (t.message ?: "unknown failure")).apply()
+            reportStartupFailure(this, t)
             Log.e("AutomationService", "startForegroundCompat failed: ${t.message}", t)
             return false
         }
@@ -147,9 +147,54 @@ class AutomationService : Service() {
     companion object {
         // Channel settings are immutable after creation. New ID upgrades older loud channel.
         private const val CHANNEL_ID = "engine_silent_v2"
+        private const val FAILURE_CHANNEL_ID = "engine_startup_failure"
         private const val NOTIF_ID = 1001
+        private const val FAILURE_NOTIF_ID = 1002
         private const val STATUS_PREFS = "automation_service_status"
         private const val STARTUP_FAILURE_KEY = "startup_failure"
+
+        private fun ensureFailureChannel(context: Context) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                manager.createNotificationChannel(
+                    NotificationChannel(
+                        FAILURE_CHANNEL_ID,
+                        context.getString(R.string.notif_channel_engine_failure),
+                        NotificationManager.IMPORTANCE_DEFAULT,
+                    ).apply {
+                        description = context.getString(R.string.notif_channel_engine_failure_desc)
+                    },
+                )
+            }
+        }
+
+        fun reportStartupFailure(context: Context, failure: Throwable? = null) {
+            val detail = failure?.let { it.javaClass.simpleName + ": " + (it.message ?: "unknown failure") } ?: "startup failed"
+            context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
+                .edit().putString(STARTUP_FAILURE_KEY, detail).apply()
+            ensureFailureChannel(context)
+            val openIntent = Intent(context, MainActivity::class.java)
+            val pendingIntent = PendingIntent.getActivity(
+                context, 1, openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(context, FAILURE_CHANNEL_ID)
+            } else {
+                @Suppress("DEPRECATION")
+                Notification.Builder(context)
+            }
+            val notification = builder
+                .setContentTitle(context.getString(R.string.notif_engine_failure_title))
+                .setContentText(context.getString(R.string.notif_engine_failure_text))
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setCategory(Notification.CATEGORY_ERROR)
+                .build()
+            (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .notify(FAILURE_NOTIF_ID, notification)
+        }
 
         fun start(context: Context): Boolean {
             return try {
@@ -161,8 +206,7 @@ class AutomationService : Service() {
                 }
                 true
             } catch (t: Throwable) {
-                context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
-                    .edit().putString(STARTUP_FAILURE_KEY, t.javaClass.simpleName + ": " + (t.message ?: "unknown failure")).apply()
+                reportStartupFailure(context)
                 Log.e("AutomationService", "Failed to start AutomationService: ${t.message}", t)
                 false
             }

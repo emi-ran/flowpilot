@@ -28,6 +28,7 @@ class BootReceiver : BroadcastReceiver() {
                         Log.w("BootReceiver", "AutomationService startup blocked; failure saved in automation_service_status")
                     }
                 } catch (t: Throwable) {
+                    AutomationService.reportStartupFailure(context.applicationContext)
                     Log.e("BootReceiver", "Failed to start AutomationService on boot: ${t.message}", t)
                 } finally {
                     try {

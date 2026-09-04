@@ -5,6 +5,10 @@
     <string name="notif_channel_engine_desc">Silent status required while FlowPilot automations run</string>
     <string name="notif_engine_title">Automation active</string>
     <string name="notif_engine_text">FlowPilot is running schedules</string>
+    <string name="notif_channel_engine_failure">Automation startup problems</string>
+    <string name="notif_channel_engine_failure_desc">Alerts when FlowPilot cannot start automation after startup</string>
+    <string name="notif_engine_failure_title">Automation did not start</string>
+    <string name="notif_engine_failure_text">Open FlowPilot to check permissions and restart automation.</string>
     <string name="special_use_subtype">Detects foreground app changes and applies user-configured automations (NFC, battery saver).</string>
 
     <!-- General / Navigation -->
