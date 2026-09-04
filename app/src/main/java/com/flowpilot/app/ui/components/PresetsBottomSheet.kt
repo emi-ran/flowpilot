@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flowpilot.app.R
@@ -57,8 +58,9 @@ fun PresetsBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 24.dp)
+                .padding(bottom = 16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -121,6 +123,7 @@ fun PresetsBottomSheet(
                         label = { Text("${cat.localizedLabel()} ($count)") },
                     )
                 }
+                Spacer(Modifier.width(8.dp))
             }
 
             Spacer(Modifier.height(16.dp))
@@ -128,9 +131,9 @@ fun PresetsBottomSheet(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f, fill = false)
-                    .heightIn(max = 500.dp),
+                    .weight(1f, fill = false),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
             ) {
                 items(filteredPresets, key = { it.id }) { preset ->
                     PresetCardItem(
@@ -196,17 +199,22 @@ private fun PresetCardItem(
                             text = stringResource(preset.titleRes),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
-                        SuggestionChip(
-                            onClick = {},
-                            label = {
-                                Text(
-                                    preset.category.localizedLabel(),
-                                    fontSize = 11.sp,
-                                )
-                            },
-                            modifier = Modifier.height(24.dp),
-                        )
+                        Spacer(Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                        ) {
+                            Text(
+                                text = preset.category.localizedLabel(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(4.dp))
@@ -222,26 +230,53 @@ private fun PresetCardItem(
                     // Summary of trigger and actions
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        AssistChip(
-                            onClick = {},
-                            label = { Text(preset.template.triggerEvent.localizedLabel(), fontSize = 11.sp) },
-                            modifier = Modifier.height(26.dp),
-                        )
-                        AssistChip(
-                            onClick = {},
-                            label = { Text(stringResource(R.string.actions_count, preset.template.effectiveActions.size), fontSize = 11.sp) },
-                            modifier = Modifier.height(26.dp),
-                        )
-                        Spacer(Modifier.weight(1f))
+                        Row(
+                            modifier = Modifier.weight(1f, fill = false),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                modifier = Modifier.weight(1f, fill = false),
+                            ) {
+                                Text(
+                                    text = preset.template.triggerEvent.localizedLabel(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.actions_count, preset.template.effectiveActions.size),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
                         Button(
                             onClick = onUsePreset,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                            modifier = Modifier.height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                            modifier = Modifier.height(34.dp),
                         ) {
-                            Text(stringResource(R.string.btn_use_preset), fontSize = 12.sp)
+                            Text(
+                                text = stringResource(R.string.btn_use_preset),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                            )
                         }
                     }
                 }

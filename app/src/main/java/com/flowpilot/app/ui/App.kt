@@ -37,6 +37,7 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     var page by remember { mutableStateOf(Page.HOME) }
     var permissionsReturnPage by remember { mutableStateOf(Page.HOME) }
     var selectedRule by remember { mutableStateOf<Automation?>(null) }
+    var initialPreset by remember { mutableStateOf<com.flowpilot.app.data.model.AutomationPreset?>(null) }
 
     BackHandler(enabled = page != Page.HOME) {
         page = Page.HOME
@@ -52,7 +53,11 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                 Page.HOME -> HomeScreen(
                     vm = vm,
                     detail = { selectedRule = it; page = Page.DETAIL },
-                    create = { page = Page.CREATE },
+                    create = { initialPreset = null; page = Page.CREATE },
+                    createWithPreset = { preset ->
+                        initialPreset = preset
+                        page = Page.CREATE
+                    },
                     settings = { page = Page.SETTINGS },
                     permissions = { permissionsReturnPage = Page.HOME; page = Page.PERMISSIONS },
                     bottomBar = { BottomBar(Page.HOME) { page = it } },
@@ -66,7 +71,10 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                     history = { page = Page.HISTORY },
                     bottomBar = { BottomBar(Page.SETTINGS) { page = it } },
                 )
-                Page.CREATE -> CreateScreen(vm) { page = Page.HOME }
+                Page.CREATE -> CreateScreen(vm, initialPreset = initialPreset) {
+                    initialPreset = null
+                    page = Page.HOME
+                }
                 Page.PERMISSIONS -> PermissionsScreen(vm) { page = permissionsReturnPage }
                 Page.HISTORY -> HistoryScreen(vm) { page = Page.SETTINGS }
                 Page.DETAIL -> {

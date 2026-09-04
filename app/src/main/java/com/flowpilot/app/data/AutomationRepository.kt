@@ -48,7 +48,7 @@ class AutomationRepository(private val context: Context) {
     }
 
     val appTheme: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[themeKey] ?: "dark"
+        prefs[themeKey] ?: "system"
     }
 
     suspend fun setAppTheme(theme: String) {

@@ -29,11 +29,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.flowpilot.app.R
 import com.flowpilot.app.engine.WifiStateTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -47,7 +49,7 @@ import kotlinx.coroutines.withContext
 fun WifiSsidPickerField(
     ssid: String,
     onSsidChange: (String) -> Unit,
-    label: String = "Wi-Fi SSID (leave empty for any Wi-Fi)",
+    label: String = stringResource(R.string.wifi_ssid_label),
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -97,7 +99,7 @@ fun WifiSsidPickerField(
                 ) {
                     Icon(
                         imageVector = Icons.Default.WifiFind,
-                        contentDescription = "Scan nearby networks",
+                        contentDescription = stringResource(R.string.wifi_scan_nearby),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -111,7 +113,7 @@ fun WifiSsidPickerField(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "Tap icon or button to pick nearby network",
+                stringResource(R.string.wifi_tap_to_pick),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -132,7 +134,7 @@ fun WifiSsidPickerField(
             ) {
                 Icon(Icons.Default.WifiFind, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Scan nearby", style = MaterialTheme.typography.labelSmall)
+                Text(stringResource(R.string.wifi_scan_nearby), style = MaterialTheme.typography.labelSmall)
             }
         }
 
@@ -144,7 +146,7 @@ fun WifiSsidPickerField(
             ) {
                 Column(Modifier.padding(10.dp)) {
                     Text(
-                        "Wi-Fi SSID detection requires ACCESS_FINE_LOCATION permission and device Location enabled.",
+                        stringResource(R.string.wifi_permission_required),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                     )
@@ -163,7 +165,7 @@ fun WifiSsidPickerField(
                                     wifiLauncher.launch(perms.toTypedArray())
                                 },
                             ) {
-                                Text("Grant Permission", style = MaterialTheme.typography.labelSmall)
+                                Text(stringResource(R.string.wifi_grant_permission), style = MaterialTheme.typography.labelSmall)
                             }
                         }
                         if (!isLocationEnabled) {
@@ -180,7 +182,7 @@ fun WifiSsidPickerField(
                                     }
                                 },
                             ) {
-                                Text("Enable Location", style = MaterialTheme.typography.labelSmall)
+                                Text(stringResource(R.string.wifi_enable_location), style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -222,7 +224,7 @@ fun WifiScanDialog(
         coroutineScope.launch {
             val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
             if (wm == null) {
-                uiState = ScanUiState.Error("Wi-Fi service unavailable on device.")
+                uiState = ScanUiState.Error(context.getString(R.string.wifi_service_unavailable))
                 return@launch
             }
 
@@ -252,7 +254,7 @@ fun WifiScanDialog(
                 if (cached.isNotEmpty()) {
                     uiState = ScanUiState.Success(cached)
                 } else {
-                    uiState = ScanUiState.Error("Wi-Fi scan throttled or location disabled. You can still type the SSID manually.")
+                    uiState = ScanUiState.Error(context.getString(R.string.wifi_scan_throttled))
                 }
                 return@launch
             }
@@ -316,17 +318,17 @@ fun WifiScanDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "Nearby Wi-Fi Networks",
+                        stringResource(R.string.wifi_nearby_networks_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, "Close")
+                        Icon(Icons.Default.Close, stringResource(R.string.btn_close))
                     }
                 }
 
                 Text(
-                    "Select an SSID to populate rule. Android limits scan frequency (scan throttling); results may include recent cached networks.",
+                    stringResource(R.string.wifi_scan_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
@@ -345,7 +347,7 @@ fun WifiScanDialog(
                                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.height(16.dp))
                                 Text(
-                                    "Scanning nearby networks...",
+                                    stringResource(R.string.wifi_scanning_nearby),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -367,7 +369,7 @@ fun WifiScanDialog(
                                 OutlinedButton(onClick = { performScan() }) {
                                     Icon(Icons.Default.Refresh, null)
                                     Spacer(Modifier.width(6.dp))
-                                    Text("Retry")
+                                    Text(stringResource(R.string.btn_retry))
                                 }
                             }
                         }
@@ -380,7 +382,7 @@ fun WifiScanDialog(
                                     modifier = Modifier.padding(16.dp),
                                 ) {
                                     Text(
-                                        "No Wi-Fi networks found nearby.",
+                                        stringResource(R.string.wifi_scan_no_networks),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -388,7 +390,7 @@ fun WifiScanDialog(
                                     OutlinedButton(onClick = { performScan() }) {
                                         Icon(Icons.Default.Refresh, null)
                                         Spacer(Modifier.width(6.dp))
-                                        Text("Scan again")
+                                        Text(stringResource(R.string.wifi_btn_scan_again))
                                     }
                                 }
                             } else {
@@ -456,10 +458,10 @@ fun WifiScanDialog(
                     TextButton(onClick = { performScan() }, enabled = uiState !is ScanUiState.Scanning) {
                         Icon(Icons.Default.Refresh, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Rescan")
+                        Text(stringResource(R.string.wifi_btn_rescan))
                     }
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.btn_cancel))
                     }
                 }
             }

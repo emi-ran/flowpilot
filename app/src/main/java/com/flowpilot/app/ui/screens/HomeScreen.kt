@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -25,6 +26,8 @@ import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.flowpilot.app.data.model.AutomationPreset
+import com.flowpilot.app.ui.components.PresetsBottomSheet
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,6 +51,7 @@ fun HomeScreen(
     vm: AppViewModel,
     detail: (Automation) -> Unit,
     create: () -> Unit,
+    createWithPreset: (AutomationPreset) -> Unit = {},
     permissions: () -> Unit,
     settings: () -> Unit,
     bottomBar: @Composable () -> Unit,
@@ -56,6 +60,7 @@ fun HomeScreen(
     val engine by vm.engineRunning.collectAsState()
     var selectedRuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var showPresetsSheet by remember { mutableStateOf(false) }
     val isSelectionMode = selectedRuleIds.isNotEmpty()
 
     BackHandler(enabled = isSelectionMode) {
@@ -115,6 +120,14 @@ fun HomeScreen(
                         }
                         IconButton({ showDeleteConfirmDialog = true }) {
                             Icon(Icons.Default.Delete, stringResource(R.string.btn_delete_selected), tint = MaterialTheme.colorScheme.error)
+                        }
+                    } else {
+                        IconButton({ showPresetsSheet = true }) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = stringResource(R.string.home_explore_presets),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
                         }
                     }
                 },
@@ -188,9 +201,13 @@ fun HomeScreen(
                             fontWeight = FontWeight.SemiBold,
                         )
                         val activeCount = rules.count { it.rule.enabled }
+                        val subtitleText = when {
+                            !engine -> stringResource(R.string.home_engine_paused_desc)
+                            rules.isEmpty() -> stringResource(R.string.home_no_rules_yet)
+                            else -> stringResource(R.string.home_engine_active_count, activeCount, rules.size)
+                        }
                         Text(
-                            if (engine) stringResource(R.string.home_engine_active_count, activeCount, rules.size)
-                            else stringResource(R.string.home_engine_paused_desc),
+                            text = subtitleText,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -200,7 +217,10 @@ fun HomeScreen(
             }
 
             if (rules.isEmpty()) {
-                EmptyState(create)
+                EmptyState(
+                    create = create,
+                    onExplorePresets = { showPresetsSheet = true },
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
@@ -231,31 +251,74 @@ fun HomeScreen(
             }
         }
     }
+
+    if (showPresetsSheet) {
+        PresetsBottomSheet(
+            onSelectPreset = { preset ->
+                showPresetsSheet = false
+                createWithPreset(preset)
+            },
+            onDismiss = { showPresetsSheet = false },
+        )
+    }
 }
 
 @Composable
-private fun EmptyState(create: () -> Unit) {
+private fun EmptyState(
+    create: () -> Unit,
+    onExplorePresets: () -> Unit,
+) {
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(top = 60.dp),
+            .padding(top = 44.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier = Modifier
                 .size(72.dp)
-                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), CircleShape),
+                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Default.Bolt, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(
+                Icons.Default.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(36.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
-        Text(stringResource(R.string.home_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 18.dp))
-        Text(stringResource(R.string.home_empty_desc), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
-        Spacer(Modifier.height(12.dp))
-        Button(create, shape = RoundedCornerShape(16.dp)) {
+        Text(
+            stringResource(R.string.home_empty_title),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 18.dp),
+        )
+        Text(
+            stringResource(R.string.home_empty_desc),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(
+            onClick = create,
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+        ) {
             Icon(Icons.Default.Add, null)
             Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.home_create_first_rule))
+            Text(stringResource(R.string.home_create_first_rule), fontWeight = FontWeight.SemiBold)
+        }
+        Spacer(Modifier.height(10.dp))
+        OutlinedButton(
+            onClick = onExplorePresets,
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+        ) {
+            Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.home_explore_presets), fontWeight = FontWeight.SemiBold)
         }
     }
 }

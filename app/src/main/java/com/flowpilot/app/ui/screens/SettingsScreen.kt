@@ -156,14 +156,10 @@ fun SettingsScreen(
                     onClick = { showLanguagePicker = true },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
-                SettingThemeRow(
-                    label = stringResource(R.string.settings_dark_theme),
+                SettingRowWithSubtitle(
+                    label = stringResource(R.string.settings_theme),
                     subtitle = currentThemeLabel,
                     icon = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
-                    checked = isDarkTheme,
-                    onCheckedChange = { checked ->
-                        vm.setAppTheme(if (checked) "dark" else "light")
-                    },
                     onClick = { showThemePicker = true },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -332,7 +328,7 @@ private fun ThemePickerDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 themes.forEach { (code, label) ->
-                    val isSelected = (currentTheme.isBlank() && code == "dark") ||
+                    val isSelected = (currentTheme.isBlank() && code == "system") ||
                         currentTheme.equals(code, ignoreCase = true)
                     Row(
                         modifier = Modifier
@@ -359,38 +355,6 @@ private fun ThemePickerDialog(
     )
 }
 
-@Composable
-fun SettingThemeRow(
-    label: String,
-    subtitle: String,
-    icon: ImageVector,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    onClick: () -> Unit,
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Column(
-            Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp)
-        ) {
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        FollowSwitch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
 
 @Composable
 fun SettingRowWithSubtitle(

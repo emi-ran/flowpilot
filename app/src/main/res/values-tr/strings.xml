@@ -50,8 +50,10 @@
     <string name="home_engine_running">Otomasyon motoru etkin</string>
     <string name="home_engine_stopped">Otomasyon motoru durduruldu</string>
     <string name="home_empty_title">Henüz otomasyon yok</string>
-    <string name="home_empty_desc">İlk otomasyon kuralınızı oluşturmak için + butonuna dokunun.</string>
-    <string name="home_active_rules">Aktif kurallar (%1$d)</string>
+    <string name="home_empty_desc">İlk otomasyon kuralınızı oluşturmak için aşağıdaki butona dokunun veya hazır şablonları deneyin.</string>
+    <string name="home_explore_presets">Hazır şablonları keşfet</string>
+    <string name="home_no_rules_yet">Henüz kural oluşturulmadı</string>
+    <string name="home_active_rules">Etkin kurallar (%1$d)</string>
 
     <!-- Create & Detail Screens -->
     <string name="create_title">Otomasyon oluştur</string>
@@ -622,4 +624,63 @@
     <string name="widget_active_count">%2$d kuraldan %1$d aktif</string>
     <string name="widget_btn_toggle">Motoru Aç/Kapat</string>
     <string name="widget_btn_open">FlowPilot\'ı Aç</string>
+
+    <!-- TTS Settings -->
+    <string name="tts_section_title">Metin Okuma (Çevrimdışı)</string>
+    <string name="tts_spoken_message_label">Seslendirilecek mesaj</string>
+    <string name="tts_spoken_message_placeholder">Örn: Pil şarjı tamamlandı, prizden çekin</string>
+    <string name="tts_loading_voices">Çevrimdışı sesler yükleniyor…</string>
+    <string name="tts_no_voices_found">Çevrimdışı TTS sesi bulunamadı. Android TTS motoruna çevrimdışı ses verisi indirilmelidir.</string>
+    <string name="tts_open_settings">TTS Ayarlarını Aç</string>
+    <string name="tts_offline_voice_title">Çevrimdışı Ses</string>
+    <string name="tts_system_default">Sistem varsayılanı</string>
+    <string name="tts_speech_rate_label">Konuşma Hızı (%1$s)</string>
+    <string name="tts_cached_ready">Çevrimdışı ses önbelleğe alındı &amp; hazır</string>
+    <string name="tts_needs_synthesis">Kural kaydedilmeden önce ses oluşturulmalıdır</string>
+    <string name="tts_synthesizing">Çevrimdışı ses oluşturuluyor…</string>
+    <string name="tts_synthesis_complete">Ses oluşturuldu</string>
+    <string name="tts_synthesis_failed">Ses oluşturulamadı. TTS motorunu kontrol edin.</string>
+    <string name="tts_invalid_cache_file">Geçersiz önbellek hedef dosya adı.</string>
+    <string name="tts_btn_regenerate">Yeniden Oluştur &amp; Dinle</string>
+    <string name="tts_btn_generate">Oluştur &amp; Dinle</string>
+    <string name="tts_btn_preview">Dinle</string>
+    <string name="tts_btn_stop">Durdur</string>
+    <string name="tts_dialog_title">Çevrimdışı Ses Seçin</string>
+    <string name="tts_dialog_tts_settings_desc">Sistem TTS Ayarları</string>
+    <string name="tts_dialog_search_label">Dil veya ses ara</string>
+    <string name="tts_dialog_search_placeholder">Türkçe, Turkish, tr-TR</string>
+    <string name="tts_dialog_banner">YALNIZCA ÇEVRİMDİŞİ SESLER (İnternet gerektirmez)</string>
+    <string name="tts_dialog_no_matches">\"%1$s\" ile eşleşen çevrimdışı ses bulunamadı</string>
+    <string name="tts_hold_to_preview">Dinlemek için basılı tutun</string>
+    <string name="tts_hint_enter_text_first">Önce seslendirilecek mesajı yazın, ardından sesi dinlemek için basılı tutun.</string>
+
+    <!-- Trigger Extra Settings -->
+    <string name="trigger_phone_number_label">Telefon numarası</string>
+    <string name="trigger_nfc_title">NFC etiket kimliği</string>
+    <string name="trigger_nfc_label">Etiket kimliği (hex, örn: 04A1B2C3D4E5F6)</string>
+    <string name="trigger_nfc_placeholder">Etiketi tarayın veya UID hex değerini girin</string>
+    <string name="trigger_nfc_help">Hex olarak girin veya yakalamak için uygulama açıkken etiketi telefona dokundurun.</string>
+    <string name="trigger_wifi_title">Wi-Fi ağı</string>
+    <string name="trigger_bluetooth_title">Bluetooth cihazı</string>
+    <string name="trigger_notif_title">Uygulama bildirimi</string>
+    <string name="trigger_notif_keyword_label">Anahtar kelime filtresi (isteğe bağlı, büyük/küçük harf duyarsız)</string>
+    <string name="trigger_webhook_title">HTTP Webhook</string>
+    <string name="action_delay_before">Eylem öncesi gecikme: %1$ds</string>
+    <string name="action_no_delay_label">Gecikmesiz</string>
+
+    <!-- Wi-Fi Picker -->
+    <string name="wifi_scan_nearby">Yakındakileri tara</string>
+    <string name="wifi_permission_required">Wi-Fi SSID tespiti için Konum izni ve cihaz Konumunun açık olması gerekir.</string>
+    <string name="wifi_grant_permission">İzin Ver</string>
+    <string name="wifi_enable_location">Konumu Aç</string>
+    <string name="wifi_scan_no_networks">Yakında Wi-Fi ağı bulunamadı.</string>
+    <string name="wifi_btn_scan_again">Yeniden tara</string>
+    <string name="wifi_btn_rescan">Yeniden Tara</string>
+    <string name="wifi_tap_to_pick">Yakındaki ağları seçmek için simgeye veya butona dokunun</string>
+    <string name="wifi_nearby_networks_title">Yakındaki Wi-Fi Ağları</string>
+    <string name="wifi_scan_hint">Kurala eklemek için bir SSID seçin. Android tarama sıklığını sınırlar; sonuçlar yakın zamanda önbelleğe alınmış ağları içerebilir.</string>
+    <string name="wifi_scanning_nearby">Yakındaki ağlar taranıyor…</string>
+    <string name="wifi_service_unavailable">Cihazda Wi-Fi hizmeti kullanılamıyor.</string>
+    <string name="wifi_scan_throttled">Wi-Fi taraması kısıtlandı veya konum kapalı. SSID adını elle de yazabilirsiniz.</string>
+    <string name="btn_retry">Yeniden Dene</string>
 </resources>

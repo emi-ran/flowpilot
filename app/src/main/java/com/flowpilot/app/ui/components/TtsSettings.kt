@@ -24,10 +24,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.flowpilot.app.R
 import com.flowpilot.app.actions.TtsExecutor
 import com.flowpilot.app.actions.TtsManager
 import com.flowpilot.app.data.model.TtsVoiceOption
@@ -125,7 +127,7 @@ fun TtsSettings(
     }
 
     Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
-        Text("Text-to-Speech (Offline)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.tts_section_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         OutlinedTextField(
             value = text,
@@ -137,8 +139,8 @@ fun TtsSettings(
                 .fillMaxWidth()
                 .padding(top = 8.dp)
                 .bringIntoViewOnFocusOrChange(text),
-            label = { Text("Spoken message") },
-            placeholder = { Text("e.g. Battery charged, unplug cable") },
+            label = { Text(stringResource(R.string.tts_spoken_message_label)) },
+            placeholder = { Text(stringResource(R.string.tts_spoken_message_placeholder)) },
             minLines = 2,
         )
 
@@ -148,7 +150,7 @@ fun TtsSettings(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
-                Text("Loading offline voices...", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.tts_loading_voices), style = MaterialTheme.typography.bodySmall)
             }
         } else if (voices.isEmpty()) {
             Card(
@@ -158,7 +160,7 @@ fun TtsSettings(
             ) {
                 Column(Modifier.padding(12.dp)) {
                     Text(
-                        "No offline TTS voice found. Android TTS engine needs offline voice data installed.",
+                        stringResource(R.string.tts_no_voices_found),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -175,22 +177,22 @@ fun TtsSettings(
                     ) {
                         Icon(Icons.Default.Settings, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Open TTS Settings")
+                        Text(stringResource(R.string.tts_open_settings))
                     }
                 }
             }
         } else {
             val selectedOption = voices.firstOrNull { it.name == voiceName } ?: voices.firstOrNull()
             SelectionRow(
-                title = "Offline Voice",
-                sub = selectedOption?.displayName ?: voiceName.ifBlank { "System default" },
+                title = stringResource(R.string.tts_offline_voice_title),
+                sub = selectedOption?.displayName ?: voiceName.ifBlank { stringResource(R.string.tts_system_default) },
                 click = { showVoicePicker = true }
             )
         }
 
         Spacer(Modifier.height(10.dp))
 
-        Text("Speech Rate (${"%.1fx".format(speechRate)})", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.tts_speech_rate_label, "%.1fx".format(speechRate)), style = MaterialTheme.typography.bodyMedium)
         Slider(
             value = speechRate,
             onValueChange = {
@@ -204,9 +206,9 @@ fun TtsSettings(
         Spacer(Modifier.height(6.dp))
 
         if (hasValidCache) {
-            Text("Offline audio cached & ready", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.tts_cached_ready), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         } else {
-            Text("Audio needs synthesis before rule save", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.tts_needs_synthesis), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         synthesisStatusMessage?.let { msg ->
@@ -222,22 +224,22 @@ fun TtsSettings(
                     if (trimmed.isBlank()) return@Button
                     scope.launch {
                         isSynthesizing = true
-                        synthesisStatusMessage = "Synthesizing offline audio..."
+                        synthesisStatusMessage = context.getString(R.string.tts_synthesizing)
                         val fileName = ttsManager.computeCacheFileName(ruleId, trimmed, voiceName, speechRate)
                         val targetFile = ttsManager.getCacheFile(fileName)
                         if (targetFile == null) {
                             isSynthesizing = false
-                            synthesisStatusMessage = "Invalid cache target filename."
+                            synthesisStatusMessage = context.getString(R.string.tts_invalid_cache_file)
                             return@launch
                         }
                         val success = ttsManager.synthesizeToFile(trimmed, voiceName, speechRate, targetFile)
                         isSynthesizing = false
                         if (success) {
                             setAudioFileName(fileName)
-                            synthesisStatusMessage = "Synthesis complete"
+                            synthesisStatusMessage = context.getString(R.string.tts_synthesis_complete)
                             ttsExecutor.playCacheFile(targetFile)
                         } else {
-                            synthesisStatusMessage = "Synthesis failed. Check TTS engine."
+                            synthesisStatusMessage = context.getString(R.string.tts_synthesis_failed)
                         }
                     }
                 },
@@ -249,7 +251,7 @@ fun TtsSettings(
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                     Spacer(Modifier.width(6.dp))
                 }
-                Text(if (hasValidCache) "Re-generate & Preview" else "Generate & Preview")
+                Text(if (hasValidCache) stringResource(R.string.tts_btn_regenerate) else stringResource(R.string.tts_btn_generate))
             }
 
             if (hasValidCache) {
@@ -261,7 +263,7 @@ fun TtsSettings(
                     modifier = Modifier.weight(0.7f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Preview")
+                    Text(stringResource(R.string.tts_btn_preview))
                 }
             }
 
@@ -270,7 +272,7 @@ fun TtsSettings(
                 modifier = Modifier.weight(0.6f),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Stop")
+                Text(stringResource(R.string.tts_btn_stop))
             }
         }
     }
@@ -286,6 +288,7 @@ private fun VoicePickerDialog(
     onDismiss: () -> Unit,
     onOpenTtsSettings: () -> Unit,
 ) {
+    val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var previewHint by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
@@ -318,11 +321,11 @@ private fun VoicePickerDialog(
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxSize()) {
                 TopAppBar(
-                    title = { Text("Choose Offline Voice", fontWeight = FontWeight.Bold) },
+                    title = { Text(stringResource(R.string.tts_dialog_title), fontWeight = FontWeight.Bold) },
                     navigationIcon = { IconButton(onDismiss) { Icon(Icons.Default.Close, null) } },
                     actions = {
                         IconButton(onOpenTtsSettings) {
-                            Icon(Icons.Default.Settings, "System TTS Settings")
+                            Icon(Icons.Default.Settings, stringResource(R.string.tts_dialog_tts_settings_desc))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -331,8 +334,8 @@ private fun VoicePickerDialog(
                     value = query,
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                    label = { Text("Search language or voice") },
-                    placeholder = { Text("Türkçe, Turkish, tr-TR") },
+                    label = { Text(stringResource(R.string.tts_dialog_search_label)) },
+                    placeholder = { Text(stringResource(R.string.tts_dialog_search_placeholder)) },
                     singleLine = true,
                 )
                 previewHint?.let { hint ->
@@ -349,7 +352,7 @@ private fun VoicePickerDialog(
                 ) {
                     item {
                         Text(
-                            "ONLY OFFLINE VOICES (isNetworkConnectionRequired = false)",
+                            stringResource(R.string.tts_dialog_banner),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(vertical = 12.dp)
@@ -358,7 +361,7 @@ private fun VoicePickerDialog(
                     if (filteredVoices.isEmpty()) {
                         item {
                             Text(
-                                "No offline voice matches \"$query\"",
+                                stringResource(R.string.tts_dialog_no_matches, query),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 20.dp),
@@ -376,7 +379,7 @@ private fun VoicePickerDialog(
                                             previewHint = null
                                             onPreview(voice)
                                         } else {
-                                            previewHint = "Write spoken message first, then hold a voice to preview."
+                                            previewHint = context.getString(R.string.tts_hint_enter_text_first)
                                         }
                                     },
                                 )
@@ -386,7 +389,7 @@ private fun VoicePickerDialog(
                             Column(Modifier.weight(1f)) {
                                 Text(voice.displayName, style = MaterialTheme.typography.bodyLarge)
                                 Text(voice.locale, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("Hold to preview", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.tts_hold_to_preview), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             if (voice.name == selectedVoiceName) {
                                 Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)

@@ -85,7 +85,11 @@ import com.flowpilot.app.engine.NfcTagHandoff
 import com.flowpilot.app.engine.NfcTagUtils
 
 @Composable
-fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
+fun CreateScreen(
+    vm: AppViewModel,
+    initialPreset: com.flowpilot.app.data.model.AutomationPreset? = null,
+    done: () -> Unit,
+) {
     BackHandler(onBack = done)
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -203,73 +207,81 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
         }
     }
 
+    val applyPreset: (com.flowpilot.app.data.model.AutomationPreset) -> Unit = { preset ->
+        val t = preset.template
+        name = t.name
+        event = t.triggerEvent
+        pkg = t.appPackage
+        appName = t.appName
+        scheduledMinute = t.scheduledMinute
+        scheduledDays = t.scheduledDays
+        batteryLevel = t.batteryLevel
+        wifiSsid = t.wifiSsid
+        bluetoothDeviceAddress = t.bluetoothDeviceAddress
+        bluetoothDeviceName = t.bluetoothDeviceName
+        nfcTagId = t.nfcTagId
+        notificationAppPackage = t.notificationAppPackage
+        notificationAppName = t.notificationAppName
+        notificationKeyword = t.notificationKeyword
+        phoneNumber = t.phoneNumber
+        flipScreenOffDetection = t.flipScreenOffDetection
+        lightLux = t.lightLux
+        smsSenderFilter = t.smsSenderFilter
+        smsMatchMode = t.smsMatchMode
+        smsKeyword = t.smsKeyword
+        smsRecipient = t.smsRecipient
+        smsMessage = t.smsMessage
+        conditions = t.conditions
+        actions = t.effectiveActions
+        actionDelays = t.effectiveActionDelays
+        cooldownMinutes = t.cooldownMinutes
+        notificationTitle = t.notificationTitle
+        notificationBody = t.notificationBody
+        vibrationPattern = t.vibrationPattern
+        vibrationDurationMs = t.vibrationDurationMs
+        vibrationAmplitude = t.vibrationAmplitude
+        mediaVolumePercent = t.mediaVolumePercent
+        soundPreset = t.soundPreset
+        soundUri = t.soundUri
+        soundName = t.soundName
+        soundDurationMs = t.soundDurationMs
+        launchPackage = t.launchPackage
+        launchAppName = t.launchAppName
+        url = t.url
+        alarmHour = t.alarmHour
+        alarmMinute = t.alarmMinute
+        alarmMessage = t.alarmMessage
+        timerDurationSeconds = t.timerDurationSeconds
+        timerMessage = t.timerMessage
+        webhookMethod = t.webhookMethod
+        webhookUrl = t.webhookUrl
+        webhookHeaders = t.webhookHeaders
+        webhookBody = t.webhookBody
+        webhookTimeoutSeconds = t.webhookTimeoutSeconds
+        ttsText = t.ttsText
+        ttsVoiceName = t.ttsVoiceName
+        ttsSpeechRate = t.ttsSpeechRate
+        ttsAudioFileName = t.ttsAudioFileName
+        screenBrightnessPercent = t.screenBrightnessPercent
+        forceStopPackage = t.forceStopPackage
+        forceStopAppName = t.forceStopAppName
+
+        val localizedPresetTitle = context.getString(preset.titleRes)
+        name = localizedPresetTitle
+
+        scope.launch {
+            snackbarHostState.showSnackbar(context.getString(R.string.preset_applied_snackbar, localizedPresetTitle))
+        }
+    }
+
+    LaunchedEffect(initialPreset) {
+        initialPreset?.let { applyPreset(it) }
+    }
+
     if (showPresets) {
         com.flowpilot.app.ui.components.PresetsBottomSheet(
             onSelectPreset = { preset ->
-                val t = preset.template
-                name = t.name
-                event = t.triggerEvent
-                pkg = t.appPackage
-                appName = t.appName
-                scheduledMinute = t.scheduledMinute
-                scheduledDays = t.scheduledDays
-                batteryLevel = t.batteryLevel
-                wifiSsid = t.wifiSsid
-                bluetoothDeviceAddress = t.bluetoothDeviceAddress
-                bluetoothDeviceName = t.bluetoothDeviceName
-                nfcTagId = t.nfcTagId
-                notificationAppPackage = t.notificationAppPackage
-                notificationAppName = t.notificationAppName
-                notificationKeyword = t.notificationKeyword
-                phoneNumber = t.phoneNumber
-                flipScreenOffDetection = t.flipScreenOffDetection
-                lightLux = t.lightLux
-                smsSenderFilter = t.smsSenderFilter
-                smsMatchMode = t.smsMatchMode
-                smsKeyword = t.smsKeyword
-                smsRecipient = t.smsRecipient
-                smsMessage = t.smsMessage
-                conditions = t.conditions
-                actions = t.effectiveActions
-                actionDelays = t.effectiveActionDelays
-                cooldownMinutes = t.cooldownMinutes
-                notificationTitle = t.notificationTitle
-                notificationBody = t.notificationBody
-                vibrationPattern = t.vibrationPattern
-                vibrationDurationMs = t.vibrationDurationMs
-                vibrationAmplitude = t.vibrationAmplitude
-                mediaVolumePercent = t.mediaVolumePercent
-                soundPreset = t.soundPreset
-                soundUri = t.soundUri
-                soundName = t.soundName
-                soundDurationMs = t.soundDurationMs
-                launchPackage = t.launchPackage
-                launchAppName = t.launchAppName
-                url = t.url
-                alarmHour = t.alarmHour
-                alarmMinute = t.alarmMinute
-                alarmMessage = t.alarmMessage
-                timerDurationSeconds = t.timerDurationSeconds
-                timerMessage = t.timerMessage
-                webhookMethod = t.webhookMethod
-                webhookUrl = t.webhookUrl
-                webhookHeaders = t.webhookHeaders
-                webhookBody = t.webhookBody
-                webhookTimeoutSeconds = t.webhookTimeoutSeconds
-                ttsText = t.ttsText
-                ttsVoiceName = t.ttsVoiceName
-                ttsSpeechRate = t.ttsSpeechRate
-                ttsAudioFileName = t.ttsAudioFileName
-                screenBrightnessPercent = t.screenBrightnessPercent
-                forceStopPackage = t.forceStopPackage
-                forceStopAppName = t.forceStopAppName
-
-                val localizedPresetTitle = context.getString(preset.titleRes)
-                name = localizedPresetTitle
-
-                scope.launch {
-                    snackbarHostState.showSnackbar(context.getString(R.string.preset_applied_snackbar, localizedPresetTitle))
-                }
+                applyPreset(preset)
             },
             onDismiss = { showPresets = false },
         )
@@ -1052,7 +1064,7 @@ fun PhoneActionSettings(
             .padding(top = 8.dp)
             .bringIntoViewOnFocusOrChange(phoneNumber),
         shape = RoundedCornerShape(16.dp),
-        label = { Text("Phone number") },
+        label = { Text(stringResource(R.string.trigger_phone_number_label)) },
         placeholder = { Text("+905551234567") },
         singleLine = true,
     )
@@ -1063,7 +1075,7 @@ fun NfcTagTriggerSettings(
     tagId: String,
     onTagIdChange: (String) -> Unit,
 ) {
-    Text("NFC tag ID", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.trigger_nfc_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     OutlinedTextField(
         value = tagId,
         onValueChange = { onTagIdChange(it.uppercase()) },
@@ -1072,10 +1084,10 @@ fun NfcTagTriggerSettings(
             .padding(top = 8.dp)
             .bringIntoViewOnFocusOrChange(tagId),
         shape = RoundedCornerShape(16.dp),
-        label = { Text("Tag ID (hex, e.g. 04A1B2C3D4E5F6)") },
-        placeholder = { Text("Scan or enter tag UID hex") },
+        label = { Text(stringResource(R.string.trigger_nfc_label)) },
+        placeholder = { Text(stringResource(R.string.trigger_nfc_placeholder)) },
         supportingText = {
-            Text("Enter tag UID in hex or tap a tag on phone while app is open to capture.")
+            Text(stringResource(R.string.trigger_nfc_help))
         },
         singleLine = true,
     )
@@ -1092,7 +1104,7 @@ fun ActionDelaySetting(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
-            text = if (delaySeconds > 0) "Delay before action: ${delaySeconds}s" else "No delay",
+            text = if (delaySeconds > 0) stringResource(R.string.action_delay_before, delaySeconds) else stringResource(R.string.action_no_delay_label),
             style = MaterialTheme.typography.bodySmall,
             color = if (delaySeconds > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -1111,7 +1123,7 @@ fun WifiTriggerSettings(
     ssid: String,
     setSsid: (String) -> Unit,
 ) {
-    Text("Wi-Fi network", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.trigger_wifi_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     WifiSsidPickerField(
         ssid = ssid,
         onSsidChange = setSsid,
@@ -1124,7 +1136,7 @@ fun BluetoothTriggerSettings(
     name: String,
     onDeviceSelected: (address: String, name: String) -> Unit,
 ) {
-    Text("Bluetooth device", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.trigger_bluetooth_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     BluetoothDevicePickerField(address = address, name = name, onDeviceSelected = onDeviceSelected)
 }
 
@@ -1136,10 +1148,10 @@ fun NotificationTriggerSettings(
     chooseApp: () -> Unit,
     setKeyword: (String) -> Unit,
 ) {
-    Text("App notification", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.trigger_notif_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     SelectionRow(
-        if (appPackage.isEmpty()) "App" else appName,
-        if (appPackage.isEmpty()) "Choose app to listen to" else appPackage,
+        if (appPackage.isEmpty()) stringResource(R.string.cat_app) else appName,
+        if (appPackage.isEmpty()) stringResource(R.string.notification_choose_app) else appPackage,
         chooseApp,
     )
     OutlinedTextField(
@@ -1150,7 +1162,7 @@ fun NotificationTriggerSettings(
             .padding(top = 8.dp)
             .bringIntoViewOnFocusOrChange(keyword),
         shape = RoundedCornerShape(16.dp),
-        label = { Text("Keyword filter (optional, case-insensitive)") },
+        label = { Text(stringResource(R.string.trigger_notif_keyword_label)) },
         singleLine = true,
     )
 }
@@ -1168,7 +1180,7 @@ fun WebhookSettings(
     setBody: (String) -> Unit,
     setTimeoutSeconds: (Int) -> Unit,
 ) {
-    Text("HTTP Webhook", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.trigger_webhook_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     var showTemplateVariables by remember { mutableStateOf(false) }
 
     val methods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD")
@@ -1194,7 +1206,7 @@ fun WebhookSettings(
             .padding(top = 8.dp)
             .bringIntoViewOnFocusOrChange(url),
         shape = RoundedCornerShape(16.dp),
-        label = { Text("URL (https://example.com/api)") },
+        label = { Text(stringResource(R.string.action_url_label)) },
         singleLine = true,
     )
 
@@ -1207,7 +1219,7 @@ fun WebhookSettings(
             .padding(top = 8.dp)
             .bringIntoViewOnFocusOrChange(headers),
         shape = RoundedCornerShape(16.dp),
-        label = { Text("Headers (Key: Value, one per line)") },
+        label = { Text(stringResource(R.string.webhook_headers_label)) },
         placeholder = { Text("Content-Type: application/json\nAuthorization: Bearer token") },
         isError = headerError != null,
         supportingText = headerError?.let { err ->
@@ -1225,7 +1237,7 @@ fun WebhookSettings(
                 .padding(top = 8.dp)
                 .bringIntoViewOnFocusOrChange(body),
             shape = RoundedCornerShape(16.dp),
-            label = { Text("Request Body") },
+            label = { Text(stringResource(R.string.webhook_body_label)) },
             placeholder = { Text("{\"event\": \"\${trigger}\", \"battery\": \${batteryPercent}}") },
             minLines = 3,
         )
@@ -1235,14 +1247,14 @@ fun WebhookSettings(
         onClick = { showTemplateVariables = true },
         modifier = Modifier.padding(top = 4.dp),
     ) {
-        Text("View supported variables")
+        Text(stringResource(R.string.webhook_view_vars))
     }
 
     if (showTemplateVariables) {
         WebhookTemplateVariablesDialog(onDismiss = { showTemplateVariables = false })
     }
 
-    Text("Timeout  ${timeoutSeconds}s", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
+    Text(stringResource(R.string.webhook_timeout_label, timeoutSeconds), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
     Slider(
         value = timeoutSeconds.toFloat(),
         onValueChange = { setTimeoutSeconds(it.toInt().coerceIn(1, 60)) },
@@ -1256,7 +1268,7 @@ fun WebhookSettings(
 private fun WebhookTemplateVariablesDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Webhook variables") },
+        title = { Text(stringResource(R.string.webhook_vars_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
@@ -1278,7 +1290,7 @@ private fun WebhookTemplateVariablesDialog(onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Done") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.btn_close)) }
         },
     )
 }

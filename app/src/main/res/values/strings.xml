@@ -50,7 +50,9 @@
     <string name="home_engine_running">Automation engine active</string>
     <string name="home_engine_stopped">Automation engine stopped</string>
     <string name="home_empty_title">No automations yet</string>
-    <string name="home_empty_desc">Tap + to create your first automation rule.</string>
+    <string name="home_empty_desc">Tap the button below to create your first automation or explore ready-to-use presets.</string>
+    <string name="home_explore_presets">Explore presets</string>
+    <string name="home_no_rules_yet">No automations created yet</string>
     <string name="home_active_rules">Active rules (%1$d)</string>
 
     <!-- Create & Detail Screens -->
@@ -622,4 +624,63 @@
     <string name="widget_active_count">%1$d of %2$d active</string>
     <string name="widget_btn_toggle">Toggle Engine</string>
     <string name="widget_btn_open">Open FlowPilot</string>
+
+    <!-- TTS Settings -->
+    <string name="tts_section_title">Text-to-Speech (Offline)</string>
+    <string name="tts_spoken_message_label">Spoken message</string>
+    <string name="tts_spoken_message_placeholder">e.g. Battery charged, unplug cable</string>
+    <string name="tts_loading_voices">Loading offline voices…</string>
+    <string name="tts_no_voices_found">No offline TTS voice found. Android TTS engine needs offline voice data installed.</string>
+    <string name="tts_open_settings">Open TTS Settings</string>
+    <string name="tts_offline_voice_title">Offline Voice</string>
+    <string name="tts_system_default">System default</string>
+    <string name="tts_speech_rate_label">Speech Rate (%1$s)</string>
+    <string name="tts_cached_ready">Offline audio cached &amp; ready</string>
+    <string name="tts_needs_synthesis">Audio needs synthesis before rule save</string>
+    <string name="tts_synthesizing">Synthesizing offline audio…</string>
+    <string name="tts_synthesis_complete">Synthesis complete</string>
+    <string name="tts_synthesis_failed">Synthesis failed. Check TTS engine.</string>
+    <string name="tts_invalid_cache_file">Invalid cache target filename.</string>
+    <string name="tts_btn_regenerate">Re-generate &amp; Preview</string>
+    <string name="tts_btn_generate">Generate &amp; Preview</string>
+    <string name="tts_btn_preview">Preview</string>
+    <string name="tts_btn_stop">Stop</string>
+    <string name="tts_dialog_title">Choose Offline Voice</string>
+    <string name="tts_dialog_tts_settings_desc">System TTS Settings</string>
+    <string name="tts_dialog_search_label">Search language or voice</string>
+    <string name="tts_dialog_search_placeholder">Türkçe, Turkish, tr-TR</string>
+    <string name="tts_dialog_banner">ONLY OFFLINE VOICES (isNetworkConnectionRequired = false)</string>
+    <string name="tts_dialog_no_matches">No offline voice matches \"%1$s\"</string>
+    <string name="tts_hold_to_preview">Hold to preview</string>
+    <string name="tts_hint_enter_text_first">Write spoken message first, then hold a voice to preview.</string>
+
+    <!-- Trigger Extra Settings -->
+    <string name="trigger_phone_number_label">Phone number</string>
+    <string name="trigger_nfc_title">NFC tag ID</string>
+    <string name="trigger_nfc_label">Tag ID (hex, e.g. 04A1B2C3D4E5F6)</string>
+    <string name="trigger_nfc_placeholder">Scan or enter tag UID hex</string>
+    <string name="trigger_nfc_help">Enter tag UID in hex or tap a tag on phone while app is open to capture.</string>
+    <string name="trigger_wifi_title">Wi-Fi network</string>
+    <string name="trigger_bluetooth_title">Bluetooth device</string>
+    <string name="trigger_notif_title">App notification</string>
+    <string name="trigger_notif_keyword_label">Keyword filter (optional, case-insensitive)</string>
+    <string name="trigger_webhook_title">HTTP Webhook</string>
+    <string name="action_delay_before">Delay before action: %1$ds</string>
+    <string name="action_no_delay_label">No delay</string>
+
+    <!-- Wi-Fi Picker -->
+    <string name="wifi_scan_nearby">Scan nearby</string>
+    <string name="wifi_permission_required">Wi-Fi SSID detection requires ACCESS_FINE_LOCATION permission and device Location enabled.</string>
+    <string name="wifi_grant_permission">Grant Permission</string>
+    <string name="wifi_enable_location">Enable Location</string>
+    <string name="wifi_scan_no_networks">No Wi-Fi networks found nearby.</string>
+    <string name="wifi_btn_scan_again">Scan again</string>
+    <string name="wifi_btn_rescan">Rescan</string>
+    <string name="wifi_tap_to_pick">Tap icon or button to pick nearby network</string>
+    <string name="wifi_nearby_networks_title">Nearby Wi-Fi Networks</string>
+    <string name="wifi_scan_hint">Select an SSID to populate rule. Android limits scan frequency (scan throttling); results may include recent cached networks.</string>
+    <string name="wifi_scanning_nearby">Scanning nearby networks…</string>
+    <string name="wifi_service_unavailable">Wi-Fi service unavailable on device.</string>
+    <string name="wifi_scan_throttled">Wi-Fi scan throttled or location disabled. You can still type the SSID manually.</string>
+    <string name="btn_retry">Retry</string>
 </resources>
