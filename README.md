@@ -23,6 +23,8 @@
 > [!NOTE]
 > **📱 Device Compatibility & Community Testing Notice:**  
 > FlowPilot is created by an independent developer and is currently **developed and tested primarily on Xiaomi HyperOS (Xiaomi 15T Pro)**, as this is the developer's primary personal device. Standard Android APIs and best practices are adhered to wherever possible, but compatibility with other OEM skins (Google Pixel, Samsung One UI, OxygenOS, Motorola, etc.) has **not been tested yet**. Feedback, test reports on other hardware, and pull requests from other developers are warmly welcomed!
+>
+> CI runs `connectedDebugAndroidTest` on an API 35 Android Emulator. This checks runtime contracts in `RuntimeContractsInstrumentedTest`; it does not replace physical-device or OEM smoke testing. Release workflow blocks APK publishing when this emulator gate fails.
 
 ## 🌟 Why FlowPilot?
 
