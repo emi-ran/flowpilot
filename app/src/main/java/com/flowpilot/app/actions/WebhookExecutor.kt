@@ -3,6 +3,7 @@ package com.flowpilot.app.actions
 import android.util.Log
 import com.flowpilot.app.data.model.ActionType
 import java.io.OutputStreamWriter
+import java.nio.charset.StandardCharsets
 import java.net.HttpURLConnection
 import java.net.Inet6Address
 import java.net.InetAddress
@@ -48,8 +49,6 @@ internal class PinnedSocketFactory(
     override fun getDefaultCipherSuites(): Array<String> = delegate.defaultCipherSuites
     override fun getSupportedCipherSuites(): Array<String> = delegate.supportedCipherSuites
 }
-
-import java.nio.charset.StandardCharsets
 
 /**
  * Executes outbound HTTP/HTTPS requests (webhooks) using standard HttpURLConnection.
