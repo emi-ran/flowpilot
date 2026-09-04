@@ -71,14 +71,14 @@ class BluetoothDeviceTracker(private val context: Context) {
             }
             val device = intent.bluetoothDeviceOrNull() ?: return
             val address = try { device.address } catch (_: SecurityException) { return }
-            Log.i(TAG, "Received address=$address event=$event")
+            Log.i(TAG, "Received Bluetooth event=$event")
             val name = try { device.name } catch (_: SecurityException) { null }
             synchronized(this@BluetoothDeviceTracker) {
                 val result = BluetoothDeviceReducer.reduce(state, event, address, name)
                 state = result.first
                 result.second?.let {
                     transitions.add(it)
-                    Log.i(TAG, "Reduced address=${it.address} event=${it.event}")
+                    Log.i(TAG, "Reduced Bluetooth event=${it.event}")
                 }
             }
         }
