@@ -91,8 +91,8 @@ class SmsExecutor(
             Log.i(TAG, "Direct SMS sent successfully to $masked")
             ActionResult(true, "SMS sent to $masked")
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to send SMS: ${e.message}")
-            ActionResult(false, "Failed to send SMS: ${e.message ?: "Unknown error"}")
+            Log.w(TAG, "Failed to send SMS (${e.javaClass.simpleName})")
+            ActionResult(false, "Failed to send SMS")
         }
     }
 
@@ -122,7 +122,7 @@ class SmsExecutor(
             Log.i(TAG, "SMS draft opened successfully")
             ActionResult(true, "SMS draft opened")
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to draft SMS: ${e.message}")
+            Log.w(TAG, "Failed to draft SMS (${e.javaClass.simpleName})")
             ActionResult(false, "Failed to open SMS draft")
         }
     }

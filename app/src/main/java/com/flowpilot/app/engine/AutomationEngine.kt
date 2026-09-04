@@ -90,7 +90,7 @@ class AutomationEngine(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.w(TAG, "Exception during engine poll: ${e.message}")
+                    Log.w(TAG, "Exception during engine poll (${e.javaClass.simpleName})")
                 }
                 delay(POLL_INTERVAL_MS)
             }
@@ -494,7 +494,7 @@ class AutomationEngine(
                                 smsMessage = rule.smsMessage,
                             ),
                         )
-                        Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")
+                        Log.i(TAG, "Rule action result: action=${action.name}, success=${result.success}")
                         if (result.success) {
                             anySuccess = true
                         }
