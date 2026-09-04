@@ -54,7 +54,10 @@ class AutomationService : Service() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
         // Ensure service and engine remain active even if the task/activity is swiped away from Recents
-        startForegroundCompat()
+        if (!startForegroundCompat()) {
+            stopSelf()
+            return
+        }
         synchronized(lifecycleLock) {
             ensureEngineRunning()
         }
@@ -97,9 +100,8 @@ class AutomationService : Service() {
         try {
             val notification = buildNotification()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                val hasLocationPerm = checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
-                    checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                val types = if (hasLocationPerm) {
+                val hasBackgroundLocationPerm = checkSelfPermission(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val types = if (hasBackgroundLocationPerm) {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
                 } else {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
@@ -108,6 +110,8 @@ class AutomationService : Service() {
             } else {
                 startForeground(NOTIF_ID, notification)
             }
+            getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
+                .edit().remove(STARTUP_FAILURE_KEY).apply()
             return true
         } catch (t: Throwable) {
             getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
@@ -155,8 +159,6 @@ class AutomationService : Service() {
                 } else {
                     context.startService(intent)
                 }
-                context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
-                    .edit().remove(STARTUP_FAILURE_KEY).apply()
                 true
             } catch (t: Throwable) {
                 context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
