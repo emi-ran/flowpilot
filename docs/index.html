@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowPilot — Rootless Android Automation Engine</title>
+  <meta name="description" content="Local, event-driven Android automation. Zero telemetry, no persistent background wake-locks, privileged system control via Shizuku IPC." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23121215%22/><path d=%22M32 28L68 50L32 72V28Z%22 fill=%22%2322c55e%22/></svg>" />
+
+  <style>
+    :root {
+      --bg: #09090b;
+      --card: #121215;
+      --card-muted: #18181c;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.16);
+      --border-focus: #3b82f6;
+      
+      --text: #f4f4f6;
+      --text-muted: #8e8e99;
+      --text-dim: #5a5a66;
+      
+      --emerald: #10b981;
+      --emerald-bg: rgba(16, 185, 129, 0.08);
+      --emerald-border: rgba(16, 185, 129, 0.25);
+      
+      --blue: #3b82f6;
+      --blue-bg: rgba(59, 130, 246, 0.08);
+      --blue-border: rgba(59, 130, 246, 0.25);
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --dur: 200ms;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      letter-spacing: -0.01em;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* Layout wrapper */
+    .shell {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Grid layout */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 860px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(9, 9, 11, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-content {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+    .brand-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: #18181c;
+      border: 1px solid var(--border-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--emerald);
+    }
+    .brand-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--emerald);
+      background: var(--emerald-bg);
+      border: 1px solid var(--emerald-border);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .nav-items {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .nav-link {
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: color var(--dur) ease;
+    }
+    .nav-link:hover {
+      color: var(--text);
+    }
+
+    /* Language Switcher */
+    .lang-switcher {
+      display: inline-flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px;
+    }
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--dur) ease;
+    }
+    .lang-btn.active {
+      background: #27272e;
+      color: var(--text);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 6px;
+      transition: all var(--dur) ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: #f4f4f6;
+      color: #09090b;
+      font-weight: 600;
+    }
+    .btn-primary:hover {
+      background: #ffffff;
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover {
+      border-color: var(--border-hover);
+      background: var(--card-muted);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 72px 0 60px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-pre {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    .hero-pre span {
+      color: var(--emerald);
+    }
+    .hero-title {
+      font-size: 42px;
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.035em;
+      margin-bottom: 18px;
+      color: #ffffff;
+      max-width: 800px;
+    }
+    .hero-desc {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 680px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+    .command-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: all;
+      transition: border-color var(--dur) ease;
+    }
+    .command-box:hover {
+      border-color: var(--border-hover);
+      color: var(--text);
+    }
+    .copy-tag {
+      font-size: 10px;
+      color: var(--emerald);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Key Attributes Bar */
+    .attr-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    @media (max-width: 720px) {
+      .attr-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+    .attr-item {
+      background: var(--card);
+      padding: 16px 20px;
+    }
+    .attr-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      letter-spacing: 0.05em;
+    }
+    .attr-val {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .attr-val small {
+      font-size: 12px;
+      color: var(--emerald);
+      font-weight: 500;
+    }
+
+    /* Interactive Workbench Section */
+    .section {
+      padding: 64px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-header {
+      margin-bottom: 32px;
+    }
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--emerald);
+      margin-bottom: 8px;
+      display: block;
+    }
+    .section-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: #fff;
+    }
+    .section-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      max-width: 640px;
+    }
+
+    /* Workbench card */
+    .workbench {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    @media (max-width: 900px) {
+      .workbench { grid-template-columns: 1fr; }
+    }
+
+    .wb-controls {
+      padding: 24px;
+      border-right: 1px solid var(--border);
+      background: #0d0d10;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    @media (max-width: 900px) {
+      .wb-controls { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+
+    .wb-rule-btn {
+      text-align: left;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all var(--dur) ease;
+      color: inherit;
+    }
+    .wb-rule-btn:hover {
+      border-color: var(--border-hover);
+      background: var(--card-muted);
+    }
+    .wb-rule-btn.active {
+      border-color: var(--emerald-border);
+      background: var(--emerald-bg);
+    }
+    .wb-rule-btn .btn-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .wb-rule-btn .btn-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #fff;
+    }
+    .wb-rule-btn.active .btn-name {
+      color: var(--emerald);
+    }
+    .wb-rule-btn .btn-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+    }
+    .wb-rule-btn .btn-summary {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .wb-stage {
+      padding: 28px;
+      display: flex;
+      gap: 28px;
+      align-items: center;
+      justify-content: center;
+      background: #09090b;
+    }
+    @media (max-width: 720px) {
+      .wb-stage { flex-direction: column; padding: 20px; }
+    }
+
+    /* Phone container */
+    .device-viewport {
+      width: 250px;
+      height: 510px;
+      background: #000;
+      border: 6px solid #222228;
+      border-radius: 36px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+      flex-shrink: 0;
+    }
+    .device-viewport img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 150ms ease;
+    }
+
+    /* Rule Inspector Code view */
+    .rule-spec {
+      flex: 1;
+      min-width: 0;
+      background: #111114;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.65;
+      overflow-x: auto;
+    }
+    .spec-header {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .code-kw { color: #f472b6; }
+    .code-prop { color: #60a5fa; }
+    .code-str { color: #34d399; }
+    .code-num { color: #fbbf24; }
+    .code-comment { color: #6b7280; font-style: italic; }
+
+    /* Comparison / Philosophy */
+    .comp-table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--card);
+    }
+    table.comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    table.comp-table th, table.comp-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    table.comp-table th {
+      background: #0d0d10;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    table.comp-table tr:last-child td {
+      border-bottom: none;
+    }
+    .badge-good {
+      color: var(--emerald);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-bad {
+      color: #ef4444;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-warn {
+      color: #f59e0b;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* Technical Capability Matrix */
+    .cap-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 860px) {
+      .cap-grid { grid-template-columns: 1fr; }
+    }
+    .cap-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .cap-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cap-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      font-size: 13px;
+    }
+    .cap-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+    .cap-name {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .cap-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--emerald);
+    }
+    .cap-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: #1e1e24;
+      color: var(--text-dim);
+    }
+    .cap-badge.shizuku {
+      background: var(--blue-bg);
+      color: #93c5fd;
+      border: 1px solid var(--blue-border);
+    }
+
+    /* Terminal Walkthrough */
+    .term-window {
+      background: #0d0d10;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .term-bar {
+      height: 34px;
+      background: #141418;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .term-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .term-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #2b2b32;
+    }
+    .term-body {
+      padding: 20px;
+      line-height: 1.7;
+      color: #d1d5db;
+    }
+    .term-prompt { color: var(--emerald); user-select: none; }
+    .term-cmd { color: #f3f4f6; }
+    .term-out { color: var(--text-muted); }
+
+    /* Screenshot Gallery Slider */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 500px) {
+      .gallery-grid { grid-template-columns: 1fr; }
+    }
+    .gallery-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color var(--dur) ease;
+    }
+    .gallery-card:hover {
+      border-color: var(--border-hover);
+    }
+    .gallery-img-wrap {
+      border-radius: 6px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border);
+      aspect-ratio: 9 / 19.5;
+    }
+    .gallery-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .gallery-caption {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .gallery-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* OEM / HyperOS Box */
+    .oem-box {
+      background: #111116;
+      border: 1px solid var(--border);
+      border-left: 3px solid #f59e0b;
+      padding: 20px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .oem-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .oem-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* Footer */
+    footer {
+      padding: 48px 0;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .footer-links a:hover {
+      color: var(--text);
+    }
+
+    /* Inline micro tags */
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: #1b1b22;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="shell header-content">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </div>
+        <span>FlowPilot</span>
+        <span class="brand-tag">v1.0.0</span>
+      </div>
+
+      <div class="nav-items">
+        <a href="#workbench" class="nav-link" data-i18n="nav_workbench">İncele</a>
+        <a href="#matrix" class="nav-link" data-i18n="nav_matrix">Kabiliyetler</a>
+        <a href="#comparison" class="nav-link" data-i18n="nav_comparison">Mimari</a>
+        <a href="#install" class="nav-link" data-i18n="nav_install">Kurulum</a>
+        
+        <div class="lang-switcher">
+          <button class="lang-btn active" id="btn-tr" onclick="setLang('tr')">TR</button>
+          <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+        </div>
+
+        <a href="https://github.com/emi-ran/flowpilot" target="_blank" class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="shell">
+      <div class="hero-pre">
+        <code>github.com/emi-ran/flowpilot</code>
+        <span>•</span>
+        <code data-i18n="hero_badge">Açık Kaynak & Bağımsız</code>
+      </div>
+
+      <h1 class="hero-title" data-i18n="hero_title">
+        Root Gerektirmeyen Android Otomasyon Motoru.
+      </h1>
+
+      <p class="hero-desc" data-i18n="hero_desc">
+        Gereksiz pil tüketen sürekli arka plan servisleri ve hantal yapılar yerine; Shizuku IPC, Kotlin Coroutines ve modern Android olay yayınlarıyla çalışan hafif, gizlilik odaklı otomasyon.
+      </p>
+
+      <div class="hero-actions">
+        <a href="https://github.com/emi-ran/flowpilot/releases/download/v1.0.0/FlowPilot-v1.0.0.apk" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span data-i18n="btn_download">APK İndir (v1.0.0)</span>
+        </a>
+
+        <div class="command-box" onclick="copyAdbInstall(this)">
+          <code>adb install FlowPilot-v1.0.0.apk</code>
+          <span class="copy-tag" id="adb-copy-feedback" data-i18n="btn_copy">KOPYALA</span>
+        </div>
+      </div>
+
+      <!-- Engineering Attr Bar -->
+      <div class="attr-bar">
+        <div class="attr-item">
+          <div class="attr-title" data-i18n="stat_apk_label">APK Boyutu</div>
+          <div class="attr-val">~4.2 MB <small>(Zero Bloat)</small></div>
+        </div>
+        <div class="attr-item">
+          <div class="attr-title" data-i18n="stat_runtime_label">Çalışma Modeli</div>
+          <div class="attr-val">Event-Driven <small>(0 Wake-Lock)</small></div>
+        </div>
+        <div class="attr-item">
+          <div class="attr-title" data-i18n="stat_shizuku_label">Yetki Katmanı</div>
+          <div class="attr-val">Shizuku IPC <small>(No Root)</small></div>
+        </div>
+        <div class="attr-item">
+          <div class="attr-title" data-i18n="stat_telemetry_label">Telemetri & Ağ</div>
+          <div class="attr-val">0 İstek <small>(%100 Yerel)</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Interactive Workbench -->
+  <section class="section" id="workbench">
+    <div class="shell">
+      <div class="section-header">
+        <span class="section-label" data-i18n="wb_label">İnteraktif Kural Mühendisliği</span>
+        <h2 class="section-title" data-i18n="wb_title">Uygulamayı ve Otomasyon Mantığını İnceleyin</h2>
+        <p class="section-desc" data-i18n="wb_desc">
+          Aşağıdaki hazır kuralları seçerek hem cihaz ekranındaki görünümünü hem de arkasındaki veri/eylem yapısını canlı olarak görün.
+        </p>
+      </div>
+
+      <div class="workbench">
+        <!-- Controls -->
+        <div class="wb-controls">
+          <button class="wb-rule-btn active" onclick="selectRule(0)" id="wb-rule-0">
+            <div class="btn-top">
+              <span class="btn-name" data-i18n="rule_0_title">Gece Rutini (Sessiz & Ekran)</span>
+              <span class="btn-tag">ZAMAN</span>
+            </div>
+            <div class="btn-summary" data-i18n="rule_0_summary">Saat 23:00 olunca otomatik parlaklığı kapat, seviyeyi %10 yap ve Rahatsız Etmeyin'e geç.</div>
+          </button>
+
+          <button class="wb-rule-btn" onclick="selectRule(1)" id="wb-rule-1">
+            <div class="btn-top">
+              <span class="btn-name" data-i18n="rule_1_title">Evden Çıkış (Hızlı Güç)</span>
+              <span class="btn-tag">AĞ</span>
+            </div>
+            <div class="btn-summary" data-i18n="rule_1_summary">Ev Wi-Fi bağlantısı koptuğunda Wi-Fi'ı devre dışı bırak ve otomatik parlaklığı aç.</div>
+          </button>
+
+          <button class="wb-rule-btn" onclick="selectRule(2)" id="wb-rule-2">
+            <div class="btn-top">
+              <span class="btn-name" data-i18n="rule_2_title">Kritik Pil Koruma</span>
+              <span class="btn-tag">GÜÇ</span>
+            </div>
+            <div class="btn-summary" data-i18n="rule_2_summary">Pil %20'nin altına indiğinde Bluetooth'u kapat ve ekranı en düşük enerjiye al.</div>
+          </button>
+
+          <button class="wb-rule-btn" onclick="selectRule(3)" id="wb-rule-3">
+            <div class="btn-top">
+              <span class="btn-name" data-i18n="rule_3_title">Kural Oluşturucu</span>
+              <span class="btn-tag">UI</span>
+            </div>
+            <div class="btn-summary" data-i18n="rule_3_summary">Tetikleyici, koşul ve sıralı eylem adımlarını görsel olarak yapılandırın.</div>
+          </button>
+        </div>
+
+        <!-- Stage: Device Mockup + JSON Spec -->
+        <div class="wb-stage">
+          <div class="device-viewport">
+            <img id="wb-screen-img" src="assets/screenshots/tr/home_screen.png" alt="FlowPilot Device Screen" />
+          </div>
+
+          <div class="rule-spec" id="wb-spec-box">
+            <div class="spec-header">
+              <span id="wb-spec-name">flowpilot_rule_night_mode.json</span>
+              <span>PARSED AST</span>
+            </div>
+            <pre id="wb-code-content"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Architecture & Comparison -->
+  <section class="section" id="comparison">
+    <div class="shell">
+      <div class="section-header">
+        <span class="section-label" data-i18n="comp_label">Mimari Tercihler</span>
+        <h2 class="section-title" data-i18n="comp_title">Neden Geleneksel Araçlar Yerine FlowPilot?</h2>
+        <p class="section-desc" data-i18n="comp_desc">
+          Yıllanmış otomasyon uygulamaları karmaşık izinler, sürekli CPU tüketen arka plan döngüleri ve kapalı kaynak kodlarla gelir. FlowPilot ise modern Android pratikleriyle tasarlandı.
+        </p>
+      </div>
+
+      <div class="comp-table-wrap">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th data-i18n="th_feature">Kriter / Mimari</th>
+              <th data-i18n="th_legacy">Geleneksel / Diğer Araçlar</th>
+              <th>FlowPilot</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-i18n="comp_row_1_title">Arka Plan Kaynak Tüketimi</td>
+              <td><span class="badge-bad" data-i18n="comp_row_1_old">Sürekli çalışan Foreground Service ve Wake-Lock</span></td>
+              <td><span class="badge-good" data-i18n="comp_row_1_new">Olay tabanlı (Event-driven) Broadcast & WorkManager</span></td>
+            </tr>
+            <tr>
+              <td data-i18n="comp_row_2_title">Ayrıcalıklı Sistem Erişimi</td>
+              <td><span class="badge-warn" data-i18n="comp_row_2_old">Root veya karmaşık ADB WRITE_SECURE_SETTINGS betikleri</span></td>
+              <td><span class="badge-good" data-i18n="comp_row_2_new">Standart Shizuku IPC (Root gerektirmez)</span></td>
+            </tr>
+            <tr>
+              <td data-i18n="comp_row_3_title">Uygulama Boyutu & Şişkinlik</td>
+              <td><span class="badge-bad">60 MB - 140 MB</span></td>
+              <td><span class="badge-good">~4.2 MB (Jetpack Compose, ProGuard)</span></td>
+            </tr>
+            <tr>
+              <td data-i18n="comp_row_4_title">Gizlilik & Telemetri</td>
+              <td><span class="badge-warn" data-i18n="comp_row_4_old">Crashlytics, analitik SDK'ları, hesap zorunluluğu</span></td>
+              <td><span class="badge-good" data-i18n="comp_row_4_new">Sıfır telemetri, sıfır hesap, sıfır internet izni</span></td>
+            </tr>
+            <tr>
+              <td data-i18n="comp_row_5_title">Kaynak Kod Lisansı</td>
+              <td><span class="badge-bad" data-i18n="comp_row_5_old">Kapalı kaynak (Proprietary / Ücretli)</span></td>
+              <td><span class="badge-good" data-i18n="comp_row_5_new">%100 Açık Kaynak (GitHub / Bağımsız)</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Capability Matrix -->
+  <section class="section" id="matrix">
+    <div class="shell">
+      <div class="section-header">
+        <span class="section-label" data-i18n="mat_label">Yetkinlik Haritası</span>
+        <h2 class="section-title" data-i18n="mat_title">Desteklenen Tetikleyiciler ve Eylemler</h2>
+        <p class="section-desc" data-i18n="mat_desc">
+          FlowPilot, Android'in yerel API sınırları dahilinde çalışırken, ayrıcalıklı işlemler için Shizuku'dan yararlanır.
+        </p>
+      </div>
+
+      <div class="cap-grid">
+        <!-- Card 1: Triggers -->
+        <div class="cap-card">
+          <div class="cap-card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span data-i18n="cat_triggers">Tetikleyiciler (Triggers)</span>
+          </div>
+          <ul class="cap-list">
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_time">Belirli Saat / Periyot</span></span><span class="cap-badge">AlarmManager</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_bat_level">Pil Seviyesi Değişimi</span></span><span class="cap-badge">Broadcast</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_bat_state">Şarj Bağlandı / Kesildi</span></span><span class="cap-badge">Broadcast</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_wifi_state">Wi-Fi Bağlandı / Kesildi</span></span><span class="cap-badge">NetworkCallback</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_wifi_ssid">Belirli SSID Eşleşmesi</span></span><span class="cap-badge">Location/Wifi</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_bt_state">Bluetooth Cihaz Durumu</span></span><span class="cap-badge">BluetoothAdapter</span></li>
+          </ul>
+        </div>
+
+        <!-- Card 2: Display & Audio -->
+        <div class="cap-card">
+          <div class="cap-card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+            <span data-i18n="cat_display_audio">Ekran, Güç ve Ses</span>
+          </div>
+          <ul class="cap-list">
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_bright_level">Ekran Parlaklığı Ayarı</span></span><span class="cap-badge">WRITE_SETTINGS</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_bright_auto">Otomatik Parlaklık Aç/Kapa</span></span><span class="cap-badge">WRITE_SETTINGS</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_vol_media">Medya / Zil Sesi Seviyesi</span></span><span class="cap-badge">AudioManager</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_vol_ringer">Sessiz / Titreşim Modu</span></span><span class="cap-badge">AudioManager</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_dnd">Rahatsız Etmeyin (DND)</span></span><span class="cap-badge">NotificationPolicy</span></li>
+          </ul>
+        </div>
+
+        <!-- Card 3: System & Hardware via Shizuku -->
+        <div class="cap-card">
+          <div class="cap-card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/></svg>
+            <span data-i18n="cat_hardware">Donanım & Sistem Kontrolü</span>
+          </div>
+          <ul class="cap-list">
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_wifi_toggle">Wi-Fi Aç / Kapat</span></span><span class="cap-badge shizuku">Shizuku IPC</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_bt_toggle">Bluetooth Aç / Kapat</span></span><span class="cap-badge shizuku">Shizuku / API</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_hotspot">Taşınabilir Erişim Noktası</span></span><span class="cap-badge shizuku">Shizuku IPC</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_launch_app">Uygulama / Aktivite Başlat</span></span><span class="cap-badge">PackageManager</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_notify">Özel Sistem Bildirimi</span></span><span class="cap-badge">NotificationManager</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Real App Gallery -->
+  <section class="section" id="gallery">
+    <div class="shell">
+      <div class="section-header">
+        <span class="section-label" data-i18n="gal_label">Arayüz Vitrini</span>
+        <h2 class="section-title" data-i18n="gal_title">Material 3 Expressive Tasarımı</h2>
+        <p class="section-desc" data-i18n="gal_desc">
+          Telefonunuzun doğal parçası gibi hissettiren saf Jetpack Compose bileşenleri, dinamik renk uyumu ve yüksek bilgi yoğunluğu.
+        </p>
+      </div>
+
+      <div class="gallery-grid">
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img class="gal-img" data-screen="home_screen" src="assets/screenshots/tr/home_screen.png" alt="Ana Ekran" />
+          </div>
+          <div class="gallery-caption" data-i18n="gal_1_title">Ana Kontrol Paneli</div>
+          <div class="gallery-sub" data-i18n="gal_1_sub">Aktif kurallar, durum anahtarları ve servis göstergesi.</div>
+        </div>
+
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img class="gal-img" data-screen="presets_screen" src="assets/screenshots/tr/presets_screen.png" alt="Hazır Şablonlar" />
+          </div>
+          <div class="gallery-caption" data-i18n="gal_2_title">Hazır Şablon Kataloğu</div>
+          <div class="gallery-sub" data-i18n="gal_2_sub">Tek tıkla içe aktarılabilen doğrulanmış otomasyonlar.</div>
+        </div>
+
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img class="gal-img" data-screen="create_screen" src="assets/screenshots/tr/create_screen.png" alt="Kural Oluşturucu" />
+          </div>
+          <div class="gallery-caption" data-i18n="gal_3_title">Kural Oluşturucu</div>
+          <div class="gallery-sub" data-i18n="gal_3_sub">Kategori bazlı tetikleyici ve eylem yapılandırması.</div>
+        </div>
+
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img class="gal-img" data-screen="about_dialog" src="assets/screenshots/tr/about_dialog.png" alt="Hakkında" />
+          </div>
+          <div class="gallery-caption" data-i18n="gal_4_title">Sistem & Bilgi</div>
+          <div class="gallery-sub" data-i18n="gal_4_sub">Sürüm, lisans ve cihaz ayrıcalık durumu.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Installation & Shizuku Terminal -->
+  <section class="section" id="install">
+    <div class="shell">
+      <div class="section-header">
+        <span class="section-label" data-i18n="inst_label">Hızlı Dağıtım</span>
+        <h2 class="section-title" data-i18n="inst_title">Kurulum & Shizuku Yapılandırması</h2>
+        <p class="section-desc" data-i18n="inst_desc">
+          Root gerekmez. Kablosuz Hata Ayıklama (Android 11+) veya tek bir ADB komutuyla 60 saniyede hazır.
+        </p>
+      </div>
+
+      <div class="grid-2" style="align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Step 1 -->
+          <div style="background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--emerald); margin-bottom: 4px;">ADIM 01</div>
+            <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px;" data-i18n="step_1_title">APK'yı Yükleyin</div>
+            <div style="font-size: 13px; color: var(--text-muted);" data-i18n="step_1_desc">
+              GitHub Releases sayfasından derlenmiş <span class="tag">FlowPilot-v1.0.0.apk</span> dosyasını indirin veya ADB ile doğrudan cihaza kurun.
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div style="background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--emerald); margin-bottom: 4px;">ADIM 02</div>
+            <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px;" data-i18n="step_2_title">Shizuku'yu Başlatın</div>
+            <div style="font-size: 13px; color: var(--text-muted);" data-i18n="step_2_desc">
+              Geliştirici Seçenekleri'nden <em>Kablosuz Hata Ayıklama</em> üzerinden eşleyin veya cihazınızı USB ile bağlayıp terminalden başlatın.
+            </div>
+          </div>
+
+          <!-- Step 3 (HyperOS / OEM Warning) -->
+          <div class="oem-box">
+            <div class="oem-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span data-i18n="oem_box_title">Xiaomi HyperOS / Cihaz Optimizasyonu Notu</span>
+            </div>
+            <div class="oem-text" data-i18n="oem_box_desc">
+              Xiaomi 15T Pro veya HyperOS/MIUI cihazlarda kuralların ekran kapalıyken dakik çalışması için: FlowPilot için <strong>Otomatik Başlatma (Autostart)</strong> iznini açın ve <strong>Pil Tasarrufu: Kısıtlama Yok (No Restrictions)</strong> olarak ayarlayın.
+            </div>
+          </div>
+        </div>
+
+        <!-- Terminal Window -->
+        <div class="term-window">
+          <div class="term-bar">
+            <div class="term-dots">
+              <div class="term-dot"></div>
+              <div class="term-dot"></div>
+              <div class="term-dot"></div>
+            </div>
+            <span>terminal — shizuku-setup</span>
+            <span>zsh / pwsh</span>
+          </div>
+          <div class="term-body">
+            <div><span class="term-prompt">$ </span><span class="term-cmd">adb devices</span></div>
+            <div class="term-out">List of devices attached</div>
+            <div class="term-out">2407FRK8EC&nbsp;&nbsp;&nbsp;&nbsp;device  # Xiaomi 15T Pro</div>
+            <br>
+            <div><span class="term-prompt">$ </span><span class="term-cmd">adb install FlowPilot-v1.0.0.apk</span></div>
+            <div class="term-out">Performing Streamed Install</div>
+            <div class="term-out" style="color: var(--emerald);">Success</div>
+            <br>
+            <div><span class="term-prompt">$ </span><span class="term-cmd">adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh</span></div>
+            <div class="term-out">info: start.sh begin</div>
+            <div class="term-out">info: shizuku_starter service running</div>
+            <div class="term-out" style="color: var(--emerald);">info: shizuku server is ready to accept IPC connections</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="shell footer-inner">
+      <div>
+        <strong style="color: #fff;">FlowPilot</strong> — Android Event Automation Engine.
+        <div style="font-size: 11px; margin-top: 4px;">Developed with Jetpack Compose, Kotlin Coroutines & Shizuku.</div>
+      </div>
+
+      <div class="footer-links">
+        <a href="https://github.com/emi-ran/flowpilot" target="_blank">GitHub</a>
+        <a href="https://github.com/emi-ran/flowpilot/releases" target="_blank">Releases</a>
+        <a href="https://shizuku.rikka.app" target="_blank">Shizuku</a>
+        <a href="https://github.com/emi-ran/flowpilot/blob/main/LICENSE" target="_blank">License</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Rule definitions for Interactive Workbench
+    const rules = [
+      {
+        screen: "home_screen",
+        file: "flowpilot_rule_night_mode.json",
+        code: `{\n  "rule_id": "rule_preset_night_mode",\n  "name": "Gece Rutini (Sessiz & Ekran)",\n  "enabled": true,\n  "trigger": {\n    "type": "TIME",\n    "target_time": "23:00",\n    "repeat_days": ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]\n  },\n  "conditions": [\n    { "type": "SCREEN_ON", "expected": true }\n  ],\n  "actions": [\n    { "type": "AUTO_BRIGHTNESS_OFF" },\n    { "type": "SET_BRIGHTNESS", "value": 15 },\n    { "type": "SET_RINGER_MODE", "mode": "SILENT" },\n    { "type": "SET_DND", "enabled": true }\n  ]\n}`
+      },
+      {
+        screen: "presets_screen",
+        file: "flowpilot_rule_leaving_home.json",
+        code: `{\n  "rule_id": "rule_preset_leave_home",\n  "name": "Evden Çıkış (Hızlı Güç)",\n  "enabled": true,\n  "trigger": {\n    "type": "WIFI_DISCONNECTED",\n    "previous_ssid": "Home_Mesh_5G"\n  },\n  "conditions": [],\n  "actions": [\n    { "type": "WIFI_OFF", "privileged_via": "SHIZUKU_IPC" },\n    { "type": "AUTO_BRIGHTNESS_ON" },\n    { "type": "SET_VOLUME", "stream": "RINGER", "level": 80 }\n  ]\n}`
+      },
+      {
+        screen: "settings_screen",
+        file: "flowpilot_rule_battery_saver.json",
+        code: `{\n  "rule_id": "rule_preset_battery_saver",\n  "name": "Kritik Pil Koruma",\n  "enabled": true,\n  "trigger": {\n    "type": "BATTERY_LEVEL_DROPS_BELOW",\n    "percentage": 20\n  },\n  "conditions": [\n    { "type": "IS_CHARGING", "expected": false }\n  ],\n  "actions": [\n    { "type": "BLUETOOTH_OFF", "privileged_via": "SHIZUKU_IPC" },\n    { "type": "AUTO_BRIGHTNESS_OFF" },\n    { "type": "SET_BRIGHTNESS", "value": 10 }\n  ]\n}`
+      },
+      {
+        screen: "create_screen",
+        file: "flowpilot_flow_builder.kt",
+        code: `// FlowPilot Rule Construction Pipeline\nval newRule = AutomationRule(\n    id = UUID.randomUUID().toString(),\n    title = "Ofis Wi-Fi Bağlandığında",\n    trigger = Trigger.WifiConnected(ssid = "Office_Corp"),\n    condition = Condition.TimeBetween("09:00", "18:00"),\n    actions = listOf(\n        Action.SetVolume(stream = AudioStream.RINGER, level = 0),\n        Action.SetVibration(enabled = true)\n    ),\n    enabled = true\n)\nruleRepository.saveRule(newRule)`
+      }
+    ];
+
+    let currentRuleIdx = 0;
+    let currentLang = 'tr';
+
+    // Translations Dictionary
+    const translations = {
+      tr: {
+        nav_workbench: "İncele",
+        nav_matrix: "Kabiliyetler",
+        nav_comparison: "Mimari",
+        nav_install: "Kurulum",
+        hero_badge: "Açık Kaynak & Bağımsız",
+        hero_title: "Root Gerektirmeyen Android Otomasyon Motoru.",
+        hero_desc: "Gereksiz pil tüketen sürekli arka plan servisleri ve hantal yapılar yerine; Shizuku IPC, Kotlin Coroutines ve modern Android olay yayınlarıyla çalışan hafif, gizlilik odaklı otomasyon.",
+        btn_download: "APK İndir (v1.0.0)",
+        btn_copy: "KOPYALA",
+        copied: "KOPYALANDI!",
+        stat_apk_label: "APK Boyutu",
+        stat_runtime_label: "Çalışma Modeli",
+        stat_shizuku_label: "Yetki Katmanı",
+        stat_telemetry_label: "Telemetri & Ağ",
+        wb_label: "İnteraktif Kural Mühendisliği",
+        wb_title: "Uygulamayı ve Otomasyon Mantığını İnceleyin",
+        wb_desc: "Aşağıdaki hazır kuralları seçerek hem cihaz ekranındaki görünümünü hem de arkasındaki veri/eylem yapısını canlı olarak görün.",
+        rule_0_title: "Gece Rutini (Sessiz & Ekran)",
+        rule_0_summary: "Saat 23:00 olunca otomatik parlaklığı kapat, seviyeyi %10 yap ve Rahatsız Etmeyin'e geç.",
+        rule_1_title: "Evden Çıkış (Hızlı Güç)",
+        rule_1_summary: "Ev Wi-Fi bağlantısı koptuğunda Wi-Fi'ı devre dışı bırak ve otomatik parlaklığı aç.",
+        rule_2_title: "Kritik Pil Koruma",
+        rule_2_summary: "Pil %20'nin altına indiğinde Bluetooth'u kapat ve ekranı en düşük enerjiye al.",
+        rule_3_title: "Kural Oluşturucu",
+        rule_3_summary: "Tetikleyici, koşul ve sıralı eylem adımlarını görsel olarak yapılandırın.",
+        comp_label: "Mimari Tercihler",
+        comp_title: "Neden Geleneksel Araçlar Yerine FlowPilot?",
+        comp_desc: "Yıllanmış otomasyon uygulamaları karmaşık izinler, sürekli CPU tüketen arka plan döngüleri ve kapalı kaynak kodlarla gelir. FlowPilot ise modern Android pratikleriyle tasarlandı.",
+        th_feature: "Kriter / Mimari",
+        th_legacy: "Geleneksel / Diğer Araçlar",
+        comp_row_1_title: "Arka Plan Kaynak Tüketimi",
+        comp_row_1_old: "Sürekli çalışan Foreground Service ve Wake-Lock",
+        comp_row_1_new: "Olay tabanlı (Event-driven) Broadcast & WorkManager",
+        comp_row_2_title: "Ayrıcalıklı Sistem Erişimi",
+        comp_row_2_old: "Root veya karmaşık ADB WRITE_SECURE_SETTINGS betikleri",
+        comp_row_2_new: "Standart Shizuku IPC (Root gerektirmez)",
+        comp_row_3_title: "Uygulama Boyutu & Şişkinlik",
+        comp_row_4_title: "Gizlilik & Telemetri",
+        comp_row_4_old: "Crashlytics, analitik SDK'ları, hesap zorunluluğu",
+        comp_row_4_new: "Sıfır telemetri, sıfır hesap, sıfır internet izni",
+        comp_row_5_title: "Kaynak Kod Lisansı",
+        comp_row_5_old: "Kapalı kaynak (Proprietary / Ücretli)",
+        comp_row_5_new: "%100 Açık Kaynak (GitHub / Bağımsız)",
+        mat_label: "Yetkinlik Haritası",
+        mat_title: "Desteklenen Tetikleyiciler ve Eylemler",
+        mat_desc: "FlowPilot, Android'in yerel API sınırları dahilinde çalışırken, ayrıcalıklı işlemler için Shizuku'dan yararlanır.",
+        cat_triggers: "Tetikleyiciler (Triggers)",
+        trig_time: "Belirli Saat / Periyot",
+        trig_bat_level: "Pil Seviyesi Değişimi",
+        trig_bat_state: "Şarj Bağlandı / Kesildi",
+        trig_wifi_state: "Wi-Fi Bağlandı / Kesildi",
+        trig_wifi_ssid: "Belirli SSID Eşleşmesi",
+        trig_bt_state: "Bluetooth Cihaz Durumu",
+        cat_display_audio: "Ekran, Güç ve Ses",
+        act_bright_level: "Ekran Parlaklığı Ayarı",
+        act_bright_auto: "Otomatik Parlaklık Aç/Kapa",
+        act_vol_media: "Medya / Zil Sesi Seviyesi",
+        act_vol_ringer: "Sessiz / Titreşim Modu",
+        act_dnd: "Rahatsız Etmeyin (DND)",
+        cat_hardware: "Donanım & Sistem Kontrolü",
+        act_wifi_toggle: "Wi-Fi Aç / Kapat",
+        act_bt_toggle: "Bluetooth Aç / Kapat",
+        act_hotspot: "Taşınabilir Erişim Noktası",
+        act_launch_app: "Uygulama / Aktivite Başlat",
+        act_notify: "Özel Sistem Bildirimi",
+        gal_label: "Arayüz Vitrini",
+        gal_title: "Material 3 Expressive Tasarımı",
+        gal_desc: "Telefonunuzun doğal parçası gibi hissettiren saf Jetpack Compose bileşenleri, dinamik renk uyumu ve yüksek bilgi yoğunluğu.",
+        gal_1_title: "Ana Kontrol Paneli",
+        gal_1_sub: "Aktif kurallar, durum anahtarları ve servis göstergesi.",
+        gal_2_title: "Hazır Şablon Kataloğu",
+        gal_2_sub: "Tek tıkla içe aktarılabilen doğrulanmış otomasyonlar.",
+        gal_3_title: "Kural Oluşturucu",
+        gal_3_sub: "Kategori bazlı tetikleyici ve eylem yapılandırması.",
+        gal_4_title: "Sistem & Bilgi",
+        gal_4_sub: "Sürüm, lisans ve cihaz ayrıcalık durumu.",
+        inst_label: "Hızlı Dağıtım",
+        inst_title: "Kurulum & Shizuku Yapılandırması",
+        inst_desc: "Root gerekmez. Kablosuz Hata Ayıklama (Android 11+) veya tek bir ADB komutuyla 60 saniyede hazır.",
+        step_1_title: "APK'yı Yükleyin",
+        step_1_desc: "GitHub Releases sayfasından derlenmiş FlowPilot-v1.0.0.apk dosyasını indirin veya ADB ile doğrudan cihaza kurun.",
+        step_2_title: "Shizuku'yu Başlatın",
+        step_2_desc: "Geliştirici Seçenekleri'nden Kablosuz Hata Ayıklama üzerinden eşleyin veya cihazınızı USB ile bağlayıp terminalden başlatın.",
+        oem_box_title: "Xiaomi HyperOS / Cihaz Optimizasyonu Notu",
+        oem_box_desc: "Xiaomi 15T Pro veya HyperOS/MIUI cihazlarda kuralların ekran kapalıyken dakik çalışması için: FlowPilot için Otomatik Başlatma (Autostart) iznini açın ve Pil Tasarrufu: Kısıtlama Yok (No Restrictions) olarak ayarlayın."
+      },
+      en: {
+        nav_workbench: "Workbench",
+        nav_matrix: "Capabilities",
+        nav_comparison: "Architecture",
+        nav_install: "Installation",
+        hero_badge: "Open Source & Independent",
+        hero_title: "Rootless Android Automation Engine.",
+        hero_desc: "Forget bloated battery-draining foreground wake-locks and complex background services. FlowPilot delivers lean, privacy-first automation powered by Shizuku IPC, Kotlin Coroutines, and native Android broadcasts.",
+        btn_download: "Download APK (v1.0.0)",
+        btn_copy: "COPY",
+        copied: "COPIED!",
+        stat_apk_label: "APK Size",
+        stat_runtime_label: "Runtime Model",
+        stat_shizuku_label: "Privilege Layer",
+        stat_telemetry_label: "Telemetry & Network",
+        wb_label: "Interactive Rule Engineering",
+        wb_title: "Inspect the App & Automation Logic",
+        wb_desc: "Select any rule preset below to inspect both its on-device screenshot and the underlying structured rule definition AST.",
+        rule_0_title: "Night Routine (Silent & Display)",
+        rule_0_summary: "At 23:00, turn off auto-brightness, set display brightness to 10%, and enable Do Not Disturb.",
+        rule_1_title: "Leaving Home (Quick Power)",
+        rule_1_summary: "When disconnected from home Wi-Fi, disable Wi-Fi radio and enable auto-brightness.",
+        rule_2_title: "Critical Battery Saver",
+        rule_2_summary: "When battery drops below 20%, turn off Bluetooth and reduce screen brightness.",
+        rule_3_title: "Flow Builder",
+        rule_3_summary: "Visually compose triggers, conditions, and sequential action steps with instant validation.",
+        comp_label: "Architectural Choices",
+        comp_title: "Why FlowPilot Over Legacy Tools?",
+        comp_desc: "Legacy automation apps rely on complex permission hacks, perpetual CPU-wake services, and closed-source binaries. FlowPilot is engineered with modern Android best practices.",
+        th_feature: "Criterion / Architecture",
+        th_legacy: "Legacy / Other Tools",
+        comp_row_1_title: "Background Resource Footprint",
+        comp_row_1_old: "Continuous Foreground Service & persistent Wake-Lock",
+        comp_row_1_new: "Event-driven BroadcastReceiver & WorkManager",
+        comp_row_2_title: "Privileged System Access",
+        comp_row_2_old: "Root or brittle ADB WRITE_SECURE_SETTINGS scripts",
+        comp_row_2_new: "Standard Shizuku IPC (No root required)",
+        comp_row_3_title: "App Size & Bloat",
+        comp_row_4_title: "Privacy & Telemetry",
+        comp_row_4_old: "Crashlytics, third-party analytics SDKs, mandatory account",
+        comp_row_4_new: "Zero telemetry, zero analytics, zero network permission",
+        comp_row_5_title: "Source Code License",
+        comp_row_5_old: "Closed source (Proprietary / Paid subscriptions)",
+        comp_row_5_new: "100% Open Source (GitHub / Independent)",
+        mat_label: "Capability Matrix",
+        mat_title: "Supported Triggers and Actions",
+        mat_desc: "FlowPilot operates within Android's official permission framework and leverages Shizuku for privileged hardware toggles.",
+        cat_triggers: "Triggers",
+        trig_time: "Specific Time / Interval",
+        trig_bat_level: "Battery Level Change",
+        trig_bat_state: "Charger Connected / Disconnected",
+        trig_wifi_state: "Wi-Fi Connected / Disconnected",
+        trig_wifi_ssid: "Specific SSID Match",
+        trig_bt_state: "Bluetooth Device State",
+        cat_display_audio: "Display, Power & Audio",
+        act_bright_level: "Manual Screen Brightness",
+        act_bright_auto: "Auto-Brightness Toggle",
+        act_vol_media: "Media / Ring Volume Levels",
+        act_vol_ringer: "Silent / Vibrate Mode",
+        act_dnd: "Do Not Disturb (DND Policy)",
+        cat_hardware: "Hardware & System Controls",
+        act_wifi_toggle: "Wi-Fi Toggle",
+        act_bt_toggle: "Bluetooth Toggle",
+        act_hotspot: "Portable Hotspot",
+        act_launch_app: "Launch App / Activity",
+        act_notify: "Custom System Notification",
+        gal_label: "UI Showcase",
+        gal_title: "Material 3 Expressive Craft",
+        gal_desc: "Pure Jetpack Compose components designed to feel native to your phone, featuring dynamic color matching and dense readability.",
+        gal_1_title: "Main Dashboard",
+        gal_1_sub: "Active rules, master execution toggles, and service health.",
+        gal_2_title: "Preset Catalog",
+        gal_2_sub: "Verified pre-packaged automations ready to import in one click.",
+        gal_3_title: "Rule Builder",
+        gal_3_sub: "Category-filtered trigger and action selection sheets.",
+        gal_4_title: "System & Info",
+        gal_4_sub: "Build version, license, and device privilege status.",
+        inst_label: "Fast Deployment",
+        inst_title: "Installation & Shizuku Setup",
+        inst_desc: "No root required. Ready in under 60 seconds via Wireless Debugging (Android 11+) or a single ADB shell command.",
+        step_1_title: "Install the APK",
+        step_1_desc: "Download FlowPilot-v1.0.0.apk from GitHub Releases or sideload it directly with adb install.",
+        step_2_title: "Start Shizuku",
+        step_2_desc: "Pair via Wireless Debugging in Developer Options or start it over USB via the standard start script.",
+        oem_box_title: "Xiaomi HyperOS / OEM Optimization Note",
+        oem_box_desc: "To ensure rules execute accurately when screen is off on Xiaomi 15T Pro or HyperOS/MIUI devices: grant Autostart permission for FlowPilot and set Battery Saver to 'No Restrictions'."
+      }
+    };
+
+    function selectRule(idx) {
+      currentRuleIdx = idx;
+      // Update buttons
+      for (let i = 0; i < 4; i++) {
+        const btn = document.getElementById(`wb-rule-${i}`);
+        if (btn) btn.classList.toggle('active', i === idx);
+      }
+      // Update Image with subtle fade
+      const img = document.getElementById('wb-screen-img');
+      img.style.opacity = '0';
+      setTimeout(() => {
+        img.src = `assets/screenshots/${currentLang}/${rules[idx].screen}.png`;
+        img.style.opacity = '1';
+      }, 100);
+
+      // Update Code
+      document.getElementById('wb-spec-name').textContent = rules[idx].file;
+      renderSyntaxHighlighted(rules[idx].code);
+    }
+
+    function renderSyntaxHighlighted(raw) {
+      const codeEl = document.getElementById('wb-code-content');
+      // Escape HTML
+      let formatted = raw
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Format JSON / Kotlin syntax simply
+      formatted = formatted
+        .replace(/"(.*?)":/g, '<span class="code-prop">"$1"</span>:')
+        .replace(/:\s*"(.*?)"/g, ': <span class="code-str">"$1"</span>')
+        .replace(/:\s*(\d+)/g, ': <span class="code-num">$1</span>')
+        .replace(/:\s*(true|false)/g, ': <span class="code-kw">$1</span>')
+        .replace(/(\/\/.*)/g, '<span class="code-comment">$1</span>')
+        .replace(/\b(val|fun|class|listOf)\b/g, '<span class="code-kw">$1</span>');
+
+      codeEl.innerHTML = formatted;
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      document.getElementById('btn-tr').classList.toggle('active', lang === 'tr');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+      document.documentElement.lang = lang;
+
+      // Update text nodes with data-i18n
+      const dict = translations[lang];
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          el.textContent = dict[key];
+        }
+      });
+
+      // Update gallery screenshots
+      document.querySelectorAll('.gal-img').forEach(img => {
+        const screen = img.getAttribute('data-screen');
+        img.src = `assets/screenshots/${lang}/${screen}.png`;
+      });
+
+      // Update workbench screen
+      selectRule(currentRuleIdx);
+
+      try {
+        localStorage.setItem('flowpilot_lang', lang);
+      } catch (e) {}
+    }
+
+    function copyAdbInstall(el) {
+      const cmd = "adb install FlowPilot-v1.0.0.apk";
+      navigator.clipboard.writeText(cmd).then(() => {
+        const feedback = document.getElementById('adb-copy-feedback');
+        const orig = feedback.textContent;
+        feedback.textContent = translations[currentLang].copied || "COPIED!";
+        setTimeout(() => {
+          feedback.textContent = translations[currentLang].btn_copy || "KOPYALA";
+        }, 1800);
+      });
+    }
+
+    // Init
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('flowpilot_lang') || 'tr';
+      setLang(saved);
+      selectRule(0);
+    });
+  </script>
+</body>
+</html>
