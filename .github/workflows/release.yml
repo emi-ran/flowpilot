@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -36,6 +35,12 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
+      - name: Run Debug Unit Tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Run Debug Lint
+        run: ./gradlew lintDebug --no-daemon
 
       - name: Validate signing environment
         env:
