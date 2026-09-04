@@ -7,8 +7,47 @@ import java.net.HttpURLConnection
 import java.net.Inet6Address
 import java.net.InetAddress
 import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLSocketFactory
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.net.URI
 import java.net.URL
+
+private class PinnedSocketFactory(
+    private val delegate: SSLSocketFactory,
+    private val address: InetAddress,
+) : SSLSocketFactory() {
+    override fun createSocket(host: String, port: Int): Socket = delegate.createSocket().let {
+        it.connect(InetSocketAddress(address, port))
+        delegate.createSocket(it, host, port, true)
+    }
+
+    override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket =
+        delegate.createSocket().let {
+            it.bind(InetSocketAddress(localHost, localPort))
+            it.connect(InetSocketAddress(address, port))
+            delegate.createSocket(it, host, port, true)
+        }
+
+    override fun createSocket(address: InetAddress, port: Int): Socket = delegate.createSocket().let {
+        it.connect(InetSocketAddress(this.address, port))
+        delegate.createSocket(it, this.address.hostName, port, true)
+    }
+
+    override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket =
+        delegate.createSocket().let {
+            it.bind(InetSocketAddress(localAddress, localPort))
+            it.connect(InetSocketAddress(this.address, port))
+            delegate.createSocket(it, this.address.hostName, port, true)
+        }
+
+    override fun createSocket(socket: Socket, host: String, port: Int, autoClose: Boolean): Socket =
+        delegate.createSocket(socket, host, port, autoClose)
+
+    override fun getDefaultCipherSuites(): Array<String> = delegate.defaultCipherSuites
+    override fun getSupportedCipherSuites(): Array<String> = delegate.supportedCipherSuites
+}
+
 import java.nio.charset.StandardCharsets
 
 /**
@@ -17,13 +56,9 @@ import java.nio.charset.StandardCharsets
  */
 class WebhookExecutor(
     private val connectionFactory: (URL, InetAddress) -> HttpURLConnection = { url, address ->
-        val pinnedUrl = url.withAddress(address)
-        (pinnedUrl.openConnection() as HttpURLConnection).apply {
-            setRequestProperty("Host", url.host)
+        (url.openConnection() as HttpURLConnection).apply {
             if (this is HttpsURLConnection) {
-                hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier().let { verifier ->
-                    javax.net.ssl.HostnameVerifier { _, session -> verifier.verify(url.host, session) }
-                }
+                sslSocketFactory = PinnedSocketFactory(sslSocketFactory, address)
             }
         }
     },
