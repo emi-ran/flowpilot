@@ -46,7 +46,7 @@ class WebhookExecutorTest {
         )
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).contains("must use http or https scheme")
+        assertThat(result.message).contains("must use HTTPS scheme")
     }
 
     @Test
@@ -63,7 +63,7 @@ class WebhookExecutorTest {
         )
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).contains("must use http or https scheme")
+        assertThat(result.message).contains("must use HTTPS scheme")
         assertThat(connectionFactoryCalled).isFalse()
     }
 

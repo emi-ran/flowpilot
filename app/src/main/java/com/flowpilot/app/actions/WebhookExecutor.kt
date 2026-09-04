@@ -126,7 +126,7 @@ class WebhookExecutor(
 
             val scheme = uri.scheme?.lowercase()
             if (scheme != "https") {
-                return "Webhook URL must use http or https scheme"
+                return "Webhook URL must use HTTPS scheme"
             }
 
             if (uri.host.isNullOrBlank()) {
