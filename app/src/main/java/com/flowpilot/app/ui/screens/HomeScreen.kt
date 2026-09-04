@@ -27,8 +27,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.flowpilot.app.R
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.ui.AppViewModel
@@ -37,19 +39,21 @@ import com.flowpilot.app.ui.components.CapabilityPill
 import com.flowpilot.app.ui.components.FollowSwitch
 import com.flowpilot.app.ui.components.triggerIcon
 import com.flowpilot.app.ui.components.AppIconImage
+import com.flowpilot.app.ui.util.localizedActionSummary
+import com.flowpilot.app.ui.util.localizedLabel
 
 @Composable
 fun HomeScreen(
     vm: AppViewModel,
     detail: (Automation) -> Unit,
     create: () -> Unit,
-    settings: () -> Unit,
     permissions: () -> Unit,
-    bottomBar: @Composable () -> Unit = {},
+    settings: () -> Unit,
+    bottomBar: @Composable () -> Unit,
 ) {
     val rules by vm.automations.collectAsState()
     val engine by vm.engineRunning.collectAsState()
-    var selectedRuleIds by remember { mutableStateOf(emptySet<String>()) }
+    var selectedRuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     val isSelectionMode = selectedRuleIds.isNotEmpty()
 
@@ -60,19 +64,19 @@ fun HomeScreen(
     if (showDeleteConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
-            title = { Text("Delete automations?") },
-            text = { Text("Are you sure you want to delete ${selectedRuleIds.size} automation(s)? This action cannot be undone.") },
+            title = { Text(stringResource(R.string.dialog_delete_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_selected_confirm, selectedRuleIds.size)) },
             confirmButton = {
                 TextButton({
                     vm.deleteMany(selectedRuleIds)
                     selectedRuleIds = emptySet()
                     showDeleteConfirmDialog = false
                 }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.btn_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton({ showDeleteConfirmDialog = false }) { Text("Cancel") }
+                TextButton({ showDeleteConfirmDialog = false }) { Text(stringResource(R.string.btn_cancel)) }
             },
         )
     }
@@ -82,14 +86,14 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (isSelectionMode) "${selectedRuleIds.size} selected" else "Automations",
+                        if (isSelectionMode) stringResource(R.string.selected_count, selectedRuleIds.size) else stringResource(R.string.nav_home),
                         fontWeight = FontWeight.Bold,
                     )
                 },
                 navigationIcon = {
                     if (isSelectionMode) {
                         IconButton({ selectedRuleIds = emptySet() }) {
-                            Icon(Icons.Default.Close, "Cancel selection")
+                            Icon(Icons.Default.Close, stringResource(R.string.content_desc_cancel_selection))
                         }
                     } else {
                         Icon(Icons.Default.Hub, null, modifier = Modifier.padding(start = 16.dp))
@@ -100,10 +104,10 @@ fun HomeScreen(
                         TextButton({
                             selectedRuleIds = if (selectedRuleIds.size == rules.size) emptySet() else rules.map { it.rule.id }.toSet()
                         }) {
-                            Text(if (selectedRuleIds.size == rules.size) "Deselect all" else "Select all")
+                            Text(if (selectedRuleIds.size == rules.size) stringResource(R.string.btn_deselect_all) else stringResource(R.string.btn_select_all))
                         }
                         IconButton({ showDeleteConfirmDialog = true }) {
-                            Icon(Icons.Default.Delete, "Delete selected", tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Delete, stringResource(R.string.btn_delete_selected), tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 },
@@ -117,7 +121,7 @@ fun HomeScreen(
                 ExtendedFloatingActionButton(
                     onClick = create,
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("New automation", fontWeight = FontWeight.SemiBold) },
+                    text = { Text(stringResource(R.string.btn_new_automation), fontWeight = FontWeight.SemiBold) },
                     shape = RoundedCornerShape(18.dp),
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -172,14 +176,14 @@ fun HomeScreen(
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
-                            if (engine) "FlowPilot Active" else "Engine Paused",
+                            if (engine) stringResource(R.string.home_engine_active) else stringResource(R.string.home_engine_paused),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
                         val activeCount = rules.count { it.rule.enabled }
                         Text(
-                            if (engine) "$activeCount of ${rules.size} automations active"
-                            else "Automations will not trigger",
+                            if (engine) stringResource(R.string.home_engine_active_count, activeCount, rules.size)
+                            else stringResource(R.string.home_engine_paused_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -238,13 +242,13 @@ private fun EmptyState(create: () -> Unit) {
         ) {
             Icon(Icons.Default.Bolt, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
         }
-        Text("No automations yet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 18.dp))
-        Text("Create a rule to make your phone react automatically", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
+        Text(stringResource(R.string.home_empty_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 18.dp))
+        Text(stringResource(R.string.home_empty_desc), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
         Spacer(Modifier.height(12.dp))
         Button(create, shape = RoundedCornerShape(16.dp)) {
             Icon(Icons.Default.Add, null)
             Spacer(Modifier.width(8.dp))
-            Text("Create your first rule")
+            Text(stringResource(R.string.home_create_first_rule))
         }
     }
 }
@@ -352,19 +356,19 @@ private fun RuleCard(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "${item.rule.triggerEvent.label} → ${item.rule.actionSummary}",
+                    text = "${item.rule.triggerEvent.localizedLabel()} → ${item.rule.localizedActionSummary()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 val detail = when (item.rule.triggerEvent) {
                     TriggerEvent.BATTERY_BELOW,
-                    TriggerEvent.BATTERY_ABOVE -> "Threshold: ${item.rule.batteryLevel}%"
+                    TriggerEvent.BATTERY_ABOVE -> stringResource(R.string.detail_threshold_battery, item.rule.batteryLevel)
                     TriggerEvent.WIFI_CONNECTED,
-                    TriggerEvent.WIFI_DISCONNECTED -> if (item.rule.wifiSsid.isNotBlank()) "SSID: ${item.rule.wifiSsid}" else "Any Wi-Fi"
+                    TriggerEvent.WIFI_DISCONNECTED -> if (item.rule.wifiSsid.isNotBlank()) stringResource(R.string.detail_ssid, item.rule.wifiSsid) else stringResource(R.string.detail_any_wifi)
                     TriggerEvent.BLUETOOTH_CONNECTED,
                     TriggerEvent.BLUETOOTH_DISCONNECTED -> item.rule.bluetoothDeviceName.ifBlank { item.rule.bluetoothDeviceAddress }
-                    TriggerEvent.NFC_TAG_SCANNED -> "Tag ID: ${item.rule.nfcTagId}"
+                    TriggerEvent.NFC_TAG_SCANNED -> stringResource(R.string.detail_tag_id, item.rule.nfcTagId)
                     TriggerEvent.NOTIFICATION_RECEIVED -> {
                         val app = item.rule.notificationAppName.ifBlank { item.rule.notificationAppPackage }
                         if (item.rule.notificationKeyword.isNotBlank()) "$app · \"${item.rule.notificationKeyword}\"" else app
@@ -372,15 +376,15 @@ private fun RuleCard(
                     TriggerEvent.CALL_RINGING,
                     TriggerEvent.CALL_ANSWERED,
                     TriggerEvent.CALL_OUTGOING,
-                    TriggerEvent.CALL_ENDED -> "Any call"
+                    TriggerEvent.CALL_ENDED -> stringResource(R.string.detail_any_call)
                     TriggerEvent.DEVICE_FLIPPED_DOWN,
-                    TriggerEvent.DEVICE_FLIPPED_UP -> if (item.rule.flipScreenOffDetection) "Screen on & off" else "Screen on only"
-                    TriggerEvent.DEVICE_SHAKE -> "Shake device"
-                    TriggerEvent.DEVICE_UNLOCKED -> "Unlock screen"
+                    TriggerEvent.DEVICE_FLIPPED_UP -> if (item.rule.flipScreenOffDetection) stringResource(R.string.detail_screen_on_off) else stringResource(R.string.detail_screen_on_only)
+                    TriggerEvent.DEVICE_SHAKE -> stringResource(R.string.detail_shake_device)
+                    TriggerEvent.DEVICE_UNLOCKED -> stringResource(R.string.detail_unlock_screen)
                     TriggerEvent.LIGHT_BELOW,
-                    TriggerEvent.LIGHT_ABOVE -> "Threshold: ${item.rule.lightLux} lx"
+                    TriggerEvent.LIGHT_ABOVE -> stringResource(R.string.detail_threshold_light, item.rule.lightLux)
                     TriggerEvent.SMS_RECEIVED -> {
-                        val sender = if (item.rule.smsSenderFilter.isBlank()) "Any sender" else item.rule.smsSenderFilter
+                        val sender = if (item.rule.smsSenderFilter.isBlank()) stringResource(R.string.detail_any_sender) else item.rule.smsSenderFilter
                         val filter = if (item.rule.smsKeyword.isNotBlank()) " · \"${item.rule.smsKeyword}\"" else ""
                         "$sender$filter"
                     }
@@ -401,14 +405,14 @@ private fun RuleCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    CapabilityPill(item.capability.label, onClick = onPermission)
+                    CapabilityPill(item.capability, onClick = onPermission)
                     if (item.rule.effectiveCooldownMinutes > 0) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         ) {
                             Text(
-                                text = "⏱ ${item.rule.effectiveCooldownMinutes}m cooldown",
+                                text = stringResource(R.string.detail_cooldown_badge, item.rule.effectiveCooldownMinutes),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),

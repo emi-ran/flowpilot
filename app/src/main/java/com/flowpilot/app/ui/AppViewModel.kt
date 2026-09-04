@@ -65,6 +65,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val ignoresBatteryOptimizations = MutableStateFlow(false)
     val shizukuState = MutableStateFlow(ShizukuState.NOT_INSTALLED)
     val engineRunning = MutableStateFlow(false)
+    val appLanguage: StateFlow<String> = repository.appLanguage
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "system")
+
+    fun setAppLanguage(language: String) {
+        viewModelScope.launch {
+            repository.setAppLanguage(language)
+        }
+    }
 
     private val app get() = getApplication<Application>()
 

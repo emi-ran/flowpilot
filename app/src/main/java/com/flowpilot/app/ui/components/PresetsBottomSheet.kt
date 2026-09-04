@@ -16,19 +16,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.flowpilot.app.R
 import com.flowpilot.app.data.model.AutomationPreset
 import com.flowpilot.app.data.model.AutomationPresets
 import com.flowpilot.app.data.model.PresetCategory
+import com.flowpilot.app.ui.util.localizedLabel
 
 @Composable
 fun PresetsBottomSheet(
@@ -81,19 +83,19 @@ fun PresetsBottomSheet(
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Hazır Şablonlar",
+                            text = stringResource(R.string.presets_sheet_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "Önceden yapılandırılmış senaryolar",
+                            text = stringResource(R.string.presets_sheet_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Kapat")
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.btn_close))
                 }
             }
 
@@ -109,14 +111,14 @@ fun PresetsBottomSheet(
                 FilterChip(
                     selected = selectedCategory == null,
                     onClick = { selectedCategory = null },
-                    label = { Text("Tümü (${AutomationPresets.all.size})") },
+                    label = { Text("${stringResource(R.string.all_filter)} (${AutomationPresets.all.size})") },
                 )
                 PresetCategory.entries.forEach { cat ->
                     val count = AutomationPresets.all.count { it.category == cat }
                     FilterChip(
                         selected = selectedCategory == cat,
                         onClick = { selectedCategory = cat },
-                        label = { Text("${cat.label} ($count)") },
+                        label = { Text("${cat.localizedLabel()} ($count)") },
                     )
                 }
             }
@@ -191,7 +193,7 @@ private fun PresetCardItem(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = preset.title,
+                            text = stringResource(preset.titleRes),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -199,7 +201,7 @@ private fun PresetCardItem(
                             onClick = {},
                             label = {
                                 Text(
-                                    preset.category.label,
+                                    preset.category.localizedLabel(),
                                     fontSize = 11.sp,
                                 )
                             },
@@ -210,7 +212,7 @@ private fun PresetCardItem(
                     Spacer(Modifier.height(4.dp))
 
                     Text(
-                        text = preset.description,
+                        text = stringResource(preset.descriptionRes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -225,12 +227,12 @@ private fun PresetCardItem(
                     ) {
                         AssistChip(
                             onClick = {},
-                            label = { Text(preset.template.triggerEvent.label, fontSize = 11.sp) },
+                            label = { Text(preset.template.triggerEvent.localizedLabel(), fontSize = 11.sp) },
                             modifier = Modifier.height(26.dp),
                         )
                         AssistChip(
                             onClick = {},
-                            label = { Text("${preset.template.effectiveActions.size} Eylem", fontSize = 11.sp) },
+                            label = { Text(stringResource(R.string.actions_count, preset.template.effectiveActions.size), fontSize = 11.sp) },
                             modifier = Modifier.height(26.dp),
                         )
                         Spacer(Modifier.weight(1f))
@@ -239,7 +241,7 @@ private fun PresetCardItem(
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                             modifier = Modifier.height(32.dp),
                         ) {
-                            Text("Kullan", fontSize = 12.sp)
+                            Text(stringResource(R.string.btn_use_preset), fontSize = 12.sp)
                         }
                     }
                 }

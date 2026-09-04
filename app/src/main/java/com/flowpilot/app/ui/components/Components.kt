@@ -28,7 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.flowpilot.app.permission.CapabilityStatus
+import com.flowpilot.app.ui.util.labelRes
 import kotlinx.coroutines.launch
 
 /**
@@ -101,15 +104,52 @@ fun FollowSwitch(
 
 /** Small pill label for capability state (Available / Permission required / Shizuku required / Unsupported). */
 @Composable
-fun CapabilityPill(text: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
-    val bg = when (text) {
-        "Available" -> MaterialTheme.colorScheme.primaryContainer
-        "Unsupported on this device" -> MaterialTheme.colorScheme.errorContainer
+fun CapabilityPill(
+    status: CapabilityStatus,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+) {
+    val bg = when (status) {
+        CapabilityStatus.AVAILABLE -> MaterialTheme.colorScheme.primaryContainer
+        CapabilityStatus.UNSUPPORTED -> MaterialTheme.colorScheme.errorContainer
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
-    val fg = when (text) {
-        "Available" -> MaterialTheme.colorScheme.onPrimaryContainer
-        "Unsupported on this device" -> MaterialTheme.colorScheme.onErrorContainer
+    val fg = when (status) {
+        CapabilityStatus.AVAILABLE -> MaterialTheme.colorScheme.onPrimaryContainer
+        CapabilityStatus.UNSUPPORTED -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(bg)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        androidx.compose.material3.Text(
+            text = stringResource(status.labelRes),
+            style = MaterialTheme.typography.labelMedium,
+            color = fg,
+        )
+    }
+}
+
+@Composable
+fun CapabilityPill(
+    text: String,
+    modifier: Modifier = Modifier,
+    isSuccess: Boolean = false,
+    isError: Boolean = false,
+    onClick: (() -> Unit)? = null,
+) {
+    val bg = when {
+        isSuccess -> MaterialTheme.colorScheme.primaryContainer
+        isError -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val fg = when {
+        isSuccess -> MaterialTheme.colorScheme.onPrimaryContainer
+        isError -> MaterialTheme.colorScheme.onErrorContainer
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     Box(

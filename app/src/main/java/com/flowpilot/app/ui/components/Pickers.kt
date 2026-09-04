@@ -77,10 +77,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import android.content.Context
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
+import com.flowpilot.app.R
 import com.flowpilot.app.data.model.*
+import com.flowpilot.app.ui.util.labelRes
+import com.flowpilot.app.ui.util.descriptionRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -102,6 +107,35 @@ data class PickerCategoryGroup<T>(
     val iconTint: Color? = null,
     val items: List<PickerItem<T>>,
 )
+
+fun <T> PickerItem<T>.displayTitle(context: Context): String = when (val v = value) {
+    is TriggerEvent -> context.getString(v.labelRes)
+    is ActionType -> context.getString(v.labelRes)
+    is ConditionType -> context.getString(v.labelRes)
+    else -> title
+}
+
+fun <T> PickerItem<T>.displaySubtitle(context: Context): String = when (val v = value) {
+    is TriggerEvent -> context.getString(v.descriptionRes)
+    is ActionType -> context.getString(v.descriptionRes)
+    is ConditionType -> context.getString(v.descriptionRes)
+    else -> subtitle
+}
+
+fun <T> PickerCategoryGroup<T>.displayLabel(context: Context): String {
+    val catName = id
+    val trCategory = TriggerCategory.entries.firstOrNull { it.name == catName }
+    if (trCategory != null) return context.getString(trCategory.labelRes)
+    val actCategory = ActionCategory.entries.firstOrNull { it.name == catName }
+    if (actCategory != null) return context.getString(actCategory.labelRes)
+    return when (catName) {
+        "TIME" -> context.getString(R.string.cat_time)
+        "POWER" -> context.getString(R.string.cat_power)
+        "DISPLAY" -> context.getString(R.string.cat_display)
+        "NETWORK" -> context.getString(R.string.cat_network)
+        else -> label
+    }
+}
 
 /** Full-screen modal picker for triggers, grouped by category with search and icons. */
 @Composable
@@ -448,8 +482,8 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
     }
 
     ModernChoiceDialog(
-        title = "Choose trigger",
-        searchPlaceholder = "Search triggers (e.g. battery, call, sms, screen, time)...",
+        title = stringResource(R.string.choose_trigger),
+        searchPlaceholder = stringResource(R.string.search_triggers_hint),
         groups = groups,
         isSelected = { it == selected },
         onSelect = { select(it) },
@@ -834,8 +868,8 @@ fun ActionPicker(
     }
 
     ModernChoiceDialog(
-        title = "Choose action",
-        searchPlaceholder = "Search actions (e.g. phone, sound, app, notify, nfc)...",
+        title = stringResource(R.string.choose_action),
+        searchPlaceholder = stringResource(R.string.search_actions_hint),
         groups = availableGroups,
         isSelected = { selected != null && it == selected },
         onSelect = { select(it) },
@@ -967,8 +1001,8 @@ fun ConditionPicker(
     }
 
     ModernChoiceDialog(
-        title = "Choose condition",
-        searchPlaceholder = "Search conditions (e.g. time, battery, wifi, screen)...",
+        title = stringResource(R.string.choose_condition),
+        searchPlaceholder = stringResource(R.string.search_conditions_hint),
         groups = groups,
         isSelected = { false },
         onSelect = { type ->
@@ -989,18 +1023,20 @@ fun <T> ModernChoiceDialog(
     onSelect: (T) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
 
-    val filteredGroups = remember(groups, searchQuery) {
+    val filteredGroups = remember(groups, searchQuery, context) {
         val query = searchQuery.trim().lowercase()
         if (query.isEmpty()) {
             groups
         } else {
             groups.mapNotNull { group ->
-                val categoryMatches = group.label.lowercase().contains(query)
+                val categoryMatches = group.displayLabel(context).lowercase().contains(query)
                 val matchingItems = group.items.filter { item ->
                     categoryMatches ||
-                        item.title.lowercase().contains(query) ||
+                        item.displayTitle(context).lowercase().contains(query) ||
+                        item.displaySubtitle(context).lowercase().contains(query) ||
                         item.subtitle.lowercase().contains(query) ||
                         item.keywords.any { it.lowercase().contains(query) }
                 }
@@ -1018,9 +1054,10 @@ fun <T> ModernChoiceDialog(
                 TopAppBar(
                     title = { Text(title, fontWeight = FontWeight.Bold) },
                     navigationIcon = {
+                        val closeDesc = stringResource(R.string.content_desc_close)
                         IconButton(
                             onClick = onDismiss,
-                            modifier = Modifier.semantics { contentDescription = "Close dialog" },
+                            modifier = Modifier.semantics { contentDescription = closeDesc },
                         ) {
                             Icon(Icons.Default.Close, contentDescription = null)
                         }
@@ -1047,15 +1084,16 @@ fun <T> ModernChoiceDialog(
                     leadingIcon = {
                         Icon(
                             Icons.Default.Search,
-                            contentDescription = "Search icon",
+                            contentDescription = stringResource(R.string.content_desc_search),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
+                            val clearDesc = stringResource(R.string.content_desc_clear_search)
                             IconButton(
                                 onClick = { searchQuery = "" },
-                                modifier = Modifier.semantics { contentDescription = "Clear search query" },
+                                modifier = Modifier.semantics { contentDescription = clearDesc },
                             ) {
                                 Icon(
                                     Icons.Default.Close,
@@ -1104,14 +1142,14 @@ fun <T> ModernChoiceDialog(
                             }
                             Spacer(Modifier.height(16.dp))
                             Text(
-                                "No matches found",
+                                stringResource(R.string.no_matches_found),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "Try searching for a different keyword or name",
+                                stringResource(R.string.no_matches_found_hint),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -1146,7 +1184,7 @@ fun <T> ModernChoiceDialog(
                         filteredGroups.forEach { group ->
                             item(key = "hdr-${group.id}") {
                                 CategorySectionHeader(
-                                    title = group.label,
+                                    title = group.displayLabel(context),
                                     count = group.items.size,
                                     icon = group.icon,
                                     iconTint = group.iconTint ?: MaterialTheme.colorScheme.primary,
@@ -1154,7 +1192,7 @@ fun <T> ModernChoiceDialog(
                             }
                             items(
                                 items = group.items,
-                                key = { "${group.id}-${it.title}" },
+                                key = { "${group.id}-${it.displayTitle(context)}" },
                             ) { item ->
                                 val selected = isSelected(item.value)
                                 PickerOptionCard(
@@ -1223,6 +1261,9 @@ private fun <T> PickerOptionCard(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val itemTitle = item.displayTitle(context)
+    val itemSubtitle = item.displaySubtitle(context)
     val containerColor = if (selected) {
         MaterialTheme.colorScheme.surfaceContainerHighest
     } else {
@@ -1242,7 +1283,7 @@ private fun <T> PickerOptionCard(
             .semantics {
                 this.role = Role.RadioButton
                 this.selected = selected
-                this.contentDescription = "${item.title}, ${item.subtitle}${if (selected) ", selected" else ""}"
+                this.contentDescription = "$itemTitle, $itemSubtitle${if (selected) ", selected" else ""}"
             },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
@@ -1276,7 +1317,7 @@ private fun <T> PickerOptionCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = item.title,
+                    text = itemTitle,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
                     color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -1285,7 +1326,7 @@ private fun <T> PickerOptionCard(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = item.subtitle,
+                    text = itemSubtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -1402,7 +1443,7 @@ fun AppPicker(
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxSize()) {
                 TopAppBar(
-                    title = { Text("Choose an app", fontWeight = FontWeight.Bold) },
+                    title = { Text(stringResource(R.string.choose_app_title), fontWeight = FontWeight.Bold) },
                     navigationIcon = { IconButton(onDismiss) { Icon(Icons.Default.Close, null) } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 )
@@ -1411,7 +1452,7 @@ fun AppPicker(
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 12.dp),
                     shape = RoundedCornerShape(16.dp),
-                    placeholder = { Text("Search apps...") },
+                    placeholder = { Text(stringResource(R.string.search_apps_placeholder)) },
                     singleLine = true,
                 )
 

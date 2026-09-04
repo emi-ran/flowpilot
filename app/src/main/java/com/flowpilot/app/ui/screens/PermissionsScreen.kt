@@ -22,8 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.flowpilot.app.R
 import com.flowpilot.app.actions.ShizukuPermissionBridge
 import com.flowpilot.app.permission.ShizukuState
 import com.flowpilot.app.ui.AppViewModel
@@ -85,52 +87,52 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Setup FlowPilot", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.perms_title), fontWeight = FontWeight.Bold) },
             navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
         )
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
         ) {
-            Text("Some actions require additional system permissions.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 20.dp))
+            Text(stringResource(R.string.perms_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 20.dp))
 
-            PermissionCard("Usage Access", "Required to detect when apps open. Open system Settings and allow FlowPilot.", usage) {
+            PermissionCard(stringResource(R.string.perms_usage_title), stringResource(R.string.perms_usage_desc), usage) {
                 context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
             }
-            PermissionCard("Notifications", "Shows engine status while automation runs.", notif) {
+            PermissionCard(stringResource(R.string.perms_notif_title), stringResource(R.string.perms_notif_desc), notif) {
                 notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             PermissionCard(
-                "Phone call state access",
-                "Required to detect incoming, answered, outgoing, and ended phone calls. FlowPilot never reads call log, never accesses contacts, and never records audio.",
+                stringResource(R.string.perms_phone_state_title),
+                stringResource(R.string.perms_phone_state_desc),
                 readPhoneState,
             ) {
                 phoneStateLauncher.launch(Manifest.permission.READ_PHONE_STATE)
             }
             PermissionCard(
-                "Make direct phone calls",
-                "Required for the Call number automation action to place real telephone calls automatically without manual dialer confirmation.",
+                stringResource(R.string.perms_call_phone_title),
+                stringResource(R.string.perms_call_phone_desc),
                 callPhone,
             ) {
                 callPhoneLauncher.launch(Manifest.permission.CALL_PHONE)
             }
             PermissionCard(
-                "Receive SMS messages",
-                "Required for incoming SMS triggers to detect incoming messages, filter senders, match verification codes, and trigger automations.",
+                stringResource(R.string.perms_receive_sms_title),
+                stringResource(R.string.perms_receive_sms_desc),
                 receiveSms,
             ) {
                 receiveSmsLauncher.launch(Manifest.permission.RECEIVE_SMS)
             }
             PermissionCard(
-                "Send SMS messages",
-                "Required for the Send SMS action to send automated background SMS text messages directly without manual app confirmation.",
+                stringResource(R.string.perms_send_sms_title),
+                stringResource(R.string.perms_send_sms_desc),
                 sendSms,
             ) {
                 sendSmsLauncher.launch(Manifest.permission.SEND_SMS)
             }
             PermissionCard(
-                "Notification listener access",
-                "Allows FlowPilot to trigger automations when notifications arrive from selected apps.",
+                stringResource(R.string.perms_notif_listener_title),
+                stringResource(R.string.perms_notif_listener_desc),
                 notifListener,
             ) {
                 val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
@@ -142,8 +144,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
-                "Bluetooth paired-device access",
-                "Required on Android 12+ to list bonded devices and receive Bluetooth device connect/disconnect events. FlowPilot never runs Bluetooth discovery or stores paired-device history.",
+                stringResource(R.string.perms_bluetooth_title),
+                stringResource(R.string.perms_bluetooth_desc),
                 bluetoothConnect,
             ) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -151,13 +153,13 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
-                "NFC hardware & status",
-                if (!hasNfcHardware) "NFC hardware is not available on this device."
-                else if (!isNfcEnabled) "NFC is turned off in system settings. Turn on NFC to scan tags and trigger rules."
-                else "NFC hardware is active and ready for tag triggers.",
+                stringResource(R.string.perms_nfc_title),
+                if (!hasNfcHardware) stringResource(R.string.perms_nfc_unsupported)
+                else if (!isNfcEnabled) stringResource(R.string.perms_nfc_disabled)
+                else stringResource(R.string.perms_nfc_ready),
                 granted = hasNfcHardware && isNfcEnabled,
-                pillText = if (!hasNfcHardware) "Unsupported" else "NFC disabled",
-                actionText = "Turn on",
+                pillText = if (!hasNfcHardware) stringResource(R.string.capability_unsupported) else stringResource(R.string.perms_nfc_pill_disabled),
+                actionText = stringResource(R.string.perms_btn_turn_on),
             ) {
                 if (hasNfcHardware) {
                     val intent = Intent(Settings.ACTION_NFC_SETTINGS)
@@ -170,8 +172,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
-                "Wi-Fi SSID & Location access",
-                "Android requires ACCESS_FINE_LOCATION permission, Wi-Fi permissions, and device Location enabled to identify connected Wi-Fi SSID and scan nearby networks for Wi-Fi triggers and conditions.",
+                stringResource(R.string.perms_wifi_loc_title),
+                stringResource(R.string.perms_wifi_loc_desc),
                 wifiPerms,
             ) {
                 val hasFine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -199,19 +201,19 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
-                "Background Location ('Allow all the time')",
+                stringResource(R.string.perms_bg_loc_title),
                 if (!hasFineLocation) {
-                    "FlowPilot needs foreground location permission first. Tap to grant location access."
+                    stringResource(R.string.perms_bg_loc_need_fg)
                 } else if (!isLocationServiceEnabled) {
-                    "Device GPS / Location service is turned off. Tap to open system Location settings and turn on Location."
+                    stringResource(R.string.perms_bg_loc_gps_off)
                 } else if (!hasBackgroundLocation) {
-                    "Required so FlowPilot can read your GPS coordinates (\${location.lat}, \${location.lng}) in the background (e.g. for incoming SMS triggers or automations when the screen is locked). Tap to select 'Allow all the time' (Her zaman izin ver)."
+                    stringResource(R.string.perms_bg_loc_need_all_time)
                 } else {
-                    "FlowPilot has full background GPS access. Automations can read \${location.lat} and \${location.lng} anytime, even when the screen is locked."
+                    stringResource(R.string.perms_bg_loc_ready)
                 },
                 granted = hasBackgroundLocation && isLocationServiceEnabled,
-                pillText = if (!hasFineLocation) "Location needed" else if (!isLocationServiceEnabled) "GPS disabled" else if (!hasBackgroundLocation) "Foreground only" else "Granted",
-                actionText = if (!hasFineLocation) "Grant" else if (!isLocationServiceEnabled) "Turn on GPS" else if (!hasBackgroundLocation) "Allow all the time" else "Settings",
+                pillText = if (!hasFineLocation) stringResource(R.string.perms_bg_loc_pill_needed) else if (!isLocationServiceEnabled) stringResource(R.string.perms_bg_loc_pill_gps_off) else if (!hasBackgroundLocation) stringResource(R.string.perms_bg_loc_pill_fg_only) else stringResource(R.string.perms_pill_granted),
+                actionText = if (!hasFineLocation) stringResource(R.string.perms_btn_grant) else if (!isLocationServiceEnabled) stringResource(R.string.perms_bg_loc_action_turn_gps) else if (!hasBackgroundLocation) stringResource(R.string.perms_bg_loc_action_allow_all) else stringResource(R.string.perms_btn_settings),
             ) {
                 if (!hasFineLocation) {
                     locationLauncher.launch(
@@ -237,8 +239,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
-                "Do Not Disturb access",
-                "Allows FlowPilot to turn Do Not Disturb on or off. Grant Notification Policy Access in Android settings.",
+                stringResource(R.string.perms_dnd_title),
+                stringResource(R.string.perms_dnd_desc),
                 notifPolicy,
             ) {
                 val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
@@ -250,8 +252,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
-                "Modify system settings",
-                "Allows FlowPilot to change system settings such as Auto-rotate. Grant in Android special access settings.",
+                stringResource(R.string.perms_modify_settings_title),
+                stringResource(R.string.perms_modify_settings_desc),
                 writeSettings,
             ) {
                 val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
@@ -264,10 +266,10 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
-                "Battery restrictions",
-                "Allow FlowPilot to run without battery restrictions. Required for reliable schedules while screen is off.",
+                stringResource(R.string.perms_battery_opt_title),
+                stringResource(R.string.perms_battery_opt_desc),
                 ignoresBatteryOptimizations,
-                pillText = "Restriction active",
+                pillText = stringResource(R.string.perms_battery_opt_pill),
             ) {
                 val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                     data = Uri.parse("package:${context.packageName}")
@@ -279,11 +281,11 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
-                "HyperOS Autostart",
-                "HyperOS does not expose this setting for apps to read. Open list to verify FlowPilot is enabled, then set Battery saver to No restrictions.",
+                stringResource(R.string.perms_hyperos_title),
+                stringResource(R.string.perms_hyperos_desc),
                 false,
-                pillText = "Check in HyperOS",
-                actionText = "Open list",
+                pillText = stringResource(R.string.perms_hyperos_pill),
+                actionText = stringResource(R.string.perms_btn_open_list),
             ) {
                 val intent = Intent("miui.intent.action.OP_AUTO_START")
                 if (intent.resolveActivity(context.packageManager) != null) {
@@ -293,20 +295,20 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
             PermissionCard(
-                "Secure settings",
-                if (shizuku == ShizukuState.READY) "Battery Saver actions can run through Shizuku. ADB grant is optional direct access."
-                else "Required for Battery Saver actions. Grant with ADB or Shizuku.",
+                stringResource(R.string.perms_secure_settings_title),
+                if (shizuku == ShizukuState.READY) stringResource(R.string.perms_secure_settings_ready)
+                else stringResource(R.string.perms_secure_settings_needed),
                 write || shizuku == ShizukuState.READY,
-                pillText = if (shizuku == ShizukuState.READY && !write) "Available via Shizuku" else "Permission required",
+                pillText = if (shizuku == ShizukuState.READY && !write) stringResource(R.string.perms_secure_settings_pill_shizuku) else stringResource(R.string.capability_permission_required),
             ) {
                 if (shizuku == ShizukuState.READY) vm.grantSecureSettingsViaShizuku { vm.refreshPermissions() }
                 else showAdbDialog = true
             }
             PermissionCard(
-                "Shizuku",
-                "Required to toggle NFC and Bluetooth. Install, start, then grant access.",
+                stringResource(R.string.perms_shizuku_title),
+                stringResource(R.string.perms_shizuku_desc),
                 shizuku == ShizukuState.READY,
-                pillText = if (shizuku == ShizukuState.READY) "Available" else "Shizuku required",
+                pillText = if (shizuku == ShizukuState.READY) stringResource(R.string.capability_available) else stringResource(R.string.capability_shizuku_required),
             ) {
                 when (shizuku) {
                     ShizukuState.NOT_INSTALLED -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://shizuku.rikka.app/download/")))
@@ -320,30 +322,25 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 }
             }
 
-            Text("Tip: tap the status pill on an automation to jump here.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 16.dp))
+            Text(stringResource(R.string.perms_tip), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 16.dp))
         }
     }
 
     if (showAdbDialog) {
         AlertDialog(
             onDismissRequest = { showAdbDialog = false },
-            title = { Text("Grant via ADB") },
-            text = { Text("Connect the phone over USB with debugging enabled, then run:\n\nadb shell pm grant ${context.packageName} android.permission.WRITE_SECURE_SETTINGS\n\nOr start Shizuku, tap Setup here and FlowPilot grants it for you.") },
-            confirmButton = { TextButton({ showAdbDialog = false }) { Text("OK") } },
+            title = { Text(stringResource(R.string.perms_adb_dialog_title)) },
+            text = { Text(stringResource(R.string.perms_adb_dialog_content, context.packageName)) },
+            confirmButton = { TextButton({ showAdbDialog = false }) { Text(stringResource(R.string.btn_ok)) } },
         )
     }
 
     if (showBackgroundLocationDialog) {
         AlertDialog(
             onDismissRequest = { showBackgroundLocationDialog = false },
-            title = { Text("Allow all the time (Her zaman izin ver)") },
+            title = { Text(stringResource(R.string.perms_bg_loc_dialog_title)) },
             text = {
-                Text(
-                    "To send your GPS location while the app is in the background or screen is off, Android requires the 'Allow all the time' (Her zaman izin ver) permission.\n\n" +
-                        "1. Tap 'Open settings' below\n" +
-                        "2. Tap 'Permissions' > 'Location'\n" +
-                        "3. Select 'Allow all the time' (Her zaman izin ver)"
-                )
+                Text(stringResource(R.string.perms_bg_loc_dialog_content))
             },
             confirmButton = {
                 TextButton(
@@ -356,12 +353,12 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                         context.startActivity(intent)
                     }
                 ) {
-                    Text("Open settings")
+                    Text(stringResource(R.string.perms_btn_open_settings))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showBackgroundLocationDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.btn_cancel))
                 }
             }
         )
@@ -373,15 +370,18 @@ private fun PermissionCard(
     title: String,
     desc: String,
     granted: Boolean,
-    pillText: String = "Permission required",
-    actionText: String = "Setup",
+    pillText: String = stringResource(R.string.capability_permission_required),
+    actionText: String = stringResource(R.string.perms_btn_setup),
     action: (() -> Unit)? = null,
 ) {
     Card(Modifier.fillMaxWidth().padding(bottom = 12.dp), colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                CapabilityPill(if (granted) "Available" else pillText)
+                CapabilityPill(
+                    text = if (granted) stringResource(R.string.capability_available) else pillText,
+                    isSuccess = granted,
+                )
             }
             Text(desc, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp), style = MaterialTheme.typography.bodySmall)
             if (!granted && action != null) Button(action, Modifier.align(Alignment.End), shape = RoundedCornerShape(14.dp)) { Text(actionText) }

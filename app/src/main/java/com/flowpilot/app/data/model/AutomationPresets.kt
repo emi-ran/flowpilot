@@ -1,16 +1,18 @@
 package com.flowpilot.app.data.model
 
+import androidx.annotation.StringRes
+import com.flowpilot.app.R
 import java.util.UUID
 
 /**
  * Predefined automation preset categories for UI filtering.
  */
 enum class PresetCategory(val label: String) {
-    ROUTINE("Rutinler"),
-    BATTERY("Pil & Güç"),
-    GESTURES("Sensör & Jestler"),
-    SAFETY_LOCATION("Güvenlik & Konum"),
-    CONNECTIVITY("Ağ & Bağlantı"),
+    ROUTINE("Routines"),
+    BATTERY("Battery & Power"),
+    GESTURES("Sensors & Gestures"),
+    SAFETY_LOCATION("Safety & Location"),
+    CONNECTIVITY("Network & Connectivity"),
 }
 
 /**
@@ -20,6 +22,8 @@ data class AutomationPreset(
     val id: String,
     val title: String,
     val description: String,
+    @StringRes val titleRes: Int,
+    @StringRes val descriptionRes: Int,
     val category: PresetCategory,
     val iconName: String,
     val template: Automation,
@@ -32,6 +36,8 @@ object AutomationPresets {
             id = "preset_bedtime",
             title = "Gece / Uyku Rutini",
             description = "Saat 23:30'da koyu temayı açar, Rahatsız Etmeyin'i ve sessiz profili etkinleştirir, ekran parlaklığını %10'a düşürür.",
+            titleRes = R.string.preset_bedtime_title,
+            descriptionRes = R.string.preset_bedtime_desc,
             category = PresetCategory.ROUTINE,
             iconName = "Bedtime",
             template = Automation(
@@ -62,6 +68,8 @@ object AutomationPresets {
             id = "preset_full_battery",
             title = "Pil %100 Doldu Uyarısı",
             description = "Telefon şarjdayken pil %99 üzerine ulaştığında sesli TTS ile haber verir, bildirim gösterir ve uyarı sesi çalar.",
+            titleRes = R.string.preset_full_battery_title,
+            descriptionRes = R.string.preset_full_battery_desc,
             category = PresetCategory.BATTERY,
             iconName = "BatteryChargingFull",
             template = Automation(
@@ -89,6 +97,8 @@ object AutomationPresets {
             id = "preset_battery_emergency",
             title = "Acil Pil Tasarrufu",
             description = "Pil %15 altına düştüğünde Pil Tasarrufunu açar, ekran parlaklığını %15 yapar, Bluetooth'u kapatır ve koyu temaya geçer.",
+            titleRes = R.string.preset_battery_emergency_title,
+            descriptionRes = R.string.preset_battery_emergency_desc,
             category = PresetCategory.BATTERY,
             iconName = "BatteryAlert",
             template = Automation(
@@ -111,6 +121,8 @@ object AutomationPresets {
             id = "preset_flip_silence",
             title = "Yüzüstü Sessize Al",
             description = "Telefon yüzüstü masaya bırakıldığında Rahatsız Etmeyin modunu açar ve hafif bir onay titreşimi verir.",
+            titleRes = R.string.preset_flip_silence_title,
+            descriptionRes = R.string.preset_flip_silence_desc,
             category = PresetCategory.GESTURES,
             iconName = "ScreenRotation",
             template = Automation(
@@ -131,6 +143,8 @@ object AutomationPresets {
             id = "preset_shake_torch",
             title = "Sallayarak Feneri Aç",
             description = "Telefon sallandığında arka kamera fenerini açar ve çift titreşimle geri bildirim verir.",
+            titleRes = R.string.preset_shake_torch_title,
+            descriptionRes = R.string.preset_shake_torch_desc,
             category = PresetCategory.GESTURES,
             iconName = "FlashlightOn",
             template = Automation(
@@ -151,6 +165,8 @@ object AutomationPresets {
             id = "preset_cinema_mode",
             title = "Sinema / Gece Okuma Modu",
             description = "Ortam ışığı 5 lüksün altına indiğinde ekran parlaklığını %5'e düşürür ve koyu temayı açar.",
+            titleRes = R.string.preset_cinema_title,
+            descriptionRes = R.string.preset_cinema_desc,
             category = PresetCategory.ROUTINE,
             iconName = "Nightlife",
             template = Automation(
@@ -174,6 +190,8 @@ object AutomationPresets {
             id = "preset_leaving_home",
             title = "Evden Çıkış Modu",
             description = "Ev Wi-Fi ağından ayrıldığınızda mobil veriyi açar, ses profilini normale alır ve medya sesini %80 yapar.",
+            titleRes = R.string.preset_leaving_home_title,
+            descriptionRes = R.string.preset_leaving_home_desc,
             category = PresetCategory.CONNECTIVITY,
             iconName = "ExitToApp",
             template = Automation(
@@ -195,6 +213,8 @@ object AutomationPresets {
             id = "preset_welcome_home",
             title = "Eve Varış Modu",
             description = "Ev Wi-Fi ağına bağlandığınızda mobil veriyi kapatarak pil tasarrufu sağlar ve ekran parlaklığını %50'ye getirir.",
+            titleRes = R.string.preset_welcome_home_title,
+            descriptionRes = R.string.preset_welcome_home_desc,
             category = PresetCategory.CONNECTIVITY,
             iconName = "Home",
             template = Automation(
@@ -215,6 +235,8 @@ object AutomationPresets {
             id = "preset_sms_location_responder",
             title = "SMS Acil Konum Yanıtı",
             description = "'NEREDESIN' içerikli SMS geldiğinde önce GPS konumunu açar, 5 saniye uydu kilidini bekler ve anlık Google Haritalar konumunu SMS ile geri yollar.",
+            titleRes = R.string.preset_sms_location_title,
+            descriptionRes = R.string.preset_sms_location_desc,
             category = PresetCategory.SAFETY_LOCATION,
             iconName = "LocationOn",
             template = Automation(

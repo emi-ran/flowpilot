@@ -6,4 +6,579 @@
     <string name="notif_engine_title">Automation active</string>
     <string name="notif_engine_text">FlowPilot is running schedules</string>
     <string name="special_use_subtype">Detects foreground app changes and applies user-configured automations (NFC, battery saver).</string>
+
+    <!-- General / Navigation -->
+    <string name="nav_home">Automations</string>
+    <string name="nav_create">Create</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_history">History</string>
+    <string name="nav_permissions">Permissions</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_edit">Edit</string>
+    <string name="btn_ok">OK</string>
+    <string name="btn_close">Close</string>
+    <string name="btn_test">Test</string>
+    <string name="btn_run_now">Run now</string>
+    <string name="btn_use_preset">Use</string>
+    <string name="btn_add_action">Add action</string>
+    <string name="btn_add_condition">Add condition</string>
+    <string name="search_placeholder">Search automations...</string>
+    <string name="all_filter">All</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Manage your FlowPilot preferences.</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System default</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_tr">Türkçe</string>
+    <string name="settings_select_language">Select language</string>
+    <string name="settings_startup">Run engine on device startup</string>
+    <string name="settings_permissions">Advanced permissions</string>
+    <string name="settings_history">Run history</string>
+    <string name="settings_about">About</string>
+    <string name="settings_dark_theme">Dark theme</string>
+
+    <!-- Home Screen -->
+    <string name="home_engine_running">Automation engine active</string>
+    <string name="home_engine_stopped">Automation engine stopped</string>
+    <string name="home_empty_title">No automations yet</string>
+    <string name="home_empty_desc">Tap + to create your first automation rule.</string>
+    <string name="home_active_rules">Active rules (%1$d)</string>
+
+    <!-- Create & Detail Screens -->
+    <string name="create_title">Create automation</string>
+    <string name="edit_title">Edit automation</string>
+    <string name="presets_banner_title">Ready-to-use Presets</string>
+    <string name="presets_banner_desc">Choose from popular scenarios with a single tap</string>
+    <string name="automation_name_label">Automation name</string>
+    <string name="section_when">WHEN</string>
+    <string name="section_conditions">CONDITIONS (optional, all must match)</string>
+    <string name="section_do">DO (%1$d actions)</string>
+    <string name="section_do_single">DO (1 action)</string>
+    <string name="hold_to_reorder">Hold to reorder</string>
+    <string name="advanced_options">Advanced options</string>
+    <string name="cooldown_prefix">Cooldown: %1$s</string>
+    <string name="cooldown_none">None</string>
+    <string name="cooldown_1m">1 minute</string>
+    <string name="cooldown_5m">5 minutes</string>
+    <string name="cooldown_15m">15 minutes</string>
+    <string name="cooldown_60m">1 hour</string>
+    <string name="screen_off_detection">Detect when screen is off</string>
+    <string name="screen_off_detection_desc">Keeps sensors active while screen is off (may use slightly more battery)</string>
+    <string name="preset_applied_snackbar">\'%1$s\' preset applied.</string>
+    <string name="test_actions_title">Test Actions Now</string>
+    <string name="test_actions_desc">This will immediately run the actions with current form values.</string>
+    <string name="action_delay_seconds">+%1$ds</string>
+    <string name="tap_to_choose_app">Tap to choose app</string>
+    <string name="tap_to_choose_target_app">Tap to choose target app</string>
+    <string name="choose_trigger">Choose trigger</string>
+    <string name="choose_action">Choose action</string>
+    <string name="choose_condition">Choose condition</string>
+    <string name="actions_count">%1$d Actions</string>
+
+    <!-- Presets Bottom Sheet -->
+    <string name="presets_sheet_title">Ready-to-use Presets</string>
+    <string name="presets_sheet_desc">Pre-configured scenarios to get started quickly</string>
+    <string name="preset_cat_routine">Routines</string>
+    <string name="preset_cat_battery">Battery &amp; Power</string>
+    <string name="preset_cat_gestures">Sensors &amp; Gestures</string>
+    <string name="preset_cat_safety">Safety &amp; Location</string>
+    <string name="preset_cat_connectivity">Network &amp; Connectivity</string>
+
+    <!-- Preset Items -->
+    <string name="preset_bedtime_title">Bedtime / Night Routine</string>
+    <string name="preset_bedtime_desc" formatted="false">At 23:30, turns on dark theme, Do Not Disturb, silent profile, and lowers screen brightness to 10%.</string>
+
+    <string name="preset_full_battery_title" formatted="false">Full Battery Alert (100%)</string>
+    <string name="preset_full_battery_desc" formatted="false">When charging and battery reaches 100%, announces via TTS, shows notification, and plays an alert sound.</string>
+    <string name="preset_full_battery_tts">Battery fully charged, please unplug the charger.</string>
+    <string name="preset_full_battery_notif_title">Battery Fully Charged</string>
+    <string name="preset_full_battery_notif_body" formatted="false">Battery has reached 100%. You can disconnect your charger.</string>
+
+    <string name="preset_battery_emergency_title">Battery Saver Emergency</string>
+    <string name="preset_battery_emergency_desc" formatted="false">When battery drops below 15%, turns on Battery Saver, sets brightness to 15%, turns off Bluetooth, and enables dark theme.</string>
+
+    <string name="preset_flip_silence_title">Flip to Silence</string>
+    <string name="preset_flip_silence_desc">When placed face down on a surface, turns on Do Not Disturb and gives a subtle confirmation pulse.</string>
+
+    <string name="preset_shake_torch_title">Shake for Flashlight</string>
+    <string name="preset_shake_torch_desc">When shaken, toggles the camera flashlight and gives double-tap vibration feedback.</string>
+
+    <string name="preset_cinema_title">Cinema / Night Reading Mode</string>
+    <string name="preset_cinema_desc" formatted="false">When ambient light drops below 5 lux and screen is on, lowers brightness to 5% and enables dark theme.</string>
+
+    <string name="preset_leaving_home_title">Leaving Home Mode</string>
+    <string name="preset_leaving_home_desc" formatted="false">When disconnected from home Wi-Fi, turns on mobile data, sets sound profile to normal, and raises volume to 80%.</string>
+
+    <string name="preset_welcome_home_title">Welcome Home Mode</string>
+    <string name="preset_welcome_home_desc" formatted="false">When connected to home Wi-Fi, turns off mobile data for power saving and sets brightness to 50%.</string>
+
+    <string name="preset_sms_location_title">SMS Emergency Location Responder</string>
+    <string name="preset_sms_location_desc">When incoming SMS matches keyword, turns on GPS, waits 5 seconds for satellite lock, and replies with live Google Maps coordinates.</string>
+    <string name="preset_sms_location_message" formatted="false">My current location: ${location.maps_url} (Battery: %${batteryPercent})</string>
+
+    <!-- TriggerEvent Labels -->
+    <string name="trigger_app_opened">App opened</string>
+    <string name="trigger_app_closed">App closed</string>
+    <string name="trigger_charger_connected">Charger connected</string>
+    <string name="trigger_charger_disconnected">Charger disconnected</string>
+    <string name="trigger_battery_below">Battery below level</string>
+    <string name="trigger_battery_above">Battery above level</string>
+    <string name="trigger_screen_on">Screen turned on</string>
+    <string name="trigger_screen_off">Screen turned off</string>
+    <string name="trigger_time_schedule">At scheduled time</string>
+    <string name="trigger_wifi_connected">Connected to Wi-Fi</string>
+    <string name="trigger_wifi_disconnected">Disconnected from Wi-Fi</string>
+    <string name="trigger_bluetooth_connected">Bluetooth device connected</string>
+    <string name="trigger_bluetooth_disconnected">Bluetooth device disconnected</string>
+    <string name="trigger_nfc_tag_scanned">NFC tag scanned</string>
+    <string name="trigger_notification_received">Notification received</string>
+    <string name="trigger_call_ringing">Incoming call ringing</string>
+    <string name="trigger_call_answered">Call active / answered</string>
+    <string name="trigger_call_outgoing">Outgoing call started</string>
+    <string name="trigger_call_ended">Call ended</string>
+    <string name="trigger_device_flipped_down">Device flipped face down</string>
+    <string name="trigger_device_flipped_up">Device flipped face up</string>
+    <string name="trigger_device_shake">Device shaken</string>
+    <string name="trigger_device_unlocked">Device unlocked</string>
+    <string name="trigger_light_below">Ambient light below level</string>
+    <string name="trigger_light_above">Ambient light above level</string>
+    <string name="trigger_sms_received">SMS received</string>
+
+    <!-- ActionType Labels -->
+    <string name="action_bluetooth_on">Turn Bluetooth on</string>
+    <string name="action_bluetooth_off">Turn Bluetooth off</string>
+    <string name="action_nfc_on">Turn NFC on</string>
+    <string name="action_nfc_off">Turn NFC off</string>
+    <string name="action_battery_saver_on">Turn Battery Saver on</string>
+    <string name="action_battery_saver_off">Turn Battery Saver off</string>
+    <string name="action_dark_theme_on">Turn Dark theme on</string>
+    <string name="action_dark_theme_off">Turn Dark theme off</string>
+    <string name="action_auto_rotate_on">Turn Auto-rotate on</string>
+    <string name="action_auto_rotate_off">Turn Auto-rotate off</string>
+    <string name="action_show_notification">Show notification</string>
+    <string name="action_dnd_on">Turn Do Not Disturb on</string>
+    <string name="action_dnd_off">Turn Do Not Disturb off</string>
+    <string name="action_vibrate">Vibrate</string>
+    <string name="action_sound_profile_normal">Sound profile: Normal</string>
+    <string name="action_sound_profile_vibrate">Sound profile: Vibrate</string>
+    <string name="action_sound_profile_silent">Sound profile: Silent</string>
+    <string name="action_play_sound">Play sound</string>
+    <string name="action_set_media_volume">Set media volume</string>
+    <string name="action_speak_text">Speak text (TTS)</string>
+    <string name="action_create_alarm">Create alarm</string>
+    <string name="action_start_timer">Start timer</string>
+    <string name="action_launch_app">Launch app</string>
+    <string name="action_open_url">Open URL</string>
+    <string name="action_http_webhook">Send HTTP webhook</string>
+    <string name="action_open_dialer">Open dialer</string>
+    <string name="action_dial_number">Dial phone number</string>
+    <string name="action_call_number">Call phone number directly</string>
+    <string name="action_send_sms">Send SMS directly</string>
+    <string name="action_draft_sms">Prepare SMS draft</string>
+    <string name="action_mobile_data_on">Turn Mobile Data on</string>
+    <string name="action_mobile_data_off">Turn Mobile Data off</string>
+    <string name="action_wifi_on">Turn Wi-Fi on</string>
+    <string name="action_wifi_off">Turn Wi-Fi off</string>
+    <string name="action_airplane_mode_on">Turn Airplane mode on</string>
+    <string name="action_airplane_mode_off">Turn Airplane mode off</string>
+    <string name="action_torch_on">Turn Flashlight on</string>
+    <string name="action_torch_off">Turn Flashlight off</string>
+    <string name="action_set_screen_brightness">Set screen brightness</string>
+    <string name="action_lock_screen">Lock screen</string>
+    <string name="action_force_stop_app">Force stop app</string>
+    <string name="action_location_on">Turn Location on</string>
+    <string name="action_location_off">Turn Location off</string>
+
+    <!-- ConditionType Labels -->
+    <string name="cond_battery_below">Battery below level</string>
+    <string name="cond_battery_above">Battery above level</string>
+    <string name="cond_charger_connected">Charger connected</string>
+    <string name="cond_charger_disconnected">Charger disconnected</string>
+    <string name="cond_screen_on">Screen is on</string>
+    <string name="cond_screen_off">Screen is off</string>
+    <string name="cond_wifi_connected">Connected to Wi-Fi</string>
+    <string name="cond_wifi_disconnected">Disconnected from Wi-Fi</string>
+    <string name="cond_time_between">Time is between</string>
+    <string name="cond_days_of_week">Days of week</string>
+
+    <!-- Categories -->
+    <string name="cat_app">App</string>
+    <string name="cat_power">Power</string>
+    <string name="cat_display">Display</string>
+    <string name="cat_time">Time</string>
+    <string name="cat_network">Network</string>
+    <string name="cat_bluetooth">Bluetooth</string>
+    <string name="cat_nfc">NFC</string>
+    <string name="cat_notification">Notification</string>
+    <string name="cat_phone">Phone</string>
+    <string name="cat_sms">SMS</string>
+    <string name="cat_motion">Motion</string>
+    <string name="cat_connectivity">Connectivity</string>
+    <string name="cat_battery">Battery</string>
+    <string name="cat_alerts">Alerts</string>
+    <string name="cat_audio">Audio</string>
+    <string name="cat_apps_links">Apps &amp; Links</string>
+    <string name="cat_clock">Clock</string>
+
+    <!-- Match Modes -->
+    <string name="sms_mode_contains">Contains keyword</string>
+    <string name="sms_mode_equals">Equals text exactly</string>
+    <string name="sms_mode_starts_with">Starts with text</string>
+    <string name="sms_mode_regex">Matches regex</string>
+    <string name="sms_mode_any">Any SMS</string>
+
+    <!-- Vibration Patterns -->
+    <string name="vib_pulse">Pulse</string>
+    <string name="vib_double_tap">Double tap</string>
+    <string name="vib_alert">Alert</string>
+    <string name="vib_heartbeat">Heartbeat</string>
+    <string name="vib_triple_tap">Triple tap</string>
+    <string name="vib_sos">SOS</string>
+
+    <!-- Sound Presets -->
+    <string name="sound_preset_notif">Notification sound</string>
+    <string name="sound_preset_alarm">Alarm sound</string>
+    <string name="sound_preset_ringtone">Ringtone</string>
+    <string name="sound_preset_custom">Custom audio file</string>
+
+    <!-- Dialogs & Selection -->
+    <string name="dialog_delete_title">Delete automation?</string>
+    <string name="dialog_delete_single_confirm">Are you sure you want to delete \'%1$s\'? This action cannot be undone.</string>
+    <string name="dialog_delete_selected_confirm">Are you sure you want to delete %1$d automations? This cannot be undone.</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="btn_select_all">Select all</string>
+    <string name="btn_deselect_all">Deselect all</string>
+    <string name="content_desc_cancel_selection">Cancel selection</string>
+    <string name="btn_delete_selected">Delete selected</string>
+    <string name="btn_new_automation">New automation</string>
+
+    <!-- Home Screen Status & Details -->
+    <string name="home_engine_active">FlowPilot Active</string>
+    <string name="home_engine_paused">Engine Paused</string>
+    <string name="home_engine_active_count">%1$d of %2$d automations active</string>
+    <string name="home_engine_paused_desc">Automations will not trigger</string>
+    <string name="home_create_first_rule">Create your first rule</string>
+    <string name="detail_threshold_battery">Threshold: %1$d%%</string>
+    <string name="detail_threshold_light">Threshold: %1$d lx</string>
+    <string name="detail_ssid">SSID: %1$s</string>
+    <string name="detail_any_wifi">Any Wi-Fi</string>
+    <string name="detail_tag_id">Tag ID: %1$s</string>
+    <string name="detail_any_call">Any call</string>
+    <string name="detail_screen_on_off">Screen on &amp; off</string>
+    <string name="detail_screen_on_only">Screen on only</string>
+    <string name="detail_shake_device">Shake device</string>
+    <string name="detail_unlock_screen">Unlock screen</string>
+    <string name="detail_any_sender">Any sender</string>
+    <string name="detail_cooldown_badge">⏱ %1$dm cooldown</string>
+
+    <!-- Test Run & Actions -->
+    <string name="test_run_now_confirm_title">Test actions now?</string>
+    <string name="test_run_now_confirm_desc">This will immediately run the actions configured on this screen.\n\n• Trigger and conditions will be bypassed\n• Runs with your current edits without needing to save first\n• Automation saved state and history trigger timestamps will not change</string>
+    <string name="test_run_now_warning_call">\n\n⚠️ WARNING: This rule contains a direct phone call action. Running it now will place a real phone call immediately.</string>
+    <string name="test_run_executed_success">Executed %1$d action(s) successfully</string>
+    <string name="test_run_executed_errors">Ran with errors: %1$d succeeded, %2$d failed (%3$s)</string>
+    <string name="msg_add_action_to_test">Add at least one action to test</string>
+    <string name="btn_save_changes">Save changes</string>
+    <string name="btn_create_rule">Create rule</string>
+    <string name="search_triggers_hint">Search triggers (e.g. battery, call, sms, screen, time)...</string>
+    <string name="search_actions_hint">Search actions (e.g. bluetooth, wifi, volume, notification)...</string>
+    <string name="search_conditions_hint">Search conditions...</string>
+    <string name="execution_cooldown">Execution cooldown</string>
+
+    <!-- Trigger Descriptions -->
+    <string name="trigger_app_opened_desc">When selected foreground app starts</string>
+    <string name="trigger_app_closed_desc">When selected foreground app exits</string>
+    <string name="trigger_call_ringing_desc">When an incoming call starts ringing</string>
+    <string name="trigger_call_answered_desc">When an incoming call is picked up (off-hook)</string>
+    <string name="trigger_call_outgoing_desc">When an outgoing phone call is placed / dialed</string>
+    <string name="trigger_call_ended_desc">When an active or ringing call ends (returns to idle)</string>
+    <string name="trigger_charger_connected_desc">When device is plugged into AC or USB charger</string>
+    <string name="trigger_charger_disconnected_desc">When device is unplugged from power source</string>
+    <string name="trigger_battery_below_desc">When battery drops to or below configured percentage</string>
+    <string name="trigger_battery_above_desc">When battery charges to or above configured percentage</string>
+    <string name="trigger_bluetooth_connected_desc">When a specific paired Bluetooth device connects</string>
+    <string name="trigger_bluetooth_disconnected_desc">When a specific paired Bluetooth device disconnects</string>
+    <string name="trigger_nfc_tag_scanned_desc">When a physical NFC tag is scanned against the phone</string>
+    <string name="trigger_screen_on_desc">When screen turns on or device wakes up</string>
+    <string name="trigger_screen_off_desc">When screen locks or turns off</string>
+    <string name="trigger_device_unlocked_desc">When device is unlocked with PIN, fingerprint or face</string>
+    <string name="trigger_light_below_desc">When ambient light falls to or below configured lux</string>
+    <string name="trigger_light_above_desc">When ambient light rises to or above configured lux</string>
+    <string name="trigger_time_schedule_desc">At specific time of day and selected days</string>
+    <string name="trigger_wifi_connected_desc">When device connects to a configured Wi-Fi SSID</string>
+    <string name="trigger_wifi_disconnected_desc">When device disconnects from a configured Wi-Fi SSID</string>
+    <string name="trigger_notification_received_desc">When a notification arrives from selected app (optional keyword)</string>
+    <string name="trigger_device_flipped_down_desc">When device is placed face down on a table or surface</string>
+    <string name="trigger_device_flipped_up_desc">When device is turned face up back to normal position</string>
+    <string name="trigger_device_shake_desc">When device is firmly shaken back and forth</string>
+    <string name="trigger_sms_received_desc">When an incoming SMS text message is received (filter sender &amp; content)</string>
+
+    <!-- Action Descriptions -->
+    <string name="action_send_sms_desc">Directly sends an SMS in background (requires SEND_SMS)</string>
+    <string name="action_draft_sms_desc">Prepares SMS draft in default SMS app for review</string>
+    <string name="action_open_dialer_desc">Open default phone dialer app</string>
+    <string name="action_dial_number_desc">Prepare number in dialer for user confirmation</string>
+    <string name="action_call_number_desc">Directly initiates a phone call automatically (requires CALL_PHONE)</string>
+    <string name="action_show_notification_desc">Post a heads-up or status notification</string>
+    <string name="action_dnd_on_desc">Mute all interruptions and enable Do Not Disturb</string>
+    <string name="action_dnd_off_desc">Allow normal interruptions and disable Do Not Disturb</string>
+    <string name="action_vibrate_desc">Vibrate device with custom pattern and strength</string>
+    <string name="action_create_alarm_desc">Create an alarm in the system Clock app</string>
+    <string name="action_start_timer_desc">Start a countdown timer in the system Clock app</string>
+    <string name="action_sound_profile_normal_desc">Set sound profile to normal (ring and notifications audible)</string>
+    <string name="action_sound_profile_vibrate_desc">Set sound profile to vibrate (silent with vibration)</string>
+    <string name="action_sound_profile_silent_desc">Set sound profile to silent (mute calls and notifications)</string>
+    <string name="action_play_sound_desc">Play custom audio file or system tone</string>
+    <string name="action_set_media_volume_desc">Adjust media stream volume percentage</string>
+    <string name="action_speak_text_desc">Synthesize and speak voice text with TTS</string>
+    <string name="action_launch_app_desc">Start an installed app into the foreground</string>
+    <string name="action_open_url_desc">Open website or deep link in default browser</string>
+    <string name="action_http_webhook_desc">Send HTTP request (Home Assistant, Discord, ntfy)</string>
+    <string name="action_force_stop_app_desc">Force terminate a running application (requires Shizuku)</string>
+    <string name="action_dark_theme_on_desc">Enable system-wide dark theme (requires Shizuku)</string>
+    <string name="action_dark_theme_off_desc">Disable dark theme / switch to light mode (requires Shizuku)</string>
+    <string name="action_auto_rotate_on_desc">Enable automatic screen rotation based on orientation</string>
+    <string name="action_auto_rotate_off_desc">Lock screen orientation to portrait / disable auto-rotate</string>
+    <string name="action_set_screen_brightness_desc">Adjust screen brightness level (0% - 100%)</string>
+    <string name="action_lock_screen_desc">Lock screen and turn off display (requires Shizuku)</string>
+    <string name="action_torch_on_desc">Turn camera flash on as flashlight</string>
+    <string name="action_torch_off_desc">Turn camera flash / flashlight off</string>
+    <string name="action_battery_saver_on_desc">Enable Android low-power saver mode</string>
+    <string name="action_battery_saver_off_desc">Disable Android low-power saver mode</string>
+    <string name="action_bluetooth_on_desc">Turn Bluetooth radio on (requires Shizuku)</string>
+    <string name="action_bluetooth_off_desc">Turn Bluetooth radio off (requires Shizuku)</string>
+    <string name="action_wifi_on_desc">Turn Wi-Fi radio on (requires Shizuku)</string>
+    <string name="action_wifi_off_desc">Turn Wi-Fi radio off (requires Shizuku)</string>
+    <string name="action_mobile_data_on_desc">Turn mobile cellular data on (requires Shizuku)</string>
+    <string name="action_mobile_data_off_desc">Turn mobile cellular data off (requires Shizuku)</string>
+    <string name="action_airplane_mode_on_desc">Turn Airplane mode on (requires Shizuku)</string>
+    <string name="action_airplane_mode_off_desc">Turn Airplane mode off (requires Shizuku)</string>
+    <string name="action_location_on_desc">Turn Location / GPS services on (requires Shizuku)</string>
+    <string name="action_location_off_desc">Turn Location / GPS services off (requires Shizuku)</string>
+    <string name="action_nfc_on_desc">Turn NFC radio on (requires Shizuku)</string>
+    <string name="action_nfc_off_desc">Turn NFC radio off (requires Shizuku)</string>
+
+    <!-- Condition Descriptions -->
+    <string name="cond_time_between_desc">Run only during a specific time interval (e.g. 23:00 to 07:00)</string>
+    <string name="cond_days_of_week_desc">Run only on selected days (weekdays, weekends, or custom days)</string>
+    <string name="cond_battery_below_desc">Run only when battery level is at or below percentage</string>
+    <string name="cond_battery_above_desc">Run only when battery level is at or above percentage</string>
+    <string name="cond_charger_connected_desc">Run only while phone is plugged into power</string>
+    <string name="cond_charger_disconnected_desc">Run only while phone is unplugged and discharging</string>
+    <string name="cond_screen_on_desc">Run only while device screen is on or awake</string>
+    <string name="cond_screen_off_desc">Run only while screen is turned off or locked</string>
+    <string name="cond_wifi_connected_desc">Run only when connected to Wi-Fi (optional specific SSID)</string>
+    <string name="cond_wifi_disconnected_desc">Run only when disconnected from Wi-Fi or specific SSID</string>
+
+    <!-- Picker Search & UI -->
+    <string name="no_matches_found">No matches found</string>
+    <string name="no_matches_found_hint">Try searching for a different keyword or name</string>
+    <string name="content_desc_close">Close</string>
+    <string name="content_desc_search">Search icon</string>
+    <string name="content_desc_clear_search">Clear search query</string>
+
+    <!-- Card Components, Labels & Prompts -->
+    <string name="schedule_daily">Daily</string>
+    <string name="schedule_weekdays">Weekdays</string>
+    <string name="schedule_weekends">Weekends</string>
+    <string name="wifi_ssid_label">Wi-Fi SSID (empty for any)</string>
+    <string name="bluetooth_device_choose">Choose device</string>
+    <string name="trigger_wifi_any">Any Wi-Fi network</string>
+    <string name="nfc_uid_label">NFC Tag UID (hex)</string>
+    <string name="nfc_uid_placeholder">e.g. 04A1B2C3D4E5F6</string>
+    <string name="nfc_tap_instruction">Tap a tag to the phone while app is open to auto-capture UID.</string>
+    <string name="notification_keyword_filter">Keyword filter (optional)</string>
+    <string name="notification_choose_app">Choose app</string>
+    <string name="tap_to_select_app">Tap to select app</string>
+    <string name="flip_screen_off_label">Detect while screen is off (uses slightly more battery)</string>
+    <string name="light_current_lux">Current room light</string>
+    <string name="light_reading_sensor">Reading sensor...</string>
+    <string name="light_set_target">Set as target</string>
+    <string name="light_trigger_darker">Trigger when darker than</string>
+    <string name="light_trigger_brighter">Trigger when brighter than</string>
+    <string name="light_preset_dark_room">Dark room (5 lx)</string>
+    <string name="light_preset_dim_night">Dim / Night (20 lx)</string>
+    <string name="light_preset_indoor">Indoor (100 lx)</string>
+    <string name="light_preset_office">Office (300 lx)</string>
+    <string name="light_preset_daylight">Daylight (600 lx)</string>
+    <string name="shake_hint">Shake phone firmly to trigger. Active while screen is on.</string>
+    <string name="unlock_hint">Triggers each time the phone is unlocked with fingerprint, face, or PIN.</string>
+    <string name="sms_sender_filter_label">Sender filter (optional)</string>
+    <string name="sms_sender_filter_placeholder">e.g. +90555... or leave blank for any</string>
+    <string name="sms_match_mode_label">Message Match Mode</string>
+    <string name="sms_exact_text">Exact message text</string>
+    <string name="sms_prefix_keyword">Prefix keyword</string>
+    <string name="sms_regex_pattern">Regular expression pattern</string>
+    <string name="sms_keyword_phrase">Keyword or phrase</string>
+    <string name="sms_any_sms">any SMS</string>
+    <string name="sms_contains_quoted">contains \"%1$s\"</string>
+    <string name="sms_equals_quoted">equals \"%1$s\"</string>
+    <string name="sms_starts_with_quoted">starts with \"%1$s\"</string>
+    <string name="sms_regex_quoted">regex \"%1$s\"</string>
+
+    <string name="action_move_up">Move up</string>
+    <string name="action_move_down">Move down</string>
+    <string name="action_remove">Remove action</string>
+    <string name="action_reorder_desc">Reorder action (hold to drag)</string>
+    <string name="action_no_delay">No delay</string>
+    <string name="action_wait_seconds">Wait %1$ds</string>
+    <string name="action_notif_title_label">Notification title</string>
+    <string name="action_notif_body_label">Message</string>
+    <string name="vib_strength_soft">Soft</string>
+    <string name="vib_strength_normal">Normal</string>
+    <string name="vib_strength_strong">Strong</string>
+    <string name="action_preview_vibration">Preview vibration</string>
+    <string name="sound_no_file_selected">No audio file selected</string>
+    <string name="sound_choose_file">Choose MP3 or WAV</string>
+    <string name="sound_duration_label">Duration: %1$ds</string>
+    <string name="sound_btn_play">Play</string>
+    <string name="sound_btn_stop">Stop</string>
+    <string name="action_choose_app_prompt">Tap to select target app</string>
+    <string name="action_url_label">URL (https://...)</string>
+    <string name="alarm_time_label">Alarm time: %1$02d:%2$02d</string>
+    <string name="alarm_label_optional">Alarm label (optional)</string>
+    <string name="timer_label_optional">Timer label (optional)</string>
+    <string name="webhook_url_label">Webhook URL</string>
+    <string name="webhook_headers_label">Headers (Key: Value, one per line)</string>
+    <string name="webhook_body_label">Request body</string>
+    <string name="webhook_timeout_label">Timeout: %1$ds</string>
+    <string name="webhook_view_vars">View supported variables</string>
+    <string name="webhook_vars_title">Webhook variables</string>
+    <string name="phone_number_label">Phone number</string>
+    <string name="phone_direct_call_warning">⚠️ Direct call: Places a real phone call immediately when triggered.</string>
+    <string name="sms_recipient_label">Recipient phone number</string>
+    <string name="sms_reply_sender_chip" formatted="false">Reply to sender (${sms.sender})</string>
+    <string name="sms_message_text_label">SMS message text</string>
+    <string name="sms_quick_variables">Quick variables:</string>
+    <string name="sms_direct_send_warning">⚠️ Direct SMS: Sends a background text message immediately. Standard carrier rates may apply.</string>
+    <string name="action_force_stop_prompt">Tap to choose app to force stop</string>
+    <string name="action_system_service_desc">Runs automatically via system services when triggered.</string>
+    <string name="time_start">Start time</string>
+    <string name="time_end">End time</string>
+    <string name="time_overnight_window">🌙 Overnight window (crosses midnight)</string>
+    <string name="btn_remove_condition">Remove condition</string>
+    <string name="cooldown_rule_description_none">Rule triggers on every matching event.</string>
+    <string name="cooldown_rule_description_minutes">Rule will wait %1$d minute(s) after a successful run before triggering automatically again.</string>
+
+    <!-- Capabilities & Status -->
+    <string name="capability_available">Available</string>
+    <string name="capability_permission_required">Permission required</string>
+    <string name="capability_shizuku_required">Shizuku required</string>
+    <string name="capability_unsupported">Unsupported on this device</string>
+
+    <!-- Permissions Screen -->
+    <string name="perms_title">Setup FlowPilot</string>
+    <string name="perms_subtitle">Some actions require additional system permissions.</string>
+    <string name="perms_tip">Tip: tap the status pill on an automation to jump here.</string>
+    <string name="perms_btn_setup">Setup</string>
+    <string name="perms_btn_grant">Grant</string>
+    <string name="perms_btn_turn_on">Turn on</string>
+    <string name="perms_btn_open_list">Open list</string>
+    <string name="perms_btn_open_settings">Open settings</string>
+    <string name="perms_usage_title">Usage Access</string>
+    <string name="perms_usage_desc">Required to detect when apps open. Open system Settings and allow FlowPilot.</string>
+    <string name="perms_notif_title">Notifications</string>
+    <string name="perms_notif_desc">Shows engine status while automation runs.</string>
+    <string name="perms_phone_state_title">Phone call state access</string>
+    <string name="perms_phone_state_desc">Required to detect incoming, answered, outgoing, and ended phone calls. FlowPilot never reads call log, never accesses contacts, and never records audio.</string>
+    <string name="perms_call_phone_title">Make direct phone calls</string>
+    <string name="perms_call_phone_desc">Required for the Call number automation action to place real telephone calls automatically without manual dialer confirmation.</string>
+    <string name="perms_receive_sms_title">Receive SMS messages</string>
+    <string name="perms_receive_sms_desc">Required for incoming SMS triggers to detect incoming messages, filter senders, match verification codes, and trigger automations.</string>
+    <string name="perms_send_sms_title">Send SMS messages</string>
+    <string name="perms_send_sms_desc">Required for the Send SMS action to send automated background SMS text messages directly without manual app confirmation.</string>
+    <string name="perms_notif_listener_title">Notification listener access</string>
+    <string name="perms_notif_listener_desc">Allows FlowPilot to trigger automations when notifications arrive from selected apps.</string>
+    <string name="perms_bluetooth_title">Bluetooth paired-device access</string>
+    <string name="perms_bluetooth_desc">Required on Android 12+ to list bonded devices and receive Bluetooth device connect/disconnect events. FlowPilot never runs Bluetooth discovery or stores paired-device history.</string>
+    <string name="perms_nfc_title">NFC hardware &amp; status</string>
+    <string name="perms_nfc_unsupported">NFC hardware is not available on this device.</string>
+    <string name="perms_nfc_disabled">NFC is turned off in system settings. Turn on NFC to scan tags and trigger rules.</string>
+    <string name="perms_nfc_ready">NFC hardware is active and ready for tag triggers.</string>
+    <string name="perms_nfc_pill_disabled">NFC disabled</string>
+    <string name="perms_wifi_loc_title">Wi-Fi SSID &amp; Location access</string>
+    <string name="perms_wifi_loc_desc">Android requires ACCESS_FINE_LOCATION permission, Wi-Fi permissions, and device Location enabled to identify connected Wi-Fi SSID and scan nearby networks for Wi-Fi triggers and conditions.</string>
+    <string name="perms_bg_loc_title">Background Location (\'Allow all the time\')</string>
+    <string name="perms_bg_loc_need_fg">FlowPilot needs foreground location permission first. Tap to grant location access.</string>
+    <string name="perms_bg_loc_gps_off">Device GPS / Location service is turned off. Tap to open system Location settings and turn on Location.</string>
+    <string name="perms_bg_loc_need_all_time" formatted="false">Required so FlowPilot can read your GPS coordinates (${location.lat}, ${location.lng}) in the background (e.g. for incoming SMS triggers or automations when the screen is locked). Tap to select \'Allow all the time\' (Her zaman izin ver).</string>
+    <string name="perms_bg_loc_ready" formatted="false">FlowPilot has full background GPS access. Automations can read ${location.lat} and ${location.lng} anytime, even when the screen is locked.</string>
+    <string name="perms_bg_loc_pill_needed">Location needed</string>
+    <string name="perms_bg_loc_pill_gps_off">GPS disabled</string>
+    <string name="perms_bg_loc_pill_fg_only">Foreground only</string>
+    <string name="perms_bg_loc_action_turn_gps">Turn on GPS</string>
+    <string name="perms_bg_loc_action_allow_all">Allow all the time</string>
+    <string name="perms_dnd_title">Do Not Disturb access</string>
+    <string name="perms_dnd_desc">Allows FlowPilot to turn Do Not Disturb on or off. Grant Notification Policy Access in Android settings.</string>
+    <string name="perms_modify_settings_title">Modify system settings</string>
+    <string name="perms_modify_settings_desc">Allows FlowPilot to change system settings such as Auto-rotate. Grant in Android special access settings.</string>
+    <string name="perms_battery_opt_title">Battery restrictions</string>
+    <string name="perms_battery_opt_desc">Allow FlowPilot to run without battery restrictions. Required for reliable schedules while screen is off.</string>
+    <string name="perms_battery_opt_pill">Restriction active</string>
+    <string name="perms_hyperos_title">HyperOS Autostart</string>
+    <string name="perms_hyperos_desc">HyperOS does not expose this setting for apps to read. Open list to verify FlowPilot is enabled, then set Battery saver to No restrictions.</string>
+    <string name="perms_hyperos_pill">Check in HyperOS</string>
+    <string name="perms_secure_settings_title">Secure settings</string>
+    <string name="perms_secure_settings_ready">Battery Saver actions can run through Shizuku. ADB grant is optional direct access.</string>
+    <string name="perms_secure_settings_needed">Required for Battery Saver actions. Grant with ADB or Shizuku.</string>
+    <string name="perms_secure_settings_pill_shizuku">Available via Shizuku</string>
+    <string name="perms_shizuku_title">Shizuku</string>
+    <string name="perms_shizuku_desc">Required to toggle NFC and Bluetooth. Install, start, then grant access.</string>
+    <string name="perms_adb_dialog_title">Grant via ADB</string>
+    <string name="perms_adb_dialog_content">Connect the phone over USB with debugging enabled, then run:\n\nadb shell pm grant %1$s android.permission.WRITE_SECURE_SETTINGS\n\nOr start Shizuku, tap Setup here and FlowPilot grants it for you.</string>
+    <string name="perms_bg_loc_dialog_title">Allow all the time (Her zaman izin ver)</string>
+    <string name="perms_bg_loc_dialog_content">To send your GPS location while the app is in the background or screen is off, Android requires the \'Allow all the time\' (Her zaman izin ver) permission.\n\n1. Tap \'Open settings\' below\n2. Tap \'Permissions\' &gt; \'Location\'\n3. Select \'Allow all the time\' (Her zaman izin ver)</string>
+
+    <!-- History Screen -->
+    <string name="history_title">Run history</string>
+    <string name="history_clear_title">Clear history</string>
+    <string name="history_clear_confirm">Are you sure you want to clear all automation run history? This action cannot be undone.</string>
+    <string name="history_btn_clear">Clear</string>
+    <string name="history_empty_title">No run history yet</string>
+    <string name="history_empty_desc">Runs triggered by the engine or tested manually will appear here.</string>
+    <string name="history_untitled_rule">Untitled rule</string>
+    <string name="history_section_actions">Actions</string>
+    <string name="status_success">Success</string>
+    <string name="status_partial">Partial</string>
+    <string name="status_failed">Failed</string>
+
+    <!-- Day initials -->
+    <string name="day_m">M</string>
+    <string name="day_t">T</string>
+    <string name="day_w">W</string>
+    <string name="day_th">T</string>
+    <string name="day_f">F</string>
+    <string name="day_sa">S</string>
+    <string name="day_su">S</string>
+
+    <!-- Quick Variables -->
+    <string name="quick_var_sender">Sender</string>
+    <string name="quick_var_full_sms">Full SMS</string>
+    <string name="quick_var_otp">OTP Code</string>
+    <string name="quick_var_gps">GPS Location</string>
+    <string name="quick_var_battery">Battery %</string>
+    <string name="quick_var_time">Time</string>
+
+    <!-- Webhook variables desc -->
+    <string name="webhook_var_trigger_desc">Event that ran this rule</string>
+    <string name="webhook_var_battery_desc">Current battery percentage</string>
+    <string name="webhook_var_charging_desc">Charger connection status</string>
+    <string name="webhook_var_wifi_desc">Current Wi-Fi name</string>
+    <string name="webhook_var_timestamp_desc">Epoch milliseconds</string>
+
+    <!-- Extra UI strings -->
+    <string name="perms_btn_settings">Settings</string>
+    <string name="perms_pill_granted">Granted</string>
+    <string name="brightness_min">Min</string>
+    <string name="brightness_max">Max</string>
+    <string name="search_apps_placeholder">Search apps...</string>
+    <string name="choose_app_title">Choose an app</string>
+    <string name="bluetooth_choose_device_title">Choose paired Bluetooth device</string>
+    <string name="bluetooth_unavailable">Bluetooth is unavailable on this device.</string>
+    <string name="bluetooth_no_devices">No bonded Bluetooth devices found. Pair a device in Android Bluetooth settings, then return here. FlowPilot does not scan for devices.</string>
+    <string name="btn_done">Done</string>
 </resources>

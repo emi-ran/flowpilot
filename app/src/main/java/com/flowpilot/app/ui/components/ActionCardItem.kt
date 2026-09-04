@@ -28,13 +28,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.flowpilot.app.R
 import com.flowpilot.app.actions.ActionParameters
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.data.model.VibrationPattern
+import com.flowpilot.app.ui.util.localizedLabel
 
 fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.SHOW_NOTIFICATION -> Icons.Default.Notifications
@@ -213,7 +216,7 @@ fun ActionCardItem(
                         .clickable(onClick = onChangeAction),
                 ) {
                     Text(
-                        action.label,
+                        action.localizedLabel(),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -228,7 +231,7 @@ fun ActionCardItem(
                         ) {
                             Icon(
                                 Icons.Default.DragHandle,
-                                contentDescription = "Reorder action (hold to drag)",
+                                contentDescription = stringResource(R.string.action_reorder_desc),
                                 tint = if (isDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp),
                             )
@@ -239,7 +242,7 @@ fun ActionCardItem(
                         ) {
                             if (onMoveUp != null) {
                                 DropdownMenuItem(
-                                    text = { Text("Move up") },
+                                    text = { Text(stringResource(R.string.action_move_up)) },
                                     leadingIcon = { Icon(Icons.Default.ArrowUpward, contentDescription = null) },
                                     onClick = {
                                         showReorderMenu = false
@@ -249,7 +252,7 @@ fun ActionCardItem(
                             }
                             if (onMoveDown != null) {
                                 DropdownMenuItem(
-                                    text = { Text("Move down") },
+                                    text = { Text(stringResource(R.string.action_move_down)) },
                                     leadingIcon = { Icon(Icons.Default.ArrowDownward, contentDescription = null) },
                                     onClick = {
                                         showReorderMenu = false
@@ -266,7 +269,7 @@ fun ActionCardItem(
                     ) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "Remove action",
+                            contentDescription = stringResource(R.string.action_remove),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(18.dp),
                         )
@@ -298,7 +301,7 @@ fun ActionCardItem(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            if (delaySeconds == 0) "No delay" else "Wait ${delaySeconds}s",
+                            if (delaySeconds == 0) stringResource(R.string.action_no_delay) else stringResource(R.string.action_wait_seconds, delaySeconds),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
                             color = if (delaySeconds > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -343,7 +346,7 @@ fun ActionCardItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .bringIntoViewOnFocusOrChange(notificationTitle),
-                        label = { Text("Notification title") },
+                        label = { Text(stringResource(R.string.action_notif_title_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
@@ -354,7 +357,7 @@ fun ActionCardItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .bringIntoViewOnFocusOrChange(notificationBody),
-                        label = { Text("Message") },
+                        label = { Text(stringResource(R.string.action_notif_body_label)) },
                         shape = RoundedCornerShape(12.dp),
                         minLines = 2,
                     )
@@ -369,7 +372,7 @@ fun ActionCardItem(
                             FilterChip(
                                 selected = vibrationPattern == pattern,
                                 onClick = { onVibrationPatternChange(pattern) },
-                                label = { Text(pattern.label) },
+                                label = { Text(pattern.localizedLabel()) },
                             )
                         }
                     }
@@ -388,9 +391,9 @@ fun ActionCardItem(
                         )
                     }
                     val strength = when {
-                        vibrationAmplitude < 100 -> "Soft"
-                        vibrationAmplitude < 200 -> "Normal"
-                        else -> "Strong"
+                        vibrationAmplitude < 100 -> stringResource(R.string.vib_strength_soft)
+                        vibrationAmplitude < 200 -> stringResource(R.string.vib_strength_normal)
+                        else -> stringResource(R.string.vib_strength_strong)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -413,7 +416,7 @@ fun ActionCardItem(
                             onClick = { onPreviewVibration(vibrationPattern, vibrationDurationMs, vibrationAmplitude) },
                             shape = RoundedCornerShape(10.dp),
                         ) {
-                            Text("Preview vibration")
+                            Text(stringResource(R.string.action_preview_vibration))
                         }
                     }
                 }
@@ -427,13 +430,13 @@ fun ActionCardItem(
                             FilterChip(
                                 selected = soundPreset == option,
                                 onClick = { onSoundPresetChange(option) },
-                                label = { Text(option.label) },
+                                label = { Text(option.localizedLabel()) },
                             )
                         }
                     }
                     if (soundPreset == SoundPreset.CUSTOM) {
                         Text(
-                            if (soundName.isBlank()) "No audio file selected" else soundName,
+                            if (soundName.isBlank()) stringResource(R.string.sound_no_file_selected) else soundName,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 8.dp),
                         )
@@ -442,14 +445,14 @@ fun ActionCardItem(
                             modifier = Modifier.padding(top = 6.dp),
                             shape = RoundedCornerShape(10.dp),
                         ) {
-                            Text("Choose MP3 or WAV")
+                            Text(stringResource(R.string.sound_choose_file))
                         }
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Duration: ${soundDurationMs / 1000}s", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(80.dp))
+                        Text(stringResource(R.string.sound_duration_label, soundDurationMs / 1000), style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(80.dp))
                         Slider(
                             value = soundDurationMs.toFloat(),
                             onValueChange = { onSoundDurationChange(it.toInt().coerceIn(1_000, 60_000)) },
@@ -463,11 +466,11 @@ fun ActionCardItem(
                         horizontalArrangement = Arrangement.End,
                     ) {
                         FilledTonalButton(onClick = onPreviewSound, shape = RoundedCornerShape(10.dp)) {
-                            Text("Play")
+                            Text(stringResource(R.string.sound_btn_play))
                         }
                         Spacer(Modifier.width(8.dp))
                         TextButton(onClick = onStopPreviewSound) {
-                            Text("Stop")
+                            Text(stringResource(R.string.sound_btn_stop))
                         }
                     }
                 }
@@ -502,7 +505,7 @@ fun ActionCardItem(
                             )
                             Spacer(Modifier.width(10.dp))
                             Text(
-                                if (launchPackage.isEmpty()) "Tap to select target app" else "$launchAppName ($launchPackage)",
+                                if (launchPackage.isEmpty()) stringResource(R.string.action_choose_app_prompt) else "$launchAppName ($launchPackage)",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
@@ -518,7 +521,7 @@ fun ActionCardItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .bringIntoViewOnFocusOrChange(url),
-                        label = { Text("URL (https://...)") },
+                        label = { Text(stringResource(R.string.action_url_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
@@ -533,7 +536,7 @@ fun ActionCardItem(
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Alarm, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(10.dp))
-                            Text("Alarm time: %02d:%02d".format(alarmHour, alarmMinute), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Text(stringResource(R.string.alarm_time_label, alarmHour, alarmMinute), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                             Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -542,7 +545,7 @@ fun ActionCardItem(
                         value = alarmMessage,
                         onValueChange = onAlarmMessageChange,
                         modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(alarmMessage),
-                        label = { Text("Alarm label (optional)") },
+                        label = { Text(stringResource(R.string.alarm_label_optional)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
@@ -582,7 +585,7 @@ fun ActionCardItem(
                         value = timerMessage,
                         onValueChange = onTimerMessageChange,
                         modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(timerMessage),
-                        label = { Text("Timer label (optional)") },
+                        label = { Text(stringResource(R.string.timer_label_optional)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
@@ -593,18 +596,18 @@ fun ActionCardItem(
                     if (showVariablesDialog) {
                         AlertDialog(
                             onDismissRequest = { showVariablesDialog = false },
-                            title = { Text("Webhook variables") },
+                            title = { Text(stringResource(R.string.webhook_vars_title)) },
                             text = {
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text("\${trigger} - Event that ran this rule", style = MaterialTheme.typography.bodySmall)
-                                    Text("\${batteryPercent} - Current battery percentage", style = MaterialTheme.typography.bodySmall)
-                                    Text("\${isCharging} - Charger connection status", style = MaterialTheme.typography.bodySmall)
-                                    Text("\${wifiSsid} - Current Wi-Fi name", style = MaterialTheme.typography.bodySmall)
-                                    Text("\${timestamp} - Epoch milliseconds", style = MaterialTheme.typography.bodySmall)
+                                    Text("\${trigger} - ${stringResource(R.string.webhook_var_trigger_desc)}", style = MaterialTheme.typography.bodySmall)
+                                    Text("\${batteryPercent} - ${stringResource(R.string.webhook_var_battery_desc)}", style = MaterialTheme.typography.bodySmall)
+                                    Text("\${isCharging} - ${stringResource(R.string.webhook_var_charging_desc)}", style = MaterialTheme.typography.bodySmall)
+                                    Text("\${wifiSsid} - ${stringResource(R.string.webhook_var_wifi_desc)}", style = MaterialTheme.typography.bodySmall)
+                                    Text("\${timestamp} - ${stringResource(R.string.webhook_var_timestamp_desc)}", style = MaterialTheme.typography.bodySmall)
                                 }
                             },
                             confirmButton = {
-                                TextButton(onClick = { showVariablesDialog = false }) { Text("OK") }
+                                TextButton(onClick = { showVariablesDialog = false }) { Text(stringResource(R.string.btn_ok)) }
                             },
                         )
                     }
@@ -624,7 +627,7 @@ fun ActionCardItem(
                         value = webhookUrl,
                         onValueChange = onWebhookUrlChange,
                         modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(webhookUrl),
-                        label = { Text("Webhook URL") },
+                        label = { Text(stringResource(R.string.webhook_url_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
@@ -634,7 +637,7 @@ fun ActionCardItem(
                         value = webhookHeaders,
                         onValueChange = onWebhookHeadersChange,
                         modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(webhookHeaders),
-                        label = { Text("Headers (Key: Value, one per line)") },
+                        label = { Text(stringResource(R.string.webhook_headers_label)) },
                         shape = RoundedCornerShape(12.dp),
                         isError = headerError != null,
                         supportingText = headerError?.let { err -> { Text(err, color = MaterialTheme.colorScheme.error) } },
@@ -646,7 +649,7 @@ fun ActionCardItem(
                             value = webhookBody,
                             onValueChange = onWebhookBodyChange,
                             modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(webhookBody),
-                            label = { Text("Request body") },
+                            label = { Text(stringResource(R.string.webhook_body_label)) },
                             placeholder = { Text("{\"event\": \"\${trigger}\"}") },
                             shape = RoundedCornerShape(12.dp),
                             minLines = 2,
@@ -656,7 +659,7 @@ fun ActionCardItem(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Timeout: ${webhookTimeoutSeconds}s", style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(80.dp))
+                        Text(stringResource(R.string.webhook_timeout_label, webhookTimeoutSeconds), style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(80.dp))
                         Slider(
                             value = webhookTimeoutSeconds.toFloat(),
                             onValueChange = { onWebhookTimeoutChange(it.toInt().coerceIn(1, 60)) },
@@ -669,7 +672,7 @@ fun ActionCardItem(
                         onClick = { showVariablesDialog = true },
                         modifier = Modifier.padding(top = 2.dp),
                     ) {
-                        Text("View supported variables", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.webhook_view_vars), style = MaterialTheme.typography.labelSmall)
                     }
                 }
                 ActionType.SPEAK_TEXT -> {
@@ -682,13 +685,13 @@ fun ActionCardItem(
                         value = phoneNumber,
                         onValueChange = onPhoneNumberChange,
                         modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(phoneNumber),
-                        label = { Text("Phone number") },
+                        label = { Text(stringResource(R.string.phone_number_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
                     if (action == ActionType.CALL_NUMBER) {
                         Text(
-                            "⚠️ Direct call: Places a real phone call immediately when triggered.",
+                            stringResource(R.string.phone_direct_call_warning),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(top = 4.dp),
@@ -701,7 +704,7 @@ fun ActionCardItem(
                         value = smsRecipient,
                         onValueChange = onSmsRecipientChange,
                         modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(smsRecipient),
-                        label = { Text("Recipient phone number") },
+                        label = { Text(stringResource(R.string.sms_recipient_label)) },
                         placeholder = { Text("e.g. +90555... or \${sms.sender}") },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -714,7 +717,7 @@ fun ActionCardItem(
                     ) {
                         SuggestionChip(
                             onClick = { onSmsRecipientChange("\${sms.sender}") },
-                            label = { Text("Reply to sender (\${sms.sender})", style = MaterialTheme.typography.bodySmall) },
+                            label = { Text(stringResource(R.string.sms_reply_sender_chip), style = MaterialTheme.typography.bodySmall) },
                             shape = RoundedCornerShape(8.dp),
                         )
                     }
@@ -724,7 +727,7 @@ fun ActionCardItem(
                         value = smsMessage,
                         onValueChange = onSmsMessageChange,
                         modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(smsMessage),
-                        label = { Text("SMS message text") },
+                        label = { Text(stringResource(R.string.sms_message_text_label)) },
                         placeholder = { Text("e.g. Received code: \${sms.otp}") },
                         shape = RoundedCornerShape(12.dp),
                         minLines = 2,
@@ -733,7 +736,7 @@ fun ActionCardItem(
 
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "Quick variables:",
+                        stringResource(R.string.sms_quick_variables),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -744,13 +747,14 @@ fun ActionCardItem(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         listOf(
-                            "\${sms.sender}" to "Sender",
-                            "\${sms.body}" to "Full SMS",
-                            "\${sms.otp}" to "OTP Code",
-                            "\${location.lat},\${location.lng}" to "GPS Location",
-                            "\${battery.percent}%" to "Battery %",
-                            "\${time}" to "Time",
-                        ).forEach { (variable, label) ->
+                            "\${sms.sender}" to R.string.quick_var_sender,
+                            "\${sms.body}" to R.string.quick_var_full_sms,
+                            "\${sms.otp}" to R.string.quick_var_otp,
+                            "\${location.lat},\${location.lng}" to R.string.quick_var_gps,
+                            "\${battery.percent}%" to R.string.quick_var_battery,
+                            "\${time}" to R.string.quick_var_time,
+                        ).forEach { (variable, labelRes) ->
+                            val label = stringResource(labelRes)
                             AssistChip(
                                 onClick = {
                                     val newMsg = if (smsMessage.isBlank()) variable else "$smsMessage $variable"
@@ -770,7 +774,7 @@ fun ActionCardItem(
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(
-                                "⚠️ Direct SMS: Sends a background text message immediately. Standard carrier rates may apply.",
+                                stringResource(R.string.sms_direct_send_warning),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 modifier = Modifier.padding(8.dp),
@@ -794,7 +798,13 @@ fun ActionCardItem(
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
-                        listOf(0 to "Min", 25 to "25%", 50 to "50%", 75 to "75%", 100 to "Max").forEach { (pct, label) ->
+                        listOf(
+                            0 to stringResource(R.string.brightness_min),
+                            25 to "25%",
+                            50 to "50%",
+                            75 to "75%",
+                            100 to stringResource(R.string.brightness_max)
+                        ).forEach { (pct, label) ->
                             FilterChip(
                                 selected = screenBrightnessPercent == pct,
                                 onClick = { onScreenBrightnessChange(pct) },
@@ -822,7 +832,7 @@ fun ActionCardItem(
                             }
                             Spacer(Modifier.width(10.dp))
                             Text(
-                                if (forceStopPackage.isEmpty()) "Tap to choose app to force stop" else "$forceStopAppName ($forceStopPackage)",
+                                if (forceStopPackage.isEmpty()) stringResource(R.string.action_force_stop_prompt) else "$forceStopAppName ($forceStopPackage)",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
@@ -833,7 +843,7 @@ fun ActionCardItem(
                 else -> {
                     // System toggles (Wi-Fi, Bluetooth, Mobile Data, Flashlight, Airplane Mode, NFC, Battery Saver, Auto-rotate, DND, Dark Theme, Sound Profile, Lock Screen, Location)
                     Text(
-                        "Runs automatically via system services when triggered.",
+                        stringResource(R.string.action_system_service_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 6.dp),

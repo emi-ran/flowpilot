@@ -32,7 +32,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.flowpilot.app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -108,12 +110,12 @@ private fun BondedBluetoothDeviceDialog(
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Choose paired Bluetooth device") },
+        title = { Text(stringResource(R.string.bluetooth_choose_device_title)) },
         text = {
             when {
                 loading -> CircularProgressIndicator()
-                unavailable -> Text("Bluetooth is unavailable on this device.")
-                devices.isEmpty() -> Text("No bonded Bluetooth devices found. Pair a device in Android Bluetooth settings, then return here. FlowPilot does not scan for devices.")
+                unavailable -> Text(stringResource(R.string.bluetooth_unavailable))
+                devices.isEmpty() -> Text(stringResource(R.string.bluetooth_no_devices))
                 else -> LazyColumn {
                     items(devices, key = { it.address }) { device ->
                         Card(
@@ -135,7 +137,7 @@ private fun BondedBluetoothDeviceDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onDismiss) { Text("Done") } },
+        confirmButton = { TextButton(onDismiss) { Text(stringResource(R.string.btn_done)) } },
     )
 }
 

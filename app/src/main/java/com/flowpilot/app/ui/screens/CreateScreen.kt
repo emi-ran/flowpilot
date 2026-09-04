@@ -39,8 +39,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.flowpilot.app.R
+import com.flowpilot.app.ui.util.localizedLabel
 import android.content.Intent
 import android.provider.Settings
 import android.media.MediaMetadataRetriever
@@ -261,8 +264,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 forceStopPackage = t.forceStopPackage
                 forceStopAppName = t.forceStopAppName
 
+                val localizedPresetTitle = context.getString(preset.titleRes)
+                name = localizedPresetTitle
+
                 scope.launch {
-                    snackbarHostState.showSnackbar("'${preset.title}' şablonu uygulandı.")
+                    snackbarHostState.showSnackbar(context.getString(R.string.preset_applied_snackbar, localizedPresetTitle))
                 }
             },
             onDismiss = { showPresets = false },
@@ -309,8 +315,8 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
         val pickerState = rememberTimePickerState(scheduledMinute / 60, scheduledMinute % 60, is24Hour = true)
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            confirmButton = { TextButton({ scheduledMinute = pickerState.hour * 60 + pickerState.minute; showTimePicker = false }) { Text("OK") } },
-            dismissButton = { TextButton({ showTimePicker = false }) { Text("Cancel") } },
+            confirmButton = { TextButton({ scheduledMinute = pickerState.hour * 60 + pickerState.minute; showTimePicker = false }) { Text(stringResource(R.string.btn_ok)) } },
+            dismissButton = { TextButton({ showTimePicker = false }) { Text(stringResource(R.string.btn_cancel)) } },
             text = { TimePicker(pickerState) },
         )
     }
@@ -318,25 +324,21 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
         val alarmPickerState = rememberTimePickerState(alarmHour, alarmMinute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { showAlarmTimePicker = false },
-            confirmButton = { TextButton({ alarmHour = alarmPickerState.hour; alarmMinute = alarmPickerState.minute; showAlarmTimePicker = false }) { Text("OK") } },
-            dismissButton = { TextButton({ showAlarmTimePicker = false }) { Text("Cancel") } },
+            confirmButton = { TextButton({ alarmHour = alarmPickerState.hour; alarmMinute = alarmPickerState.minute; showAlarmTimePicker = false }) { Text(stringResource(R.string.btn_ok)) } },
+            dismissButton = { TextButton({ showAlarmTimePicker = false }) { Text(stringResource(R.string.btn_cancel)) } },
             text = { TimePicker(alarmPickerState) },
         )
     }
 
     if (showRunConfirm) {
         val hasDirectCall = actions.any { it == ActionType.CALL_NUMBER }
+        val runConfirmDesc = stringResource(R.string.test_run_now_confirm_desc)
+        val warning = if (hasDirectCall) stringResource(R.string.test_run_now_warning_call) else ""
         AlertDialog(
             onDismissRequest = { showRunConfirm = false },
-            title = { Text("Test actions now?") },
+            title = { Text(stringResource(R.string.test_run_now_confirm_title)) },
             text = {
-                Text(
-                    "This will immediately run the actions configured on this screen.\n\n" +
-                        "• Trigger and conditions will be bypassed\n" +
-                        "• Tests actions before creating or saving\n" +
-                        "• Automation will not be saved" +
-                        if (hasDirectCall) "\n\n⚠️ WARNING: This rule contains a direct phone call action. Running it now will place a real phone call immediately." else ""
-                )
+                Text("$runConfirmDesc$warning")
             },
             confirmButton = {
                 TextButton({
@@ -406,19 +408,19 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     vm.runRuleNow(currentFormRule) { result ->
                         scope.launch {
                             val msg = if (result.failureCount == 0) {
-                                "Executed ${result.successCount} action(s) successfully"
+                                context.getString(R.string.test_run_executed_success, result.successCount)
                             } else {
-                                "Ran with errors: ${result.successCount} succeeded, ${result.failureCount} failed (${result.failureMessages.joinToString(", ")})"
+                                context.getString(R.string.test_run_executed_errors, result.successCount, result.failureCount, result.failureMessages.joinToString(", "))
                             }
                             snackbarHostState.showSnackbar(msg)
                         }
                     }
                 }) {
-                    Text("Run now")
+                    Text(stringResource(R.string.btn_run_now))
                 }
             },
             dismissButton = {
-                TextButton({ showRunConfirm = false }) { Text("Cancel") }
+                TextButton({ showRunConfirm = false }) { Text(stringResource(R.string.btn_cancel)) }
             },
         )
     }
@@ -433,15 +435,15 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 .padding(padding)
         ) {
             TopAppBar(
-                title = { Text("Create automation", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.create_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = { IconButton(done) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
                 actions = {
                     IconButton({ showPresets = true }) {
-                        Icon(Icons.Default.AutoAwesome, "Hazır Şablonlar", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.AutoAwesome, stringResource(R.string.presets_sheet_title), tint = MaterialTheme.colorScheme.primary)
                     }
                     if (actions.isNotEmpty()) {
                         IconButton({ showRunConfirm = true }) {
-                            Icon(Icons.Default.PlayArrow, "Test actions now", tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.PlayArrow, stringResource(R.string.test_actions_title), tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -489,13 +491,13 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Hazır Şablonlar (Presets)",
+                            text = stringResource(R.string.presets_banner_title),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = "Popüler senaryolardan birini tek tıkla seçin",
+                            text = stringResource(R.string.presets_banner_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -516,12 +518,12 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     .padding(bottom = 16.dp)
                     .bringIntoViewOnFocusOrChange(name),
                 shape = RoundedCornerShape(16.dp),
-                label = { Text("Automation name") },
-                placeholder = { Text(if (appName.isNotEmpty()) "When $appName opened..." else "${event.label}...") },
+                label = { Text(stringResource(R.string.automation_name_label)) },
+                placeholder = { Text(if (appName.isNotEmpty()) "When $appName opened..." else "${event.localizedLabel()}...") },
                 singleLine = true,
             )
 
-            Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+            Text(stringResource(R.string.section_when), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
             TriggerCardItem(
                 event = event,
                 onChangeTrigger = { showTriggers = true },
@@ -562,7 +564,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
             )
 
             Text(
-                "CONDITIONS (optional, all must match)",
+                stringResource(R.string.section_conditions),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
@@ -588,7 +590,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        "DO (${actions.size} actions)",
+                        stringResource(R.string.section_do, actions.size),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -604,7 +606,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "Hold to reorder",
+                            stringResource(R.string.hold_to_reorder),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium,
@@ -613,7 +615,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 }
             } else {
                 Text(
-                    "DO (${actions.size} action)",
+                    stringResource(R.string.section_do_single),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
@@ -768,7 +770,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 ) {
                     Icon(Icons.Default.Add, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Add action")
+                    Text(stringResource(R.string.btn_add_action))
                 }
                 if (actions.isNotEmpty()) {
                     FilledTonalButton(
@@ -777,7 +779,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     ) {
                         Icon(Icons.Default.PlayArrow, null, Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Test")
+                        Text(stringResource(R.string.btn_test))
                     }
                 }
             }
@@ -804,9 +806,10 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     ) {
                         Icon(Icons.Default.Tune, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(10.dp))
-                        Text("Advanced options", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Text(stringResource(R.string.advanced_options), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        val cdText = if (cooldownMinutes == 0) stringResource(R.string.cooldown_none) else "${cooldownMinutes}m"
                         Text(
-                            if (cooldownMinutes == 0) "Cooldown: None" else "Cooldown: ${cooldownMinutes}m",
+                            stringResource(R.string.cooldown_prefix, cdText),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -833,7 +836,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                     ) {
                         Column {
                             Spacer(Modifier.height(12.dp))
-                            Text("Execution cooldown", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.execution_cooldown), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(6.dp))
                             RuleCooldownSettings(cooldownMinutes) { cooldownMinutes = it }
                         }
@@ -843,7 +846,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
 
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
+                OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.btn_cancel)) }
                 Button(
                     onClick = {
                         vm.addRule(
@@ -925,7 +928,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
                             actions.isNotEmpty(),
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.btn_save))
                 }
             }
         }
@@ -1335,12 +1338,12 @@ fun ConditionsSection(
             ) {
                 Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(cond.type.label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Text(cond.type.localizedLabel(), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         IconButton(
                             onClick = { onRemoveCondition(index) },
                             modifier = Modifier.size(28.dp),
                         ) {
-                            Icon(Icons.Default.Close, "Remove condition", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Close, stringResource(R.string.btn_remove_condition), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                         }
                     }
                     if (cond.type == ConditionType.BATTERY_BELOW || cond.type == ConditionType.BATTERY_ABOVE) {
@@ -1357,7 +1360,7 @@ fun ConditionsSection(
                         WifiSsidPickerField(
                             ssid = cond.wifiSsid,
                             onSsidChange = { onUpdateCondition(index, cond.copy(wifiSsid = it)) },
-                            label = "Wi-Fi SSID (empty for any)",
+                            label = stringResource(R.string.wifi_ssid_label),
                         )
                     } else if (cond.type == ConditionType.TIME_BETWEEN) {
                         val startH = cond.startMinute / 60
@@ -1378,7 +1381,7 @@ fun ConditionsSection(
                                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
                                 ) {
                                     Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                                        Text("Start time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(stringResource(R.string.time_start), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text("%02d:%02d".format(startH, startM), style = MaterialTheme.typography.titleMedium)
                                     }
                                 }
@@ -1389,14 +1392,14 @@ fun ConditionsSection(
                                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
                                 ) {
                                     Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                                        Text("End time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(stringResource(R.string.time_end), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text("%02d:%02d".format(endH, endM), style = MaterialTheme.typography.titleMedium)
                                     }
                                 }
                             }
                             if (isOvernight) {
                                 Text(
-                                    "🌙 Overnight window (crosses midnight)",
+                                    stringResource(R.string.time_overnight_window),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(start = 2.dp, top = 2.dp),
@@ -1409,29 +1412,36 @@ fun ConditionsSection(
                                 FilterChip(
                                     selected = cond.days.isEmpty(),
                                     onClick = { onUpdateCondition(index, cond.copy(days = emptySet())) },
-                                    label = { Text("Daily") },
+                                    label = { Text(stringResource(R.string.schedule_daily)) },
                                 )
                                 FilterChip(
                                     selected = cond.days == setOf(1, 2, 3, 4, 5),
                                     onClick = { onUpdateCondition(index, cond.copy(days = setOf(1, 2, 3, 4, 5))) },
-                                    label = { Text("Weekdays") },
+                                    label = { Text(stringResource(R.string.schedule_weekdays)) },
                                 )
                                 FilterChip(
                                     selected = cond.days == setOf(6, 7),
                                     onClick = { onUpdateCondition(index, cond.copy(days = setOf(6, 7))) },
-                                    label = { Text("Weekends") },
+                                    label = { Text(stringResource(R.string.schedule_weekends)) },
                                 )
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
-                                listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { dayIdx, label ->
-                                    val day = dayIdx + 1
+                                listOf(
+                                    1 to R.string.day_m,
+                                    2 to R.string.day_t,
+                                    3 to R.string.day_w,
+                                    4 to R.string.day_th,
+                                    5 to R.string.day_f,
+                                    6 to R.string.day_sa,
+                                    7 to R.string.day_su,
+                                ).forEach { (day, labelRes) ->
                                     FilterChip(
                                         selected = cond.days.isNotEmpty() && day in cond.days,
                                         onClick = {
                                             val next = if (day in cond.days) cond.days - day else cond.days + day
                                             onUpdateCondition(index, cond.copy(days = next))
                                         },
-                                        label = { Text(label) },
+                                        label = { Text(stringResource(labelRes)) },
                                     )
                                 }
                             }
@@ -1451,7 +1461,7 @@ fun ConditionsSection(
     ) {
         Icon(Icons.Default.Add, null)
         Spacer(Modifier.width(8.dp))
-        Text("Add condition")
+        Text(stringResource(R.string.btn_add_condition))
     }
 }
 

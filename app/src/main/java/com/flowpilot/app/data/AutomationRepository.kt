@@ -34,6 +34,17 @@ class AutomationRepository(private val context: Context) {
     private val key = stringPreferencesKey("rules")
     private val historyKey = stringPreferencesKey("execution_history")
     private val engineKey = androidx.datastore.preferences.core.booleanPreferencesKey("engine_enabled")
+    private val languageKey = stringPreferencesKey("app_language")
+
+    val appLanguage: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[languageKey] ?: "system"
+    }
+
+    suspend fun setAppLanguage(language: String) {
+        context.dataStore.edit { prefs ->
+            prefs[languageKey] = language
+        }
+    }
 
     val isEngineEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[engineKey] ?: true

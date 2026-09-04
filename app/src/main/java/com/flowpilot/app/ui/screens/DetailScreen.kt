@@ -27,19 +27,20 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.ui.draw.rotate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.DragHandle
+import com.flowpilot.app.R
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.ActionType
@@ -47,6 +48,7 @@ import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.data.model.SoundPreset
+import com.flowpilot.app.ui.util.localizedLabel
 import com.flowpilot.app.actions.ActionParameters
 import com.flowpilot.app.actions.SoundExecutor
 import com.flowpilot.app.actions.TtsExecutor
@@ -237,25 +239,21 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
         val alarmPickerState = rememberTimePickerState(alarmHour, alarmMinute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { showAlarmTimePicker = false },
-            confirmButton = { TextButton({ alarmHour = alarmPickerState.hour; alarmMinute = alarmPickerState.minute; showAlarmTimePicker = false }) { Text("OK") } },
-            dismissButton = { TextButton({ showAlarmTimePicker = false }) { Text("Cancel") } },
+            confirmButton = { TextButton({ alarmHour = alarmPickerState.hour; alarmMinute = alarmPickerState.minute; showAlarmTimePicker = false }) { Text(stringResource(R.string.btn_ok)) } },
+            dismissButton = { TextButton({ showAlarmTimePicker = false }) { Text(stringResource(R.string.btn_cancel)) } },
             text = { TimePicker(alarmPickerState) },
         )
     }
 
     if (showRunConfirm) {
         val hasDirectCall = actions.any { it == ActionType.CALL_NUMBER }
+        val runConfirmDesc = stringResource(R.string.test_run_now_confirm_desc)
+        val warning = if (hasDirectCall) stringResource(R.string.test_run_now_warning_call) else ""
         AlertDialog(
             onDismissRequest = { showRunConfirm = false },
-            title = { Text("Test actions now?") },
+            title = { Text(stringResource(R.string.test_run_now_confirm_title)) },
             text = {
-                Text(
-                    "This will immediately run the actions configured on this screen.\n\n" +
-                        "• Trigger and conditions will be bypassed\n" +
-                        "• Runs with your current edits without needing to save first\n" +
-                        "• Automation saved state and history trigger timestamps will not change" +
-                        if (hasDirectCall) "\n\n⚠️ WARNING: This rule contains a direct phone call action. Running it now will place a real phone call immediately." else ""
-                )
+                Text("$runConfirmDesc$warning")
             },
             confirmButton = {
                 TextButton({
@@ -322,19 +320,19 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     vm.runRuleNow(currentFormRule) { result ->
                         scope.launch {
                             val msg = if (result.failureCount == 0) {
-                                "Executed ${result.successCount} action(s) successfully"
+                                context.getString(R.string.test_run_executed_success, result.successCount)
                             } else {
-                                "Ran with errors: ${result.successCount} succeeded, ${result.failureCount} failed (${result.failureMessages.joinToString(", ")})"
+                                context.getString(R.string.test_run_executed_errors, result.successCount, result.failureCount, result.failureMessages.joinToString(", "))
                             }
                             snackbarHostState.showSnackbar(msg)
                         }
                     }
                 }) {
-                    Text("Run now")
+                    Text(stringResource(R.string.btn_run_now))
                 }
             },
             dismissButton = {
-                TextButton({ showRunConfirm = false }) { Text("Cancel") }
+                TextButton({ showRunConfirm = false }) { Text(stringResource(R.string.btn_cancel)) }
             },
         )
     }
@@ -342,19 +340,19 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete automation?") },
-            text = { Text("Are you sure you want to delete '${initialRule.name}'? This action cannot be undone.") },
+            title = { Text(stringResource(R.string.dialog_delete_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_single_confirm, initialRule.name)) },
             confirmButton = {
                 TextButton({
                     showDeleteConfirm = false
                     vm.delete(initialRule.id)
                     back()
                 }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.btn_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton({ showDeleteConfirm = false }) { Text("Cancel") }
+                TextButton({ showDeleteConfirm = false }) { Text(stringResource(R.string.btn_cancel)) }
             },
         )
     }
@@ -369,7 +367,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 .padding(padding)
         ) {
             TopAppBar(
-                title = { Text("Edit automation", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.edit_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
                 actions = {
                     IconButton(
@@ -378,19 +376,19 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 showRunConfirm = true
                             } else {
                                 scope.launch {
-                                    snackbarHostState.showSnackbar("Add at least one action to test")
+                                    snackbarHostState.showSnackbar(context.getString(R.string.msg_add_action_to_test))
                                 }
                             }
                         }
                     ) {
                         Icon(
                             Icons.Default.PlayArrow,
-                            "Run now",
+                            stringResource(R.string.btn_run_now),
                             tint = if (actions.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
                         )
                     }
                     IconButton({ showDeleteConfirm = true }) {
-                        Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Default.Delete, stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -412,12 +410,12 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     .padding(bottom = 16.dp)
                     .bringIntoViewOnFocusOrChange(name),
                 shape = RoundedCornerShape(16.dp),
-                label = { Text("Automation name") },
-                placeholder = { Text(if (appName.isNotEmpty()) "When $appName opened..." else "${event.label}...") },
+                label = { Text(stringResource(R.string.automation_name_label)) },
+                placeholder = { Text(if (appName.isNotEmpty()) "When $appName opened..." else "${event.localizedLabel()}...") },
                 singleLine = true,
             )
 
-            Text("WHEN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+            Text(stringResource(R.string.section_when), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
             TriggerCardItem(
                 event = event,
                 onChangeTrigger = { showTriggers = true },
@@ -458,7 +456,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
             )
 
             Text(
-                "CONDITIONS (optional, all must match)",
+                stringResource(R.string.section_conditions),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
@@ -484,7 +482,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        "DO (${actions.size} actions)",
+                        stringResource(R.string.section_do, actions.size),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -500,7 +498,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "Hold to reorder",
+                            stringResource(R.string.hold_to_reorder),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium,
@@ -509,7 +507,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 }
             } else {
                 Text(
-                    "DO (${actions.size} action)",
+                    stringResource(R.string.section_do_single),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
@@ -664,7 +662,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 ) {
                     Icon(Icons.Default.Add, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Add action")
+                    Text(stringResource(R.string.btn_add_action))
                 }
                 if (actions.isNotEmpty()) {
                     FilledTonalButton(
@@ -673,7 +671,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     ) {
                         Icon(Icons.Default.PlayArrow, null, Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Test")
+                        Text(stringResource(R.string.btn_test))
                     }
                 }
             }
@@ -700,9 +698,12 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     ) {
                         Icon(Icons.Default.Tune, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(10.dp))
-                        Text("Advanced options", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Text(stringResource(R.string.advanced_options), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         Text(
-                            if (cooldownMinutes == 0) "Cooldown: None" else "Cooldown: ${cooldownMinutes}m",
+                            stringResource(
+                                R.string.cooldown_prefix,
+                                if (cooldownMinutes == 0) stringResource(R.string.cooldown_none) else "${cooldownMinutes}m"
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -729,7 +730,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                     ) {
                         Column {
                             Spacer(Modifier.height(12.dp))
-                            Text("Execution cooldown", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.execution_cooldown), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(6.dp))
                             RuleCooldownSettings(cooldownMinutes) { cooldownMinutes = it }
                         }
@@ -739,7 +740,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
 
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(back, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text("Cancel") }
+                OutlinedButton(back, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.btn_cancel)) }
                 Button(
                     onClick = {
                         val summary = actions.joinToString(" + ") { it.label }
@@ -846,7 +847,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                             (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
                             actions.isNotEmpty(),
                 ) {
-                    Text("Save changes")
+                    Text(stringResource(R.string.btn_save_changes))
                 }
             }
         }

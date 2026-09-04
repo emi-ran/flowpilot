@@ -23,10 +23,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.flowpilot.app.R
 import com.flowpilot.app.data.model.SmsMatchMode
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.ui.util.localizedLabel
 
 fun triggerIcon(event: TriggerEvent): ImageVector = when (event) {
     TriggerEvent.APP_OPENED -> Icons.Default.Apps
@@ -163,40 +166,39 @@ fun TriggerCardItem(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        event.label,
+                        event.localizedLabel(),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
                     val subtitle = when (event) {
-                        TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED -> if (pkg.isEmpty()) "Tap to choose app" else appName.ifBlank { pkg }
-                        TriggerEvent.WIFI_CONNECTED, TriggerEvent.WIFI_DISCONNECTED -> if (wifiSsid.isBlank()) "Any Wi-Fi network" else wifiSsid
-                        TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED -> if (bluetoothAddress.isBlank()) "Choose device" else bluetoothName.ifBlank { bluetoothAddress }
+                        TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED -> if (pkg.isEmpty()) stringResource(R.string.tap_to_choose_app) else appName.ifBlank { pkg }
+                        TriggerEvent.WIFI_CONNECTED, TriggerEvent.WIFI_DISCONNECTED -> if (wifiSsid.isBlank()) stringResource(R.string.trigger_wifi_any) else wifiSsid
+                        TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED -> if (bluetoothAddress.isBlank()) stringResource(R.string.bluetooth_device_choose) else bluetoothName.ifBlank { bluetoothAddress }
                         TriggerEvent.TIME_SCHEDULE -> "%02d:%02d".format(scheduledMinute / 60, scheduledMinute % 60)
-                        TriggerEvent.BATTERY_BELOW, TriggerEvent.BATTERY_ABOVE -> "Threshold: $batteryLevel%"
-                        TriggerEvent.CHARGER_CONNECTED -> "When plugged into power"
-                        TriggerEvent.CHARGER_DISCONNECTED -> "When unplugged from power"
-                        TriggerEvent.SCREEN_ON -> "When screen turns on"
-                        TriggerEvent.SCREEN_OFF -> "When screen turns off"
-                        TriggerEvent.DEVICE_FLIPPED_DOWN -> "Placed face down on surface"
-                        TriggerEvent.DEVICE_FLIPPED_UP -> "Turned face up to normal"
-                        TriggerEvent.NFC_TAG_SCANNED -> if (nfcTagId.isBlank()) "Tap to scan tag" else nfcTagId
-                        TriggerEvent.NOTIFICATION_RECEIVED -> if (notificationAppPackage.isBlank()) "Choose app" else notificationAppName.ifBlank { notificationAppPackage }
-                        TriggerEvent.CALL_RINGING -> "Incoming call starts ringing"
-                        TriggerEvent.CALL_ANSWERED -> "Call is answered"
-                        TriggerEvent.CALL_OUTGOING -> "Outgoing call placed"
-                        TriggerEvent.CALL_ENDED -> "Call ends"
-                        TriggerEvent.DEVICE_SHAKE -> "When device is shaken"
-                        TriggerEvent.DEVICE_UNLOCKED -> "When device is unlocked"
-                        TriggerEvent.LIGHT_BELOW -> "Ambient light drops below $lightLux lx"
-                        TriggerEvent.LIGHT_ABOVE -> "Ambient light rises above $lightLux lx"
+                        TriggerEvent.BATTERY_BELOW, TriggerEvent.BATTERY_ABOVE -> stringResource(R.string.detail_threshold_battery, batteryLevel)
+                        TriggerEvent.CHARGER_CONNECTED -> stringResource(R.string.trigger_charger_connected_desc)
+                        TriggerEvent.CHARGER_DISCONNECTED -> stringResource(R.string.trigger_charger_disconnected_desc)
+                        TriggerEvent.SCREEN_ON -> stringResource(R.string.trigger_screen_on_desc)
+                        TriggerEvent.SCREEN_OFF -> stringResource(R.string.trigger_screen_off_desc)
+                        TriggerEvent.DEVICE_FLIPPED_DOWN -> stringResource(R.string.trigger_device_flipped_down_desc)
+                        TriggerEvent.DEVICE_FLIPPED_UP -> stringResource(R.string.trigger_device_flipped_up_desc)
+                        TriggerEvent.NFC_TAG_SCANNED -> if (nfcTagId.isBlank()) stringResource(R.string.detail_tag_id, "—") else nfcTagId
+                        TriggerEvent.NOTIFICATION_RECEIVED -> if (notificationAppPackage.isBlank()) stringResource(R.string.notification_choose_app) else notificationAppName.ifBlank { notificationAppPackage }
+                        TriggerEvent.CALL_RINGING -> stringResource(R.string.trigger_call_ringing_desc)
+                        TriggerEvent.CALL_ANSWERED -> stringResource(R.string.trigger_call_answered_desc)
+                        TriggerEvent.CALL_OUTGOING -> stringResource(R.string.trigger_call_outgoing_desc)
+                        TriggerEvent.CALL_ENDED -> stringResource(R.string.trigger_call_ended_desc)
+                        TriggerEvent.DEVICE_SHAKE -> stringResource(R.string.trigger_device_shake_desc)
+                        TriggerEvent.DEVICE_UNLOCKED -> stringResource(R.string.trigger_device_unlocked_desc)
+                        TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> stringResource(R.string.detail_threshold_light, lightLux)
                         TriggerEvent.SMS_RECEIVED -> {
-                            val sender = if (smsSenderFilter.isBlank()) "Any sender" else smsSenderFilter
+                            val sender = if (smsSenderFilter.isBlank()) stringResource(R.string.detail_any_sender) else smsSenderFilter
                             val filterDesc = when (smsMatchMode) {
-                                SmsMatchMode.ANY -> "any SMS"
-                                SmsMatchMode.CONTAINS -> "contains \"$smsKeyword\""
-                                SmsMatchMode.EQUALS -> "equals \"$smsKeyword\""
-                                SmsMatchMode.STARTS_WITH -> "starts with \"$smsKeyword\""
-                                SmsMatchMode.REGEX -> "regex \"$smsKeyword\""
+                                SmsMatchMode.ANY -> stringResource(R.string.sms_any_sms)
+                                SmsMatchMode.CONTAINS -> stringResource(R.string.sms_contains_quoted, smsKeyword)
+                                SmsMatchMode.EQUALS -> stringResource(R.string.sms_equals_quoted, smsKeyword)
+                                SmsMatchMode.STARTS_WITH -> stringResource(R.string.sms_starts_with_quoted, smsKeyword)
+                                SmsMatchMode.REGEX -> stringResource(R.string.sms_regex_quoted, smsKeyword)
                             }
                             "$sender • $filterDesc"
                         }
@@ -209,7 +211,7 @@ fun TriggerCardItem(
                 }
                 Icon(
                     Icons.Default.ChevronRight,
-                    contentDescription = "Change trigger",
+                    contentDescription = stringResource(R.string.choose_trigger),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -231,7 +233,7 @@ fun TriggerCardItem(
                             )
                             Spacer(Modifier.width(10.dp))
                             Text(
-                                if (pkg.isEmpty()) "Tap to choose target app" else "$appName ($pkg)",
+                                if (pkg.isEmpty()) stringResource(R.string.tap_to_choose_target_app) else "$appName ($pkg)",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
@@ -260,25 +262,32 @@ fun TriggerCardItem(
                             FilterChip(
                                 selected = scheduledDays.isEmpty(),
                                 onClick = { onDaysChange(emptySet()) },
-                                label = { Text("Daily") },
+                                label = { Text(stringResource(R.string.schedule_daily)) },
                             )
                             FilterChip(
                                 selected = scheduledDays == setOf(1, 2, 3, 4, 5),
                                 onClick = { onDaysChange(setOf(1, 2, 3, 4, 5)) },
-                                label = { Text("Weekdays") },
+                                label = { Text(stringResource(R.string.schedule_weekdays)) },
                             )
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
-                        listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { index, label ->
-                            val day = index + 1
+                        listOf(
+                            1 to R.string.day_m,
+                            2 to R.string.day_t,
+                            3 to R.string.day_w,
+                            4 to R.string.day_th,
+                            5 to R.string.day_f,
+                            6 to R.string.day_sa,
+                            7 to R.string.day_su,
+                        ).forEach { (day, labelRes) ->
                             FilterChip(
                                 selected = scheduledDays.isNotEmpty() && day in scheduledDays,
                                 onClick = {
                                     val next = if (day in scheduledDays) scheduledDays - day else scheduledDays + day
                                     onDaysChange(next)
                                 },
-                                label = { Text(label) },
+                                label = { Text(stringResource(labelRes)) },
                             )
                         }
                     }
@@ -304,7 +313,7 @@ fun TriggerCardItem(
                     WifiSsidPickerField(
                         ssid = wifiSsid,
                         onSsidChange = onWifiSsidChange,
-                        label = "Wi-Fi SSID (empty for any)",
+                        label = stringResource(R.string.wifi_ssid_label),
                     )
                 }
                 TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED -> {
@@ -321,12 +330,12 @@ fun TriggerCardItem(
                         value = nfcTagId,
                         onValueChange = { onNfcTagChange(it.uppercase()) },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("NFC Tag UID (hex)") },
-                        placeholder = { Text("e.g. 04A1B2C3D4E5F6") },
+                        label = { Text(stringResource(R.string.nfc_uid_label)) },
+                        placeholder = { Text(stringResource(R.string.nfc_uid_placeholder)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         supportingText = {
-                            Text("Tap a tag to the phone while app is open to auto-capture UID.")
+                            Text(stringResource(R.string.nfc_tap_instruction))
                         },
                     )
                 }
@@ -345,7 +354,7 @@ fun TriggerCardItem(
                             )
                             Spacer(Modifier.width(10.dp))
                             Text(
-                                if (notificationAppPackage.isEmpty()) "Tap to select app" else "$notificationAppName ($notificationAppPackage)",
+                                if (notificationAppPackage.isEmpty()) stringResource(R.string.tap_to_select_app) else "$notificationAppName ($notificationAppPackage)",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
@@ -357,7 +366,7 @@ fun TriggerCardItem(
                         value = notificationKeyword,
                         onValueChange = onNotificationKeywordChange,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Keyword filter (optional)") },
+                        label = { Text(stringResource(R.string.notification_keyword_filter)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
@@ -373,7 +382,7 @@ fun TriggerCardItem(
                             onCheckedChange = onFlipScreenOffChange,
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text("Detect while screen is off (uses slightly more battery)", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.flip_screen_off_label), style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> {
@@ -407,12 +416,12 @@ fun TriggerCardItem(
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(
-                                    "Current room light",
+                                    stringResource(R.string.light_current_lux),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Text(
-                                    if (liveAmbientLux != null) "%.0f lx".format(liveAmbientLux) else "Reading sensor...",
+                                    if (liveAmbientLux != null) "%.0f lx".format(liveAmbientLux) else stringResource(R.string.light_reading_sensor),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
@@ -424,7 +433,7 @@ fun TriggerCardItem(
                                     shape = RoundedCornerShape(10.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                 ) {
-                                    Text("Set as target", style = MaterialTheme.typography.labelMedium)
+                                    Text(stringResource(R.string.light_set_target), style = MaterialTheme.typography.labelMedium)
                                 }
                             }
                         }
@@ -439,7 +448,7 @@ fun TriggerCardItem(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            if (event == TriggerEvent.LIGHT_BELOW) "Trigger when darker than" else "Trigger when brighter than",
+                            if (event == TriggerEvent.LIGHT_BELOW) stringResource(R.string.light_trigger_darker) else stringResource(R.string.light_trigger_brighter),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -471,11 +480,17 @@ fun TriggerCardItem(
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        listOf(5 to "Dark room (5 lx)", 20 to "Dim / Night (20 lx)", 100 to "Indoor (100 lx)", 300 to "Office (300 lx)", 600 to "Daylight (600 lx)").forEach { (presetLux, label) ->
+                        listOf(
+                            5 to R.string.light_preset_dark_room,
+                            20 to R.string.light_preset_dim_night,
+                            100 to R.string.light_preset_indoor,
+                            300 to R.string.light_preset_office,
+                            600 to R.string.light_preset_daylight
+                        ).forEach { (presetLux, stringRes) ->
                             FilterChip(
                                 selected = lightLux == presetLux,
                                 onClick = { onLightLuxChange(presetLux) },
-                                label = { Text(label, style = MaterialTheme.typography.bodySmall) },
+                                label = { Text(stringResource(stringRes), style = MaterialTheme.typography.bodySmall) },
                                 shape = RoundedCornerShape(8.dp),
                             )
                         }
@@ -484,7 +499,7 @@ fun TriggerCardItem(
                 TriggerEvent.DEVICE_SHAKE -> {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Shake phone firmly to trigger. Active while screen is on.",
+                        stringResource(R.string.shake_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -492,7 +507,7 @@ fun TriggerCardItem(
                 TriggerEvent.DEVICE_UNLOCKED -> {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Triggers each time the phone is unlocked with fingerprint, face, or PIN.",
+                        stringResource(R.string.unlock_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -502,8 +517,8 @@ fun TriggerCardItem(
                     OutlinedTextField(
                         value = smsSenderFilter,
                         onValueChange = onSmsSenderFilterChange,
-                        label = { Text("Sender filter (optional)") },
-                        placeholder = { Text("e.g. +90555... or leave blank for any") },
+                        label = { Text(stringResource(R.string.sms_sender_filter_label)) },
+                        placeholder = { Text(stringResource(R.string.sms_sender_filter_placeholder)) },
                         singleLine = true,
                         leadingIcon = { Icon(Icons.Default.Phone, null) },
                         modifier = Modifier.fillMaxWidth(),
@@ -511,7 +526,7 @@ fun TriggerCardItem(
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "Message Match Mode",
+                        stringResource(R.string.sms_match_mode_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -521,16 +536,16 @@ fun TriggerCardItem(
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        com.flowpilot.app.data.model.SmsMatchMode.entries.forEach { mode ->
+                        SmsMatchMode.entries.forEach { mode ->
                             FilterChip(
                                 selected = smsMatchMode == mode,
                                 onClick = { onSmsMatchModeChange(mode) },
-                                label = { Text(mode.label, style = MaterialTheme.typography.bodySmall) },
+                                label = { Text(mode.localizedLabel(), style = MaterialTheme.typography.bodySmall) },
                                 shape = RoundedCornerShape(8.dp),
                             )
                         }
                     }
-                    if (smsMatchMode != com.flowpilot.app.data.model.SmsMatchMode.ANY) {
+                    if (smsMatchMode != SmsMatchMode.ANY) {
                         Spacer(Modifier.height(10.dp))
                         OutlinedTextField(
                             value = smsKeyword,
@@ -538,19 +553,19 @@ fun TriggerCardItem(
                             label = {
                                 Text(
                                     when (smsMatchMode) {
-                                        com.flowpilot.app.data.model.SmsMatchMode.EQUALS -> "Exact message text"
-                                        com.flowpilot.app.data.model.SmsMatchMode.STARTS_WITH -> "Prefix keyword"
-                                        com.flowpilot.app.data.model.SmsMatchMode.REGEX -> "Regular expression pattern"
-                                        else -> "Keyword or phrase"
+                                        SmsMatchMode.EQUALS -> stringResource(R.string.sms_exact_text)
+                                        SmsMatchMode.STARTS_WITH -> stringResource(R.string.sms_prefix_keyword)
+                                        SmsMatchMode.REGEX -> stringResource(R.string.sms_regex_pattern)
+                                        else -> stringResource(R.string.sms_keyword_phrase)
                                     }
                                 )
                             },
                             placeholder = {
                                 Text(
                                     when (smsMatchMode) {
-                                        com.flowpilot.app.data.model.SmsMatchMode.EQUALS -> "e.g. NEREDESIN"
-                                        com.flowpilot.app.data.model.SmsMatchMode.STARTS_WITH -> "e.g. KOD:"
-                                        com.flowpilot.app.data.model.SmsMatchMode.REGEX -> """e.g. \b\d{4,6}\b"""
+                                        SmsMatchMode.EQUALS -> "e.g. NEREDESIN"
+                                        SmsMatchMode.STARTS_WITH -> "e.g. KOD:"
+                                        SmsMatchMode.REGEX -> """e.g. \b\d{4,6}\b"""
                                         else -> "e.g. ACIL or Onay Kodu"
                                     }
                                 )

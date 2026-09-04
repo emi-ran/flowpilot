@@ -17,6 +17,8 @@ import com.flowpilot.app.actions.ShizukuShell
 import com.flowpilot.app.engine.NfcTagHandoff
 import com.flowpilot.app.ui.FlowPilotRoot
 import com.flowpilot.app.ui.theme.FlowPilotTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import rikka.shizuku.Shizuku
 
 class MainActivity : ComponentActivity() {
@@ -30,7 +32,13 @@ class MainActivity : ComponentActivity() {
         Shizuku.addRequestPermissionResultListener(requestListener)
         initNfcForegroundDispatch()
         handleNfcIntent(intent)
-        setContent { FlowPilotTheme { FlowPilotRoot() } }
+        setContent {
+            val vm: com.flowpilot.app.ui.AppViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            val appLanguage by vm.appLanguage.collectAsState()
+            com.flowpilot.app.ui.util.AppLocaleProvider(appLanguage) {
+                FlowPilotTheme { FlowPilotRoot(vm) }
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -91,13 +91,13 @@ private fun BottomBar(current: Page, onSelect: (Page) -> Unit) {
             selected = current == Page.HOME,
             onClick = { onSelect(Page.HOME) },
             icon = { Icon(Icons.Default.Bolt, null) },
-            label = { Text("Automations") },
+            label = { Text(androidx.compose.ui.res.stringResource(com.flowpilot.app.R.string.nav_home)) },
         )
         NavigationBarItem(
             selected = current == Page.SETTINGS,
             onClick = { onSelect(Page.SETTINGS) },
             icon = { Icon(Icons.Default.Settings, null) },
-            label = { Text("Settings") },
+            label = { Text(androidx.compose.ui.res.stringResource(com.flowpilot.app.R.string.nav_settings)) },
         )
     }
 }

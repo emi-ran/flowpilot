@@ -17,6 +17,8 @@ class AutomationPresetsTest {
             val template = preset.template
             assertTrue("Title should not be blank", preset.title.isNotBlank())
             assertTrue("Description should not be blank", preset.description.isNotBlank())
+            assertTrue("Title resource should be valid", preset.titleRes != 0)
+            assertTrue("Description resource should be valid", preset.descriptionRes != 0)
             assertTrue("Name should not be blank", template.name.isNotBlank())
             assertTrue("Actions should not be empty", template.effectiveActions.isNotEmpty())
             assertEquals(

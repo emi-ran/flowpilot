@@ -13,12 +13,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.flowpilot.app.R
 import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.ExecutionStatus
 import com.flowpilot.app.ui.AppViewModel
+import com.flowpilot.app.ui.util.labelRes
+import com.flowpilot.app.ui.util.localizedLabel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -35,8 +39,8 @@ fun HistoryScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Clear history") },
-            text = { Text("Are you sure you want to clear all automation run history? This action cannot be undone.") },
+            title = { Text(stringResource(R.string.history_clear_title)) },
+            text = { Text(stringResource(R.string.history_clear_confirm)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -44,12 +48,12 @@ fun HistoryScreen(
                         showClearDialog = false
                     },
                 ) {
-                    Text("Clear", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.history_btn_clear), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.btn_cancel))
                 }
             },
         )
@@ -57,10 +61,10 @@ fun HistoryScreen(
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Run history", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.history_title), fontWeight = FontWeight.Bold) },
             navigationIcon = {
                 IconButton(onClick = back) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                 }
             },
             actions = {
@@ -68,7 +72,7 @@ fun HistoryScreen(
                     IconButton(onClick = { showClearDialog = true }) {
                         Icon(
                             Icons.Default.DeleteSweep,
-                            contentDescription = "Clear history",
+                            contentDescription = stringResource(R.string.history_clear_title),
                             tint = MaterialTheme.colorScheme.error,
                         )
                     }
@@ -93,13 +97,13 @@ fun HistoryScreen(
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        "No run history yet",
+                        stringResource(R.string.history_empty_title),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Runs triggered by the engine or tested manually will appear here.",
+                        stringResource(R.string.history_empty_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
@@ -142,7 +146,7 @@ private fun HistoryEntryCard(entry: ExecutionHistoryEntry) {
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = entry.ruleName.ifBlank { "Untitled rule" },
+                        text = entry.ruleName.ifBlank { stringResource(R.string.history_untitled_rule) },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
@@ -162,7 +166,7 @@ private fun HistoryEntryCard(entry: ExecutionHistoryEntry) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Actions",
+                    stringResource(R.string.history_section_actions),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -177,21 +181,18 @@ private fun HistoryEntryCard(entry: ExecutionHistoryEntry) {
 
 @Composable
 private fun StatusBadge(status: ExecutionStatus) {
-    val (bgColor, textColor, text) = when (status) {
-        ExecutionStatus.SUCCESS -> Triple(
+    val (bgColor, textColor) = when (status) {
+        ExecutionStatus.SUCCESS -> Pair(
             MaterialTheme.colorScheme.primaryContainer,
             MaterialTheme.colorScheme.onPrimaryContainer,
-            "Success",
         )
-        ExecutionStatus.PARTIAL -> Triple(
+        ExecutionStatus.PARTIAL -> Pair(
             MaterialTheme.colorScheme.tertiaryContainer,
             MaterialTheme.colorScheme.onTertiaryContainer,
-            "Partial",
         )
-        ExecutionStatus.FAILURE -> Triple(
+        ExecutionStatus.FAILURE -> Pair(
             MaterialTheme.colorScheme.errorContainer,
             MaterialTheme.colorScheme.onErrorContainer,
-            "Failed",
         )
     }
 
@@ -200,7 +201,7 @@ private fun StatusBadge(status: ExecutionStatus) {
         shape = RoundedCornerShape(8.dp),
     ) {
         Text(
-            text = text,
+            text = stringResource(status.labelRes),
             color = textColor,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
@@ -228,7 +229,7 @@ private fun ActionOutcomeRow(action: ActionExecutionRecord) {
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                text = action.actionLabel,
+                text = action.actionType.localizedLabel(),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
             )

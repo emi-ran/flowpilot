@@ -1,0 +1,584 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FlowPilot</string>
+    <string name="notif_channel_engine">Otomasyon motoru (sessiz)</string>
+    <string name="notif_channel_engine_desc">FlowPilot otomasyonları çalışırken gerekli sessiz durum bildirimi</string>
+    <string name="notif_engine_title">Otomasyon etkin</string>
+    <string name="notif_engine_text">FlowPilot kuralları çalıştırılıyor</string>
+    <string name="special_use_subtype">Ön plan uygulama değişikliklerini algılar ve yapılandırılmış otomasyonları uygular.</string>
+
+    <!-- General / Navigation -->
+    <string name="nav_home">Otomasyonlar</string>
+    <string name="nav_create">Oluştur</string>
+    <string name="nav_settings">Ayarlar</string>
+    <string name="nav_history">Geçmiş</string>
+    <string name="nav_permissions">İzinler</string>
+    <string name="btn_save">Kaydet</string>
+    <string name="btn_cancel">İptal</string>
+    <string name="btn_delete">Sil</string>
+    <string name="btn_edit">Düzenle</string>
+    <string name="btn_ok">Tamam</string>
+    <string name="btn_close">Kapat</string>
+    <string name="btn_test">Test</string>
+    <string name="btn_run_now">Şimdi Çalıştır</string>
+    <string name="btn_use_preset">Kullan</string>
+    <string name="btn_add_action">Eylem ekle</string>
+    <string name="btn_add_condition">Koşul ekle</string>
+    <string name="search_placeholder">Otomasyonlarda ara...</string>
+    <string name="all_filter">Tümü</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Ayarlar</string>
+    <string name="settings_subtitle">FlowPilot tercihlerinizi yönetin.</string>
+    <string name="settings_language">Dil</string>
+    <string name="settings_language_system">Sistem varsayılanı</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_tr">Türkçe</string>
+    <string name="settings_select_language">Dil seçin</string>
+    <string name="settings_startup">Cihaz açılışında motoru başlat</string>
+    <string name="settings_permissions">Gelişmiş izinler</string>
+    <string name="settings_history">Çalıştırma geçmişi</string>
+    <string name="settings_about">Hakkında</string>
+    <string name="settings_dark_theme">Koyu tema</string>
+
+    <!-- Home Screen -->
+    <string name="home_engine_running">Otomasyon motoru etkin</string>
+    <string name="home_engine_stopped">Otomasyon motoru durduruldu</string>
+    <string name="home_empty_title">Henüz otomasyon yok</string>
+    <string name="home_empty_desc">İlk otomasyon kuralınızı oluşturmak için + butonuna dokunun.</string>
+    <string name="home_active_rules">Aktif kurallar (%1$d)</string>
+
+    <!-- Create & Detail Screens -->
+    <string name="create_title">Otomasyon oluştur</string>
+    <string name="edit_title">Otomasyonu düzenle</string>
+    <string name="presets_banner_title">Hazır Şablonlar (Presets)</string>
+    <string name="presets_banner_desc">Popüler senaryolardan birini tek tıkla seçin</string>
+    <string name="automation_name_label">Otomasyon adı</string>
+    <string name="section_when">TETİKLEYİCİ</string>
+    <string name="section_conditions">KOŞULLAR (isteğe bağlı, hepsi eşleşmeli)</string>
+    <string name="section_do">EYLEMLER (%1$d eylem)</string>
+    <string name="section_do_single">EYLEMLER (1 eylem)</string>
+    <string name="hold_to_reorder">Sıralamak için basılı tutun</string>
+    <string name="advanced_options">Gelişmiş seçenekler</string>
+    <string name="cooldown_prefix">Bekleme süresi: %1$s</string>
+    <string name="cooldown_none">Yok</string>
+    <string name="cooldown_1m">1 dakika</string>
+    <string name="cooldown_5m">5 dakika</string>
+    <string name="cooldown_15m">15 dakika</string>
+    <string name="cooldown_60m">1 saat</string>
+    <string name="screen_off_detection">Ekran kapalıyken algıla</string>
+    <string name="screen_off_detection_desc">Ekran kapalıyken sensörleri aktif tutar (biraz daha fazla pil tüketebilir)</string>
+    <string name="preset_applied_snackbar">\'%1$s\' şablonu uygulandı.</string>
+    <string name="test_actions_title">Eylemleri Şimdi Test Et</string>
+    <string name="test_actions_desc">Bu işlem formdaki güncel değerlerle eylemleri anında çalıştırır.</string>
+    <string name="action_delay_seconds">+%1$ds</string>
+    <string name="tap_to_choose_app">Uygulama seçmek için dokunun</string>
+    <string name="tap_to_choose_target_app">Hedef uygulama seçmek için dokunun</string>
+    <string name="choose_trigger">Tetikleyici seç</string>
+    <string name="choose_action">Eylem seç</string>
+    <string name="choose_condition">Koşul seç</string>
+    <string name="actions_count">%1$d Eylem</string>
+
+    <!-- Presets Bottom Sheet -->
+    <string name="presets_sheet_title">Hazır Şablonlar</string>
+    <string name="presets_sheet_desc">Hızlıca başlamak için yapılandırılmış senaryolar</string>
+    <string name="preset_cat_routine">Rutinler</string>
+    <string name="preset_cat_battery">Pil &amp; Güç</string>
+    <string name="preset_cat_gestures">Sensörler &amp; Jestler</string>
+    <string name="preset_cat_safety">Güvenlik &amp; Konum</string>
+    <string name="preset_cat_connectivity">Ağ &amp; Bağlantı</string>
+
+    <!-- Preset Items -->
+    <string name="preset_bedtime_title">Gece / Uyku Rutini</string>
+    <string name="preset_bedtime_desc" formatted="false">Saat 23:30\'da koyu temayı açar, Rahatsız Etmeyin\'i ve sessiz profili etkinleştirir, ekran parlaklığını %10\'a düşürür.</string>
+
+    <string name="preset_full_battery_title" formatted="false">Pil %100 Doldu Uyarısı</string>
+    <string name="preset_full_battery_desc" formatted="false">Telefon şarjdayken pil %100\'e ulaştığında sesli TTS ile haber verir, bildirim gösterir ve uyarı sesi çalar.</string>
+    <string name="preset_full_battery_tts">Pil şarjı tamamlandı, lütfen prizden çekin.</string>
+    <string name="preset_full_battery_notif_title">Şarj Tamamlandı</string>
+    <string name="preset_full_battery_notif_body" formatted="false">Pil %100 seviyesine ulaştı. Cihazınızı şarjdan çıkarabilirsiniz.</string>
+
+    <string name="preset_battery_emergency_title">Acil Pil Tasarrufu</string>
+    <string name="preset_battery_emergency_desc" formatted="false">Pil %15 altına düştüğünde Pil Tasarrufunu açar, ekran parlaklığını %15 yapar, Bluetooth\'u kapatır ve koyu temaya geçer.</string>
+
+    <string name="preset_flip_silence_title">Yüzüstü Sessize Al</string>
+    <string name="preset_flip_silence_desc">Telefon yüzüstü masaya bırakıldığında Rahatsız Etmeyin modunu açar ve hafif bir onay titreşimi verir.</string>
+
+    <string name="preset_shake_torch_title">Sallayarak Feneri Aç</string>
+    <string name="preset_shake_torch_desc">Telefon sallandığında arka kamera fenerini açar ve çift titreşimle geri bildirim verir.</string>
+
+    <string name="preset_cinema_title">Sinema / Gece Okuma Modu</string>
+    <string name="preset_cinema_desc" formatted="false">Ortam ışığı 5 lüksün altına indiğinde ve ekran açıkken ekran parlaklığını %5\'e düşürür ve koyu temayı açar.</string>
+
+    <string name="preset_leaving_home_title">Evden Çıkış Modu</string>
+    <string name="preset_leaving_home_desc" formatted="false">Ev Wi-Fi ağından ayrıldığınızda mobil veriyi açar, ses profilini normale alır ve medya sesini %80 yapar.</string>
+
+    <string name="preset_welcome_home_title">Eve Varış Modu</string>
+    <string name="preset_welcome_home_desc" formatted="false">Ev Wi-Fi ağına bağlandığınızda mobil veriyi kapatır ve ekran parlaklığını %50\'ye getirir.</string>
+
+    <string name="preset_sms_location_title">SMS Acil Konum Yanıtı</string>
+    <string name="preset_sms_location_desc">\'NEREDESIN\' SMS\'i geldiğinde önce GPS\'i açar, 5 saniye uydu kilidini bekler ve anlık Google Haritalar konumunu SMS ile geri yollar.</string>
+    <string name="preset_sms_location_message" formatted="false">Şu anki konumum: ${location.maps_url} (Pil: %${batteryPercent})</string>
+
+    <!-- TriggerEvent Labels -->
+    <string name="trigger_app_opened">Uygulama açıldı</string>
+    <string name="trigger_app_closed">Uygulama kapandı</string>
+    <string name="trigger_charger_connected">Şarj cihazı takıldı</string>
+    <string name="trigger_charger_disconnected">Şarj cihazı çıkarıldı</string>
+    <string name="trigger_battery_below">Pil seviyesi altına düştü</string>
+    <string name="trigger_battery_above">Pil seviyesi üstüne çıktı</string>
+    <string name="trigger_screen_on">Ekran açıldı</string>
+    <string name="trigger_screen_off">Ekran kapandı</string>
+    <string name="trigger_time_schedule">Belirlenen saatte</string>
+    <string name="trigger_wifi_connected">Wi-Fi ağına bağlandı</string>
+    <string name="trigger_wifi_disconnected">Wi-Fi bağlantısı kesildi</string>
+    <string name="trigger_bluetooth_connected">Bluetooth cihazına bağlandı</string>
+    <string name="trigger_bluetooth_disconnected">Bluetooth bağlantısı koptu</string>
+    <string name="trigger_nfc_tag_scanned">NFC etiketi tarandı</string>
+    <string name="trigger_notification_received">Bildirim alındı</string>
+    <string name="trigger_call_ringing">Gelen çağrı çalıyor</string>
+    <string name="trigger_call_answered">Arama aktif / cevaplandı</string>
+    <string name="trigger_call_outgoing">Giden arama başladı</string>
+    <string name="trigger_call_ended">Arama sonlandı</string>
+    <string name="trigger_device_flipped_down">Cihaz yüzüstü çevrildi</string>
+    <string name="trigger_device_flipped_up">Cihaz düz çevrildi</string>
+    <string name="trigger_device_shake">Cihaz sallandı</string>
+    <string name="trigger_device_unlocked">Cihaz kilidi açıldı</string>
+    <string name="trigger_light_below">Ortam ışığı altına indi</string>
+    <string name="trigger_light_above">Ortam ışığı üstüne çıktı</string>
+    <string name="trigger_sms_received">SMS alındı</string>
+
+    <!-- ActionType Labels -->
+    <string name="action_bluetooth_on">Bluetooth\'u aç</string>
+    <string name="action_bluetooth_off">Bluetooth\'u kapat</string>
+    <string name="action_nfc_on">NFC\'yi aç</string>
+    <string name="action_nfc_off">NFC\'yi kapat</string>
+    <string name="action_battery_saver_on">Pil Tasarrufunu aç</string>
+    <string name="action_battery_saver_off">Pil Tasarrufunu kapat</string>
+    <string name="action_dark_theme_on">Koyu temayı aç</string>
+    <string name="action_dark_theme_off">Koyu temayı kapat</string>
+    <string name="action_auto_rotate_on">Otomatik döndürmeyi aç</string>
+    <string name="action_auto_rotate_off">Otomatik döndürmeyi kapat</string>
+    <string name="action_show_notification">Bildirim göster</string>
+    <string name="action_dnd_on">Rahatsız Etmeyin\'i aç</string>
+    <string name="action_dnd_off">Rahatsız Etmeyin\'i kapat</string>
+    <string name="action_vibrate">Titreşim</string>
+    <string name="action_sound_profile_normal">Ses profili: Normal</string>
+    <string name="action_sound_profile_vibrate">Ses profili: Titreşim</string>
+    <string name="action_sound_profile_silent">Ses profili: Sessiz</string>
+    <string name="action_play_sound">Ses çal</string>
+    <string name="action_set_media_volume">Medya sesini ayarla</string>
+    <string name="action_speak_text">Metni seslendir (TTS)</string>
+    <string name="action_create_alarm">Alarm kur</string>
+    <string name="action_start_timer">Zamanlayıcı başlat</string>
+    <string name="action_launch_app">Uygulama başlat</string>
+    <string name="action_open_url">URL aç</string>
+    <string name="action_http_webhook">HTTP Webhook gönder</string>
+    <string name="action_open_dialer">Arama ekranını aç</string>
+    <string name="action_dial_number">Numarayı tuşla</string>
+    <string name="action_call_number">Doğrudan telefon araması yap</string>
+    <string name="action_send_sms">Doğrudan SMS gönder</string>
+    <string name="action_draft_sms">SMS taslağı hazırla</string>
+    <string name="action_mobile_data_on">Mobil Veriyi aç</string>
+    <string name="action_mobile_data_off">Mobil Veriyi kapat</string>
+    <string name="action_wifi_on">Wi-Fi\'yi aç</string>
+    <string name="action_wifi_off">Wi-Fi\'yi kapat</string>
+    <string name="action_airplane_mode_on">Uçak Modunu aç</string>
+    <string name="action_airplane_mode_off">Uçak Modunu kapat</string>
+    <string name="action_torch_on">El Fenerini aç</string>
+    <string name="action_torch_off">El Fenerini kapat</string>
+    <string name="action_set_screen_brightness">Ekran parlaklığını ayarla</string>
+    <string name="action_lock_screen">Ekranı kilitle</string>
+    <string name="action_force_stop_app">Uygulamayı durdurmaya zorla</string>
+    <string name="action_location_on">Konumu aç</string>
+    <string name="action_location_off">Konumu kapat</string>
+
+    <!-- ConditionType Labels -->
+    <string name="cond_battery_below">Pil seviyesi altında</string>
+    <string name="cond_battery_above">Pil seviyesi üstünde</string>
+    <string name="cond_charger_connected">Şarj cihazı takılı</string>
+    <string name="cond_charger_disconnected">Şarj cihazı takılı değil</string>
+    <string name="cond_screen_on">Ekran açık</string>
+    <string name="cond_screen_off">Ekran kapalı</string>
+    <string name="cond_wifi_connected">Wi-Fi ağına bağlı</string>
+    <string name="cond_wifi_disconnected">Wi-Fi ağına bağlı değil</string>
+    <string name="cond_time_between">Saat aralığında</string>
+    <string name="cond_days_of_week">Haftanın günleri</string>
+
+    <!-- Categories -->
+    <string name="cat_app">Uygulama</string>
+    <string name="cat_power">Güç</string>
+    <string name="cat_display">Ekran</string>
+    <string name="cat_time">Zaman</string>
+    <string name="cat_network">Ağ</string>
+    <string name="cat_bluetooth">Bluetooth</string>
+    <string name="cat_nfc">NFC</string>
+    <string name="cat_notification">Bildirim</string>
+    <string name="cat_phone">Telefon</string>
+    <string name="cat_sms">SMS</string>
+    <string name="cat_motion">Hareket &amp; Sensör</string>
+    <string name="cat_connectivity">Bağlantı</string>
+    <string name="cat_battery">Pil</string>
+    <string name="cat_alerts">Uyarılar</string>
+    <string name="cat_audio">Ses</string>
+    <string name="cat_apps_links">Uygulamalar &amp; Bağlantılar</string>
+    <string name="cat_clock">Saat</string>
+
+    <!-- Match Modes -->
+    <string name="sms_mode_contains">Kelime içerir</string>
+    <string name="sms_mode_equals">Birebir eşit</string>
+    <string name="sms_mode_starts_with">İle başlar</string>
+    <string name="sms_mode_regex">Regex eşleşir</string>
+    <string name="sms_mode_any">Herhangi bir SMS</string>
+
+    <!-- Vibration Patterns -->
+    <string name="vib_pulse">Nabız (Pulse)</string>
+    <string name="vib_double_tap">Çift Dokunuş</string>
+    <string name="vib_alert">Uyarı</string>
+    <string name="vib_heartbeat">Kalp Atışı</string>
+    <string name="vib_triple_tap">Üçlü Dokunuş</string>
+    <string name="vib_sos">SOS</string>
+
+    <!-- Sound Presets -->
+    <string name="sound_preset_notif">Bildirim sesi</string>
+    <string name="sound_preset_alarm">Alarm sesi</string>
+    <string name="sound_preset_ringtone">Zil sesi</string>
+    <string name="sound_preset_custom">Özel ses dosyası</string>
+
+    <!-- Dialogs & Selection -->
+    <string name="dialog_delete_title">Otomasyonu sil?</string>
+    <string name="dialog_delete_single_confirm">\'%1$s\' otomasyonunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</string>
+    <string name="dialog_delete_selected_confirm">%1$d otomasyonu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</string>
+    <string name="selected_count">%1$d seçildi</string>
+    <string name="btn_select_all">Tümünü seç</string>
+    <string name="btn_deselect_all">Seçimi kaldır</string>
+    <string name="content_desc_cancel_selection">Seçimi iptal et</string>
+    <string name="btn_delete_selected">Seçilenleri sil</string>
+    <string name="btn_new_automation">Yeni otomasyon</string>
+
+    <!-- Home Screen Status & Details -->
+    <string name="home_engine_active">FlowPilot Etkin</string>
+    <string name="home_engine_paused">Motor Duraklatıldı</string>
+    <string name="home_engine_active_count">%2$d otomasyondan %1$d tanesi etkin</string>
+    <string name="home_engine_paused_desc">Otomasyonlar tetiklenmeyecek</string>
+    <string name="home_create_first_rule">İlk kuralınızı oluşturun</string>
+    <string name="detail_threshold_battery">Eşik: %%%1$d</string>
+    <string name="detail_threshold_light">Eşik: %1$d lx</string>
+    <string name="detail_ssid">SSID: %1$s</string>
+    <string name="detail_any_wifi">Herhangi bir Wi-Fi</string>
+    <string name="detail_tag_id">Etiket ID: %1$s</string>
+    <string name="detail_any_call">Herhangi bir arama</string>
+    <string name="detail_screen_on_off">Ekran açık ve kapalı</string>
+    <string name="detail_screen_on_only">Yalnızca ekran açıkken</string>
+    <string name="detail_shake_device">Cihazı salla</string>
+    <string name="detail_unlock_screen">Ekran kilidini aç</string>
+    <string name="detail_any_sender">Herhangi bir gönderici</string>
+    <string name="detail_cooldown_badge">⏱ %1$ddk bekleme</string>
+
+    <!-- Test Run & Actions -->
+    <string name="test_run_now_confirm_title">Eylemleri şimdi test et?</string>
+    <string name="test_run_now_confirm_desc">Bu ekranda yapılandırılan eylemler hemen çalıştırılacaktır.\n\n• Tetikleyici ve koşullar atlanır\n• Kaydetmeye gerek kalmadan geçerli düzenlemelerle çalışır\n• Otomasyon kayıt durumu ve geçmiş tetikleme zamanları değişmez</string>
+    <string name="test_run_now_warning_call">\n\n⚠️ UYARI: Bu kural doğrudan telefon araması eylemi içerir. Şimdi çalıştırmak hemen gerçek bir arama başlatacaktır.</string>
+    <string name="test_run_executed_success">%1$d eylem başarıyla çalıştırıldı</string>
+    <string name="test_run_executed_errors">Hatalarla tamamlandı: %1$d başarılı, %2$d başarısız (%3$s)</string>
+    <string name="msg_add_action_to_test">Test etmek için en az bir eylem ekleyin</string>
+    <string name="btn_save_changes">Değişiklikleri kaydet</string>
+    <string name="btn_create_rule">Kuralı oluştur</string>
+    <string name="search_triggers_hint">Tetikleyici ara (örn. pil, arama, sms, ekran, zaman)...</string>
+    <string name="search_actions_hint">Eylem ara (örn. bluetooth, wifi, ses, bildirim)...</string>
+    <string name="search_conditions_hint">Koşul ara...</string>
+    <string name="execution_cooldown">Yürütme bekleme süresi</string>
+
+    <!-- Trigger Descriptions -->
+    <string name="trigger_app_opened_desc">Seçilen uygulama ön planda başladığında</string>
+    <string name="trigger_app_closed_desc">Seçilen uygulama kapandığında veya arka plana geçtiğinde</string>
+    <string name="trigger_call_ringing_desc">Gelen arama çalmaya başladığında</string>
+    <string name="trigger_call_answered_desc">Gelen arama yanıtlandığında veya aktif konuşma başladığında</string>
+    <string name="trigger_call_outgoing_desc">Giden arama başlatıldığında veya numara çevrildiğinde</string>
+    <string name="trigger_call_ended_desc">Arama sonlandığında veya reddedildiğinde</string>
+    <string name="trigger_charger_connected_desc">Cihaz şarja takıldığında</string>
+    <string name="trigger_charger_disconnected_desc">Cihaz şarjdan çıkarıldığında</string>
+    <string name="trigger_battery_below_desc">Pil seviyesi belirlenen yüzdenin altına indiğinde</string>
+    <string name="trigger_battery_above_desc">Pil seviyesi belirlenen yüzdenin üzerine çıktığında</string>
+    <string name="trigger_bluetooth_connected_desc">Belirli bir eşleşmiş Bluetooth cihazı bağlandığında</string>
+    <string name="trigger_bluetooth_disconnected_desc">Belirli bir eşleşmiş Bluetooth cihazının bağlantısı koptuğunda</string>
+    <string name="trigger_nfc_tag_scanned_desc">Fiziksel bir NFC etiketi telefona okutulduğunda</string>
+    <string name="trigger_screen_on_desc">Ekran açıldığında veya cihaz uyandığında</string>
+    <string name="trigger_screen_off_desc">Ekran kapandığında veya kilitlendiğinde</string>
+    <string name="trigger_device_unlocked_desc">Cihaz kilit ekranı PIN, parmak izi veya yüzle açıldığında</string>
+    <string name="trigger_light_below_desc">Ortam ışığı belirlenen lüks seviyesinin altına düştüğünde</string>
+    <string name="trigger_light_above_desc">Ortam ışığı belirlenen lüks seviyesinin üzerine çıktığında</string>
+    <string name="trigger_time_schedule_desc">Günün belirlenen saatinde ve seçilen günlerde</string>
+    <string name="trigger_wifi_connected_desc">Cihaz belirlenen Wi-Fi ağına bağlandığında</string>
+    <string name="trigger_wifi_disconnected_desc">Cihaz belirlenen Wi-Fi ağından ayrıldığında</string>
+    <string name="trigger_notification_received_desc">Seçilen uygulamadan bildirim geldiğinde (isteğe bağlı anahtar kelime)</string>
+    <string name="trigger_device_flipped_down_desc">Telefon yüzüstü masaya veya düz bir zemine bırakıldığında</string>
+    <string name="trigger_device_flipped_up_desc">Telefon tekrar normal şekilde yüzü yukarı çevrildiğinde</string>
+    <string name="trigger_device_shake_desc">Telefon belirgin şekilde sallandığında</string>
+    <string name="trigger_sms_received_desc">Gelen SMS mesajı alındığında (gönderici ve içerik filtreli)</string>
+
+    <!-- Action Descriptions -->
+    <string name="action_send_sms_desc">Arka planda doğrudan SMS gönderir (SEND_SMS izni gerekir)</string>
+    <string name="action_draft_sms_desc">Varsayılan SMS uygulamasında taslak mesaj hazırlar</string>
+    <string name="action_open_dialer_desc">Varsayılan telefon arama ekranını açar</string>
+    <string name="action_dial_number_desc">Numarayı arama ekranına yazar, aramak için onay bekler</string>
+    <string name="action_call_number_desc">Numarayı beklemeden doğrudan arar (CALL_PHONE izni gerekir)</string>
+    <string name="action_show_notification_desc">Bildirim çubuğunda bildirim gösterir</string>
+    <string name="action_dnd_on_desc">Rahatsız Etmeyin modunu açarak tüm bildirimleri susturur</string>
+    <string name="action_dnd_off_desc">Rahatsız Etmeyin modunu kapatır</string>
+    <string name="action_vibrate_desc">Özel titreşim deseni ve yoğunluğuyla titretir</string>
+    <string name="action_create_alarm_desc">Sistem Saat uygulamasında alarm kurar</string>
+    <string name="action_start_timer_desc">Sistem Saat uygulamasında geri sayım sayacı başlatır</string>
+    <string name="action_sound_profile_normal_desc">Ses profilini normale alır (zil ve bildirimler duyulur)</string>
+    <string name="action_sound_profile_vibrate_desc">Ses profilini titreşime alır (sessiz ve titreşimli)</string>
+    <string name="action_sound_profile_silent_desc">Ses profilini sessize alır (tüm sesler kapalı)</string>
+    <string name="action_play_sound_desc">Özel ses dosyası veya sistem uyarı sesi çalar</string>
+    <string name="action_set_media_volume_desc">Medya ses düzeyini ayarlar</string>
+    <string name="action_speak_text_desc">Metni sesli okuma (TTS) ile seslendirir</string>
+    <string name="action_launch_app_desc">Yüklü bir uygulamayı ön planda açar</string>
+    <string name="action_open_url_desc">Web sitesini veya bağlantıyı tarayıcıda açar</string>
+    <string name="action_http_webhook_desc">HTTP isteği gönderir (Home Assistant, Discord, ntfy vb.)</string>
+    <string name="action_force_stop_app_desc">Çalışan bir uygulamayı zorla durdurur (Shizuku gerekir)</string>
+    <string name="action_dark_theme_on_desc">Sistem genelinde koyu temayı açar (Shizuku gerekir)</string>
+    <string name="action_dark_theme_off_desc">Koyu temayı kapatır / açık temaya geçer (Shizuku gerekir)</string>
+    <string name="action_auto_rotate_on_desc">Otomatik ekran döndürmeyi açar</string>
+    <string name="action_auto_rotate_off_desc">Ekran yönünü dikey kilitler / döndürmeyi kapatır</string>
+    <string name="action_set_screen_brightness_desc">Ekran parlaklığını ayarlar (%0 - %100)</string>
+    <string name="action_lock_screen_desc">Ekranı kilitler ve ekranı kapatır (Shizuku gerekir)</string>
+    <string name="action_torch_on_desc">Kamera fenerini / flaşı açar</string>
+    <string name="action_torch_off_desc">Kamera fenerini / flaşı kapatır</string>
+    <string name="action_battery_saver_on_desc">Android Pil Tasarrufu modunu açar</string>
+    <string name="action_battery_saver_off_desc">Android Pil Tasarrufu modunu kapatır</string>
+    <string name="action_bluetooth_on_desc">Bluetooth\'u açar (Shizuku gerekir)</string>
+    <string name="action_bluetooth_off_desc">Bluetooth\'u kapatır (Shizuku gerekir)</string>
+    <string name="action_wifi_on_desc">Wi-Fi\'ı açar (Shizuku gerekir)</string>
+    <string name="action_wifi_off_desc">Wi-Fi\'ı kapatır (Shizuku gerekir)</string>
+    <string name="action_mobile_data_on_desc">Mobil veriyi açar (Shizuku gerekir)</string>
+    <string name="action_mobile_data_off_desc">Mobil veriyi kapatır (Shizuku gerekir)</string>
+    <string name="action_airplane_mode_on_desc">Uçak modunu açar (Shizuku gerekir)</string>
+    <string name="action_airplane_mode_off_desc">Uçak modunu kapatır (Shizuku gerekir)</string>
+    <string name="action_location_on_desc">Konum / GPS servislerini açar (Shizuku gerekir)</string>
+    <string name="action_location_off_desc">Konum / GPS servislerini kapatır (Shizuku gerekir)</string>
+    <string name="action_nfc_on_desc">NFC\'yi açar (Shizuku gerekir)</string>
+    <string name="action_nfc_off_desc">NFC\'yi kapatır (Shizuku gerekir)</string>
+
+    <!-- Condition Descriptions -->
+    <string name="cond_time_between_desc">Yalnızca belirli saat aralığında çalışır (örn. 23:00 - 07:00)</string>
+    <string name="cond_days_of_week_desc">Yalnızca seçilen günlerde çalışır (hafta içi, hafta sonu veya özel günler)</string>
+    <string name="cond_battery_below_desc">Yalnızca pil seviyesi belirlenen yüzdenin altında veya eşitken çalışır</string>
+    <string name="cond_battery_above_desc">Yalnızca pil seviyesi belirlenen yüzdenin üzerinde veya eşitken çalışır</string>
+    <string name="cond_charger_connected_desc">Yalnızca telefon şarja takılıyken çalışır</string>
+    <string name="cond_charger_disconnected_desc">Yalnızca telefon şarjda değilken çalışır</string>
+    <string name="cond_screen_on_desc">Yalnızca telefon ekranı açıkken çalışır</string>
+    <string name="cond_screen_off_desc">Yalnızca ekran kapalı veya kilitliyken çalışır</string>
+    <string name="cond_wifi_connected_desc">Yalnızca Wi-Fi bağlıyken çalışır (isteğe bağlı belirli SSID)</string>
+    <string name="cond_wifi_disconnected_desc">Yalnızca Wi-Fi veya belirli SSID bağlı değilken çalışır</string>
+
+    <!-- Picker Search & UI -->
+    <string name="no_matches_found">Eşleşme bulunamadı</string>
+    <string name="no_matches_found_hint">Farklı bir anahtar kelime veya isim aramayı deneyin</string>
+    <string name="content_desc_close">Kapat</string>
+    <string name="content_desc_search">Arama simgesi</string>
+    <string name="content_desc_clear_search">Aramayı temizle</string>
+
+    <!-- Card Components, Labels & Prompts -->
+    <string name="schedule_daily">Her gün</string>
+    <string name="schedule_weekdays">Hafta içi</string>
+    <string name="schedule_weekends">Hafta sonu</string>
+    <string name="wifi_ssid_label">Wi-Fi Adı (tüm ağlar için boş bırakın)</string>
+    <string name="bluetooth_device_choose">Cihaz seçin</string>
+    <string name="trigger_wifi_any">Herhangi bir Wi-Fi ağı</string>
+    <string name="nfc_uid_label">NFC Etiket UID (hex)</string>
+    <string name="nfc_uid_placeholder">örn. 04A1B2C3D4E5F6</string>
+    <string name="nfc_tap_instruction">Uygulama açıkken etiketi telefona dokundurarak UID\'yi yakalayabilirsiniz.</string>
+    <string name="notification_keyword_filter">Anahtar kelime filtresi (isteğe bağlı)</string>
+    <string name="notification_choose_app">Uygulama seçin</string>
+    <string name="tap_to_select_app">Uygulama seçmek için dokunun</string>
+    <string name="flip_screen_off_label">Ekran kapalıyken de algıla (biraz daha fazla pil tüketebilir)</string>
+    <string name="light_current_lux">Mevcut oda ışığı</string>
+    <string name="light_reading_sensor">Sensör okunuyor...</string>
+    <string name="light_set_target">Hedef olarak ayarla</string>
+    <string name="light_trigger_darker">Şundan daha karanlık olunca:</string>
+    <string name="light_trigger_brighter">Şundan daha aydınlık olunca:</string>
+    <string name="light_preset_dark_room">Karanlık oda (5 lx)</string>
+    <string name="light_preset_dim_night">Loş / Gece (20 lx)</string>
+    <string name="light_preset_indoor">Ev içi (100 lx)</string>
+    <string name="light_preset_office">Ofis (300 lx)</string>
+    <string name="light_preset_daylight">Gün ışığı (600 lx)</string>
+    <string name="shake_hint">Tetiklemek için telefonu sallayın. Ekran açıkken aktiftir.</string>
+    <string name="unlock_hint">Telefon parmak izi, yüz veya PIN ile her açıldığında tetiklenir.</string>
+    <string name="sms_sender_filter_label">Gönderici filtresi (isteğe bağlı)</string>
+    <string name="sms_sender_filter_placeholder">örn. +90555... veya tümü için boş bırakın</string>
+    <string name="sms_match_mode_label">Mesaj Eşleşme Modu</string>
+    <string name="sms_exact_text">Birebir mesaj metni</string>
+    <string name="sms_prefix_keyword">Başlangıç kelimesi</string>
+    <string name="sms_regex_pattern">Düzenli ifade (regex) deseni</string>
+    <string name="sms_keyword_phrase">Anahtar kelime veya ifade</string>
+    <string name="sms_any_sms">herhangi bir SMS</string>
+    <string name="sms_contains_quoted">\"%1$s\" içeren</string>
+    <string name="sms_equals_quoted">\"%1$s\" olan</string>
+    <string name="sms_starts_with_quoted">\"%1$s\" ile başlayan</string>
+    <string name="sms_regex_quoted">regex \"%1$s\"</string>
+
+    <string name="action_move_up">Yukarı taşı</string>
+    <string name="action_move_down">Aşağı taşı</string>
+    <string name="action_remove">Eylemi kaldır</string>
+    <string name="action_reorder_desc">Eylemi yeniden sırala (sürüklemek için basılı tutun)</string>
+    <string name="action_no_delay">Gecikmesiz</string>
+    <string name="action_wait_seconds">%1$ds bekle</string>
+    <string name="action_notif_title_label">Bildirim başlığı</string>
+    <string name="action_notif_body_label">Mesaj metni</string>
+    <string name="vib_strength_soft">Hafif</string>
+    <string name="vib_strength_normal">Normal</string>
+    <string name="vib_strength_strong">Güçlü</string>
+    <string name="action_preview_vibration">Titreşimi dene</string>
+    <string name="sound_no_file_selected">Ses dosyası seçilmedi</string>
+    <string name="sound_choose_file">MP3 veya WAV seçin</string>
+    <string name="sound_duration_label">Süre: %1$ds</string>
+    <string name="sound_btn_play">Oynat</string>
+    <string name="sound_btn_stop">Durdur</string>
+    <string name="action_choose_app_prompt">Hedef uygulamayı seçmek için dokunun</string>
+    <string name="action_url_label">URL (https://...)</string>
+    <string name="alarm_time_label">Alarm saati: %1$02d:%2$02d</string>
+    <string name="alarm_label_optional">Alarm etiketi (isteğe bağlı)</string>
+    <string name="timer_label_optional">Sayaç etiketi (isteğe bağlı)</string>
+    <string name="webhook_url_label">Webhook URL adresi</string>
+    <string name="webhook_headers_label">Başlıklar (Key: Value, her satıra bir adet)</string>
+    <string name="webhook_body_label">İstek gövdesi (Body)</string>
+    <string name="webhook_timeout_label">Zaman aşımı: %1$ds</string>
+    <string name="webhook_view_vars">Desteklenen değişkenleri gör</string>
+    <string name="webhook_vars_title">Webhook değişkenleri</string>
+    <string name="phone_number_label">Telefon numarası</string>
+    <string name="phone_direct_call_warning">⚠️ Doğrudan arama: Tetiklendiğinde derhal gerçek bir telefon araması başlatır.</string>
+    <string name="sms_recipient_label">Alıcı telefon numarası</string>
+    <string name="sms_reply_sender_chip" formatted="false">Gönderene yanıtla (${sms.sender})</string>
+    <string name="sms_message_text_label">SMS mesaj metni</string>
+    <string name="sms_quick_variables">Hızlı değişkenler:</string>
+    <string name="sms_direct_send_warning">⚠️ Doğrudan SMS: Arka planda derhal SMS gönderir. Operatör tarifesi geçerli olabilir.</string>
+    <string name="action_force_stop_prompt">Zorla durdurulacak uygulamayı seçin</string>
+    <string name="action_system_service_desc">Tetiklendiğinde sistem servisleri üzerinden otomatik çalışır.</string>
+    <string name="time_start">Başlangıç saati</string>
+    <string name="time_end">Bitiş saati</string>
+    <string name="time_overnight_window">🌙 Gece yarısını geçen zaman aralığı</string>
+    <string name="btn_remove_condition">Koşulu kaldır</string>
+    <string name="cooldown_rule_description_none">Kural eşleşen her olayda hemen tetiklenir.</string>
+    <string name="cooldown_rule_description_minutes">Kural başarılı bir çalışmadan sonra tekrar otomatik tetiklenmek için %1$d dakika bekler.</string>
+
+    <!-- Capabilities & Status -->
+    <string name="capability_available">Kullanılabilir</string>
+    <string name="capability_permission_required">İzin gerekli</string>
+    <string name="capability_shizuku_required">Shizuku gerekli</string>
+    <string name="capability_unsupported">Bu cihazda desteklenmiyor</string>
+
+    <!-- Permissions Screen -->
+    <string name="perms_title">FlowPilot Kurulumu</string>
+    <string name="perms_subtitle">Bazı eylemler ek sistem izinleri gerektirir.</string>
+    <string name="perms_tip">İpucu: Bir otomasyondaki durum etiketine dokunarak buraya gelebilirsiniz.</string>
+    <string name="perms_btn_setup">Ayarla</string>
+    <string name="perms_btn_grant">İzin ver</string>
+    <string name="perms_btn_turn_on">Aç</string>
+    <string name="perms_btn_open_list">Listeyi aç</string>
+    <string name="perms_btn_open_settings">Ayarları aç</string>
+    <string name="perms_usage_title">Kullanım Erişimi</string>
+    <string name="perms_usage_desc">Uygulamaların ne zaman açıldığını algılamak için gereklidir. Ayarlar\'dan FlowPilot\'a izin verin.</string>
+    <string name="perms_notif_title">Bildirimler</string>
+    <string name="perms_notif_desc">Otomasyon çalışırken motor durumunu gösterir.</string>
+    <string name="perms_phone_state_title">Telefon arama durumu erişimi</string>
+    <string name="perms_phone_state_desc">Gelen, yanıtlanan, giden ve biten aramaları algılamak için gereklidir. FlowPilot arama geçmişini veya kişileri asla okumaz, ses kaydetmez.</string>
+    <string name="perms_call_phone_title">Doğrudan arama yapma</string>
+    <string name="perms_call_phone_desc">Numarayı ara eyleminin onay gerektirmeden otomatik arama yapabilmesi için gereklidir.</string>
+    <string name="perms_receive_sms_title">SMS mesajlarını alma</string>
+    <string name="perms_receive_sms_desc">Gelen SMS tetikleyicilerinin mesajları algılaması, gönderici filtrelemesi ve doğrulama kodlarını yakalaması için gereklidir.</string>
+    <string name="perms_send_sms_title">SMS gönderme</string>
+    <string name="perms_send_sms_desc">SMS gönder eyleminin manuel onay olmadan arka planda otomatik SMS gönderebilmesi için gereklidir.</string>
+    <string name="perms_notif_listener_title">Bildirim dinleme erişimi</string>
+    <string name="perms_notif_listener_desc">Seçilen uygulamalardan bildirim geldiğinde FlowPilot\'ın otomasyonları tetiklemesini sağlar.</string>
+    <string name="perms_bluetooth_title">Bluetooth eşleşmiş cihaz erişimi</string>
+    <string name="perms_bluetooth_desc">Android 12+ sürümlerde eşleşmiş cihazları listelemek ve bağlanma/kopma olaylarını yakalamak için gereklidir.</string>
+    <string name="perms_nfc_title">NFC donanımı ve durumu</string>
+    <string name="perms_nfc_unsupported">Bu cihazda NFC donanımı bulunmuyor.</string>
+    <string name="perms_nfc_disabled">NFC sistem ayarlarından kapalı. Etiket okutmak için NFC\'yi açın.</string>
+    <string name="perms_nfc_ready">NFC donanımı etkin ve etiket tetiklemeleri için hazır.</string>
+    <string name="perms_nfc_pill_disabled">NFC kapalı</string>
+    <string name="perms_wifi_loc_title">Wi-Fi Ağ Adı ve Konum Erişimi</string>
+    <string name="perms_wifi_loc_desc">Android, bağlı Wi-Fi adını (SSID) tespit etmek ve ağ tetikleyicilerini çalıştırmak için Konum izni ve GPS\'in açık olmasını şart koşar.</string>
+    <string name="perms_bg_loc_title">Arka Planda Konum (\'Her zaman izin ver\')</string>
+    <string name="perms_bg_loc_need_fg">FlowPilot önce ön plan konum iznine ihtiyaç duyar. İzin vermek için dokunun.</string>
+    <string name="perms_bg_loc_gps_off">Cihazın GPS / Konum servisi kapalı. Açmak için dokunun.</string>
+    <string name="perms_bg_loc_need_all_time" formatted="false">FlowPilot\'ın arka planda veya ekran kapalıyken GPS konumunu okuyabilmesi için gereklidir. \'Her zaman izin ver\' seçeneğini belirleyin.</string>
+    <string name="perms_bg_loc_ready" formatted="false">FlowPilot tam arka plan GPS erişimine sahip. Otomasyonlar ekran kilitliyken dahi konumu okuyabilir.</string>
+    <string name="perms_bg_loc_pill_needed">Konum izni gerekli</string>
+    <string name="perms_bg_loc_pill_gps_off">GPS kapalı</string>
+    <string name="perms_bg_loc_pill_fg_only">Yalnızca ön plan</string>
+    <string name="perms_bg_loc_action_turn_gps">GPS\'i aç</string>
+    <string name="perms_bg_loc_action_allow_all">Her zaman izin ver</string>
+    <string name="perms_dnd_title">Rahatsız Etmeyin erişimi</string>
+    <string name="perms_dnd_desc">FlowPilot\'ın Rahatsız Etmeyin modunu açıp kapatmasına olanak tanır.</string>
+    <string name="perms_modify_settings_title">Sistem ayarlarını değiştirme</string>
+    <string name="perms_modify_settings_desc">FlowPilot\'ın otomatik ekran döndürme gibi sistem ayarlarını değiştirmesini sağlar.</string>
+    <string name="perms_battery_opt_title">Pil kısıtlamaları</string>
+    <string name="perms_battery_opt_desc">FlowPilot\'ın arka planda kesintisiz çalışabilmesi için pil kısıtlamalarını kaldırın.</string>
+    <string name="perms_battery_opt_pill">Kısıtlama etkin</string>
+    <string name="perms_hyperos_title">HyperOS Otomatik Başlatma</string>
+    <string name="perms_hyperos_desc">HyperOS bu ayarı doğrudan okutmaz. FlowPilot\'ın açık olduğunu doğrulamak için listeyi açın ve pil tasarrufunu \'Kısıtlama yok\' yapın.</string>
+    <string name="perms_hyperos_pill">HyperOS\'ta kontrol et</string>
+    <string name="perms_secure_settings_title">Güvenli sistem ayarları</string>
+    <string name="perms_secure_settings_ready">Pil Tasarrufu eylemleri Shizuku üzerinden çalışabilir. ADB yetkisi doğrudan erişim sağlar.</string>
+    <string name="perms_secure_settings_needed">Pil Tasarrufu eylemleri için gereklidir. ADB veya Shizuku ile yetki verin.</string>
+    <string name="perms_secure_settings_pill_shizuku">Shizuku ile kullanılabilir</string>
+    <string name="perms_shizuku_title">Shizuku</string>
+    <string name="perms_shizuku_desc">NFC ve Bluetooth\'u yönetmek için gereklidir. Kurun, başlatın ve yetki verin.</string>
+    <string name="perms_adb_dialog_title">ADB ile yetki verin</string>
+    <string name="perms_adb_dialog_content">Telefonu USB hata ayıklama açık şekilde bilgisayara bağlayın ve şu komutu çalıştırın:\n\nadb shell pm grant %1$s android.permission.WRITE_SECURE_SETTINGS\n\nVeya Shizuku\'yu başlatıp buradan Ayarla\'ya dokunduğunuzda FlowPilot yetkiyi kendisi alır.</string>
+    <string name="perms_bg_loc_dialog_title">Her zaman izin ver</string>
+    <string name="perms_bg_loc_dialog_content">Uygulama arka plandayken veya ekran kapalıyken GPS konumunu alabilmek için Android \'Her zaman izin ver\' seçeneğini zorunlu kılar.\n\n1. Aşağıdan \'Ayarları aç\' butonuna dokunun\n2. \'İzinler\' &gt; \'Konum\' yolunu izleyin\n3. \'Her zaman izin ver\' seçeneğini işaretleyin</string>
+
+    <!-- History Screen -->
+    <string name="history_title">Çalışma geçmişi</string>
+    <string name="history_clear_title">Geçmişi temizle</string>
+    <string name="history_clear_confirm">Tüm otomasyon çalışma geçmişini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</string>
+    <string name="history_btn_clear">Temizle</string>
+    <string name="history_empty_title">Henüz çalışma kaydı yok</string>
+    <string name="history_empty_desc">Motor tarafından tetiklenen veya manuel test edilen çalıştırmalar burada listelenir.</string>
+    <string name="history_untitled_rule">İsimsiz kural</string>
+    <string name="history_section_actions">Eylemler</string>
+    <string name="status_success">Başarılı</string>
+    <string name="status_partial">Kısmi</string>
+    <string name="status_failed">Başarısız</string>
+
+    <!-- Day initials -->
+    <string name="day_m">P</string>
+    <string name="day_t">S</string>
+    <string name="day_w">Ç</string>
+    <string name="day_th">P</string>
+    <string name="day_f">C</string>
+    <string name="day_sa">C</string>
+    <string name="day_su">P</string>
+
+    <!-- Quick Variables -->
+    <string name="quick_var_sender">Gönderen</string>
+    <string name="quick_var_full_sms">Tam SMS</string>
+    <string name="quick_var_otp">Doğrulama Kodu</string>
+    <string name="quick_var_gps">GPS Konumu</string>
+    <string name="quick_var_battery">Pil %</string>
+    <string name="quick_var_time">Zaman</string>
+
+    <!-- Webhook variables desc -->
+    <string name="webhook_var_trigger_desc">Bu kuralı tetikleyen olay</string>
+    <string name="webhook_var_battery_desc">Mevcut pil yüzdesi</string>
+    <string name="webhook_var_charging_desc">Şarj bağlantı durumu</string>
+    <string name="webhook_var_wifi_desc">Bağlı Wi-Fi adı</string>
+    <string name="webhook_var_timestamp_desc">Zaman damgası (milisaniye)</string>
+
+    <!-- Extra UI strings -->
+    <string name="perms_btn_settings">Ayarlar</string>
+    <string name="perms_pill_granted">Verildi</string>
+    <string name="brightness_min">Min</string>
+    <string name="brightness_max">Maks</string>
+    <string name="search_apps_placeholder">Uygulamalarda ara...</string>
+    <string name="choose_app_title">Uygulama seç</string>
+    <string name="bluetooth_choose_device_title">Eşleşmiş Bluetooth cihazı seç</string>
+    <string name="bluetooth_unavailable">Bu cihazda Bluetooth kullanılamıyor.</string>
+    <string name="bluetooth_no_devices">Eşleşmiş Bluetooth cihazı bulunamadı. Android Bluetooth ayarlarından bir cihaz eşleştirip buraya dönün. FlowPilot cihaz taraması yapmaz.</string>
+    <string name="btn_done">Tamam</string>
+</resources>
