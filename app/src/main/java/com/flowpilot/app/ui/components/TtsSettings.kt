@@ -305,7 +305,7 @@ private fun VoicePickerDialog(
                     voice.locale,
                     locale.displayName,
                     locale.getDisplayName(Locale.ENGLISH),
-                    locale.getDisplayName(Locale("tr")),
+                    locale.getDisplayName(Locale.forLanguageTag("tr")),
                 ).any { value -> value.lowercase(Locale.ROOT).contains(needle) }
             }
         }
