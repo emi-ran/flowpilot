@@ -47,7 +47,7 @@ class FlowPilotWidgetProvider : AppWidgetProvider() {
                     views.setOnClickPendingIntent(R.id.widget_btn_open, openAppPendingIntent)
 
                     // Toggle engine button
-                    val toggleIntent = Intent(context, FlowPilotWidgetProvider::class.java).apply {
+                    val toggleIntent = Intent(context, FlowPilotWidgetToggleReceiver::class.java).apply {
                         action = ACTION_TOGGLE_ENGINE
                     }
                     val togglePendingIntent = PendingIntent.getBroadcast(
@@ -95,21 +95,6 @@ class FlowPilotWidgetProvider : AppWidgetProvider() {
         }
 
         updateAllWidgets(context)
-    }
-
-    override fun onReceive(context: Context, intent: Intent) {
-        super.onReceive(context, intent)
-        if (intent.action == ACTION_TOGGLE_ENGINE) {
-            val pendingResult = goAsync()
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-            scope.launch {
-                try {
-                    handleToggleEngine(context)
-                } finally {
-                    pendingResult.finish()
-                }
-            }
-        }
     }
 
     companion object {
