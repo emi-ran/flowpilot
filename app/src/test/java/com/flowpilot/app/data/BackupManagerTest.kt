@@ -73,6 +73,47 @@ class BackupManagerTest {
     }
 
     @Test
+    fun exportToString_omitsWebhookSecrets() {
+        val rule = createSampleRule("r-secret", "Secret Rule", "https://secret.example")
+            .copy(webhookHeaders = "Authorization: Bearer secret", webhookBody = "secret body")
+
+        val json = BackupManager.exportToString(listOf(rule))
+
+        assertThat(json).doesNotContain("https://secret.example")
+        assertThat(json).doesNotContain("Authorization: Bearer secret")
+        assertThat(json).doesNotContain("secret body")
+        assertThat(BackupManager.parseImport(json).getOrThrow().single().webhookUrl).isEmpty()
+    }
+
+    @Test
+    fun exportSingleToString_omitsWebhookSecrets() {
+        val rule = createSampleRule("r-single-secret", "Single Secret", "https://secret.example")
+            .copy(webhookHeaders = "X-Secret: value", webhookBody = "secret body")
+
+        val json = BackupManager.exportSingleToString(rule)
+
+        assertThat(json).doesNotContain("https://secret.example")
+        assertThat(json).doesNotContain("X-Secret: value")
+        assertThat(json).doesNotContain("secret body")
+    }
+
+    @Test
+    fun parseImport_disablesRulesFromFullBackupRawListAndSingleRule() {
+        val enabledRule = createSampleRule("r-import", "Imported", "secret")
+        val fullBackup = kotlinx.serialization.json.Json.encodeToString(
+            FlowPilotBackup.serializer(), FlowPilotBackup(automations = listOf(enabledRule))
+        )
+        val rawList = kotlinx.serialization.json.Json.encodeToString(
+            kotlinx.serialization.builtins.ListSerializer(Automation.serializer()), listOf(enabledRule)
+        )
+        val single = kotlinx.serialization.json.Json.encodeToString(Automation.serializer(), enabledRule)
+
+        assertThat(BackupManager.parseImport(fullBackup).getOrThrow().single().enabled).isFalse()
+        assertThat(BackupManager.parseImport(rawList).getOrThrow().single().enabled).isFalse()
+        assertThat(BackupManager.parseImport(single).getOrThrow().single().enabled).isFalse()
+    }
+
+    @Test
     fun exportSingleToString_serializesSingleRule() {
         val rule = createSampleRule("r-single", "Single Test")
         val json = BackupManager.exportSingleToString(rule)

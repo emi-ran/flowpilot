@@ -43,20 +43,22 @@ object BackupManager {
     }
 
     fun exportToString(automations: List<Automation>): String {
-        // Decrypt secrets so the JSON can be imported on other devices cleanly
-        val plainRules = automations.map { it.withDecryptedSecrets() }
+        val safeRules = automations.map { it.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "") }
         val backup = FlowPilotBackup(
             version = FlowPilotBackup.BACKUP_VERSION,
             exportedAt = System.currentTimeMillis(),
-            automations = plainRules,
+            automations = safeRules,
         )
         return prettyJson.encodeToString(FlowPilotBackup.serializer(), backup)
     }
 
     fun exportSingleToString(rule: Automation): String {
-        val plainRule = rule.withDecryptedSecrets()
-        return prettyJson.encodeToString(Automation.serializer(), plainRule)
+        val safeRule = rule.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "")
+        return prettyJson.encodeToString(Automation.serializer(), safeRule)
     }
+
+    private fun disableImportedRules(rules: List<Automation>): List<Automation> =
+        rules.map { it.copy(enabled = false) }
 
     fun parseImport(jsonContent: String): Result<List<Automation>> {
         val trimmed = jsonContent.trim()
@@ -68,7 +70,7 @@ object BackupManager {
         try {
             val backup = parserJson.decodeFromString(FlowPilotBackup.serializer(), trimmed)
             if (backup.automations.isNotEmpty()) {
-                return Result.success(backup.automations)
+                return Result.success(disableImportedRules(backup.automations))
             }
         } catch (_: Throwable) {}
 
@@ -76,14 +78,14 @@ object BackupManager {
         try {
             val list = parserJson.decodeFromString(ListSerializer(Automation.serializer()), trimmed)
             if (list.isNotEmpty()) {
-                return Result.success(list)
+                return Result.success(disableImportedRules(list))
             }
         } catch (_: Throwable) {}
 
         // 3. Try parsing as single Automation
         try {
             val single = parserJson.decodeFromString(Automation.serializer(), trimmed)
-            return Result.success(listOf(single))
+            return Result.success(listOf(single.copy(enabled = false)))
         } catch (_: Throwable) {}
 
         return Result.failure(IllegalArgumentException("Invalid JSON format for automations"))
