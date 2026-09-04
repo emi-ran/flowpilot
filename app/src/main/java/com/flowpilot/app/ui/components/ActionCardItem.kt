@@ -63,6 +63,7 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.DARK_THEME_ON, ActionType.DARK_THEME_OFF -> Icons.Default.DarkMode
     ActionType.SOUND_PROFILE_NORMAL, ActionType.SOUND_PROFILE_VIBRATE, ActionType.SOUND_PROFILE_SILENT -> Icons.Default.Notifications
     ActionType.SET_SCREEN_BRIGHTNESS -> Icons.Default.BrightnessMedium
+    ActionType.AUTO_BRIGHTNESS_ON, ActionType.AUTO_BRIGHTNESS_OFF -> Icons.Default.BrightnessAuto
     ActionType.LOCK_SCREEN -> Icons.Default.Lock
     ActionType.FORCE_STOP_APP -> Icons.Default.Cancel
     ActionType.LOCATION_ON, ActionType.LOCATION_OFF -> Icons.Default.LocationOn

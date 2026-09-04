@@ -764,6 +764,22 @@ fun ActionPicker(
                         keywords = listOf("brightness", "screen", "display", "dim", "bright", "level", "percent"),
                     ),
                     PickerItem(
+                        value = ActionType.AUTO_BRIGHTNESS_ON,
+                        title = ActionType.AUTO_BRIGHTNESS_ON.label,
+                        subtitle = "Turn on adaptive / automatic screen brightness",
+                        icon = Icons.Default.BrightnessAuto,
+                        iconTint = Color(0xFFFFB74D),
+                        keywords = listOf("auto brightness", "automatic brightness", "adaptive brightness", "screen", "display", "light"),
+                    ),
+                    PickerItem(
+                        value = ActionType.AUTO_BRIGHTNESS_OFF,
+                        title = ActionType.AUTO_BRIGHTNESS_OFF.label,
+                        subtitle = "Turn off adaptive brightness / lock to manual level",
+                        icon = Icons.Default.BrightnessMedium,
+                        iconTint = Color(0xFFFFCC80),
+                        keywords = listOf("auto brightness", "manual brightness", "screen", "display", "disable auto brightness"),
+                    ),
+                    PickerItem(
                         value = ActionType.LOCK_SCREEN,
                         title = ActionType.LOCK_SCREEN.label,
                         subtitle = "Lock screen and turn off display (requires Shizuku)",

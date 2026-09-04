@@ -195,6 +195,8 @@
     <string name="action_torch_on">Turn Flashlight on</string>
     <string name="action_torch_off">Turn Flashlight off</string>
     <string name="action_set_screen_brightness">Set screen brightness</string>
+    <string name="action_auto_brightness_on">Turn Auto-brightness on</string>
+    <string name="action_auto_brightness_off">Turn Auto-brightness off</string>
     <string name="action_lock_screen">Lock screen</string>
     <string name="action_force_stop_app">Force stop app</string>
     <string name="action_location_on">Turn Location on</string>
@@ -351,6 +353,8 @@
     <string name="action_auto_rotate_on_desc">Enable automatic screen rotation based on orientation</string>
     <string name="action_auto_rotate_off_desc">Lock screen orientation to portrait / disable auto-rotate</string>
     <string name="action_set_screen_brightness_desc">Adjust screen brightness level (0% - 100%)</string>
+    <string name="action_auto_brightness_on_desc">Enables adaptive / automatic screen brightness</string>
+    <string name="action_auto_brightness_off_desc">Disables automatic brightness and keeps manual level</string>
     <string name="action_lock_screen_desc">Lock screen and turn off display (requires Shizuku)</string>
     <string name="action_torch_on_desc">Turn camera flash on as flashlight</string>
     <string name="action_torch_off_desc">Turn camera flash / flashlight off</string>

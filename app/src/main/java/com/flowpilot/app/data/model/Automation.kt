@@ -96,6 +96,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     TORCH_ON("Turn Flashlight on", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
     TORCH_OFF("Turn Flashlight off", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
     SET_SCREEN_BRIGHTNESS("Set screen brightness", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
+    AUTO_BRIGHTNESS_ON("Turn Auto-brightness on", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
+    AUTO_BRIGHTNESS_OFF("Turn Auto-brightness off", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     LOCK_SCREEN("Lock screen", ActionCategory.DISPLAY, CapabilityRequirement.SHIZUKU),
     FORCE_STOP_APP("Force stop app", ActionCategory.APPS_LINKS, CapabilityRequirement.SHIZUKU),
     LOCATION_ON("Turn Location on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),

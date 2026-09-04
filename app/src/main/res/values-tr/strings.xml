@@ -195,6 +195,8 @@
     <string name="action_torch_on">El Fenerini aç</string>
     <string name="action_torch_off">El Fenerini kapat</string>
     <string name="action_set_screen_brightness">Ekran parlaklığını ayarla</string>
+    <string name="action_auto_brightness_on">Otomatik parlaklığı aç</string>
+    <string name="action_auto_brightness_off">Otomatik parlaklığı kapat</string>
     <string name="action_lock_screen">Ekranı kilitle</string>
     <string name="action_force_stop_app">Uygulamayı durdurmaya zorla</string>
     <string name="action_location_on">Konumu aç</string>
@@ -351,6 +353,8 @@
     <string name="action_auto_rotate_on_desc">Otomatik ekran döndürmeyi açar</string>
     <string name="action_auto_rotate_off_desc">Ekran yönünü dikey kilitler / döndürmeyi kapatır</string>
     <string name="action_set_screen_brightness_desc">Ekran parlaklığını ayarlar (%0 - %100)</string>
+    <string name="action_auto_brightness_on_desc">Uyarlanabilir / otomatik ekran parlaklığını açar</string>
+    <string name="action_auto_brightness_off_desc">Otomatik parlaklığı kapatır ve manuel seviyeyi korur</string>
     <string name="action_lock_screen_desc">Ekranı kilitler ve ekranı kapatır (Shizuku gerekir)</string>
     <string name="action_torch_on_desc">Kamera fenerini / flaşı açar</string>
     <string name="action_torch_off_desc">Kamera fenerini / flaşı kapatır</string>
