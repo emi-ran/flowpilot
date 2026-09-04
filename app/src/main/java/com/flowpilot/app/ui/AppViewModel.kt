@@ -243,6 +243,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         webhookBody: String = "",
         webhookTimeoutSeconds: Int = 10,
         phoneNumber: String = "",
+        lightLux: Int = 10,
+        screenBrightnessPercent: Int = 50,
+        forceStopPackage: String = "",
+        forceStopAppName: String = "",
         ruleId: String = UUID.randomUUID().toString(),
     ) {
         viewModelScope.launch {
@@ -294,6 +298,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 webhookBody = webhookBody,
                 webhookTimeoutSeconds = webhookTimeoutSeconds,
                 phoneNumber = phoneNumber,
+                lightLux = lightLux,
+                screenBrightnessPercent = screenBrightnessPercent,
+                forceStopPackage = forceStopPackage,
+                forceStopAppName = forceStopAppName,
                 id = ruleId,
             )
             startEngine()
@@ -390,6 +398,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
                 webhookTemplateContext = templateContext,
                 phoneNumber = rule.phoneNumber,
+                screenBrightnessPercent = rule.screenBrightnessPercent,
+                forceStopPackage = rule.forceStopPackage,
             )
             val dispatcher = com.flowpilot.app.actions.ActionDispatcher.get(app)
             var successCount = 0

@@ -34,6 +34,8 @@ class AutomationEngine(
     private val bluetoothTracker: BluetoothDeviceTracker = BluetoothDeviceTracker(context.applicationContext),
     private val callTracker: CallStateTracker = CallStateTracker(context.applicationContext),
     private val flipTracker: DeviceFlipTracker = DeviceFlipTracker(context.applicationContext),
+    private val shakeTracker: DeviceShakeTracker = DeviceShakeTracker(context.applicationContext),
+    private val lightTracker: LightSensorTracker = LightSensorTracker(context.applicationContext),
 ) {
 
     private val appContext = context.applicationContext
@@ -61,16 +63,22 @@ class AutomationEngine(
         bluetoothTracker.start()
         callTracker.start()
         flipTracker.start()
+        shakeTracker.start()
+        lightTracker.start()
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         job = scope.launch {
             while (isActive) {
                 try {
                     val liveState = getLiveSystemState()
                     updateFlipListeningPolicy(liveState)
+                    updateShakeListeningPolicy(liveState)
+                    updateLightListeningPolicy(liveState)
                     poll(liveState)
                     pollChargerEvents(liveState)
                     pollBatteryTransitions(liveState)
                     pollScreenEvents(liveState)
+                    pollShakeEvents(liveState)
+                    pollLightTransitions(liveState)
                     pollWifiTransitions(liveState)
                     pollBluetoothTransitions(liveState)
                     pollCallTransitions(liveState)
@@ -100,6 +108,8 @@ class AutomationEngine(
         bluetoothTracker.stop()
         callTracker.stop()
         flipTracker.stop()
+        shakeTracker.stop()
+        lightTracker.stop()
     }
 
     private fun getLiveSystemState(): LiveSystemState {
@@ -221,8 +231,9 @@ class AutomationEngine(
                 val trigger = when (event) {
                     ScreenEvent.ON -> TriggerEvent.SCREEN_ON
                     ScreenEvent.OFF -> TriggerEvent.SCREEN_OFF
+                    ScreenEvent.UNLOCKED -> TriggerEvent.DEVICE_UNLOCKED
                 }
-                executeAll(matches, trigger = trigger, liveState = liveState.copy(isScreenOn = (event == ScreenEvent.ON)))
+                executeAll(matches, trigger = trigger, liveState = liveState.copy(isScreenOn = (event != ScreenEvent.OFF)))
             }
         }
     }
@@ -298,6 +309,54 @@ class AutomationEngine(
                     FlipEvent.FLIPPED_UP -> TriggerEvent.DEVICE_FLIPPED_UP
                 }
                 executeAll(matches, trigger = trigger, liveState = liveState)
+            }
+        }
+    }
+
+    private suspend fun updateShakeListeningPolicy(liveState: LiveSystemState) {
+        val rules = repository.automations.first()
+        val hasShake = rules.any { it.enabled && it.triggerEvent == TriggerEvent.DEVICE_SHAKE }
+        shakeTracker.updateListeningPolicy(
+            hasActiveRules = hasShake,
+            isScreenOn = liveState.isScreenOn != false,
+        )
+    }
+
+    private suspend fun updateLightListeningPolicy(liveState: LiveSystemState) {
+        val rules = repository.automations.first()
+        val hasLight = rules.any {
+            it.enabled && (it.triggerEvent == TriggerEvent.LIGHT_BELOW || it.triggerEvent == TriggerEvent.LIGHT_ABOVE)
+        }
+        lightTracker.updateListeningPolicy(
+            hasActiveRules = hasLight,
+            isScreenOn = liveState.isScreenOn != false,
+        )
+    }
+
+    private suspend fun pollShakeEvents(liveState: LiveSystemState) {
+        val events = shakeTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (eventTime in events) {
+            val matches = RuleEvaluator.evaluateShake(rules, liveState, nowMs = eventTime)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing shake rules (${matches.size} rule(s))")
+                executeAll(matches, trigger = TriggerEvent.DEVICE_SHAKE, liveState = liveState)
+            }
+        }
+    }
+
+    private suspend fun pollLightTransitions(liveState: LiveSystemState) {
+        val transitions = lightTracker.drainTransitions()
+        if (transitions.isEmpty()) return
+        val rules = repository.automations.first()
+        for (transition in transitions) {
+            val matches = RuleEvaluator.evaluateLight(rules, transition, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing ambient light rules (${matches.size} rule(s)) for ${transition.previousLux} -> ${transition.currentLux} lx")
+                for (rule in matches) {
+                    executeAll(listOf(rule), trigger = rule.triggerEvent, liveState = liveState)
+                }
             }
         }
     }
@@ -397,6 +456,8 @@ class AutomationEngine(
                                 webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
                                 webhookTemplateContext = templateContext,
                                 phoneNumber = rule.phoneNumber,
+                                screenBrightnessPercent = rule.screenBrightnessPercent,
+                                forceStopPackage = rule.forceStopPackage,
                             ),
                         )
                         Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")

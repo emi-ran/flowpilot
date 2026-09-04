@@ -120,6 +120,10 @@ class AutomationRepository(private val context: Context) {
         webhookBody: String = "",
         webhookTimeoutSeconds: Int = 10,
         phoneNumber: String = "",
+        lightLux: Int = 10,
+        screenBrightnessPercent: Int = 50,
+        forceStopPackage: String = "",
+        forceStopAppName: String = "",
         id: String = UUID.randomUUID().toString(),
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
@@ -151,8 +155,13 @@ class AutomationRepository(private val context: Context) {
                     com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING,
                     com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED,
                     com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_DOWN,
-                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_UP ->
+                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_UP,
+                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_SHAKE,
+                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_UNLOCKED ->
                         "${triggerEvent.label} · $summary"
+                    com.flowpilot.app.data.model.TriggerEvent.LIGHT_BELOW,
+                    com.flowpilot.app.data.model.TriggerEvent.LIGHT_ABOVE ->
+                        "${triggerEvent.label} ${lightLux}lx · $summary"
                     else -> "${appName.ifBlank { appPackage }} · $summary"
                 }
             },
@@ -198,6 +207,10 @@ class AutomationRepository(private val context: Context) {
             webhookBody = webhookBody,
             webhookTimeoutSeconds = webhookTimeoutSeconds,
             phoneNumber = phoneNumber,
+            lightLux = lightLux,
+            screenBrightnessPercent = screenBrightnessPercent,
+            forceStopPackage = forceStopPackage,
+            forceStopAppName = forceStopAppName,
             action = primaryAction,
             actions = actions,
             actionDelays = actionDelays,

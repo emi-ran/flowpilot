@@ -142,13 +142,44 @@ object RuleEvaluator {
         val trigger = when (event) {
             ScreenEvent.ON -> TriggerEvent.SCREEN_ON
             ScreenEvent.OFF -> TriggerEvent.SCREEN_OFF
+            ScreenEvent.UNLOCKED -> TriggerEvent.DEVICE_UNLOCKED
         }
-        val effectiveState = liveState.copy(isScreenOn = (event == ScreenEvent.ON))
+        val effectiveState = liveState.copy(isScreenOn = (event != ScreenEvent.OFF))
         return rules.filter {
             it.enabled &&
                 it.triggerEvent == trigger &&
                 !it.isCoolingDown(nowMs) &&
                 matchesConditions(it.conditions, effectiveState, nowMs)
+        }
+    }
+
+    fun evaluateShake(
+        rules: List<Automation>,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> {
+        return rules.filter { rule ->
+            rule.enabled &&
+                rule.triggerEvent == TriggerEvent.DEVICE_SHAKE &&
+                !rule.isCoolingDown(nowMs) &&
+                matchesConditions(rule.conditions, liveState, nowMs)
+        }
+    }
+
+    fun evaluateLight(
+        rules: List<Automation>,
+        transition: LightTransition,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> {
+        return rules.filter { rule ->
+            if (!rule.enabled || rule.isCoolingDown(nowMs)) return@filter false
+            val triggerMatches = when (rule.triggerEvent) {
+                TriggerEvent.LIGHT_BELOW -> transition.previousLux > rule.lightLux && transition.currentLux <= rule.lightLux
+                TriggerEvent.LIGHT_ABOVE -> transition.previousLux < rule.lightLux && transition.currentLux >= rule.lightLux
+                else -> false
+            }
+            triggerMatches && matchesConditions(rule.conditions, liveState, nowMs)
         }
     }
 

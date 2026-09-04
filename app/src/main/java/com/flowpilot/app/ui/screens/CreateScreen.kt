@@ -139,6 +139,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
         soundName = uri.lastPathSegment?.substringAfterLast('/') ?: "Custom audio"
         soundSourceDurationMs(context, SoundPreset.CUSTOM, uri.toString())?.let { soundDurationMs = it.coerceIn(1_000, 60_000) }
     }
+    var lightLux by remember { mutableIntStateOf(50) }
+    var screenBrightnessPercent by remember { mutableIntStateOf(50) }
+    var forceStopPackage by remember { mutableStateOf("") }
+    var forceStopAppName by remember { mutableStateOf("") }
+    var showForceStopApps by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var actionDelays by remember { mutableStateOf(emptyList<Int>()) }
@@ -161,9 +166,10 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
         }
     }
 
-    if (showApps) AppPicker({ p, n -> pkg = p; appName = n; showApps = false }) { showApps = false }
-    if (showNotificationApps) AppPicker({ p, n -> notificationAppPackage = p; notificationAppName = n; showNotificationApps = false }) { showNotificationApps = false }
-    if (showLaunchApps) AppPicker({ p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }) { showLaunchApps = false }
+    if (showApps) AppPicker(select = { p, n -> pkg = p; appName = n; showApps = false }, selectedPackage = pkg, onDismiss = { showApps = false })
+    if (showNotificationApps) AppPicker(select = { p, n -> notificationAppPackage = p; notificationAppName = n; showNotificationApps = false }, selectedPackage = notificationAppPackage, onDismiss = { showNotificationApps = false })
+    if (showLaunchApps) AppPicker(select = { p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }, selectedPackage = launchPackage, onDismiss = { showLaunchApps = false })
+    if (showForceStopApps) AppPicker(select = { p, n -> forceStopPackage = p; forceStopAppName = n; showForceStopApps = false }, selectedPackage = forceStopPackage, onDismiss = { showForceStopApps = false })
     if (showTriggers) TriggerPicker(event, { event = it; showTriggers = false }) { showTriggers = false }
     if (showConditionPicker) {
         ConditionPickerDialog(
@@ -283,6 +289,10 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                         ttsSpeechRate = ttsSpeechRate,
                         ttsAudioFileName = ttsAudioFileName,
                         phoneNumber = phoneNumber.trim(),
+                        lightLux = lightLux,
+                        screenBrightnessPercent = screenBrightnessPercent,
+                        forceStopPackage = forceStopPackage,
+                        forceStopAppName = forceStopAppName,
                         createdAt = System.currentTimeMillis(),
                     )
                     vm.runRuleNow(currentFormRule) { result ->
@@ -378,6 +388,8 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 onNotificationKeywordChange = { notificationKeyword = it },
                 flipScreenOffDetection = flipScreenOffDetection,
                 onFlipScreenOffChange = { flipScreenOffDetection = it },
+                lightLux = lightLux,
+                onLightLuxChange = { lightLux = it },
             )
 
             Text(
@@ -514,6 +526,13 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                         // Phone
                         phoneNumber = phoneNumber,
                         onPhoneNumberChange = { phoneNumber = it },
+                        // Brightness
+                        screenBrightnessPercent = screenBrightnessPercent,
+                        onScreenBrightnessChange = { screenBrightnessPercent = it },
+                        // Force stop app
+                        forceStopAppName = forceStopAppName,
+                        forceStopPackage = forceStopPackage,
+                        onOpenForceStopAppPicker = { showForceStopApps = true },
                     )
                 }
             }
@@ -660,6 +679,10 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             webhookBody = webhookBody,
                             webhookTimeoutSeconds = webhookTimeoutSeconds,
                             phoneNumber = phoneNumber.trim(),
+                            lightLux = lightLux,
+                            screenBrightnessPercent = screenBrightnessPercent,
+                            forceStopPackage = forceStopPackage,
+                            forceStopAppName = forceStopAppName,
                             ruleId = newRuleId,
                         )
                         done()
@@ -672,6 +695,7 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             (event != TriggerEvent.BLUETOOTH_CONNECTED && event != TriggerEvent.BLUETOOTH_DISCONNECTED || bluetoothDeviceAddress.isNotEmpty()) &&
                             (event != TriggerEvent.NFC_TAG_SCANNED || NfcTagUtils.isValidTagId(nfcTagId)) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
+                            (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&

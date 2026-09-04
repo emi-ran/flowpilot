@@ -435,5 +435,46 @@ class RuleEvaluatorTest {
         val schedRule = rule(TriggerEvent.TIME_SCHEDULE).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess, scheduledMinute = 120)
         val now = java.time.LocalDateTime.of(2026, 9, 1, 2, 0)
         assertThat(ScheduleEvaluator.matchingRules(listOf(schedRule), now, nowMs = nowMs)).isEmpty()
+
+        // Shake
+        val shakeRule = rule(TriggerEvent.DEVICE_SHAKE).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess)
+        assertThat(RuleEvaluator.evaluateShake(listOf(shakeRule), nowMs = nowMs)).isEmpty()
+
+        // Light
+        val lightRule = rule(TriggerEvent.LIGHT_BELOW).copy(cooldownMinutes = cdMinutes, lastTriggeredAt = recentSuccess, lightLux = 50)
+        assertThat(RuleEvaluator.evaluateLight(listOf(lightRule), LightTransition(100f, 40f), nowMs = nowMs)).isEmpty()
+    }
+
+    @Test fun shake_matches_only_enabled_shake_rules() {
+        val shake = rule(TriggerEvent.DEVICE_SHAKE).copy(id = "shake-1")
+        val shakeDisabled = rule(TriggerEvent.DEVICE_SHAKE).copy(id = "shake-2", enabled = false)
+        val other = rule(TriggerEvent.SCREEN_ON).copy(id = "other")
+
+        val result = RuleEvaluator.evaluateShake(listOf(shake, shakeDisabled, other), nowMs = 1000L)
+        assertThat(result).containsExactly(shake)
+    }
+
+    @Test fun unlocked_matches_only_unlocked_rules() {
+        val unlocked = rule(TriggerEvent.DEVICE_UNLOCKED).copy(id = "u1")
+        val on = rule(TriggerEvent.SCREEN_ON).copy(id = "s1")
+        val off = rule(TriggerEvent.SCREEN_OFF).copy(id = "s2")
+
+        val result = RuleEvaluator.evaluateScreen(listOf(unlocked, on, off), ScreenEvent.UNLOCKED)
+        assertThat(result).containsExactly(unlocked)
+    }
+
+    @Test fun light_rules_match_only_when_threshold_crossed() {
+        val below = rule(TriggerEvent.LIGHT_BELOW).copy(id = "below", lightLux = 50)
+        val above = rule(TriggerEvent.LIGHT_ABOVE).copy(id = "above", lightLux = 500)
+        val rules = listOf(below, above)
+
+        // Dropping from 60 to 40 crosses below 50
+        assertThat(RuleEvaluator.evaluateLight(rules, LightTransition(60f, 40f))).containsExactly(below)
+        // Dropping from 40 to 30 does not cross
+        assertThat(RuleEvaluator.evaluateLight(rules, LightTransition(40f, 30f))).isEmpty()
+        // Rising from 400 to 600 crosses above 500
+        assertThat(RuleEvaluator.evaluateLight(rules, LightTransition(400f, 600f))).containsExactly(above)
+        // Rising from 600 to 700 does not cross
+        assertThat(RuleEvaluator.evaluateLight(rules, LightTransition(600f, 700f))).isEmpty()
     }
 }

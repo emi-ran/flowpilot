@@ -7,9 +7,9 @@ import android.content.IntentFilter
 import android.os.Build
 import java.util.concurrent.ConcurrentLinkedQueue
 
-enum class ScreenEvent { ON, OFF }
+enum class ScreenEvent { ON, OFF, UNLOCKED }
 
-/** Receives screen on/off transitions only while automation engine runs; no state is replayed at startup. */
+/** Receives screen on/off and user-unlock transitions only while automation engine runs; no state is replayed at startup. */
 class ScreenStateTracker(private val context: Context) {
     private val events = ConcurrentLinkedQueue<ScreenEvent>()
     private var registered = false
@@ -20,6 +20,7 @@ class ScreenStateTracker(private val context: Context) {
             val event = when (intent.action) {
                 Intent.ACTION_SCREEN_ON -> ScreenEvent.ON
                 Intent.ACTION_SCREEN_OFF -> ScreenEvent.OFF
+                Intent.ACTION_USER_PRESENT -> ScreenEvent.UNLOCKED
                 else -> return
             }
             if (event != lastEvent) {
@@ -34,6 +35,7 @@ class ScreenStateTracker(private val context: Context) {
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_USER_PRESENT)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
         else {

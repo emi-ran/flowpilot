@@ -375,6 +375,10 @@ private fun RuleCard(
                     TriggerEvent.CALL_ENDED -> "Any call"
                     TriggerEvent.DEVICE_FLIPPED_DOWN,
                     TriggerEvent.DEVICE_FLIPPED_UP -> if (item.rule.flipScreenOffDetection) "Screen on & off" else "Screen on only"
+                    TriggerEvent.DEVICE_SHAKE -> "Shake device"
+                    TriggerEvent.DEVICE_UNLOCKED -> "Unlock screen"
+                    TriggerEvent.LIGHT_BELOW,
+                    TriggerEvent.LIGHT_ABOVE -> "Threshold: ${item.rule.lightLux} lx"
                     else -> item.rule.appName.ifBlank { item.rule.appPackage }
                 }
 

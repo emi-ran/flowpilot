@@ -25,9 +25,18 @@ class ActionDispatcher private constructor(
     private val mobileData: MobileDataExecutor,
     private val airplaneMode: AirplaneModeExecutor,
     private val torch: TorchExecutor,
+    private val brightness: BrightnessExecutor,
+    private val lockScreen: LockScreenExecutor,
+    private val forceStop: ForceStopExecutor,
+    private val location: LocationExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
-        listOf(nfc, bluetooth, powerSaver, darkTheme, autoRotate, notification, vibration, sound, soundProfile, mediaVolume, launcher, tts, dnd, clock, webhook, phone, wifi, mobileData, airplaneMode, torch)
+        listOf(
+            nfc, bluetooth, powerSaver, darkTheme, autoRotate, notification,
+            vibration, sound, soundProfile, mediaVolume, launcher, tts, dnd,
+            clock, webhook, phone, wifi, mobileData, airplaneMode, torch,
+            brightness, lockScreen, forceStop, location,
+        )
             .flatMap { e -> e.supportedTypes.map { it to e } }
             .toMap()
     }
@@ -64,6 +73,10 @@ class ActionDispatcher private constructor(
                     MobileDataExecutor(context.applicationContext, ShizukuShell.instance),
                     AirplaneModeExecutor(context.applicationContext, ShizukuShell.instance),
                     TorchExecutor(context.applicationContext),
+                    BrightnessExecutor(context.applicationContext),
+                    LockScreenExecutor(ShizukuShell.instance),
+                    ForceStopExecutor(ShizukuShell.instance),
+                    LocationExecutor(context.applicationContext, ShizukuShell.instance),
                 ).also { instance = it }
             }
     }

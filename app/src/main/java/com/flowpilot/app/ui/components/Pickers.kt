@@ -10,19 +10,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.AirplanemodeActive
-import androidx.compose.material.icons.filled.AirplanemodeInactive
-import androidx.compose.material.icons.filled.BatteryAlert
-import androidx.compose.material.icons.filled.BatteryChargingFull
-import androidx.compose.material.icons.filled.BatteryFull
-import androidx.compose.material.icons.filled.BatterySaver
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Bolt
@@ -280,6 +274,30 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                         iconTint = Color(0xFF80DEEA),
                         keywords = listOf("screen", "display", "sleep", "lock", "off", "dim"),
                     ),
+                    PickerItem(
+                        value = TriggerEvent.DEVICE_UNLOCKED,
+                        title = TriggerEvent.DEVICE_UNLOCKED.label,
+                        subtitle = "When device is unlocked with PIN, fingerprint or face",
+                        icon = Icons.Default.LockOpen,
+                        iconTint = Color(0xFF80CBC4),
+                        keywords = listOf("unlock", "unlocked", "lockscreen", "fingerprint", "pin", "biometric", "face"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.LIGHT_BELOW,
+                        title = TriggerEvent.LIGHT_BELOW.label,
+                        subtitle = "When ambient light falls to or below configured lux",
+                        icon = Icons.Default.LightMode,
+                        iconTint = Color(0xFFFFD54F),
+                        keywords = listOf("light", "dark", "lux", "ambient", "sensor", "below", "dim"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.LIGHT_ABOVE,
+                        title = TriggerEvent.LIGHT_ABOVE.label,
+                        subtitle = "When ambient light rises to or above configured lux",
+                        icon = Icons.Default.LightMode,
+                        iconTint = Color(0xFFFFB74D),
+                        keywords = listOf("light", "bright", "lux", "ambient", "sensor", "above", "sun"),
+                    ),
                 ),
             ),
             PickerCategoryGroup(
@@ -359,6 +377,14 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                         icon = Icons.Default.StayCurrentPortrait,
                         iconTint = Color(0xFFFFAB91),
                         keywords = listOf("flip", "face up", "up", "sensor", "motion", "normal", "lift"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.DEVICE_SHAKE,
+                        title = TriggerEvent.DEVICE_SHAKE.label,
+                        subtitle = "When device is firmly shaken back and forth",
+                        icon = Icons.Default.Vibration,
+                        iconTint = Color(0xFFFF7043),
+                        keywords = listOf("shake", "motion", "accelerometer", "gesture", "movement", "vibrate"),
                     ),
                 ),
             ),
@@ -567,6 +593,14 @@ fun ActionPicker(
                         iconTint = Color(0xFF26A69A),
                         keywords = listOf("webhook", "http", "https", "post", "get", "api", "rest", "ha", "home assistant", "discord", "ntfy", "curl"),
                     ),
+                    PickerItem(
+                        value = ActionType.FORCE_STOP_APP,
+                        title = ActionType.FORCE_STOP_APP.label,
+                        subtitle = "Force terminate a running application (requires Shizuku)",
+                        icon = Icons.Default.Cancel,
+                        iconTint = Color(0xFFEF5350),
+                        keywords = listOf("force stop", "kill", "close", "terminate", "app", "application", "shizuku"),
+                    ),
                 ),
             ),
             PickerCategoryGroup(
@@ -606,6 +640,22 @@ fun ActionPicker(
                         icon = Icons.Default.StayCurrentPortrait,
                         iconTint = Color(0xFF80DEEA),
                         keywords = listOf("rotate", "rotation", "lock rotation", "portrait lock", "orientation", "screen lock", "disable auto rotate"),
+                    ),
+                    PickerItem(
+                        value = ActionType.SET_SCREEN_BRIGHTNESS,
+                        title = ActionType.SET_SCREEN_BRIGHTNESS.label,
+                        subtitle = "Adjust screen brightness level (0% - 100%)",
+                        icon = Icons.Default.BrightnessMedium,
+                        iconTint = Color(0xFFFFD54F),
+                        keywords = listOf("brightness", "screen", "display", "dim", "bright", "level", "percent"),
+                    ),
+                    PickerItem(
+                        value = ActionType.LOCK_SCREEN,
+                        title = ActionType.LOCK_SCREEN.label,
+                        subtitle = "Lock screen and turn off display (requires Shizuku)",
+                        icon = Icons.Default.Lock,
+                        iconTint = Color(0xFFE57373),
+                        keywords = listOf("lock", "screen", "display", "power", "turn off", "sleep", "shizuku"),
                     ),
                     PickerItem(
                         value = ActionType.TORCH_ON,
@@ -663,6 +713,8 @@ fun ActionPicker(
                     PickerItem(ActionType.MOBILE_DATA_OFF, ActionType.MOBILE_DATA_OFF.label, "Turn mobile cellular data off (requires Shizuku)", Icons.Default.SignalCellularOff, Color(0xFFA5D6A7), listOf("mobile data", "data", "cellular", "lte", "5g", "internet", "off", "disable", "shizuku")),
                     PickerItem(ActionType.AIRPLANE_MODE_ON, ActionType.AIRPLANE_MODE_ON.label, "Turn Airplane mode on (requires Shizuku)", Icons.Default.AirplanemodeActive, Color(0xFFFFB74D), listOf("airplane", "flight", "mode", "connectivity", "offline", "on", "enable", "shizuku")),
                     PickerItem(ActionType.AIRPLANE_MODE_OFF, ActionType.AIRPLANE_MODE_OFF.label, "Turn Airplane mode off (requires Shizuku)", Icons.Default.AirplanemodeInactive, Color(0xFFFFCC80), listOf("airplane", "flight", "mode", "connectivity", "online", "off", "disable", "shizuku")),
+                    PickerItem(ActionType.LOCATION_ON, ActionType.LOCATION_ON.label, "Turn Location / GPS services on (requires Shizuku)", Icons.Default.LocationOn, Color(0xFF81C784), listOf("location", "gps", "position", "geo", "on", "enable", "shizuku")),
+                    PickerItem(ActionType.LOCATION_OFF, ActionType.LOCATION_OFF.label, "Turn Location / GPS services off (requires Shizuku)", Icons.Default.LocationOff, Color(0xFFE57373), listOf("location", "gps", "position", "geo", "off", "disable", "shizuku")),
                 ),
             ),
             PickerCategoryGroup(
@@ -986,7 +1038,25 @@ fun <T> ModernChoiceDialog(
                         }
                     }
                 } else {
+                    // Compute the position of the selected item in the flattened list (header + items + spacer)
+                    val initialScrollIndex = remember(filteredGroups) {
+                        var index = 0
+                        for (group in filteredGroups) {
+                            index++ // header item
+                            for (item in group.items) {
+                                if (isSelected(item.value)) {
+                                    return@remember (index - 1).coerceAtLeast(0) // Show section header right above or target card
+                                }
+                                index++
+                            }
+                            index++ // spacer item
+                        }
+                        0
+                    }
+                    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialScrollIndex)
+
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
@@ -1195,7 +1265,11 @@ data class AppDisplayItem(
 )
 
 @Composable
-fun AppPicker(select: (String, String) -> Unit, onDismiss: () -> Unit) {
+fun AppPicker(
+    select: (String, String) -> Unit,
+    selectedPackage: String? = null,
+    onDismiss: () -> Unit,
+) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var apps by remember { mutableStateOf<List<AppDisplayItem>?>(null) }
@@ -1228,6 +1302,16 @@ fun AppPicker(select: (String, String) -> Unit, onDismiss: () -> Unit) {
         if (query.isBlank()) list
         else list.filter {
             it.label.contains(query, ignoreCase = true) || it.packageName.contains(query, ignoreCase = true)
+        }
+    }
+
+    val listState = rememberLazyListState()
+    LaunchedEffect(filtered, isLoading) {
+        if (!isLoading && !selectedPackage.isNullOrBlank() && query.isBlank()) {
+            val targetIndex = filtered.indexOfFirst { it.packageName == selectedPackage }
+            if (targetIndex >= 0) {
+                listState.scrollToItem(targetIndex)
+            }
         }
     }
 
@@ -1284,7 +1368,10 @@ fun AppPicker(select: (String, String) -> Unit, onDismiss: () -> Unit) {
                         )
                     }
                 } else {
-                    LazyColumn(Modifier.weight(1f).padding(horizontal = 20.dp)) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f).padding(horizontal = 20.dp),
+                    ) {
                         items(filtered, key = { it.packageName }) { app ->
                             AppRow(app) { select(app.packageName, app.label) }
                         }

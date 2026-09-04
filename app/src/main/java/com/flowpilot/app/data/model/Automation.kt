@@ -88,7 +88,12 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     AIRPLANE_MODE_ON("Turn Airplane mode on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
     AIRPLANE_MODE_OFF("Turn Airplane mode off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
     TORCH_ON("Turn Flashlight on", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
-    TORCH_OFF("Turn Flashlight off", ActionCategory.DISPLAY, CapabilityRequirement.NONE);
+    TORCH_OFF("Turn Flashlight off", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
+    SET_SCREEN_BRIGHTNESS("Set screen brightness", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
+    LOCK_SCREEN("Lock screen", ActionCategory.DISPLAY, CapabilityRequirement.SHIZUKU),
+    FORCE_STOP_APP("Force stop app", ActionCategory.APPS_LINKS, CapabilityRequirement.SHIZUKU),
+    LOCATION_ON("Turn Location on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    LOCATION_OFF("Turn Location off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU);
 
     companion object {
         fun fromId(id: String): ActionType? = entries.firstOrNull { it.name == id }
@@ -182,7 +187,11 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     CALL_OUTGOING("Outgoing call started", TriggerCategory.PHONE),
     CALL_ENDED("Call ended", TriggerCategory.PHONE),
     DEVICE_FLIPPED_DOWN("Device flipped face down", TriggerCategory.MOTION),
-    DEVICE_FLIPPED_UP("Device flipped face up", TriggerCategory.MOTION);
+    DEVICE_FLIPPED_UP("Device flipped face up", TriggerCategory.MOTION),
+    DEVICE_SHAKE("Device shaken", TriggerCategory.MOTION),
+    DEVICE_UNLOCKED("Device unlocked", TriggerCategory.DISPLAY),
+    LIGHT_BELOW("Ambient light below level", TriggerCategory.DISPLAY),
+    LIGHT_ABOVE("Ambient light above level", TriggerCategory.DISPLAY);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }
@@ -261,6 +270,14 @@ data class Automation(
     val cooldownMinutes: Int = 0,
     /** Whether motion/flip triggers should listen and evaluate even when the device screen is off. */
     val flipScreenOffDetection: Boolean = false,
+    /** Threshold in lux for LIGHT_BELOW / LIGHT_ABOVE triggers. */
+    val lightLux: Int = 10,
+    /** Screen brightness percent (0..100) for SET_SCREEN_BRIGHTNESS action. */
+    val screenBrightnessPercent: Int = 50,
+    /** Target package for FORCE_STOP_APP action. */
+    val forceStopPackage: String = "",
+    /** Cached target app display name for FORCE_STOP_APP action. */
+    val forceStopAppName: String = "",
     val createdAt: Long,
     val lastTriggeredAt: Long = 0L,
 ) {

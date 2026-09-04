@@ -58,6 +58,10 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.DND_ON, ActionType.DND_OFF -> Icons.Default.DoNotDisturb
     ActionType.DARK_THEME_ON, ActionType.DARK_THEME_OFF -> Icons.Default.DarkMode
     ActionType.SOUND_PROFILE_NORMAL, ActionType.SOUND_PROFILE_VIBRATE, ActionType.SOUND_PROFILE_SILENT -> Icons.Default.Notifications
+    ActionType.SET_SCREEN_BRIGHTNESS -> Icons.Default.BrightnessMedium
+    ActionType.LOCK_SCREEN -> Icons.Default.Lock
+    ActionType.FORCE_STOP_APP -> Icons.Default.Cancel
+    ActionType.LOCATION_ON, ActionType.LOCATION_OFF -> Icons.Default.LocationOn
 }
 
 @Composable
@@ -129,6 +133,13 @@ fun ActionCardItem(
     // Phone
     phoneNumber: String = "",
     onPhoneNumberChange: (String) -> Unit = {},
+    // Brightness
+    screenBrightnessPercent: Int = 50,
+    onScreenBrightnessChange: (Int) -> Unit = {},
+    // Force stop app
+    forceStopPackage: String = "",
+    forceStopAppName: String = "",
+    onOpenForceStopAppPicker: () -> Unit = {},
 ) {
     var showDelaySlider by remember { mutableStateOf(delaySeconds > 0) }
 
@@ -619,8 +630,60 @@ fun ActionCardItem(
                         )
                     }
                 }
+                ActionType.SET_SCREEN_BRIGHTNESS -> {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("$screenBrightnessPercent%", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(52.dp))
+                        Slider(
+                            value = screenBrightnessPercent.toFloat(),
+                            onValueChange = { onScreenBrightnessChange(it.toInt()) },
+                            valueRange = 0f..100f,
+                            steps = 0,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
+                        listOf(0 to "Min", 25 to "25%", 50 to "50%", 75 to "75%", 100 to "Max").forEach { (pct, label) ->
+                            FilterChip(
+                                selected = screenBrightnessPercent == pct,
+                                onClick = { onScreenBrightnessChange(pct) },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
+                }
+                ActionType.FORCE_STOP_APP -> {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedCard(
+                        onClick = onOpenForceStopAppPicker,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            if (forceStopPackage.isNotEmpty()) {
+                                AppIconImage(
+                                    packageName = forceStopPackage,
+                                    modifier = Modifier.size(28.dp),
+                                    fallbackIcon = Icons.Default.Cancel,
+                                )
+                            } else {
+                                Icon(Icons.Default.Cancel, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                if (forceStopPackage.isEmpty()) "Tap to choose app to force stop" else "$forceStopAppName ($forceStopPackage)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
                 else -> {
-                    // System toggles (Wi-Fi, Bluetooth, Mobile Data, Flashlight, Airplane Mode, NFC, Battery Saver, Auto-rotate, DND, Dark Theme, Sound Profile)
+                    // System toggles (Wi-Fi, Bluetooth, Mobile Data, Flashlight, Airplane Mode, NFC, Battery Saver, Auto-rotate, DND, Dark Theme, Sound Profile, Lock Screen, Location)
                     Text(
                         "Runs automatically via system services when triggered.",
                         style = MaterialTheme.typography.bodySmall,

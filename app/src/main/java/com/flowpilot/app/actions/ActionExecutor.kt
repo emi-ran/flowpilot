@@ -38,6 +38,8 @@ data class ActionParameters(
     val webhookTimeoutSeconds: Int = 10,
     val webhookTemplateContext: WebhookTemplateContext? = null,
     val phoneNumber: String = "",
+    val screenBrightnessPercent: Int = 50,
+    val forceStopPackage: String = "",
 )
 
 /** A capability-aware executor for one family of system actions. */
