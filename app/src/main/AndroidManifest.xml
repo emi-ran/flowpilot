@@ -203,7 +203,7 @@
         <!-- Home Screen AppWidget for FlowPilot quick control -->
         <receiver
             android:name=".widget.FlowPilotWidgetProvider"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
