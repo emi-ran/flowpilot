@@ -50,6 +50,24 @@ class WebhookExecutorTest {
     }
 
     @Test
+    fun execute_httpUrl_returnsFailureBeforeConnection() {
+        var connectionFactoryCalled = false
+        val executor = WebhookExecutor(connectionFactory = {
+            connectionFactoryCalled = true
+            error("HTTP webhook must not open connection")
+        })
+
+        val result = executor.execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(webhookUrl = "http://example.com/api"),
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.message).contains("must use http or https scheme")
+        assertThat(connectionFactoryCalled).isFalse()
+    }
+
+    @Test
     fun execute_unsupportedMethod_returnsFailure() {
         val executor = WebhookExecutor()
         val result = executor.execute(
