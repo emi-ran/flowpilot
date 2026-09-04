@@ -14,6 +14,7 @@ import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.engine.AutomationService
+import com.flowpilot.app.engine.requiresLocation
 import com.flowpilot.app.permission.CapabilityManager
 import com.flowpilot.app.permission.CapabilityStatus
 import com.flowpilot.app.permission.ShizukuState
@@ -478,7 +479,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun runRuleNow(rule: Automation, callback: (ManualRunResult) -> Unit) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val liveState = getLiveSystemState()
-            val coords = com.flowpilot.app.engine.LocationFetcher.getCoordinates(app)
+            val coords = if (rule.requiresLocation()) {
+                com.flowpilot.app.engine.LocationFetcher.getCoordinates(app)
+            } else {
+                null
+            }
             val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
                 trigger = "MANUAL",
                 timestamp = System.currentTimeMillis(),

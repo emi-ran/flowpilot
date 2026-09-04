@@ -424,7 +424,11 @@ class AutomationEngine(
         smsSender: String? = null,
         smsBody: String? = null,
     ) {
-        val coords = LocationFetcher.getCoordinates(appContext)
+        val coords = if (rules.any { it.requiresLocation() }) {
+            LocationFetcher.getCoordinates(appContext)
+        } else {
+            null
+        }
         val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
             trigger = trigger?.name ?: "",
             timestamp = System.currentTimeMillis(),

@@ -60,7 +60,7 @@ object LocationFetcher {
             if (cachedLocation != null) {
                 val ageMs = now - cachedLocation.time
                 // If cached location is less than 60 seconds old and reasonably accurate, use it immediately
-                if (ageMs < 60_000L && cachedLocation.hasAccuracy() && cachedLocation.accuracy <= 50f) {
+                if (isValidCachedLocation(cachedLocation, now)) {
                     Log.d(TAG, "Using fresh cached location (age: ${ageMs}ms, acc: ${cachedLocation.accuracy}m)")
                     return@withContext cachedLocation.latitude to cachedLocation.longitude
                 }
@@ -77,8 +77,8 @@ object LocationFetcher {
             }
 
             // Step 3: Fall back to best cached location if fresh request timed out
-            if (cachedLocation != null) {
-                Log.d(TAG, "Fresh fix timed out; falling back to cached location")
+            if (cachedLocation != null && isValidCachedLocation(cachedLocation, now)) {
+                Log.d(TAG, "Fresh fix timed out; falling back to valid cached location")
                 return@withContext cachedLocation.latitude to cachedLocation.longitude
             }
 
