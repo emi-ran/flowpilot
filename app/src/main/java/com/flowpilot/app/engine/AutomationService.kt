@@ -114,9 +114,9 @@ class AutomationService : Service() {
             getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
                 .edit().remove(STARTUP_FAILURE_KEY).apply()
             return true
-        } catch (t: Throwable) {
-            reportStartupFailure(this, t)
-            Log.e("AutomationService", "startForegroundCompat failed: ${t.message}", t)
+        } catch (_: Throwable) {
+            reportStartupFailure(this)
+            Log.e("AutomationService", "startForegroundCompat failed")
             return false
         }
     }
@@ -168,10 +168,9 @@ class AutomationService : Service() {
             }
         }
 
-        fun reportStartupFailure(context: Context, failure: Throwable? = null) {
-            val detail = failure?.let { it.javaClass.simpleName + ": " + (it.message ?: "unknown failure") } ?: "startup failed"
+        fun reportStartupFailure(context: Context) {
             context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
-                .edit().putString(STARTUP_FAILURE_KEY, detail).apply()
+                .edit().putString(STARTUP_FAILURE_KEY, "startup failed").apply()
             ensureFailureChannel(context)
             val openIntent = Intent(context, MainActivity::class.java)
             val pendingIntent = PendingIntent.getActivity(
@@ -205,9 +204,9 @@ class AutomationService : Service() {
                     context.startService(intent)
                 }
                 true
-            } catch (t: Throwable) {
+            } catch (_: Throwable) {
                 reportStartupFailure(context)
-                Log.e("AutomationService", "Failed to start AutomationService: ${t.message}", t)
+                Log.e("AutomationService", "Failed to start AutomationService")
                 false
             }
         }
@@ -215,8 +214,8 @@ class AutomationService : Service() {
         fun stop(context: Context) {
             try {
                 context.stopService(Intent(context, AutomationService::class.java))
-            } catch (t: Throwable) {
-                Log.e("AutomationService", "Failed to stop AutomationService: ${t.message}", t)
+            } catch (_: Throwable) {
+                Log.e("AutomationService", "Failed to stop AutomationService")
             }
         }
     }
