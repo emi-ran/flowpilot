@@ -29,8 +29,19 @@ object LocationFetcher {
      * 4. If active fix succeeds within timeout, returns it.
      * 5. If active fix times out, falls back to the best cached location (if any).
      */
-    suspend fun getCoordinates(context: Context, timeoutMs: Long = 5000L): Pair<Double, Double>? = withContext(Dispatchers.IO) {
+    suspend fun getCoordinates(
+        context: Context,
+        timeoutMs: Long = 5000L,
+        isBackgroundExecution: Boolean = false,
+    ): Pair<Double, Double>? = withContext(Dispatchers.IO) {
         try {
+            if (isBackgroundExecution && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.w(TAG, "Background location permission not granted")
+                return@withContext null
+            }
+
             val hasFine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
             val hasCoarse = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
             if (!hasFine && !hasCoarse) {

@@ -425,7 +425,7 @@ class AutomationEngine(
         smsBody: String? = null,
     ) {
         val coords = if (rules.any { it.requiresLocation() }) {
-            LocationFetcher.getCoordinates(appContext)
+            LocationFetcher.getCoordinates(appContext, isBackgroundExecution = true)
         } else {
             null
         }

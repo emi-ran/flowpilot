@@ -3,9 +3,11 @@ package com.flowpilot.app.engine
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -18,6 +20,15 @@ class LocationDependencyTest {
         assertThat(base.copy(actions = listOf(ActionType.HTTP_WEBHOOK), webhookBody = "${'$'}{location.lat}").requiresLocation()).isTrue()
         assertThat(base.copy(actions = listOf(ActionType.SEND_SMS), smsMessage = "${'$'}{locationLat}").requiresLocation()).isTrue()
         assertThat(base.copy(actions = listOf(ActionType.SHOW_NOTIFICATION), notificationBody = "${'$'}{location.lat}").requiresLocation()).isFalse()
+    }
+
+    @Test
+    fun locationFetcher_returnsNullBeforeAccessingLocationManager_withoutBackgroundPermission() = runBlocking {
+        val app = RuntimeEnvironment.getApplication()
+
+        val coordinates = LocationFetcher.getCoordinates(app, isBackgroundExecution = true)
+
+        assertThat(coordinates).isNull()
     }
 
     @Test
