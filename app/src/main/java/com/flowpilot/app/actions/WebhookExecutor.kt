@@ -4,6 +4,8 @@ import android.util.Log
 import com.flowpilot.app.data.model.ActionType
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
+import java.net.Inet6Address
+import java.net.InetAddress
 import java.net.URI
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -14,6 +16,7 @@ import java.nio.charset.StandardCharsets
  */
 class WebhookExecutor(
     private val connectionFactory: (URL) -> HttpURLConnection = { url -> url.openConnection() as HttpURLConnection },
+    private val addressLookup: (String) -> Array<InetAddress> = InetAddress::getAllByName,
 ) : ActionExecutor {
 
     override val supportedTypes: Set<ActionType> = setOf(ActionType.HTTP_WEBHOOK)
@@ -42,6 +45,9 @@ class WebhookExecutor(
         var connection: HttpURLConnection? = null
         return try {
             val url = URI(rawUrl).toURL()
+            validateResolvedAddresses(url.host)
+            // Resolve again immediately before opening connection to narrow DNS-rebinding window.
+            validateResolvedAddresses(url.host)
             connection = connectionFactory(url).apply {
                 requestMethod = method
                 connectTimeout = timeoutMs
@@ -88,7 +94,40 @@ class WebhookExecutor(
         }
     }
 
+    private fun validateResolvedAddresses(host: String) {
+        val addresses = addressLookup(host)
+        if (addresses.isEmpty() || addresses.any { !isPublicAddress(it) }) {
+            throw SecurityException("Webhook URL resolves to a non-public address")
+        }
+    }
+
     companion object {
+        private fun isPublicAddress(address: InetAddress): Boolean {
+            if (address.isAnyLocalAddress || address.isLoopbackAddress || address.isLinkLocalAddress || address.isMulticastAddress || address.isSiteLocalAddress) {
+                return false
+            }
+            val bytes = address.address
+            if (bytes.size == 4) {
+                val first = bytes[0].toInt() and 0xff
+                val second = bytes[1].toInt() and 0xff
+                val third = bytes[2].toInt() and 0xff
+                val fourth = bytes[3].toInt() and 0xff
+                if (first >= 240) return false
+                if (first == 100 && second in 64..127) return false
+                if (first == 100 && second == 100 && third == 100 && fourth == 200) return false
+                if (first == 192 && second == 0 && third == 0) return false
+                if (first == 192 && second == 0 && third == 2) return false
+                if (first == 198 && second in 18..19) return false
+                if (first == 198 && second == 51 && third == 100) return false
+                if (first == 203 && second == 0 && third == 113) return false
+            } else if (address is Inet6Address) {
+                val first = bytes[0].toInt() and 0xff
+                if (first and 0xfe == 0xfc) return false
+                if (address.isIPv4CompatibleAddress) return false
+            }
+            return true
+        }
+
         const val TAG = "FlowPilotWebhook"
         const val MIN_TIMEOUT_SECONDS = 1
         const val MAX_TIMEOUT_SECONDS = 60

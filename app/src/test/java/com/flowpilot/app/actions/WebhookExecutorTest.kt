@@ -9,6 +9,7 @@ import org.robolectric.annotation.Config
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.InetAddress
 import java.net.URL
 import java.nio.charset.StandardCharsets
 
@@ -65,6 +66,46 @@ class WebhookExecutorTest {
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("must use HTTPS scheme")
         assertThat(connectionFactoryCalled).isFalse()
+    }
+
+    @Test
+    fun execute_localhost_privateAndMetadataTargets_areRejectedBeforeConnection() {
+        listOf("127.0.0.1", "10.0.0.1", "169.254.169.254").forEach { addressText ->
+            var connectionFactoryCalled = false
+            val executor = WebhookExecutor(
+                connectionFactory = {
+                    connectionFactoryCalled = true
+                    error("SSRF target must not open connection")
+                },
+                addressLookup = { arrayOf(InetAddress.getByName(addressText)) },
+            )
+
+            val result = executor.execute(
+                ActionType.HTTP_WEBHOOK,
+                ActionParameters(webhookUrl = "https://target.example/webhook"),
+            )
+
+            assertThat(result.success).isFalse()
+            assertThat(result.message).contains("non-public address")
+            assertThat(connectionFactoryCalled).isFalse()
+        }
+    }
+
+    @Test
+    fun execute_publicHttpsTarget_allowsConnection() {
+        val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
+        val executor = WebhookExecutor(
+            connectionFactory = { mockConnection },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        )
+
+        val result = executor.execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(webhookUrl = "https://target.example/webhook"),
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(result.message).contains("status 204")
     }
 
     @Test
