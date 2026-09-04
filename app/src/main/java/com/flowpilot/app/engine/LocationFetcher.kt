@@ -58,10 +58,9 @@ object LocationFetcher {
             val cachedLocation = getBestCachedLocation(lm)
             val now = System.currentTimeMillis()
             if (cachedLocation != null) {
-                val ageMs = now - cachedLocation.time
                 // If cached location is less than 60 seconds old and reasonably accurate, use it immediately
                 if (isValidCachedLocation(cachedLocation, now)) {
-                    Log.d(TAG, "Using fresh cached location (age: ${ageMs}ms, acc: ${cachedLocation.accuracy}m)")
+                    Log.d(TAG, "Using fresh cached location")
                     return@withContext cachedLocation.latitude to cachedLocation.longitude
                 }
             }
@@ -72,7 +71,7 @@ object LocationFetcher {
             }
 
             if (freshLocation != null) {
-                Log.d(TAG, "Obtained fresh location fix: ${freshLocation.latitude}, ${freshLocation.longitude}")
+                Log.d(TAG, "Obtained fresh location fix")
                 return@withContext freshLocation.latitude to freshLocation.longitude
             }
 
@@ -84,11 +83,11 @@ object LocationFetcher {
 
             Log.w(TAG, "Could not obtain any location fix")
             null
-        } catch (se: SecurityException) {
-            Log.e(TAG, "SecurityException while accessing location: ${se.message}")
+        } catch (_: SecurityException) {
+            Log.e(TAG, "Security error while accessing location")
             null
-        } catch (t: Throwable) {
-            Log.e(TAG, "Error fetching location: ${t.message}")
+        } catch (_: Throwable) {
+            Log.e(TAG, "Location fetch failed")
             null
         }
     }
