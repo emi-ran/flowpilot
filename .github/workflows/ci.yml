@@ -31,8 +31,14 @@ jobs:
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
 
+      - name: Run Android lint
+        run: ./gradlew lint --no-daemon
+
       - name: Assemble Debug APK
         run: ./gradlew assembleDebug --no-daemon
+
+      - name: Validate Release APK
+        run: ./gradlew assembleRelease -PreleaseSigningRequired=false --no-daemon
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4

@@ -20,9 +20,27 @@ android {
 
     signingConfigs {
         create("release") {
+            val signingRequired = providers.gradleProperty("releaseSigningRequired")
+                .map(String::toBoolean)
+                .getOrElse(false)
             val keystorePath = System.getenv("KEYSTORE_PATH")
-            if (!keystorePath.isNullOrEmpty() && file(keystorePath).exists()) {
-                storeFile = file(keystorePath)
+            val keystoreFile = keystorePath?.takeIf { it.isNotEmpty() }?.let(::file)
+            if (signingRequired) {
+                require(keystoreFile?.isFile == true) {
+                    "Release signing required but KEYSTORE_PATH is missing or not a file"
+                }
+                require(!System.getenv("KEYSTORE_PASSWORD").isNullOrEmpty()) {
+                    "Release signing required but KEYSTORE_PASSWORD is empty"
+                }
+                require(!System.getenv("KEY_ALIAS").isNullOrEmpty()) {
+                    "Release signing required but KEY_ALIAS is empty"
+                }
+                require(!System.getenv("KEY_PASSWORD").isNullOrEmpty()) {
+                    "Release signing required but KEY_PASSWORD is empty"
+                }
+            }
+            if (keystoreFile?.isFile == true) {
+                storeFile = keystoreFile
                 storePassword = System.getenv("KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("KEY_ALIAS")
                 keyPassword = System.getenv("KEY_PASSWORD")
