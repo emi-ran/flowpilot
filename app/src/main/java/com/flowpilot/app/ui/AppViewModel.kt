@@ -444,7 +444,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             app.startActivity(chooser)
         } catch (e: Exception) {
-            android.util.Log.e("AppViewModel", "shareRule error: ${e.message}", e)
+            android.util.Log.e("AppViewModel", "Unable to share rule backup")
         }
     }
 
@@ -467,7 +467,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             app.startActivity(chooser)
         } catch (e: Exception) {
-            android.util.Log.e("AppViewModel", "shareBackup error: ${e.message}", e)
+            android.util.Log.e("AppViewModel", "Unable to share backup")
         }
     }
 
