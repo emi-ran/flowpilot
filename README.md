@@ -207,6 +207,12 @@ FlowPilot operates on a **zero-trust privacy model**:
 - **Location:** Used strictly locally to read current Wi-Fi SSID and optionally inject coordinates into user-defined Webhooks or SMS replies.
 - **Phone & SMS:** Used only to trigger automations on call states or user-specified SMS text patterns. Phone numbers are masked in all logs and history.
 
+### Distribution and restricted permissions
+
+FlowPilot declares `QUERY_ALL_PACKAGES` because its user-facing App Picker enumerates installed launchable apps for app triggers and app-targeted actions. It declares `RECEIVE_SMS` for incoming SMS triggers and `SEND_SMS` for user-configured direct SMS actions. It declares `ACCESS_BACKGROUND_LOCATION` and `FOREGROUND_SERVICE_LOCATION` so enabled rules can acquire GPS coordinates while automation service runs outside the visible activity; location is not collected continuously when no rule needs it.
+
+These permissions are restricted or policy-sensitive on Google Play. This repository does **not** claim Play compliance or guaranteed approval. Any Play release requires current policy review, required declarations, and Google approval; otherwise distribute through GitHub releases, F-Droid, or sideloading. Users should install only builds from sources they trust.
+
 ---
 
 ## 🤝 Contributing

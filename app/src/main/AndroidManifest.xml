@@ -8,7 +8,8 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
-    <!-- Restricted permission retained: App Picker uses getInstalledApplications() to list launchable apps. -->
+    <!-- Restricted permission: App Picker and app-targeted automations enumerate installed launchable apps.
+         Keep only for this user-facing installed-app selection feature; Play distribution requires policy declaration/review. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
@@ -43,7 +44,8 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- Location permissions for Wi-Fi SSID, triggers, and GPS coordinates in background/foreground. -->
+    <!-- Location permissions: Wi-Fi SSID selection/state and optional GPS coordinates for user rules.
+         Background access is needed only when active automations acquire coordinates while app is not visible. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
@@ -64,11 +66,11 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
 
-    <!-- Restricted permissions retained: incoming SMS receiver and user-configured direct SMS actions use them. -->
+    <!-- Restricted permissions: incoming SMS triggers and user-configured direct SMS actions. -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.SEND_SMS" />
 
-    <!-- Foreground service for the automation engine. -->
+    <!-- Foreground service keeps user-started event monitoring and scheduled automations alive. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
@@ -130,7 +132,7 @@
             android:foregroundServiceType="specialUse|location">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Detects foreground app changes and applies user-configured automations (NFC, battery saver)." />
+                android:value="Runs user-started automation monitoring and scheduled rules, including foreground-app transitions, broadcasts, sensors, NFC, calls, SMS, and optional background GPS acquisition." />
         </service>
 
         <!-- Restart engine after reboot. -->
@@ -208,12 +210,14 @@
             android:label="@string/widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.flowpilot.app.widget.ACTION_TOGGLE_ENGINE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_flowpilot_control_info" />
         </receiver>
+        <receiver
+            android:name=".widget.FlowPilotWidgetToggleReceiver"
+            android:exported="false" />
 
     </application>
 
