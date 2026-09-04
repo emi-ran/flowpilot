@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -105,6 +106,12 @@ fun HomeScreen(
                             selectedRuleIds = if (selectedRuleIds.size == rules.size) emptySet() else rules.map { it.rule.id }.toSet()
                         }) {
                             Text(if (selectedRuleIds.size == rules.size) stringResource(R.string.btn_deselect_all) else stringResource(R.string.btn_select_all))
+                        }
+                        IconButton({
+                            val selected = rules.filter { it.rule.id in selectedRuleIds }.map { it.rule }
+                            vm.shareBackup(selected)
+                        }) {
+                            Icon(Icons.Default.Share, stringResource(R.string.btn_share))
                         }
                         IconButton({ showDeleteConfirmDialog = true }) {
                             Icon(Icons.Default.Delete, stringResource(R.string.btn_delete_selected), tint = MaterialTheme.colorScheme.error)

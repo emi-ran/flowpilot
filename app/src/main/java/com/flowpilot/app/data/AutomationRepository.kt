@@ -54,6 +54,7 @@ class AutomationRepository(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[engineKey] = enabled
         }
+        notifyWidgets()
     }
 
     val automations: Flow<List<Automation>> = context.dataStore.data.map { prefs ->
@@ -248,6 +249,7 @@ class AutomationRepository(private val context: Context) {
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
         cleanupOrphanTtsFiles()
+        notifyWidgets()
         return rule
     }
 
@@ -261,6 +263,7 @@ class AutomationRepository(private val context: Context) {
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
         cleanupOrphanTtsFiles()
+        notifyWidgets()
     }
 
     suspend fun patchLastTriggeredAt(id: String, at: Long) {
@@ -283,6 +286,7 @@ class AutomationRepository(private val context: Context) {
             }
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
+        notifyWidgets()
     }
 
     suspend fun delete(id: String) {
@@ -292,6 +296,7 @@ class AutomationRepository(private val context: Context) {
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
         cleanupOrphanTtsFiles()
+        notifyWidgets()
     }
 
     suspend fun deleteMany(ids: Set<String>) {
@@ -302,6 +307,50 @@ class AutomationRepository(private val context: Context) {
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
         cleanupOrphanTtsFiles()
+        notifyWidgets()
+    }
+
+    suspend fun importAutomations(
+        imported: List<Automation>,
+        strategy: com.flowpilot.app.data.backup.ImportStrategy,
+    ): Int {
+        if (imported.isEmpty()) return 0
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
+            val finalRules = when (strategy) {
+                com.flowpilot.app.data.backup.ImportStrategy.MERGE -> {
+                    val remapped = imported.map { rule ->
+                        rule.copy(
+                            id = UUID.randomUUID().toString(),
+                            createdAt = System.currentTimeMillis(),
+                        ).withEncryptedSecrets()
+                    }
+                    current.map { it.withEncryptedSecrets() } + remapped
+                }
+                com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL -> {
+                    imported.map { it.withEncryptedSecrets() }
+                }
+            }
+            prefs[key] = json.encodeToString(listSerializer, finalRules)
+        }
+        cleanupOrphanTtsFiles()
+        notifyWidgets()
+        return imported.size
+    }
+
+    suspend fun replaceAll(rules: List<Automation>) {
+        context.dataStore.edit { prefs ->
+            val encrypted = rules.map { it.withEncryptedSecrets() }
+            prefs[key] = json.encodeToString(listSerializer, encrypted)
+        }
+        cleanupOrphanTtsFiles()
+        notifyWidgets()
+    }
+
+    private fun notifyWidgets() {
+        try {
+            com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(context)
+        } catch (_: Throwable) {}
     }
 
     private fun safeDecode(raw: String): List<Automation> = try {

@@ -29,6 +29,7 @@ class AutomationService : Service() {
         createChannel()
         startForegroundCompat()
         engine = AutomationEngine(this).also { it.start() }
+        com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -37,6 +38,7 @@ class AutomationService : Service() {
         if (engine?.running != true) {
             engine = AutomationEngine(this).also { it.start() }
         }
+        com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
         return START_STICKY
     }
 
@@ -52,6 +54,7 @@ class AutomationService : Service() {
     override fun onDestroy() {
         engine?.stop()
         engine = null
+        com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
         super.onDestroy()
     }
 

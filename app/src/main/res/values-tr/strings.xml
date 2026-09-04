@@ -581,4 +581,40 @@
     <string name="bluetooth_unavailable">Bu cihazda Bluetooth kullanılamıyor.</string>
     <string name="bluetooth_no_devices">Eşleşmiş Bluetooth cihazı bulunamadı. Android Bluetooth ayarlarından bir cihaz eşleştirip buraya dönün. FlowPilot cihaz taraması yapmaz.</string>
     <string name="btn_done">Tamam</string>
+
+    <!-- Backup, Export, Import & Share -->
+    <string name="settings_backup_title">Yedekleme &amp; Geri Yükleme</string>
+    <string name="settings_backup_subtitle">Otomasyon kurallarınızı yedekleyin, içe aktarın veya paylaşın</string>
+    <string name="backup_btn_export">Yedekle (Dışa Aktar)</string>
+    <string name="backup_btn_import">Geri Yükle (İçe Aktar)</string>
+    <string name="backup_btn_share_all">Tüm kuralları paylaş</string>
+    <string name="backup_export_success">%1$d otomasyon dışa aktarıldı</string>
+    <string name="backup_import_dialog_title">Otomasyonları İçe Aktar</string>
+    <string name="backup_import_dialog_desc">Seçilen dosyada %1$d otomasyon bulundu.\n\nNasıl içe aktarmak istersiniz?</string>
+    <string name="backup_import_strategy_merge">Mevcutlara ekle (Birleştir)</string>
+    <string name="backup_import_strategy_merge_desc">Mevcut kuralları korur, içe aktarılanları yeni kimliklerle ekler</string>
+    <string name="backup_import_strategy_replace">Tüm kuralları değiştir (Sıfırla)</string>
+    <string name="backup_import_strategy_replace_desc">Mevcut kuralları siler ve yalnızca içe aktarılanları geri yükler</string>
+    <string name="backup_import_success">%1$d otomasyon başarıyla içe aktarıldı</string>
+    <string name="backup_import_empty">Dosyada geçerli otomasyon kuralı bulunamadı</string>
+    <string name="backup_import_error">İçe aktarılamadı: %1$s</string>
+    <string name="backup_share_rule_title">Otomasyonu paylaş</string>
+    <string name="backup_share_rule_subject">FlowPilot Kuralı: %1$s</string>
+    <string name="backup_share_all_subject">FlowPilot Otomasyon Yedeği (%1$d kural)</string>
+    <string name="btn_share">Paylaş</string>
+    <string name="btn_export_selected">Seçilenleri dışa aktar (%1$d)</string>
+
+    <!-- Quick Settings Tile -->
+    <string name="tile_engine_name">FlowPilot</string>
+    <string name="tile_status_active">%1$d aktif</string>
+    <string name="tile_status_paused">Duraklatıldı</string>
+
+    <!-- Home Screen Widget -->
+    <string name="widget_name">FlowPilot Hızlı Kontrol</string>
+    <string name="widget_desc">Otomasyon motorunu açıp kapatın ve durumu izleyin</string>
+    <string name="widget_engine_active">Etkin</string>
+    <string name="widget_engine_paused">Duraklatıldı</string>
+    <string name="widget_active_count">%2$d kuraldan %1$d aktif</string>
+    <string name="widget_btn_toggle">Motoru Aç/Kapat</string>
+    <string name="widget_btn_open">FlowPilot\'ı Aç</string>
 </resources>

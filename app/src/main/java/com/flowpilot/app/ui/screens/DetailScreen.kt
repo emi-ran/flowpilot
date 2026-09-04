@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -370,6 +371,76 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 title = { Text(stringResource(R.string.edit_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            val currentFormRule = initialRule.copy(
+                                name = name.ifBlank { initialRule.name },
+                                triggerEvent = event,
+                                appPackage = pkg,
+                                appName = appName,
+                                scheduledMinute = scheduledMinute,
+                                scheduledDays = scheduledDays,
+                                batteryLevel = batteryLevel,
+                                wifiSsid = wifiSsid,
+                                bluetoothDeviceAddress = bluetoothDeviceAddress,
+                                bluetoothDeviceName = bluetoothDeviceName,
+                                nfcTagId = nfcTagId.trim(),
+                                flipScreenOffDetection = flipScreenOffDetection,
+                                notificationAppPackage = notificationAppPackage,
+                                notificationAppName = notificationAppName,
+                                notificationKeyword = notificationKeyword,
+                                conditions = conditions,
+                                notificationTitle = notificationTitle,
+                                notificationBody = notificationBody,
+                                vibrationPattern = vibrationPattern,
+                                vibrationDurationMs = vibrationDurationMs,
+                                vibrationAmplitude = vibrationAmplitude,
+                                mediaVolumePercent = mediaVolumePercent,
+                                soundPreset = soundPreset,
+                                soundUri = soundUri,
+                                soundName = soundName,
+                                soundDurationMs = soundDurationMs,
+                                launchPackage = launchPackage,
+                                launchAppName = launchAppName,
+                                url = url,
+                                alarmHour = alarmHour,
+                                alarmMinute = alarmMinute,
+                                alarmMessage = alarmMessage,
+                                timerDurationSeconds = timerDurationSeconds,
+                                timerMessage = timerMessage,
+                                cooldownMinutes = cooldownMinutes,
+                                webhookMethod = webhookMethod,
+                                webhookUrl = webhookUrl,
+                                webhookHeaders = webhookHeaders,
+                                webhookBody = webhookBody,
+                                webhookTimeoutSeconds = webhookTimeoutSeconds,
+                                ttsText = ttsText,
+                                ttsVoiceName = ttsVoiceName,
+                                ttsSpeechRate = ttsSpeechRate,
+                                ttsAudioFileName = ttsAudioFileName,
+                                phoneNumber = phoneNumber.trim(),
+                                smsSenderFilter = smsSenderFilter.trim(),
+                                smsMatchMode = smsMatchMode,
+                                smsKeyword = smsKeyword.trim(),
+                                smsRecipient = smsRecipient.trim(),
+                                smsMessage = smsMessage,
+                                lightLux = lightLux,
+                                screenBrightnessPercent = screenBrightnessPercent,
+                                forceStopPackage = forceStopPackage,
+                                forceStopAppName = forceStopAppName,
+                                action = actions.firstOrNull() ?: initialRule.action,
+                                actions = actions,
+                                actionDelays = actions.indices.map { actionDelays.getOrElse(it) { 0 } },
+                            )
+                            vm.shareRule(currentFormRule)
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Share,
+                            stringResource(R.string.btn_share),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     IconButton(
                         onClick = {
                             if (actions.isNotEmpty()) {

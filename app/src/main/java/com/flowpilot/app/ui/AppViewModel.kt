@@ -2,10 +2,12 @@ package com.flowpilot.app.ui
 
 import android.Manifest
 import android.app.Application
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.flowpilot.app.R
 import com.flowpilot.app.actions.ShizukuShell
 import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.data.model.ActionExecutionRecord
@@ -381,6 +383,82 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateEngineRunning(value: Boolean) {
         (engineRunning as MutableStateFlow).value = value
+    }
+
+    fun exportBackup(rules: List<Automation>? = null): String {
+        val targets = rules ?: automations.value.map { it.rule }
+        return com.flowpilot.app.data.backup.BackupManager.exportToString(targets)
+    }
+
+    fun exportSingleRule(rule: Automation): String {
+        return com.flowpilot.app.data.backup.BackupManager.exportSingleToString(rule)
+    }
+
+    fun importAutomations(
+        jsonString: String,
+        strategy: com.flowpilot.app.data.backup.ImportStrategy,
+        onResult: (Result<Int>) -> Unit,
+    ) {
+        viewModelScope.launch {
+            val parseResult = com.flowpilot.app.data.backup.BackupManager.parseImport(jsonString)
+            if (parseResult.isFailure) {
+                onResult(Result.failure(parseResult.exceptionOrNull() ?: Exception("Unknown error")))
+                return@launch
+            }
+            val importedRules = parseResult.getOrNull() ?: emptyList()
+            if (importedRules.isEmpty()) {
+                onResult(Result.failure(Exception("No automations found in backup")))
+                return@launch
+            }
+            val count = repository.importAutomations(importedRules, strategy)
+            refreshPermissions()
+            onResult(Result.success(count))
+        }
+    }
+
+    fun shareRule(rule: Automation) {
+        try {
+            val content = exportSingleRule(rule)
+            val fileName = com.flowpilot.app.data.backup.BackupManager.generateRuleFileName(rule.name)
+            val uri = com.flowpilot.app.data.backup.BackupManager.prepareShareFile(app, fileName, content)
+
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/json"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, app.getString(R.string.backup_share_rule_subject, rule.name))
+                putExtra(Intent.EXTRA_TEXT, content)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val chooser = Intent.createChooser(intent, app.getString(R.string.backup_share_rule_title)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            app.startActivity(chooser)
+        } catch (e: Exception) {
+            android.util.Log.e("AppViewModel", "shareRule error: ${e.message}", e)
+        }
+    }
+
+    fun shareBackup(rules: List<Automation>? = null) {
+        try {
+            val targets = rules ?: automations.value.map { it.rule }
+            val content = exportBackup(targets)
+            val fileName = com.flowpilot.app.data.backup.BackupManager.generateBackupFileName()
+            val uri = com.flowpilot.app.data.backup.BackupManager.prepareShareFile(app, fileName, content)
+
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/json"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, app.getString(R.string.backup_share_all_subject, targets.size))
+                putExtra(Intent.EXTRA_TEXT, content)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val chooser = Intent.createChooser(intent, app.getString(R.string.settings_backup_title)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            app.startActivity(chooser)
+        } catch (e: Exception) {
+            android.util.Log.e("AppViewModel", "shareBackup error: ${e.message}", e)
+        }
     }
 
     /**

@@ -581,4 +581,40 @@
     <string name="bluetooth_unavailable">Bluetooth is unavailable on this device.</string>
     <string name="bluetooth_no_devices">No bonded Bluetooth devices found. Pair a device in Android Bluetooth settings, then return here. FlowPilot does not scan for devices.</string>
     <string name="btn_done">Done</string>
+
+    <!-- Backup, Export, Import & Share -->
+    <string name="settings_backup_title">Backup &amp; Restore</string>
+    <string name="settings_backup_subtitle">Export, import or share your automation rules</string>
+    <string name="backup_btn_export">Export backup</string>
+    <string name="backup_btn_import">Import backup</string>
+    <string name="backup_btn_share_all">Share all rules</string>
+    <string name="backup_export_success">Exported %1$d automations</string>
+    <string name="backup_import_dialog_title">Import Automations</string>
+    <string name="backup_import_dialog_desc">Found %1$d automation(s) in the selected file.\n\nHow would you like to import them?</string>
+    <string name="backup_import_strategy_merge">Merge with existing</string>
+    <string name="backup_import_strategy_merge_desc">Keep current rules and add imported ones with new IDs</string>
+    <string name="backup_import_strategy_replace">Replace all rules</string>
+    <string name="backup_import_strategy_replace_desc">Erase current rules and restore only the imported ones</string>
+    <string name="backup_import_success">Successfully imported %1$d automation(s)</string>
+    <string name="backup_import_empty">No valid automations found in file</string>
+    <string name="backup_import_error">Failed to import: %1$s</string>
+    <string name="backup_share_rule_title">Share automation</string>
+    <string name="backup_share_rule_subject">FlowPilot Rule: %1$s</string>
+    <string name="backup_share_all_subject">FlowPilot Automations Backup (%1$d rules)</string>
+    <string name="btn_share">Share</string>
+    <string name="btn_export_selected">Export selected (%1$d)</string>
+
+    <!-- Quick Settings Tile -->
+    <string name="tile_engine_name">FlowPilot</string>
+    <string name="tile_status_active">%1$d active</string>
+    <string name="tile_status_paused">Paused</string>
+
+    <!-- Home Screen Widget -->
+    <string name="widget_name">FlowPilot Quick Control</string>
+    <string name="widget_desc">Pause or resume automation engine and view status</string>
+    <string name="widget_engine_active">Active</string>
+    <string name="widget_engine_paused">Paused</string>
+    <string name="widget_active_count">%1$d of %2$d active</string>
+    <string name="widget_btn_toggle">Toggle Engine</string>
+    <string name="widget_btn_open">Open FlowPilot</string>
 </resources>
