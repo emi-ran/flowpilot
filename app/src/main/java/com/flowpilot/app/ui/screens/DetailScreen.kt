@@ -135,6 +135,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var forceStopPackage by remember(initialRule.id) { mutableStateOf(initialRule.forceStopPackage) }
     var forceStopAppName by remember(initialRule.id) { mutableStateOf(initialRule.forceStopAppName) }
     var showForceStopApps by remember { mutableStateOf(false) }
+    var smsSenderFilter by remember(initialRule.id) { mutableStateOf(initialRule.smsSenderFilter) }
+    var smsMatchMode by remember(initialRule.id) { mutableStateOf(initialRule.smsMatchMode) }
+    var smsKeyword by remember(initialRule.id) { mutableStateOf(initialRule.smsKeyword) }
+    var smsRecipient by remember(initialRule.id) { mutableStateOf(initialRule.smsRecipient) }
+    var smsMessage by remember(initialRule.id) { mutableStateOf(initialRule.smsMessage) }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActions.distinct()) }
     var actionDelays by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActionDelays) }
@@ -282,6 +287,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                         ttsSpeechRate = ttsSpeechRate,
                         ttsAudioFileName = ttsAudioFileName,
                         phoneNumber = phoneNumber.trim(),
+                        smsSenderFilter = smsSenderFilter.trim(),
+                        smsMatchMode = smsMatchMode,
+                        smsKeyword = smsKeyword.trim(),
+                        smsRecipient = smsRecipient.trim(),
+                        smsMessage = smsMessage,
                         lightLux = lightLux,
                         screenBrightnessPercent = screenBrightnessPercent,
                         forceStopPackage = forceStopPackage,
@@ -417,6 +427,12 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 onFlipScreenOffChange = { flipScreenOffDetection = it },
                 lightLux = lightLux,
                 onLightLuxChange = { lightLux = it },
+                smsSenderFilter = smsSenderFilter,
+                onSmsSenderFilterChange = { smsSenderFilter = it },
+                smsMatchMode = smsMatchMode,
+                onSmsMatchModeChange = { smsMatchMode = it },
+                smsKeyword = smsKeyword,
+                onSmsKeywordChange = { smsKeyword = it },
             )
 
             Text(
@@ -560,6 +576,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                         forceStopAppName = forceStopAppName,
                         forceStopPackage = forceStopPackage,
                         onOpenForceStopAppPicker = { showForceStopApps = true },
+                        // SMS
+                        smsRecipient = smsRecipient,
+                        onSmsRecipientChange = { smsRecipient = it },
+                        smsMessage = smsMessage,
+                        onSmsMessageChange = { smsMessage = it },
                     )
                 }
             }
@@ -727,6 +748,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 webhookBody = webhookBody,
                                 webhookTimeoutSeconds = webhookTimeoutSeconds,
                                 phoneNumber = phoneNumber.trim(),
+                                smsSenderFilter = smsSenderFilter.trim(),
+                                smsMatchMode = smsMatchMode,
+                                smsKeyword = smsKeyword.trim(),
+                                smsRecipient = smsRecipient.trim(),
+                                smsMessage = smsMessage,
                                 lightLux = lightLux,
                                 screenBrightnessPercent = screenBrightnessPercent,
                                 forceStopPackage = forceStopPackage,
@@ -753,6 +779,8 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || (ttsAudioFileName.isNotEmpty() && ttsManager.getCacheFile(ttsAudioFileName)?.exists() == true && ttsAudioFileName == ttsManager.computeCacheFileName(initialRule.id, ttsText.trim(), ttsVoiceName, ttsSpeechRate))) &&
                             (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
+                            (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
+                            (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
                             actions.isNotEmpty(),
                 ) {
                     Text("Save changes")

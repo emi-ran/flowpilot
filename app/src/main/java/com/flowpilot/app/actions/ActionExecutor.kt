@@ -40,6 +40,8 @@ data class ActionParameters(
     val phoneNumber: String = "",
     val screenBrightnessPercent: Int = 50,
     val forceStopPackage: String = "",
+    val smsRecipient: String = "",
+    val smsMessage: String = "",
 )
 
 /** A capability-aware executor for one family of system actions. */

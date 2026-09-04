@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.flowpilot.app.data.model.SmsMatchMode
 import com.flowpilot.app.data.model.TriggerEvent
 
 fun triggerIcon(event: TriggerEvent): ImageVector = when (event) {
@@ -43,6 +44,7 @@ fun triggerIcon(event: TriggerEvent): ImageVector = when (event) {
     TriggerEvent.DEVICE_SHAKE -> Icons.Default.Vibration
     TriggerEvent.DEVICE_UNLOCKED -> Icons.Default.LockOpen
     TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> Icons.Default.LightMode
+    TriggerEvent.SMS_RECEIVED -> Icons.Default.Sms
 }
 
 @Composable
@@ -84,6 +86,13 @@ fun TriggerCardItem(
     // Light
     lightLux: Int = 10,
     onLightLuxChange: (Int) -> Unit = {},
+    // SMS
+    smsSenderFilter: String = "",
+    onSmsSenderFilterChange: (String) -> Unit = {},
+    smsMatchMode: com.flowpilot.app.data.model.SmsMatchMode = com.flowpilot.app.data.model.SmsMatchMode.CONTAINS,
+    onSmsMatchModeChange: (com.flowpilot.app.data.model.SmsMatchMode) -> Unit = {},
+    smsKeyword: String = "",
+    onSmsKeywordChange: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     var liveAmbientLux by remember { mutableStateOf<Float?>(null) }
@@ -180,6 +189,17 @@ fun TriggerCardItem(
                         TriggerEvent.DEVICE_UNLOCKED -> "When device is unlocked"
                         TriggerEvent.LIGHT_BELOW -> "Ambient light drops below $lightLux lx"
                         TriggerEvent.LIGHT_ABOVE -> "Ambient light rises above $lightLux lx"
+                        TriggerEvent.SMS_RECEIVED -> {
+                            val sender = if (smsSenderFilter.isBlank()) "Any sender" else smsSenderFilter
+                            val filterDesc = when (smsMatchMode) {
+                                SmsMatchMode.ANY -> "any SMS"
+                                SmsMatchMode.CONTAINS -> "contains \"$smsKeyword\""
+                                SmsMatchMode.EQUALS -> "equals \"$smsKeyword\""
+                                SmsMatchMode.STARTS_WITH -> "starts with \"$smsKeyword\""
+                                SmsMatchMode.REGEX -> "regex \"$smsKeyword\""
+                            }
+                            "$sender • $filterDesc"
+                        }
                     }
                     Text(
                         subtitle,
@@ -476,6 +496,71 @@ fun TriggerCardItem(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                TriggerEvent.SMS_RECEIVED -> {
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = smsSenderFilter,
+                        onValueChange = onSmsSenderFilterChange,
+                        label = { Text("Sender filter (optional)") },
+                        placeholder = { Text("e.g. +90555... or leave blank for any") },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Phone, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Message Match Mode",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        com.flowpilot.app.data.model.SmsMatchMode.entries.forEach { mode ->
+                            FilterChip(
+                                selected = smsMatchMode == mode,
+                                onClick = { onSmsMatchModeChange(mode) },
+                                label = { Text(mode.label, style = MaterialTheme.typography.bodySmall) },
+                                shape = RoundedCornerShape(8.dp),
+                            )
+                        }
+                    }
+                    if (smsMatchMode != com.flowpilot.app.data.model.SmsMatchMode.ANY) {
+                        Spacer(Modifier.height(10.dp))
+                        OutlinedTextField(
+                            value = smsKeyword,
+                            onValueChange = onSmsKeywordChange,
+                            label = {
+                                Text(
+                                    when (smsMatchMode) {
+                                        com.flowpilot.app.data.model.SmsMatchMode.EQUALS -> "Exact message text"
+                                        com.flowpilot.app.data.model.SmsMatchMode.STARTS_WITH -> "Prefix keyword"
+                                        com.flowpilot.app.data.model.SmsMatchMode.REGEX -> "Regular expression pattern"
+                                        else -> "Keyword or phrase"
+                                    }
+                                )
+                            },
+                            placeholder = {
+                                Text(
+                                    when (smsMatchMode) {
+                                        com.flowpilot.app.data.model.SmsMatchMode.EQUALS -> "e.g. NEREDESIN"
+                                        com.flowpilot.app.data.model.SmsMatchMode.STARTS_WITH -> "e.g. KOD:"
+                                        com.flowpilot.app.data.model.SmsMatchMode.REGEX -> """e.g. \b\d{4,6}\b"""
+                                        else -> "e.g. ACIL or Onay Kodu"
+                                    }
+                                )
+                            },
+                            singleLine = true,
+                            leadingIcon = { Icon(Icons.Default.TextSnippet, null) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                    }
                 }
                 else -> {
                     // Triggers with no extra configuration

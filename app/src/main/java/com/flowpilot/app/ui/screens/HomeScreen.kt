@@ -379,6 +379,11 @@ private fun RuleCard(
                     TriggerEvent.DEVICE_UNLOCKED -> "Unlock screen"
                     TriggerEvent.LIGHT_BELOW,
                     TriggerEvent.LIGHT_ABOVE -> "Threshold: ${item.rule.lightLux} lx"
+                    TriggerEvent.SMS_RECEIVED -> {
+                        val sender = if (item.rule.smsSenderFilter.isBlank()) "Any sender" else item.rule.smsSenderFilter
+                        val filter = if (item.rule.smsKeyword.isNotBlank()) " · \"${item.rule.smsKeyword}\"" else ""
+                        "$sender$filter"
+                    }
                     else -> item.rule.appName.ifBlank { item.rule.appPackage }
                 }
 

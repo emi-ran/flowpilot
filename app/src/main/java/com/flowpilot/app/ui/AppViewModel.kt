@@ -55,6 +55,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasBluetoothConnectPermission = MutableStateFlow(false)
     val hasReadPhoneStatePermission = MutableStateFlow(false)
     val hasCallPhonePermission = MutableStateFlow(false)
+    val hasSendSmsPermission = MutableStateFlow(false)
+    val hasReceiveSmsPermission = MutableStateFlow(false)
     val hasNfcHardware = MutableStateFlow(false)
     val isNfcEnabled = MutableStateFlow(false)
     val ignoresBatteryOptimizations = MutableStateFlow(false)
@@ -154,6 +156,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         hasBluetoothConnectPermission.value = c.hasBluetoothConnectPermission()
         hasReadPhoneStatePermission.value = c.hasReadPhoneStatePermission()
         hasCallPhonePermission.value = c.hasCallPhonePermission()
+        hasSendSmsPermission.value = c.hasSendSmsPermission()
+        hasReceiveSmsPermission.value = c.hasReceiveSmsPermission()
         hasNfcHardware.value = c.hasNfcHardware()
         isNfcEnabled.value = c.isNfcEnabled()
         ignoresBatteryOptimizations.value = c.isIgnoringBatteryOptimizations()
@@ -247,6 +251,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         screenBrightnessPercent: Int = 50,
         forceStopPackage: String = "",
         forceStopAppName: String = "",
+        smsSenderFilter: String = "",
+        smsMatchMode: com.flowpilot.app.data.model.SmsMatchMode = com.flowpilot.app.data.model.SmsMatchMode.CONTAINS,
+        smsKeyword: String = "",
+        smsRecipient: String = "",
+        smsMessage: String = "",
         ruleId: String = UUID.randomUUID().toString(),
     ) {
         viewModelScope.launch {
@@ -298,6 +307,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 webhookBody = webhookBody,
                 webhookTimeoutSeconds = webhookTimeoutSeconds,
                 phoneNumber = phoneNumber,
+                smsSenderFilter = smsSenderFilter,
+                smsMatchMode = smsMatchMode,
+                smsKeyword = smsKeyword,
+                smsRecipient = smsRecipient,
+                smsMessage = smsMessage,
                 lightLux = lightLux,
                 screenBrightnessPercent = screenBrightnessPercent,
                 forceStopPackage = forceStopPackage,
@@ -400,6 +414,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 phoneNumber = rule.phoneNumber,
                 screenBrightnessPercent = rule.screenBrightnessPercent,
                 forceStopPackage = rule.forceStopPackage,
+                smsRecipient = rule.smsRecipient,
+                smsMessage = rule.smsMessage,
             )
             val dispatcher = com.flowpilot.app.actions.ActionDispatcher.get(app)
             var successCount = 0

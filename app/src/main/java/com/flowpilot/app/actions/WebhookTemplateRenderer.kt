@@ -20,16 +20,31 @@ data class WebhookTemplateContext(
     val batteryPercent: Int? = null,
     val isCharging: Boolean? = null,
     val wifiSsid: String? = null,
+    val smsSender: String? = null,
+    val smsBody: String? = null,
+    val smsOtp: String? = null,
+    val locationLat: Double? = null,
+    val locationLng: Double? = null,
 )
 
 /**
- * Pure template renderer for Webhook headers and body.
+ * Pure template renderer for Webhook and SMS parameters.
  * Substitutes supported `${placeholder}` tokens with live context values.
+ * Supports both dot notation (e.g. `${sms.sender}`, `${location.lat}`) and camelCase.
  * Unknown tokens are left unchanged. No recursive rendering.
  */
 object WebhookTemplateRenderer {
 
-    private val PLACEHOLDER_REGEX = Regex("""\$\{([a-zA-Z0-9_]+)\}""")
+    private val PLACEHOLDER_REGEX = Regex("""\$\{([a-zA-Z0-9_.]+)\}""")
+    private val OTP_REGEX = Regex("""\b(\d{4,8})\b""")
+
+    /**
+     * Extracts an OTP or verification code (4-8 consecutive digits) from an SMS text message body.
+     */
+    fun extractOtp(body: String?): String? {
+        if (body.isNullOrBlank()) return null
+        return OTP_REGEX.find(body)?.groupValues?.get(1)
+    }
 
     fun render(template: String, context: WebhookTemplateContext?): String {
         if (context == null || template.isEmpty() || !template.contains("\${")) {
@@ -41,10 +56,15 @@ object WebhookTemplateRenderer {
             when (key) {
                 "time" -> context.timeProvider()
                 "timestamp" -> context.timestamp.toString()
-                "batteryPercent" -> context.batteryPercent?.toString() ?: ""
+                "batteryPercent", "battery.percent" -> context.batteryPercent?.toString() ?: ""
                 "isCharging" -> context.isCharging?.toString() ?: ""
                 "wifiSsid" -> context.wifiSsid ?: ""
                 "trigger" -> context.trigger
+                "smsSender", "sms.sender" -> context.smsSender ?: ""
+                "smsBody", "sms.body" -> context.smsBody ?: ""
+                "smsOtp", "sms.otp" -> context.smsOtp ?: (extractOtp(context.smsBody) ?: "")
+                "locationLat", "location.lat" -> context.locationLat?.let { String.format(java.util.Locale.US, "%.6f", it) } ?: ""
+                "locationLng", "location.lng" -> context.locationLng?.let { String.format(java.util.Locale.US, "%.6f", it) } ?: ""
                 else -> matchResult.value // Unknown/unsupported token left unchanged
             }
         }

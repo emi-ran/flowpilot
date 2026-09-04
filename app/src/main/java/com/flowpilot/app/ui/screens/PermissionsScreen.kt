@@ -46,6 +46,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val bluetoothConnect by vm.hasBluetoothConnectPermission.collectAsState()
     val readPhoneState by vm.hasReadPhoneStatePermission.collectAsState()
     val callPhone by vm.hasCallPhonePermission.collectAsState()
+    val sendSms by vm.hasSendSmsPermission.collectAsState()
+    val receiveSms by vm.hasReceiveSmsPermission.collectAsState()
     val hasNfcHardware by vm.hasNfcHardware.collectAsState()
     val isNfcEnabled by vm.isNfcEnabled.collectAsState()
     val ignoresBatteryOptimizations by vm.ignoresBatteryOptimizations.collectAsState()
@@ -72,6 +74,8 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val bluetoothLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
     val phoneStateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
     val callPhoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
+    val receiveSmsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
+    val sendSmsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.refreshPermissions() }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -103,6 +107,20 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 callPhone,
             ) {
                 callPhoneLauncher.launch(Manifest.permission.CALL_PHONE)
+            }
+            PermissionCard(
+                "Receive SMS messages",
+                "Required for incoming SMS triggers to detect incoming messages, filter senders, match verification codes, and trigger automations.",
+                receiveSms,
+            ) {
+                receiveSmsLauncher.launch(Manifest.permission.RECEIVE_SMS)
+            }
+            PermissionCard(
+                "Send SMS messages",
+                "Required for the Send SMS action to send automated background SMS text messages directly without manual app confirmation.",
+                sendSms,
+            ) {
+                sendSmsLauncher.launch(Manifest.permission.SEND_SMS)
             }
             PermissionCard(
                 "Notification listener access",

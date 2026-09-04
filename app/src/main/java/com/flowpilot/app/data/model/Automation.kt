@@ -32,6 +32,9 @@ enum class CapabilityRequirement {
     /** Needs android.permission.CALL_PHONE runtime permission to initiate phone calls directly. */
     CALL_PHONE,
 
+    /** Needs android.permission.SEND_SMS runtime permission to send SMS directly. */
+    SEND_SMS,
+
     /** Not possible on this device at all (e.g. no NFC hardware). */
     UNSUPPORTED,
 }
@@ -48,6 +51,7 @@ enum class ActionCategory(val label: String) {
     APPS_LINKS("Apps & Links"),
     CLOCK("Clock"),
     PHONE("Phone"),
+    SMS("SMS"),
 }
 
 /** A concrete system action a rule can perform. */
@@ -81,6 +85,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     OPEN_DIALER("Open dialer", ActionCategory.PHONE, CapabilityRequirement.NONE),
     DIAL_NUMBER("Dial phone number", ActionCategory.PHONE, CapabilityRequirement.NONE),
     CALL_NUMBER("Call phone number directly", ActionCategory.PHONE, CapabilityRequirement.CALL_PHONE),
+    SEND_SMS("Send SMS directly", ActionCategory.SMS, CapabilityRequirement.SEND_SMS),
+    DRAFT_SMS("Prepare SMS draft", ActionCategory.SMS, CapabilityRequirement.NONE),
     MOBILE_DATA_ON("Turn Mobile Data on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
     MOBILE_DATA_OFF("Turn Mobile Data off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
     WIFI_ON("Turn Wi-Fi on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
@@ -112,6 +118,7 @@ enum class TriggerCategory(val label: String) {
     NFC_TAG("NFC"),
     NOTIFICATION("Notification"),
     PHONE("Phone"),
+    SMS("SMS"),
     MOTION("Motion"),
 }
 
@@ -191,11 +198,22 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     DEVICE_SHAKE("Device shaken", TriggerCategory.MOTION),
     DEVICE_UNLOCKED("Device unlocked", TriggerCategory.DISPLAY),
     LIGHT_BELOW("Ambient light below level", TriggerCategory.DISPLAY),
-    LIGHT_ABOVE("Ambient light above level", TriggerCategory.DISPLAY);
+    LIGHT_ABOVE("Ambient light above level", TriggerCategory.DISPLAY),
+    SMS_RECEIVED("SMS received", TriggerCategory.SMS);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }
     }
+}
+
+/** Content match criteria for incoming SMS triggers. */
+@Serializable
+enum class SmsMatchMode(val label: String) {
+    CONTAINS("Contains keyword"),
+    EQUALS("Equals text exactly"),
+    STARTS_WITH("Starts with text"),
+    REGEX("Matches regex"),
+    ANY("Any SMS"),
 }
 
 /**
@@ -262,6 +280,16 @@ data class Automation(
     val webhookTimeoutSeconds: Int = 10,
     /** Telephone number used for DIAL_NUMBER and CALL_NUMBER actions. */
     val phoneNumber: String = "",
+    /** Sender filter for SMS_RECEIVED trigger (empty matches any). */
+    val smsSenderFilter: String = "",
+    /** Matching mode for SMS_RECEIVED trigger text. */
+    val smsMatchMode: SmsMatchMode = SmsMatchMode.CONTAINS,
+    /** Keyword or pattern for SMS_RECEIVED trigger. */
+    val smsKeyword: String = "",
+    /** Recipient telephone number or variable (${sms.sender}) for SEND_SMS / DRAFT_SMS actions. */
+    val smsRecipient: String = "",
+    /** Message text template for SEND_SMS / DRAFT_SMS actions. */
+    val smsMessage: String = "",
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     /** Per-action optional delay in seconds (0..300), sequential with matching index in actions. */

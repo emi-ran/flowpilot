@@ -158,6 +158,14 @@ class CapabilityManager(private val context: Context) {
     fun hasCallPhonePermission(): Boolean =
         context.checkSelfPermission(android.Manifest.permission.CALL_PHONE) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
+    /** Has the app been granted SEND_SMS permission to send text messages directly? */
+    fun hasSendSmsPermission(): Boolean =
+        context.checkSelfPermission(android.Manifest.permission.SEND_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    /** Has the app been granted RECEIVE_SMS permission to listen for incoming SMS messages? */
+    fun hasReceiveSmsPermission(): Boolean =
+        context.checkSelfPermission(android.Manifest.permission.RECEIVE_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
     /** Has the device camera flash hardware for torch actions? */
     fun hasCameraFlash(): Boolean =
         context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_FLASH)
@@ -207,6 +215,9 @@ class CapabilityManager(private val context: Context) {
 
         CapabilityRequirement.CALL_PHONE ->
             if (hasCallPhonePermission()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
+
+        CapabilityRequirement.SEND_SMS ->
+            if (hasSendSmsPermission()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
 
         CapabilityRequirement.UNSUPPORTED -> CapabilityStatus.UNSUPPORTED
     }

@@ -29,13 +29,14 @@ class ActionDispatcher private constructor(
     private val lockScreen: LockScreenExecutor,
     private val forceStop: ForceStopExecutor,
     private val location: LocationExecutor,
+    private val sms: SmsExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
         listOf(
             nfc, bluetooth, powerSaver, darkTheme, autoRotate, notification,
             vibration, sound, soundProfile, mediaVolume, launcher, tts, dnd,
             clock, webhook, phone, wifi, mobileData, airplaneMode, torch,
-            brightness, lockScreen, forceStop, location,
+            brightness, lockScreen, forceStop, location, sms,
         )
             .flatMap { e -> e.supportedTypes.map { it to e } }
             .toMap()
@@ -77,6 +78,7 @@ class ActionDispatcher private constructor(
                     LockScreenExecutor(ShizukuShell.instance),
                     ForceStopExecutor(ShizukuShell.instance),
                     LocationExecutor(context.applicationContext, ShizukuShell.instance),
+                    SmsExecutor(context.applicationContext),
                 ).also { instance = it }
             }
     }

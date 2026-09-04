@@ -124,6 +124,11 @@ class AutomationRepository(private val context: Context) {
         screenBrightnessPercent: Int = 50,
         forceStopPackage: String = "",
         forceStopAppName: String = "",
+        smsSenderFilter: String = "",
+        smsMatchMode: com.flowpilot.app.data.model.SmsMatchMode = com.flowpilot.app.data.model.SmsMatchMode.CONTAINS,
+        smsKeyword: String = "",
+        smsRecipient: String = "",
+        smsMessage: String = "",
         id: String = UUID.randomUUID().toString(),
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
@@ -162,6 +167,8 @@ class AutomationRepository(private val context: Context) {
                     com.flowpilot.app.data.model.TriggerEvent.LIGHT_BELOW,
                     com.flowpilot.app.data.model.TriggerEvent.LIGHT_ABOVE ->
                         "${triggerEvent.label} ${lightLux}lx · $summary"
+                    com.flowpilot.app.data.model.TriggerEvent.SMS_RECEIVED ->
+                        if (smsSenderFilter.isNotBlank()) "SMS from $smsSenderFilter · $summary" else "SMS Received · $summary"
                     else -> "${appName.ifBlank { appPackage }} · $summary"
                 }
             },
@@ -207,6 +214,11 @@ class AutomationRepository(private val context: Context) {
             webhookBody = webhookBody,
             webhookTimeoutSeconds = webhookTimeoutSeconds,
             phoneNumber = phoneNumber,
+            smsSenderFilter = smsSenderFilter,
+            smsMatchMode = smsMatchMode,
+            smsKeyword = smsKeyword,
+            smsRecipient = smsRecipient,
+            smsMessage = smsMessage,
             lightLux = lightLux,
             screenBrightnessPercent = screenBrightnessPercent,
             forceStopPackage = forceStopPackage,

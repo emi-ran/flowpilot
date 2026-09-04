@@ -62,6 +62,8 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.LOCK_SCREEN -> Icons.Default.Lock
     ActionType.FORCE_STOP_APP -> Icons.Default.Cancel
     ActionType.LOCATION_ON, ActionType.LOCATION_OFF -> Icons.Default.LocationOn
+    ActionType.SEND_SMS -> Icons.Default.Send
+    ActionType.DRAFT_SMS -> Icons.Default.Drafts
 }
 
 @Composable
@@ -140,6 +142,11 @@ fun ActionCardItem(
     forceStopPackage: String = "",
     forceStopAppName: String = "",
     onOpenForceStopAppPicker: () -> Unit = {},
+    // SMS
+    smsRecipient: String = "",
+    onSmsRecipientChange: (String) -> Unit = {},
+    smsMessage: String = "",
+    onSmsMessageChange: (String) -> Unit = {},
 ) {
     var showDelaySlider by remember { mutableStateOf(delaySeconds > 0) }
 
@@ -628,6 +635,89 @@ fun ActionCardItem(
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(top = 4.dp),
                         )
+                    }
+                }
+                ActionType.SEND_SMS, ActionType.DRAFT_SMS -> {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = smsRecipient,
+                        onValueChange = onSmsRecipientChange,
+                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(smsRecipient),
+                        label = { Text("Recipient phone number") },
+                        placeholder = { Text("e.g. +90555... or \${sms.sender}") },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Phone, null) },
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        SuggestionChip(
+                            onClick = { onSmsRecipientChange("\${sms.sender}") },
+                            label = { Text("Reply to sender (\${sms.sender})", style = MaterialTheme.typography.bodySmall) },
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = smsMessage,
+                        onValueChange = onSmsMessageChange,
+                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(smsMessage),
+                        label = { Text("SMS message text") },
+                        placeholder = { Text("e.g. Received code: \${sms.otp}") },
+                        shape = RoundedCornerShape(12.dp),
+                        minLines = 2,
+                        maxLines = 4,
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Quick variables:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        listOf(
+                            "\${sms.sender}" to "Sender",
+                            "\${sms.body}" to "Full SMS",
+                            "\${sms.otp}" to "OTP Code",
+                            "\${location.lat},\${location.lng}" to "GPS Location",
+                            "\${battery.percent}%" to "Battery %",
+                            "\${time}" to "Time",
+                        ).forEach { (variable, label) ->
+                            AssistChip(
+                                onClick = {
+                                    val newMsg = if (smsMessage.isBlank()) variable else "$smsMessage $variable"
+                                    onSmsMessageChange(newMsg)
+                                },
+                                label = { Text("$label ($variable)", style = MaterialTheme.typography.labelSmall) },
+                                shape = RoundedCornerShape(8.dp),
+                            )
+                        }
+                    }
+
+                    if (action == ActionType.SEND_SMS) {
+                        Spacer(Modifier.height(8.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                "⚠️ Direct SMS: Sends a background text message immediately. Standard carrier rates may apply.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(8.dp),
+                            )
+                        }
                     }
                 }
                 ActionType.SET_SCREEN_BRIGHTNESS -> {

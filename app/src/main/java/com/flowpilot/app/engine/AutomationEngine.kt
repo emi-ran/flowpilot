@@ -85,6 +85,7 @@ class AutomationEngine(
                     pollDeviceFlipEvents(liveState)
                     pollNfcTagEvents(liveState)
                     pollNotificationEvents(liveState)
+                    pollSmsEvents(liveState)
                     pollSchedules(liveState)
                 } catch (e: CancellationException) {
                     throw e
@@ -396,17 +397,67 @@ class AutomationEngine(
         }
     }
 
+    private suspend fun pollSmsEvents(liveState: LiveSystemState) {
+        val events = SmsEventTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (event in events) {
+            val matches = RuleEvaluator.evaluateSms(rules, event, liveState)
+            if (matches.isNotEmpty()) {
+                val masked = PhoneNumberUtils.mask(event.sender)
+                Log.i(TAG, "Executing SMS received rules for $masked (${matches.size} rule(s))")
+                executeAll(
+                    rules = matches,
+                    trigger = TriggerEvent.SMS_RECEIVED,
+                    liveState = liveState,
+                    smsSender = event.sender,
+                    smsBody = event.body,
+                )
+            }
+        }
+    }
+
+    private fun getLastKnownCoordinates(): Pair<Double, Double>? {
+        return try {
+            val hasFine = appContext.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            val hasCoarse = appContext.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (!hasFine && !hasCoarse) return null
+
+            val lm = appContext.getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager ?: return null
+            val providers = lm.getProviders(true)
+            var bestLocation: android.location.Location? = null
+            for (provider in providers) {
+                val loc = lm.getLastKnownLocation(provider) ?: continue
+                if (bestLocation == null || (loc.hasAccuracy() && bestLocation.hasAccuracy() && loc.accuracy < bestLocation.accuracy)) {
+                    bestLocation = loc
+                }
+            }
+            bestLocation?.let { it.latitude to it.longitude }
+        } catch (_: SecurityException) {
+            null
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
     private suspend fun executeAll(
         rules: List<com.flowpilot.app.data.model.Automation>,
         trigger: TriggerEvent? = null,
         liveState: LiveSystemState = LiveSystemState(),
+        smsSender: String? = null,
+        smsBody: String? = null,
     ) {
+        val coords = getLastKnownCoordinates()
         val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
             trigger = trigger?.name ?: "",
             timestamp = System.currentTimeMillis(),
             batteryPercent = liveState.batteryPercent,
             isCharging = liveState.isChargerConnected,
             wifiSsid = liveState.connectedWifiSsid,
+            smsSender = smsSender,
+            smsBody = smsBody,
+            locationLat = coords?.first,
+            locationLng = coords?.second,
         )
         for (rule in rules) {
             withContext(Dispatchers.IO) {
@@ -458,6 +509,8 @@ class AutomationEngine(
                                 phoneNumber = rule.phoneNumber,
                                 screenBrightnessPercent = rule.screenBrightnessPercent,
                                 forceStopPackage = rule.forceStopPackage,
+                                smsRecipient = rule.smsRecipient,
+                                smsMessage = rule.smsMessage,
                             ),
                         )
                         Log.i(TAG, "Rule '${rule.name}' action ${action.name} result: success=${result.success}, msg=${result.message}")

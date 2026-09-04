@@ -277,6 +277,54 @@ object RuleEvaluator {
         }
     }
 
+    fun evaluateSms(
+        rules: List<Automation>,
+        event: SmsReceivedEvent,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> {
+        return rules.filter { rule ->
+            if (!rule.enabled || rule.triggerEvent != TriggerEvent.SMS_RECEIVED || rule.isCoolingDown(nowMs)) {
+                return@filter false
+            }
+
+            // 1. Sender matching
+            if (!PhoneNumberUtils.matches(rule.smsSenderFilter, event.sender)) {
+                return@filter false
+            }
+
+            // 2. Content matching based on smsMatchMode
+            val keyword = rule.smsKeyword.trim()
+            val contentMatches = when (rule.smsMatchMode) {
+                com.flowpilot.app.data.model.SmsMatchMode.ANY -> true
+                com.flowpilot.app.data.model.SmsMatchMode.CONTAINS -> {
+                    if (keyword.isBlank()) true
+                    else event.body.contains(keyword, ignoreCase = true)
+                }
+                com.flowpilot.app.data.model.SmsMatchMode.EQUALS -> {
+                    if (keyword.isBlank()) event.body.isBlank()
+                    else event.body.trim().equals(keyword, ignoreCase = true)
+                }
+                com.flowpilot.app.data.model.SmsMatchMode.STARTS_WITH -> {
+                    if (keyword.isBlank()) true
+                    else event.body.trim().startsWith(keyword, ignoreCase = true)
+                }
+                com.flowpilot.app.data.model.SmsMatchMode.REGEX -> {
+                    if (keyword.isBlank()) true
+                    else try {
+                        Regex(keyword, RegexOption.IGNORE_CASE).containsMatchIn(event.body)
+                    } catch (_: Exception) {
+                        false
+                    }
+                }
+            }
+            if (!contentMatches) return@filter false
+
+            // 3. Environmental conditions
+            matchesConditions(rule.conditions, liveState, nowMs)
+        }
+    }
+
     fun evaluate(
         rules: List<Automation>,
         event: AppEvent,

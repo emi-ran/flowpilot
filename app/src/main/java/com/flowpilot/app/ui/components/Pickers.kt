@@ -388,12 +388,68 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     ),
                 ),
             ),
+            PickerCategoryGroup(
+                id = TriggerCategory.SMS.name,
+                label = TriggerCategory.SMS.label,
+                icon = Icons.Default.Sms,
+                iconTint = Color(0xFF4FC3F7),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.SMS_RECEIVED,
+                        title = TriggerEvent.SMS_RECEIVED.label,
+                        subtitle = "When an incoming SMS text message is received (filter sender & content)",
+                        icon = Icons.Default.Sms,
+                        iconTint = Color(0xFF4FC3F7),
+                        keywords = listOf("sms", "text", "message", "sender", "incoming", "received", "code", "otp"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = TriggerCategory.PHONE.name,
+                label = TriggerCategory.PHONE.label,
+                icon = Icons.Default.Phone,
+                iconTint = Color(0xFF81C784),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.CALL_RINGING,
+                        title = TriggerEvent.CALL_RINGING.label,
+                        subtitle = "When an incoming phone call starts ringing",
+                        icon = Icons.Default.PhoneInTalk,
+                        iconTint = Color(0xFF81C784),
+                        keywords = listOf("phone", "call", "ring", "ringing", "incoming call"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.CALL_ANSWERED,
+                        title = TriggerEvent.CALL_ANSWERED.label,
+                        subtitle = "When an incoming or outgoing call is answered / active",
+                        icon = Icons.Default.Call,
+                        iconTint = Color(0xFF66BB6A),
+                        keywords = listOf("phone", "call", "answered", "active", "talk"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.CALL_OUTGOING,
+                        title = TriggerEvent.CALL_OUTGOING.label,
+                        subtitle = "When an outgoing phone call is initiated",
+                        icon = Icons.Default.PhoneForwarded,
+                        iconTint = Color(0xFF4CAF50),
+                        keywords = listOf("phone", "call", "outgoing", "dialed"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.CALL_ENDED,
+                        title = TriggerEvent.CALL_ENDED.label,
+                        subtitle = "When an active or ringing phone call ends or is rejected",
+                        icon = Icons.Default.CallEnd,
+                        iconTint = Color(0xFFE57373),
+                        keywords = listOf("phone", "call", "ended", "hang up", "reject", "finish"),
+                    ),
+                ),
+            ),
         )
     }
 
     ModernChoiceDialog(
         title = "Choose trigger",
-        searchPlaceholder = "Search triggers (e.g. battery, call, screen, time)...",
+        searchPlaceholder = "Search triggers (e.g. battery, call, sms, screen, time)...",
         groups = groups,
         isSelected = { it == selected },
         onSelect = { select(it) },
@@ -411,6 +467,30 @@ fun ActionPicker(
 ) {
     val allGroups = remember {
         listOf(
+            PickerCategoryGroup(
+                id = ActionCategory.SMS.name,
+                label = ActionCategory.SMS.label,
+                icon = Icons.Default.Sms,
+                iconTint = Color(0xFF4FC3F7),
+                items = listOf(
+                    PickerItem(
+                        value = ActionType.SEND_SMS,
+                        title = ActionType.SEND_SMS.label,
+                        subtitle = "Directly sends an SMS in background (requires SEND_SMS)",
+                        icon = Icons.Default.Send,
+                        iconTint = Color(0xFF00E676),
+                        keywords = listOf("sms", "text", "message", "send", "auto sms", "background"),
+                    ),
+                    PickerItem(
+                        value = ActionType.DRAFT_SMS,
+                        title = ActionType.DRAFT_SMS.label,
+                        subtitle = "Prepares SMS draft in default SMS app for review",
+                        icon = Icons.Default.Drafts,
+                        iconTint = Color(0xFF4FC3F7),
+                        keywords = listOf("sms", "text", "message", "draft", "prepare", "compose"),
+                    ),
+                ),
+            ),
             PickerCategoryGroup(
                 id = ActionCategory.PHONE.name,
                 label = ActionCategory.PHONE.label,

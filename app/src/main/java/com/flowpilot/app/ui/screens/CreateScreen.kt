@@ -144,6 +144,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
     var forceStopPackage by remember { mutableStateOf("") }
     var forceStopAppName by remember { mutableStateOf("") }
     var showForceStopApps by remember { mutableStateOf(false) }
+    var smsSenderFilter by remember { mutableStateOf("") }
+    var smsMatchMode by remember { mutableStateOf(com.flowpilot.app.data.model.SmsMatchMode.CONTAINS) }
+    var smsKeyword by remember { mutableStateOf("") }
+    var smsRecipient by remember { mutableStateOf("") }
+    var smsMessage by remember { mutableStateOf("") }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var actionDelays by remember { mutableStateOf(emptyList<Int>()) }
@@ -289,6 +294,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                         ttsSpeechRate = ttsSpeechRate,
                         ttsAudioFileName = ttsAudioFileName,
                         phoneNumber = phoneNumber.trim(),
+                        smsSenderFilter = smsSenderFilter.trim(),
+                        smsMatchMode = smsMatchMode,
+                        smsKeyword = smsKeyword.trim(),
+                        smsRecipient = smsRecipient.trim(),
+                        smsMessage = smsMessage,
                         lightLux = lightLux,
                         screenBrightnessPercent = screenBrightnessPercent,
                         forceStopPackage = forceStopPackage,
@@ -390,6 +400,12 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                 onFlipScreenOffChange = { flipScreenOffDetection = it },
                 lightLux = lightLux,
                 onLightLuxChange = { lightLux = it },
+                smsSenderFilter = smsSenderFilter,
+                onSmsSenderFilterChange = { smsSenderFilter = it },
+                smsMatchMode = smsMatchMode,
+                onSmsMatchModeChange = { smsMatchMode = it },
+                smsKeyword = smsKeyword,
+                onSmsKeywordChange = { smsKeyword = it },
             )
 
             Text(
@@ -533,6 +549,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                         forceStopAppName = forceStopAppName,
                         forceStopPackage = forceStopPackage,
                         onOpenForceStopAppPicker = { showForceStopApps = true },
+                        // SMS
+                        smsRecipient = smsRecipient,
+                        onSmsRecipientChange = { smsRecipient = it },
+                        smsMessage = smsMessage,
+                        onSmsMessageChange = { smsMessage = it },
                     )
                 }
             }
@@ -679,6 +700,11 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             webhookBody = webhookBody,
                             webhookTimeoutSeconds = webhookTimeoutSeconds,
                             phoneNumber = phoneNumber.trim(),
+                            smsSenderFilter = smsSenderFilter.trim(),
+                            smsMatchMode = smsMatchMode,
+                            smsKeyword = smsKeyword.trim(),
+                            smsRecipient = smsRecipient.trim(),
+                            smsMessage = smsMessage,
                             lightLux = lightLux,
                             screenBrightnessPercent = screenBrightnessPercent,
                             forceStopPackage = forceStopPackage,
@@ -701,6 +727,8 @@ fun CreateScreen(vm: AppViewModel, done: () -> Unit) {
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || (ttsAudioFileName.isNotEmpty() && ttsManager.getCacheFile(ttsAudioFileName)?.exists() == true && ttsAudioFileName == ttsManager.computeCacheFileName(newRuleId, ttsText.trim(), ttsVoiceName, ttsSpeechRate))) &&
                             (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
+                            (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
+                            (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
                             actions.isNotEmpty(),
                 ) {
                     Text("Save")
