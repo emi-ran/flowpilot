@@ -580,7 +580,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             } finally {
                 val historyEntry = ExecutionHistoryEntry.create(
                     ruleId = rule.id,
-                    ruleName = rule.name,
+                    ruleName = rule.normalizedName,
                     trigger = "MANUAL",
                     timestamp = System.currentTimeMillis(),
                     actions = actionRecords,

@@ -87,6 +87,19 @@ class AutomationRepositoryHistoryTest {
     }
 
     @Test
+    fun customSmsName_resemblingLegacyFormat_isPreserved() {
+        val rule = Automation(
+            id = "custom",
+            name = "SMS from Alice · NFC enabled",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            actions = listOf(ActionType.NFC_ON),
+            createdAt = 1L,
+        )
+
+        assertThat(rule.normalizedName).isEqualTo(rule.name)
+    }
+
+    @Test
     fun clearHistory_removesAllEntries() = runTest {
         val entry = ExecutionHistoryEntry.create(
             id = "entry-1",

@@ -382,6 +382,6 @@ data class Automation(
     }
 
     private companion object {
-        val LEGACY_SMS_GENERATED_NAME = Regex("SMS from .+ · .+")
+        val LEGACY_SMS_GENERATED_NAME = Regex("SMS from (?=[+0-9])(?=[+0-9][0-9 ()./-]* · )[+0-9][0-9 ()./-]* · .+")
     }
 }
