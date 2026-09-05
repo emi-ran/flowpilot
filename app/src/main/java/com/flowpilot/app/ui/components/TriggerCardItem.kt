@@ -192,7 +192,6 @@ fun TriggerCardItem(
                         TriggerEvent.DEVICE_UNLOCKED -> stringResource(R.string.trigger_device_unlocked_desc)
                         TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> stringResource(R.string.detail_threshold_light, lightLux)
                         TriggerEvent.SMS_RECEIVED -> {
-                            val sender = if (smsSenderFilter.isBlank()) stringResource(R.string.detail_any_sender) else smsSenderFilter
                             val filterDesc = when (smsMatchMode) {
                                 SmsMatchMode.ANY -> stringResource(R.string.sms_any_sms)
                                 SmsMatchMode.CONTAINS -> stringResource(R.string.sms_contains_quoted, smsKeyword)
@@ -200,7 +199,7 @@ fun TriggerCardItem(
                                 SmsMatchMode.STARTS_WITH -> stringResource(R.string.sms_starts_with_quoted, smsKeyword)
                                 SmsMatchMode.REGEX -> stringResource(R.string.sms_regex_quoted, smsKeyword)
                             }
-                            "$sender • $filterDesc"
+                            filterDesc
                         }
                     }
                     Text(

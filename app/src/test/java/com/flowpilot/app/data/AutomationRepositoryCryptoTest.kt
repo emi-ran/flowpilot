@@ -120,6 +120,27 @@ class AutomationRepositoryCryptoTest {
     }
 
     @Test
+    fun importAutomations_normalizesLegacySmsNamesBeforePersisting() = runTest {
+        val legacy = Automation("legacy", "SMS from 555-0100 · NFC enabled", TriggerEvent.SMS_RECEIVED, actions = listOf(ActionType.NFC_ON), createdAt = 1L)
+        val custom = legacy.copy(id = "custom", name = "SMS from Alice · NFC enabled")
+
+        repository.importAutomations(listOf(legacy, custom), com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL)
+
+        val stored = json.decodeFromString(listSerializer, repository.rawDataStore.data.first()[key]!!)
+        assertThat(stored.map { it.name }).containsExactly("SMS Received · NFC enabled", custom.name).inOrder()
+    }
+
+    @Test
+    fun replaceAll_normalizesLegacySmsNamesBeforePersisting() = runTest {
+        val legacy = Automation("legacy", "SMS from 555-0100 · NFC enabled", TriggerEvent.SMS_RECEIVED, actions = listOf(ActionType.NFC_ON), createdAt = 1L)
+
+        repository.replaceAll(listOf(legacy))
+
+        val stored = json.decodeFromString(listSerializer, repository.rawDataStore.data.first()[key]!!)
+        assertThat(stored.single().name).isEqualTo("SMS Received · NFC enabled")
+    }
+
+    @Test
     fun add_webhookRule_persistsEncryptedInStore_andEmitsDecryptedInFlow() = runTest {
         val rule = repository.add(
             name = "Webhook Alert",

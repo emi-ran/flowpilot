@@ -102,6 +102,26 @@ class AutomationRepositoryHistoryTest {
     }
 
     @Test
+    fun smsGeneratedName_requiresThreeDigits_andPreservesPlusOnlySender() {
+        val base = Automation(
+            id = "edge",
+            name = "",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            actions = listOf(ActionType.NFC_ON),
+            createdAt = 1L,
+        )
+
+        assertThat(base.copy(name = "SMS from + · NFC enabled").normalizedName)
+            .isEqualTo("SMS from + · NFC enabled")
+        assertThat(base.copy(name = "SMS from 1 · NFC enabled").normalizedName)
+            .isEqualTo("SMS from 1 · NFC enabled")
+        assertThat(base.copy(name = "SMS from 12 · NFC enabled").normalizedName)
+            .isEqualTo("SMS from 12 · NFC enabled")
+        assertThat(base.copy(name = "SMS from +1 (555) 010-0 · NFC enabled").normalizedName)
+            .isEqualTo("SMS Received · NFC enabled")
+    }
+
+    @Test
     fun executionHistory_normalizesLegacySmsNamesUsingStoredRules_only() = runTest {
         val legacySmsRule = Automation(
             id = "legacy",

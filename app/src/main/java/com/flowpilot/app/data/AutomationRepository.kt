@@ -343,12 +343,13 @@ class AutomationRepository(private val context: Context) {
                         rule.copy(
                             id = UUID.randomUUID().toString(),
                             createdAt = System.currentTimeMillis(),
+                            name = rule.normalizedName,
                         ).withEncryptedSecrets()
                     }
                     current.map { it.withEncryptedSecrets() } + remapped
                 }
                 com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL -> {
-                    imported.map { it.withEncryptedSecrets() }
+                    imported.map { it.copy(name = it.normalizedName).withEncryptedSecrets() }
                 }
             }
             prefs[key] = json.encodeToString(listSerializer, finalRules)
@@ -360,7 +361,7 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun replaceAll(rules: List<Automation>) {
         context.dataStore.edit { prefs ->
-            val encrypted = rules.map { it.withEncryptedSecrets() }
+            val encrypted = rules.map { it.copy(name = it.normalizedName).withEncryptedSecrets() }
             prefs[key] = json.encodeToString(listSerializer, encrypted)
         }
         cleanupOrphanTtsFiles()

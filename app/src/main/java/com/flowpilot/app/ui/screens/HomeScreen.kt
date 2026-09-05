@@ -454,9 +454,7 @@ private fun RuleCard(
                     TriggerEvent.LIGHT_BELOW,
                     TriggerEvent.LIGHT_ABOVE -> stringResource(R.string.detail_threshold_light, item.rule.lightLux)
                     TriggerEvent.SMS_RECEIVED -> {
-                        val sender = if (item.rule.smsSenderFilter.isBlank()) stringResource(R.string.detail_any_sender) else item.rule.smsSenderFilter
-                        val filter = if (item.rule.smsKeyword.isNotBlank()) " · \"${item.rule.smsKeyword}\"" else ""
-                        "$sender$filter"
+                        if (item.rule.smsKeyword.isNotBlank()) "\"${item.rule.smsKeyword}\"" else ""
                     }
                     else -> item.rule.appName.ifBlank { item.rule.appPackage }
                 }
