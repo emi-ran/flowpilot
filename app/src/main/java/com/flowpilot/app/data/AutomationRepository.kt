@@ -191,7 +191,7 @@ class AutomationRepository(private val context: Context) {
                     com.flowpilot.app.data.model.TriggerEvent.LIGHT_ABOVE ->
                         "${triggerEvent.label} ${lightLux}lx · $summary"
                     com.flowpilot.app.data.model.TriggerEvent.SMS_RECEIVED ->
-                        if (smsSenderFilter.isNotBlank()) "SMS from $smsSenderFilter · $summary" else "SMS Received · $summary"
+                        "SMS Received · $summary"
                     else -> "${appName.ifBlank { appPackage }} · $summary"
                 }
             },

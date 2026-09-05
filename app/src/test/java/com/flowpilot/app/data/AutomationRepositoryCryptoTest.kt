@@ -54,6 +54,21 @@ class AutomationRepositoryCryptoTest {
     }
 
     @Test
+    fun add_smsRule_withSenderFilter_usesGenericGeneratedName() = runTest {
+        val rule = repository.add(
+            name = "",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.NFC_ON),
+            smsSenderFilter = "555-0100",
+        )
+
+        assertThat(rule.name).isEqualTo("SMS Received · NFC enabled")
+        assertThat(rule.name).doesNotContain("555-0100")
+    }
+
+    @Test
     fun add_webhookRule_persistsEncryptedInStore_andEmitsDecryptedInFlow() = runTest {
         val rule = repository.add(
             name = "Webhook Alert",
