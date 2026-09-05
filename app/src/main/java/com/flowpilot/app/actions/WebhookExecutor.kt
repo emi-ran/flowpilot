@@ -2,7 +2,6 @@ package com.flowpilot.app.actions
 
 import android.util.Log
 import com.flowpilot.app.data.model.ActionType
-import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 import java.net.HttpURLConnection
 import java.net.Inet6Address
@@ -14,6 +13,9 @@ import java.net.Socket
 import java.net.URI
 import java.net.URL
 
+// This checks the TLS peer, not the initial TCP destination: Android's HTTP stack
+// connects its raw socket before calling the layered SSLSocketFactory overload.
+// Do not treat this factory as verified transport-level DNS-rebinding protection.
 internal class PinnedSocketFactory(
     private val delegate: SSLSocketFactory,
     private val address: InetAddress,
@@ -84,9 +86,7 @@ class WebhookExecutor(
         val headers = parseHeaders(renderedHeaders)
         val body = WebhookTemplateRenderer.render(parameters.webhookBody, parameters.webhookTemplateContext)
 
-        val sanitizedHeaders = sanitizeHeadersForLogging(headers)
-        val sanitizedUrl = sanitizeUrlForLogging(rawUrl)
-        Log.i(TAG, "Dispatching HTTP Webhook: method=$method, url=$sanitizedUrl, timeout=${timeoutMs}ms, headers=$sanitizedHeaders")
+        Log.i(TAG, "Dispatching HTTP Webhook: method=$method")
 
         var connection: HttpURLConnection? = null
         return try {
@@ -125,11 +125,16 @@ class WebhookExecutor(
             } else {
                 "HTTP Webhook failed: status $statusCode"
             }
-            Log.i(TAG, "HTTP Webhook result: success=$isSuccess, status=$statusCode")
+            Log.i(TAG, "HTTP Webhook result: status=$statusCode")
             ActionResult(isSuccess, message)
         } catch (e: Exception) {
-            val safeMessage = redactSensitiveText(e.message ?: e.javaClass.simpleName)
-            Log.w(TAG, "HTTP Webhook execution failed: $safeMessage")
+            // Exception messages can echo arbitrary URLs, header values or body data.
+            val safeMessage = if (e is SecurityException) {
+                "Webhook destination rejected: non-public address or unsafe connection"
+            } else {
+                "Request could not be completed [REDACTED]"
+            }
+            Log.w(TAG, "HTTP Webhook execution failed")
             ActionResult(false, "HTTP request failed: $safeMessage")
         } finally {
             try {
@@ -146,11 +151,6 @@ class WebhookExecutor(
         return addresses.first()
     }
 
-    private fun URL.withAddress(address: InetAddress): URL {
-        val hostAddress = address.hostAddress.let { if (address is Inet6Address) "[$it]" else it }
-        return URL(protocol, hostAddress, port, file)
-    }
-
     companion object {
         private fun isPublicAddress(address: InetAddress): Boolean {
             if (address.isAnyLocalAddress || address.isLoopbackAddress || address.isLinkLocalAddress || address.isMulticastAddress || address.isSiteLocalAddress) {
@@ -161,7 +161,6 @@ class WebhookExecutor(
                 val first = bytes[0].toInt() and 0xff
                 val second = bytes[1].toInt() and 0xff
                 val third = bytes[2].toInt() and 0xff
-                val fourth = bytes[3].toInt() and 0xff
                 if (first == 0 || first >= 224) return false
                 if (first == 100 && second in 64..127) return false
                 if (first == 192 && second == 0 && third == 0) return false
@@ -311,7 +310,7 @@ class WebhookExecutor(
                         val parts = param.split("=", limit = 2)
                         val k = parts[0]
                         if (parts.size == 2) {
-                            if (isSensitiveQueryKey(k)) "$k=[REDACTED]" else "$k=[REDACTED]"
+                            "$k=[REDACTED]"
                         } else {
                             k
                         }
@@ -323,11 +322,6 @@ class WebhookExecutor(
             } catch (_: Exception) {
                 redactSensitiveText(rawUrl)
             }
-        }
-
-        private fun isSensitiveQueryKey(key: String): Boolean {
-            val lower = key.lowercase().trim()
-            return lower.contains("token") || lower.contains("key") || lower.contains("secret") || lower.contains("password") || lower.contains("auth") || lower.contains("sig")
         }
 
         fun isSensitiveHeader(name: String): Boolean {
