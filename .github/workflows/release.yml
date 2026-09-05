@@ -89,7 +89,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode --strict > "$GITHUB_WORKSPACE/release.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/release.jks"
           [[ -s "$GITHUB_WORKSPACE/release.jks" ]] || { echo 'ERROR: decoded keystore is empty'; exit 1; }
 
       - name: Build Signed Release APK
