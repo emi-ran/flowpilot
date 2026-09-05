@@ -62,6 +62,8 @@
         android:name="android.permission.BLUETOOTH_CONNECT"
         tools:targetApi="s" />
 
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+
     <!-- Phone call triggers (TelephonyManager state transitions) and direct call actions. -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />

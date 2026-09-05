@@ -5,6 +5,10 @@
     <string name="notif_channel_engine_desc">FlowPilot otomasyonları çalışırken gerekli sessiz durum bildirimi</string>
     <string name="notif_engine_title">Otomasyon etkin</string>
     <string name="notif_engine_text">FlowPilot kuralları çalıştırılıyor</string>
+    <string name="notif_channel_engine_failure">Otomasyon başlatma sorunları</string>
+    <string name="notif_channel_engine_failure_desc">FlowPilot açılıştan sonra otomasyonu başlatamadığında uyarır</string>
+    <string name="notif_engine_failure_title">Otomasyon başlatılamadı</string>
+    <string name="notif_engine_failure_text">İzinleri kontrol etmek ve otomasyonu yeniden başlatmak için FlowPilot uygulamasını açın.</string>
     <string name="special_use_subtype">Ön plan uygulama değişikliklerini algılar ve yapılandırılmış otomasyonları uygular.</string>
 
     <!-- General / Navigation -->
