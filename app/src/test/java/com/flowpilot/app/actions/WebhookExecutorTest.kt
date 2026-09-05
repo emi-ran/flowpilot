@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -380,9 +381,11 @@ class WebhookExecutorTest {
 
     @Test
     fun execute_networkExceptionWithSensitiveAuth_redactsAuthInFailureMessage() {
+        val bearer = "SYNTHETIC_BEARER_DO_NOT_LOG_123"
+        ShadowLog.clear()
         val executor = WebhookExecutor(
             connectionFactory = { _, _ ->
-                throw IOException("Failed to connect with Authorization: Bearer my_sup...oken and key=secret123")
+                throw IOException("Failed to connect with Authorization: Bearer $bearer and key=secret123")
             },
             addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
         )
@@ -396,9 +399,16 @@ class WebhookExecutorTest {
         )
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).doesNotContain("my_super_secret_token")
+        assertThat(result.message).doesNotContain(bearer)
         assertThat(result.message).doesNotContain("secret123")
         assertThat(result.message).contains("[REDACTED]")
+        val logs = ShadowLog.getLogsForTag(WebhookExecutor.TAG)
+        assertThat(logs).isNotEmpty()
+        logs.forEach { log ->
+            assertThat(log.msg).doesNotContain(bearer)
+            assertThat(log.msg).doesNotContain("secret123")
+            assertThat(log.throwable).isNull()
+        }
     }
 
     @Test
