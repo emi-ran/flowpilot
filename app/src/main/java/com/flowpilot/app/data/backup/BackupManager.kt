@@ -3,6 +3,7 @@ package com.flowpilot.app.data.backup
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
+import com.flowpilot.app.BuildConfig
 import com.flowpilot.app.data.model.Automation
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -16,7 +17,7 @@ import java.util.Locale
 data class FlowPilotBackup(
     val version: Int = BACKUP_VERSION,
     val exportedAt: Long = System.currentTimeMillis(),
-    val appVersion: String = "1.0.0",
+    val appVersion: String = BuildConfig.VERSION_NAME,
     val automations: List<Automation> = emptyList(),
 ) {
     companion object {

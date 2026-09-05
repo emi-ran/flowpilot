@@ -22,7 +22,7 @@ A clear and concise description of what you expected to happen.
 - **Device:** [e.g. Google Pixel 8, Xiaomi 14, Samsung Galaxy S23]
 - **Android Version:** [e.g. Android 14 / 15 / 16]
 - **ROM / OEM Skin:** [e.g. Stock, HyperOS, One UI 6, LineageOS]
-- **FlowPilot Version:** [e.g. v1.0.0 (Build 1)]
+- **FlowPilot Version:** [e.g. v1.0.1 (Build 2)]
 - **Shizuku Running?** [Yes / No / Not Applicable]
 
 ### Additional Context & Logs

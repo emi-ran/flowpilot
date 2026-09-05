@@ -144,7 +144,7 @@ FlowPilot
 └── app/src/test/         # Deterministic JUnit unit test suites
 ```
 
-- **Language:** Kotlin 2.0+
+- **Language:** Kotlin 2.2.10
 - **UI Framework:** Jetpack Compose & Material 3
 - **Concurrency:** Kotlin Coroutines & StateFlow
 - **Persistence:** Android Jetpack DataStore (Preferences & JSON serialization)

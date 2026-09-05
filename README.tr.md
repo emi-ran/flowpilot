@@ -142,7 +142,7 @@ FlowPilot
 └── app/src/test/         # Deterministik JUnit birim testleri
 ```
 
-- **Dil:** Kotlin 2.0+
+- **Dil:** Kotlin 2.2.10
 - **Arayüz:** Jetpack Compose & Material 3
 - **Eşzamanlılık:** Kotlin Coroutines & StateFlow
 - **Kalıcılık:** Android Jetpack DataStore (Preferences & JSON)
