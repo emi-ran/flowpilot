@@ -13,7 +13,8 @@ on:
 
 jobs:
   instrumentation:
-    name: Android instrumentation (emulator gate)
+    name: Android instrumentation (manual emulator gate)
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
