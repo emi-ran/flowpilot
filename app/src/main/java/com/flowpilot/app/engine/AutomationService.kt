@@ -21,6 +21,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -38,6 +42,8 @@ class AutomationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        activeService = this
+        loadFailure(this)
         createChannel()
         if (!startForegroundCompat()) {
             stopSelf()
@@ -66,6 +72,7 @@ class AutomationService : Service() {
                 throw e
             } catch (e: Exception) {
                 engine?.stop()
+                reportStartupFailure(this@AutomationService)
                 Log.e("AutomationService", "Engine reconciliation failed (${e.javaClass.simpleName})")
                 stopSelfResult(startId)
             }
@@ -87,6 +94,10 @@ class AutomationService : Service() {
         lifecycleScope.cancel()
         engine?.stop()
         engine = null
+        if (activeService === this) {
+            activeService = null
+            mutableRunning.value = false
+        }
         com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
         super.onDestroy()
     }
@@ -94,7 +105,17 @@ class AutomationService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun ensureEngineRunning() {
-        val current = engine ?: AutomationEngine(this).also { engine = it }
+        val current = engine ?: AutomationEngine(
+            this,
+            onRunningChanged = { running ->
+                if (activeService === this) {
+                    mutableRunning.value = running
+                    if (running) clearFailure(this)
+                    com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
+                }
+            },
+            onFailure = { if (activeService === this) reportStartupFailure(this) },
+        ).also { engine = it }
         current.start()
     }
 
@@ -129,8 +150,6 @@ class AutomationService : Service() {
             } else {
                 startForeground(NOTIF_ID, notification)
             }
-            getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
-                .edit().remove(STARTUP_FAILURE_KEY).apply()
             return true
         } catch (_: Throwable) {
             reportStartupFailure(this)
@@ -163,6 +182,58 @@ class AutomationService : Service() {
     }
 
     companion object {
+        private val controlMutex = Mutex()
+        private var activeService: AutomationService? = null
+        private val mutableRunning = MutableStateFlow(false)
+        val running = mutableRunning.asStateFlow()
+        private val mutableFailure = MutableStateFlow(false)
+        val failure = mutableFailure.asStateFlow()
+
+        @Synchronized
+        fun loadFailure(context: Context) {
+            mutableFailure.value = context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
+                .contains(STARTUP_FAILURE_KEY)
+        }
+
+        @Synchronized
+        private fun clearFailure(context: Context) {
+            context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
+                .edit().remove(STARTUP_FAILURE_KEY).apply()
+            mutableFailure.value = false
+        }
+
+        suspend fun setEnabled(context: Context, enabled: Boolean) = control(context) {
+            setEngineEnabled(enabled)
+            enabled
+        }
+
+        suspend fun toggleEnabled(context: Context) = control(context) { toggleEngineEnabled() }
+
+        suspend fun reconcileEnabled(context: Context) = control(context) { isEngineEnabled.first() }
+
+        // Never acquire this lock from engineLifetime: controls only enqueue Android commands.
+        private suspend fun control(
+            context: Context,
+            preference: suspend AutomationRepository.() -> Boolean,
+        ): Boolean = controlMutex.withLock {
+            withContext(NonCancellable) {
+                try {
+                    val enabled = AutomationRepository(context.applicationContext).preference()
+                    if (enabled) start(context) else {
+                        stop(context)
+                        clearFailure(context)
+                        com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(context)
+                        true
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    reportStartupFailure(context)
+                    false
+                }
+            }
+        }
+
         // Channel settings are immutable after creation. New ID upgrades older loud channel.
         private const val CHANNEL_ID = "engine_silent_v2"
         private const val FAILURE_CHANNEL_ID = "engine_startup_failure"
@@ -186,34 +257,45 @@ class AutomationService : Service() {
             }
         }
 
+        @Synchronized
         fun reportStartupFailure(context: Context) {
-            context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
-                .edit().putString(STARTUP_FAILURE_KEY, "startup failed").apply()
-            ensureFailureChannel(context)
-            val openIntent = Intent(context, MainActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(
-                context, 1, openIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-            val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Notification.Builder(context, FAILURE_CHANNEL_ID)
-            } else {
-                @Suppress("DEPRECATION")
-                Notification.Builder(context)
+            mutableFailure.value = true
+            try {
+                context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
+                    .edit().putString(STARTUP_FAILURE_KEY, "startup failed").apply()
+            } catch (_: Exception) {
+                Log.w("AutomationService", "Failure status persistence unavailable")
             }
-            val notification = builder
-                .setContentTitle(context.getString(R.string.notif_engine_failure_title))
-                .setContentText(context.getString(R.string.notif_engine_failure_text))
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .setCategory(Notification.CATEGORY_ERROR)
-                .build()
-            (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-                .notify(FAILURE_NOTIF_ID, notification)
+            com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(context)
+            try {
+                ensureFailureChannel(context)
+                val openIntent = Intent(context, MainActivity::class.java)
+                val pendingIntent = PendingIntent.getActivity(
+                    context, 1, openIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+                val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    Notification.Builder(context, FAILURE_CHANNEL_ID)
+                } else {
+                    @Suppress("DEPRECATION")
+                    Notification.Builder(context)
+                }
+                val notification = builder
+                    .setContentTitle(context.getString(R.string.notif_engine_failure_title))
+                    .setContentText(context.getString(R.string.notif_engine_failure_text))
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setCategory(Notification.CATEGORY_ERROR)
+                    .build()
+                (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                    .notify(FAILURE_NOTIF_ID, notification)
+            } catch (_: Exception) {
+                Log.w("AutomationService", "Failure notification unavailable")
+            }
         }
 
-        fun start(context: Context): Boolean {
+        private fun start(context: Context): Boolean {
             return try {
                 val intent = Intent(context, AutomationService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -229,12 +311,8 @@ class AutomationService : Service() {
             }
         }
 
-        fun stop(context: Context) {
-            try {
-                context.stopService(Intent(context, AutomationService::class.java))
-            } catch (_: Throwable) {
-                Log.e("AutomationService", "Failed to stop AutomationService")
-            }
+        private fun stop(context: Context) {
+            context.stopService(Intent(context, AutomationService::class.java))
         }
     }
 }

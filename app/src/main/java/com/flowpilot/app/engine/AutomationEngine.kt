@@ -43,6 +43,8 @@ class AutomationEngine(
     private val flipTracker: DeviceFlipTracker = DeviceFlipTracker(context.applicationContext),
     private val shakeTracker: DeviceShakeTracker = DeviceShakeTracker(context.applicationContext),
     private val lightTracker: LightSensorTracker = LightSensorTracker(context.applicationContext),
+    private val onRunningChanged: (Boolean) -> Unit = {},
+    private val onFailure: () -> Unit = {},
 ) {
 
     private val appContext = context.applicationContext
@@ -71,9 +73,11 @@ class AutomationEngine(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
+                    onFailure()
                     Log.e(TAG, "Engine failed (${e.javaClass.simpleName})")
                 } finally {
                     stopTrackers()
+                    onRunningChanged(false)
                 }
             }
         }
@@ -90,6 +94,7 @@ class AutomationEngine(
         wifiTracker.start()
         bluetoothTracker.start()
         callTracker.start()
+        onRunningChanged(true)
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         // Policy stays responsive while action execution suspends (including long action delays).
         launch {

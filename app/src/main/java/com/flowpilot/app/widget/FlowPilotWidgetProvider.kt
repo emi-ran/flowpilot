@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class FlowPilotWidgetProvider : AppWidgetProvider() {
 
@@ -24,11 +26,15 @@ class FlowPilotWidgetProvider : AppWidgetProvider() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope.launch {
             try {
+                renderMutex.withLock {
                 val repository = AutomationRepository(context)
                 val isEngineEnabled = repository.isEngineEnabled.first()
                 val rules = repository.automations.first()
                 val activeCount = rules.count { it.enabled }
                 val totalCount = rules.size
+                AutomationService.loadFailure(context)
+                val running = AutomationService.running.value
+                val failed = AutomationService.failure.value
 
                 for (appWidgetId in appWidgetIds) {
                     val views = RemoteViews(context.packageName, R.layout.widget_flowpilot_control)
@@ -59,7 +65,7 @@ class FlowPilotWidgetProvider : AppWidgetProvider() {
                     views.setOnClickPendingIntent(R.id.widget_btn_toggle, togglePendingIntent)
 
                     // Update UI state
-                    if (isEngineEnabled) {
+                    if (running) {
                         views.setImageViewResource(R.id.widget_status_dot, R.drawable.bg_widget_circle_active)
                         val statusText = if (totalCount > 0) {
                             context.getString(R.string.widget_active_count, activeCount, totalCount)
@@ -74,7 +80,15 @@ class FlowPilotWidgetProvider : AppWidgetProvider() {
                         views.setImageViewResource(R.id.widget_btn_toggle, R.drawable.ic_widget_play)
                     }
 
+                    if (failed || (isEngineEnabled && !running)) {
+                        views.setTextViewText(R.id.widget_status_text, context.getString(
+                            if (failed) R.string.notif_engine_failure_title else R.string.engine_not_running,
+                        ))
+                    }
+                    views.setImageViewResource(R.id.widget_btn_toggle,
+                        if (isEngineEnabled) R.drawable.ic_widget_pause else R.drawable.ic_widget_play)
                     appWidgetManager.updateAppWidget(appWidgetId, views)
+                }
                 }
             } finally {
                 pendingResult.finish()
@@ -83,21 +97,11 @@ class FlowPilotWidgetProvider : AppWidgetProvider() {
     }
 
     suspend fun handleToggleEngine(context: Context) {
-        val repository = AutomationRepository(context)
-        val isEnabled = repository.isEngineEnabled.first()
-        val newEnabled = !isEnabled
-        repository.setEngineEnabled(newEnabled)
-
-        if (newEnabled) {
-            AutomationService.start(context)
-        } else {
-            AutomationService.stop(context)
-        }
-
-        updateAllWidgets(context)
+        AutomationService.toggleEnabled(context.applicationContext)
     }
 
     companion object {
+        private val renderMutex = Mutex()
         const val ACTION_TOGGLE_ENGINE = "com.flowpilot.app.widget.ACTION_TOGGLE_ENGINE"
 
         fun updateAllWidgets(context: Context) {

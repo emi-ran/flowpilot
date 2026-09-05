@@ -69,6 +69,14 @@ class AutomationRepository(private val context: Context) {
         notifyWidgets()
     }
 
+    suspend fun toggleEngineEnabled(): Boolean {
+        val updated = context.dataStore.edit { prefs ->
+            prefs[engineKey] = !(prefs[engineKey] ?: true)
+        }
+        notifyWidgets()
+        return updated[engineKey] ?: true
+    }
+
     val automations: Flow<List<Automation>> = context.dataStore.data.map { prefs ->
         prefs[key]?.let { raw ->
             val list = safeDecode(raw)

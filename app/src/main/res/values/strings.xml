@@ -707,4 +707,5 @@
     <string name="about_feat_extensible_desc">Offline TTS speech synthesis, NFC, SMS matching, Webhooks, Home Screen widget &amp; Quick Settings tile.</string>
     <string name="about_btn_github">GitHub Repository</string>
     <string name="about_btn_issues">Report Issue / Feedback</string>
+    <string name="engine_not_running">Engine is not running</string>
 </resources>

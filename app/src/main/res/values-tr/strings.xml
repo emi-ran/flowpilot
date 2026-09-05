@@ -707,4 +707,5 @@
     <string name="about_feat_extensible_desc">Çevrimdışı TTS metin okuma, NFC, SMS filtreleme, Webhook\'lar, Ana Ekran widget\'ı ve Hızlı Ayar kutusu.</string>
     <string name="about_btn_github">GitHub Deposu</string>
     <string name="about_btn_issues">Sorun Bildir / Geri Bildirim</string>
+    <string name="engine_not_running">Motor çalışmıyor</string>
 </resources>

@@ -44,7 +44,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val engine by vm.engineRunning.collectAsState()
+    val engine by vm.engineEnabled.collectAsState()
     val appLanguage by vm.appLanguage.collectAsState()
     var showLanguagePicker by remember { mutableStateOf(false) }
     val appTheme by vm.appTheme.collectAsState()

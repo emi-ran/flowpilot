@@ -67,7 +67,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val isNfcEnabled = MutableStateFlow(false)
     val ignoresBatteryOptimizations = MutableStateFlow(false)
     val shizukuState = MutableStateFlow(ShizukuState.NOT_INSTALLED)
-    val engineRunning = MutableStateFlow(false)
+    val engineRunning = AutomationService.running
+    val engineFailure = AutomationService.failure
+    val engineEnabled = repository.isEngineEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
     val appLanguage: StateFlow<String> = repository.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "system")
 
@@ -90,7 +93,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         observeRules()
-        observeEngineState()
+        AutomationService.loadFailure(app)
         refreshPermissions()
         try {
             rikka.shizuku.Shizuku.addBinderReceivedListenerSticky {
@@ -105,17 +108,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun observeRules() {
         viewModelScope.launch {
             repository.automations.collect { rules -> remapRules(rules) }
-        }
-    }
-
-    private fun observeEngineState() {
-        viewModelScope.launch {
-            repository.isEngineEnabled.collect { enabled ->
-                (engineRunning as MutableStateFlow).value = enabled
-                if (enabled) {
-                    AutomationService.start(app)
-                }
-            }
         }
     }
 
@@ -188,11 +180,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         isNfcEnabled.value = c.isNfcEnabled()
         ignoresBatteryOptimizations.value = c.isIgnoringBatteryOptimizations()
 
-        if (engineRunning.value) {
-            try {
-                AutomationService.start(app)
-            } catch (_: Throwable) {}
-        }
+        viewModelScope.launch { AutomationService.reconcileEnabled(app) }
 
         // Re-evaluate capability pills on every rule card immediately.
         viewModelScope.launch { remapRules(repository.automations.first()) }
@@ -376,23 +364,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun startEngine() {
-        viewModelScope.launch {
-            repository.setEngineEnabled(true)
-        }
-        AutomationService.start(getApplication())
-        engineRunning.value = true
+        viewModelScope.launch { AutomationService.setEnabled(app, true) }
     }
 
     fun stopEngine() {
-        viewModelScope.launch {
-            repository.setEngineEnabled(false)
-        }
-        AutomationService.stop(getApplication())
-        (engineRunning as MutableStateFlow).value = false
-    }
-
-    fun updateEngineRunning(value: Boolean) {
-        (engineRunning as MutableStateFlow).value = value
+        viewModelScope.launch { AutomationService.setEnabled(app, false) }
     }
 
     fun exportBackup(rules: List<Automation>? = null): String {
