@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
+import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.security.SecretCipher
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -79,7 +80,13 @@ class AutomationRepository(private val context: Context) {
 
     val executionHistory: Flow<List<ExecutionHistoryEntry>> = context.dataStore.data.map { prefs ->
         prefs[historyKey]?.let { raw ->
-            safeDecodeHistory(raw)
+            val rulesById = prefs[key]?.let { safeDecode(it) }?.associateBy { it.id }.orEmpty()
+            safeDecodeHistory(raw).map { entry ->
+                rulesById[entry.ruleId]
+                    ?.takeIf { it.triggerEvent == TriggerEvent.SMS_RECEIVED }
+                    ?.let { entry.copy(ruleName = it.normalizedName) }
+                    ?: entry
+            }
         } ?: emptyList()
     }
 

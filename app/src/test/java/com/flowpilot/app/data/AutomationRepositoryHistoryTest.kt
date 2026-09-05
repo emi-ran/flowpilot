@@ -34,7 +34,9 @@ class AutomationRepositoryHistoryTest {
         encodeDefaults = true
     }
     private val historySerializer = ListSerializer(ExecutionHistoryEntry.serializer())
+    private val rulesSerializer = ListSerializer(Automation.serializer())
     private val historyKey = stringPreferencesKey("execution_history")
+    private val rulesKey = stringPreferencesKey("rules")
 
     @Before
     fun setup() {
@@ -97,6 +99,50 @@ class AutomationRepositoryHistoryTest {
         )
 
         assertThat(rule.normalizedName).isEqualTo(rule.name)
+    }
+
+    @Test
+    fun executionHistory_normalizesLegacySmsNamesUsingStoredRules_only() = runTest {
+        val legacySmsRule = Automation(
+            id = "legacy",
+            name = "SMS from 555-0100 · NFC enabled",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            actions = listOf(ActionType.NFC_ON),
+            createdAt = 1L,
+        )
+        val customSmsRule = legacySmsRule.copy(
+            id = "custom",
+            name = "SMS from Alice · NFC enabled",
+        )
+        val entries = listOf(
+            ExecutionHistoryEntry.create(
+                id = "legacy-entry",
+                ruleId = "legacy",
+                ruleName = legacySmsRule.name,
+                trigger = TriggerEvent.SMS_RECEIVED.name,
+                timestamp = 1L,
+                actions = listOf(ActionExecutionRecord.create(ActionType.NFC_ON, true, "done")),
+            ),
+            ExecutionHistoryEntry.create(
+                id = "custom-entry",
+                ruleId = "custom",
+                ruleName = customSmsRule.name,
+                trigger = TriggerEvent.SMS_RECEIVED.name,
+                timestamp = 2L,
+                actions = listOf(ActionExecutionRecord.create(ActionType.NFC_ON, true, "done")),
+            ),
+        )
+        repository.rawDataStore.edit { prefs ->
+            prefs[rulesKey] = json.encodeToString(rulesSerializer, listOf(legacySmsRule, customSmsRule))
+            prefs[historyKey] = json.encodeToString(historySerializer, entries)
+        }
+
+        val history = repository.executionHistory.first()
+
+        assertThat(history.map { it.ruleName }).containsExactly(
+            "SMS Received · NFC enabled",
+            customSmsRule.name,
+        ).inOrder()
     }
 
     @Test
