@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_disclosure_title">Dışa aktarmadan veya paylaşmadan önce</string>
+    <string name="backup_disclosure_body">Bu, kısmi ve şifrelenmemiş bir dışa aktarımdır. Webhook URL’leri, başlıkları (kimlik bilgileri dahil) ve gövdeleri çıkarılır. İçe aktardıktan sonra bunları yeniden girmelisiniz. Telefon numaraları, SMS alıcıları ve mesajları, Wi-Fi adları, Bluetooth adresleri, NFC kimlikleri, uygulama adları, URL’ler, bildirim ve konuşma metinleri gibi diğer kişisel veriler korunur. Dosyayı inceleyin ve yalnızca güvendiğiniz kişilerle paylaşın. Bu dosya mevcut ayarlarınızı tamamen geri yükleyemez.</string>
+    <string name="backup_disclosure_continue">Devam et</string>
+    <string name="backup_import_omissions">FlowPilot dışa aktarımları webhook URL’lerini, başlıklarını ve gövdelerini içermez. İçe aktardıktan sonra eksik alanları yeniden girin. İçe aktarılan kurallar siz etkinleştirene kadar kapalı kalır.</string>
+    <string name="backup_replace_warning">Tümünü değiştir, mevcut kurallarınızı ve kayıtlı webhook ayarlarını kalıcı olarak siler. Eksik URL’ler, başlıklar, kimlik bilgileri ve gövdeler temizlenmiş dışa aktarım dosyasından kurtarılamaz. Bunları elle yeniden girin. Mevcut kuralları korumak için birleştirmeyi seçin.</string>
+    <string name="backup_replace_acknowledge">Mevcut kuralların ve kayıtlı webhook ayarlarının silineceğini anlıyorum.</string>
+</resources>

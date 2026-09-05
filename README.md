@@ -6,7 +6,7 @@
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![Android Min SDK](https://img.shields.io/badge/Android-8.0%2B%20(API%2026--36)-brightgreen.svg)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.0-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-purple.svg)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4.svg)](https://developer.android.com/jetpack/compose)
 [![Shizuku](https://img.shields.io/badge/Shizuku-Supported-orange.svg)](https://shizuku.rikka.app)
 [![Tested On](https://img.shields.io/badge/Tested%20On-Xiaomi%20HyperOS-FF6900.svg)](https://mi.com)
@@ -23,6 +23,8 @@
 > [!NOTE]
 > **📱 Device Compatibility & Community Testing Notice:**  
 > FlowPilot is created by an independent developer and is currently **developed and tested primarily on Xiaomi HyperOS (Xiaomi 15T Pro)**, as this is the developer's primary personal device. Standard Android APIs and best practices are adhered to wherever possible, but compatibility with other OEM skins (Google Pixel, Samsung One UI, OxygenOS, Motorola, etc.) has **not been tested yet**. Feedback, test reports on other hardware, and pull requests from other developers are warmly welcomed!
+>
+> CI runs `connectedDebugAndroidTest` on an API 35 Android Emulator. This checks runtime contracts in `RuntimeContractsInstrumentedTest`; it does not replace physical-device or OEM smoke testing. Release workflow blocks APK publishing when this emulator gate fails.
 
 ## 🌟 Why FlowPilot?
 
@@ -30,7 +32,7 @@ Most popular automation tools on Android are burdened with cloud requirements, a
 
 **FlowPilot** takes a completely different approach:
 
-- 🔒 **100% Offline & Private:** Zero network analytics, no third-party SDKs, no user accounts. Your rules and sensitive data never leave your phone.
+- 🔒 **Private by Default:** No telemetry or cloud sync. Configured Webhooks, SMS, and exports can send only data you choose.
 - ⚡ **Battery-Efficient & Event-Driven:** No constant CPU wake-locks. Sensors (accelerometer, proximity, ambient light) and broadcast receivers register only on-demand when active rules require them.
 - 🛡️ **Shizuku Integration:** Execute system-level tasks (toggle Mobile Data, Airplane Mode, GPS, Dark Mode) securely with user-granted ADB permissions—without requiring root access.
 - 🎨 **Modern Material 3 Design:** Fully native Jetpack Compose architecture supporting dynamic Dark & Light themes, fluid animations, and high accessibility standards.
@@ -101,7 +103,7 @@ Chain multiple sequential actions within a single rule, complete with custom dra
 - **Clock & Alarms:** Create system alarm, start background timer (1s–24h with `EXTRA_SKIP_UI`).
 - **Apps & Web:** Launch installed application, open website URL.
 - **Phone & SMS:** Open dialer, dial phone number, directly place phone call, send direct automated background SMS, prepare SMS draft.
-- **HTTP Webhook:** Send outbound HTTP/HTTPS requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with headers, body, AES-256-GCM Keystore encrypted secrets, and live template variables (`${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`).
+- **HTTPS Webhook:** Send outbound HTTPS requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with headers, body, AES-256-GCM Keystore encrypted secrets, and live template variables (`${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`).
 
 ---
 
@@ -142,7 +144,7 @@ FlowPilot
 └── app/src/test/         # Deterministic JUnit unit test suites
 ```
 
-- **Language:** Kotlin 2.0+
+- **Language:** Kotlin 2.2.10
 - **UI Framework:** Jetpack Compose & Material 3
 - **Concurrency:** Kotlin Coroutines & StateFlow
 - **Persistence:** Android Jetpack DataStore (Preferences & JSON serialization)
@@ -202,10 +204,16 @@ Certain privileged actions (toggling Mobile Data, Airplane Mode, GPS, Dark Mode,
 ## 🔒 Privacy & Permissions Notice
 
 FlowPilot operates on a **zero-trust privacy model**:
-- **No Internet Telemetry:** The app contains no crash reporters, analytics endpoints, or remote ad SDKs.
+- **No Telemetry or Cloud Sync:** The app contains no crash reporters, analytics endpoints, remote ad SDKs, or cloud synchronization.
+- **Configured Data Sharing:** User-configured Webhooks, SMS actions, and exports can send only data you choose.
 - **Location:** Used strictly locally to read current Wi-Fi SSID and optionally inject coordinates into user-defined Webhooks or SMS replies.
 - **Phone & SMS:** Used only to trigger automations on call states or user-specified SMS text patterns. Phone numbers are masked in all logs and history.
-- **No Cloud Sync:** Your automations belong to you. Use the built-in **Backup & Restore** feature to export or import your rules as JSON files.
+
+### Distribution and restricted permissions
+
+FlowPilot declares `QUERY_ALL_PACKAGES` because its user-facing App Picker calls `PackageManager.getInstalledApplications()` and filters launchable packages for app triggers and app-targeted actions. Removing it breaks this core picker on Android versions that limit package visibility. `RECEIVE_SMS` is used by `SmsReceiver` for incoming SMS triggers; `SEND_SMS` is used by `SmsExecutor` for user-configured direct SMS actions. `ACCESS_BACKGROUND_LOCATION` is used by `LocationFetcher` when active rules need coordinates while the activity is not visible; `FOREGROUND_SERVICE_LOCATION` authorizes the location foreground-service subtype. Location is not collected continuously when no rule needs it.
+
+These permissions are restricted or policy-sensitive on Google Play. This repository does **not** claim Play compliance or guaranteed approval. No Play-specific permission-reduced flavor exists: removing these declarations would disable core features. Any Play release requires current policy review, required declarations, accurate Data safety disclosures, and Google approval. Until then, distribute builds through GitHub releases, F-Droid, or sideloading. Users should install only builds from sources they trust.
 
 ---
 

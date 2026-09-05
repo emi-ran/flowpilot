@@ -14,6 +14,7 @@ import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.engine.AutomationService
+import com.flowpilot.app.engine.requiresLocation
 import com.flowpilot.app.permission.CapabilityManager
 import com.flowpilot.app.permission.CapabilityStatus
 import com.flowpilot.app.permission.ShizukuState
@@ -66,7 +67,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val isNfcEnabled = MutableStateFlow(false)
     val ignoresBatteryOptimizations = MutableStateFlow(false)
     val shizukuState = MutableStateFlow(ShizukuState.NOT_INSTALLED)
-    val engineRunning = MutableStateFlow(false)
+    val engineRunning = AutomationService.running
+    val engineFailure = AutomationService.failure
+    val engineEnabled = repository.isEngineEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
     val appLanguage: StateFlow<String> = repository.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "system")
 
@@ -89,7 +93,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         observeRules()
-        observeEngineState()
+        AutomationService.loadFailure(app)
         refreshPermissions()
         try {
             rikka.shizuku.Shizuku.addBinderReceivedListenerSticky {
@@ -104,17 +108,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun observeRules() {
         viewModelScope.launch {
             repository.automations.collect { rules -> remapRules(rules) }
-        }
-    }
-
-    private fun observeEngineState() {
-        viewModelScope.launch {
-            repository.isEngineEnabled.collect { enabled ->
-                (engineRunning as MutableStateFlow).value = enabled
-                if (enabled) {
-                    AutomationService.start(app)
-                }
-            }
         }
     }
 
@@ -187,11 +180,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         isNfcEnabled.value = c.isNfcEnabled()
         ignoresBatteryOptimizations.value = c.isIgnoringBatteryOptimizations()
 
-        if (engineRunning.value) {
-            try {
-                AutomationService.start(app)
-            } catch (_: Throwable) {}
-        }
+        viewModelScope.launch { AutomationService.reconcileEnabled(app) }
 
         // Re-evaluate capability pills on every rule card immediately.
         viewModelScope.launch { remapRules(repository.automations.first()) }
@@ -375,23 +364,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun startEngine() {
-        viewModelScope.launch {
-            repository.setEngineEnabled(true)
-        }
-        AutomationService.start(getApplication())
-        engineRunning.value = true
+        viewModelScope.launch { AutomationService.setEnabled(app, true) }
     }
 
     fun stopEngine() {
-        viewModelScope.launch {
-            repository.setEngineEnabled(false)
-        }
-        AutomationService.stop(getApplication())
-        (engineRunning as MutableStateFlow).value = false
-    }
-
-    fun updateEngineRunning(value: Boolean) {
-        (engineRunning as MutableStateFlow).value = value
+        viewModelScope.launch { AutomationService.setEnabled(app, false) }
     }
 
     fun exportBackup(rules: List<Automation>? = null): String {
@@ -435,7 +412,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 type = "application/json"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, app.getString(R.string.backup_share_rule_subject, rule.name))
-                putExtra(Intent.EXTRA_TEXT, content)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val chooser = Intent.createChooser(intent, app.getString(R.string.backup_share_rule_title)).apply {
@@ -443,7 +419,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             app.startActivity(chooser)
         } catch (e: Exception) {
-            android.util.Log.e("AppViewModel", "shareRule error: ${e.message}", e)
+            android.util.Log.e("AppViewModel", "Unable to share rule backup")
         }
     }
 
@@ -458,7 +434,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 type = "application/json"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, app.getString(R.string.backup_share_all_subject, targets.size))
-                putExtra(Intent.EXTRA_TEXT, content)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val chooser = Intent.createChooser(intent, app.getString(R.string.settings_backup_title)).apply {
@@ -466,7 +441,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             app.startActivity(chooser)
         } catch (e: Exception) {
-            android.util.Log.e("AppViewModel", "shareBackup error: ${e.message}", e)
+            android.util.Log.e("AppViewModel", "Unable to share backup")
         }
     }
 
@@ -478,7 +453,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun runRuleNow(rule: Automation, callback: (ManualRunResult) -> Unit) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val liveState = getLiveSystemState()
-            val coords = com.flowpilot.app.engine.LocationFetcher.getCoordinates(app)
+            val coords = if (rule.requiresLocation()) {
+                com.flowpilot.app.engine.LocationFetcher.getCoordinates(app)
+            } else {
+                null
+            }
             val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
                 trigger = "MANUAL",
                 timestamp = System.currentTimeMillis(),
@@ -575,7 +554,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             } finally {
                 val historyEntry = ExecutionHistoryEntry.create(
                     ruleId = rule.id,
-                    ruleName = rule.name,
+                    ruleName = rule.normalizedName,
                     trigger = "MANUAL",
                     timestamp = System.currentTimeMillis(),
                     actions = actionRecords,

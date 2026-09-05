@@ -65,6 +65,25 @@ class SmsExecutorTest {
     }
 
     @Test
+    fun sendSms_hidesProviderExceptionDetails() {
+        shadowOf(app).grantPermissions(Manifest.permission.SEND_SMS)
+        val secret = "provider-token=https://sms.example.test/send?apiKey=secret123 +905551234567"
+        val executor = SmsExecutor(
+            context = app,
+            sendTextMessage = { _, _ -> throw IllegalStateException(secret) }
+        )
+
+        val result = executor.execute(
+            ActionType.SEND_SMS,
+            ActionParameters(smsRecipient = "+905****4567", smsMessage = "Hello World")
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.message).isEqualTo("Failed to send SMS")
+        assertThat(result.message).doesNotContain(secret)
+    }
+
+    @Test
     fun sendSms_sendsMessage_whenPermissionGranted() {
         shadowOf(app).grantPermissions(Manifest.permission.SEND_SMS)
         var capturedRecipient: String? = null

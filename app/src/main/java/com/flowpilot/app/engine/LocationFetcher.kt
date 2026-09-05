@@ -29,8 +29,19 @@ object LocationFetcher {
      * 4. If active fix succeeds within timeout, returns it.
      * 5. If active fix times out, falls back to the best cached location (if any).
      */
-    suspend fun getCoordinates(context: Context, timeoutMs: Long = 5000L): Pair<Double, Double>? = withContext(Dispatchers.IO) {
+    suspend fun getCoordinates(
+        context: Context,
+        timeoutMs: Long = 5000L,
+        isBackgroundExecution: Boolean = false,
+    ): Pair<Double, Double>? = withContext(Dispatchers.IO) {
         try {
+            if (isBackgroundExecution && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.w(TAG, "Background location permission not granted")
+                return@withContext null
+            }
+
             val hasFine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
             val hasCoarse = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
             if (!hasFine && !hasCoarse) {
@@ -58,10 +69,9 @@ object LocationFetcher {
             val cachedLocation = getBestCachedLocation(lm)
             val now = System.currentTimeMillis()
             if (cachedLocation != null) {
-                val ageMs = now - cachedLocation.time
                 // If cached location is less than 60 seconds old and reasonably accurate, use it immediately
-                if (ageMs < 60_000L && cachedLocation.hasAccuracy() && cachedLocation.accuracy <= 50f) {
-                    Log.d(TAG, "Using fresh cached location (age: ${ageMs}ms, acc: ${cachedLocation.accuracy}m)")
+                if (isValidCachedLocation(cachedLocation, now)) {
+                    Log.d(TAG, "Using fresh cached location")
                     return@withContext cachedLocation.latitude to cachedLocation.longitude
                 }
             }
@@ -72,23 +82,23 @@ object LocationFetcher {
             }
 
             if (freshLocation != null) {
-                Log.d(TAG, "Obtained fresh location fix: ${freshLocation.latitude}, ${freshLocation.longitude}")
+                Log.d(TAG, "Obtained fresh location fix")
                 return@withContext freshLocation.latitude to freshLocation.longitude
             }
 
             // Step 3: Fall back to best cached location if fresh request timed out
-            if (cachedLocation != null) {
-                Log.d(TAG, "Fresh fix timed out; falling back to cached location")
+            if (cachedLocation != null && isValidCachedLocation(cachedLocation, now)) {
+                Log.d(TAG, "Fresh fix timed out; falling back to valid cached location")
                 return@withContext cachedLocation.latitude to cachedLocation.longitude
             }
 
             Log.w(TAG, "Could not obtain any location fix")
             null
-        } catch (se: SecurityException) {
-            Log.e(TAG, "SecurityException while accessing location: ${se.message}")
+        } catch (_: SecurityException) {
+            Log.e(TAG, "Security error while accessing location")
             null
-        } catch (t: Throwable) {
-            Log.e(TAG, "Error fetching location: ${t.message}")
+        } catch (_: Throwable) {
+            Log.e(TAG, "Location fetch failed")
             null
         }
     }
@@ -177,6 +187,8 @@ object LocationFetcher {
                     listener,
                     Looper.getMainLooper(),
                 )
+            } catch (_: SecurityException) {
+                if (cont.isActive) cont.resume(null)
             } catch (_: Throwable) {
                 if (cont.isActive) cont.resume(null)
             }

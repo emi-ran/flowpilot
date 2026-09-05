@@ -17,6 +17,7 @@ class ScreenStateTracker(private val context: Context) {
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            if (!registered) return
             val event = when (intent.action) {
                 Intent.ACTION_SCREEN_ON -> ScreenEvent.ON
                 Intent.ACTION_SCREEN_OFF -> ScreenEvent.OFF
@@ -52,5 +53,6 @@ class ScreenStateTracker(private val context: Context) {
         context.unregisterReceiver(receiver)
         registered = false
         events.clear()
+        lastEvent = null
     }
 }

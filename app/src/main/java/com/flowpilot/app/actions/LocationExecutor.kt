@@ -3,6 +3,7 @@ package com.flowpilot.app.actions
 import android.content.Context
 import android.location.LocationManager
 import android.os.SystemClock
+import androidx.core.location.LocationManagerCompat
 import com.flowpilot.app.data.model.ActionType
 
 /**
@@ -15,7 +16,7 @@ class LocationExecutor(
     private val locationManagerProvider: (Context) -> LocationManager? = { ctx ->
         ctx.applicationContext.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
     },
-    private val enabledReader: (LocationManager) -> Boolean = { it.isLocationEnabled },
+    private val enabledReader: (LocationManager) -> Boolean = { LocationManagerCompat.isLocationEnabled(it) },
     private val enabledStateReader: () -> Boolean? = {
         try { locationManagerProvider(context)?.let(enabledReader) } catch (_: Throwable) { null }
     },

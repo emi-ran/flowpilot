@@ -14,7 +14,7 @@ class LaunchExecutor(
     override val supportedTypes = setOf(ActionType.LAUNCH_APP, ActionType.OPEN_URL)
 
     override fun execute(action: ActionType, parameters: ActionParameters): ActionResult = try {
-        Log.i(TAG, "Executing ${action.name}: package=${parameters.launchPackage.ifBlank { "<empty>" }}, url=${parameters.url.ifBlank { "<empty>" }}")
+        Log.i(TAG, "Executing ${action.name}")
         val intent = when (action) {
             ActionType.LAUNCH_APP -> {
                 if (parameters.launchPackage.isBlank()) return ActionResult(false, "Choose an app to launch")
@@ -34,11 +34,11 @@ class LaunchExecutor(
             else -> return ActionResult(false, "Unsupported launch action")
         }
         launch(intent)
-        Log.i(TAG, "Started ${action.name}: $intent")
+        Log.i(TAG, "Started ${action.name}")
         ActionResult(true, if (action == ActionType.LAUNCH_APP) "App launched" else "URL opened")
-    } catch (t: Throwable) {
-        Log.w(TAG, "Failed ${action.name}: ${t.message}", t)
-        ActionResult(false, t.message ?: t.javaClass.simpleName)
+    } catch (_: Throwable) {
+        Log.w(TAG, "Failed ${action.name}")
+        ActionResult(false, "Unable to complete ${action.name.lowercase().replace('_', ' ')}")
     }
 
     private companion object {

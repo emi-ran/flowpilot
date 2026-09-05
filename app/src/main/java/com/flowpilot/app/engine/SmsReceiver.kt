@@ -54,9 +54,7 @@ class SmsReceiver : BroadcastReceiver() {
     private fun ensureEngineRunning(appContext: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                if (AutomationRepository(appContext).isEngineEnabled.first()) {
-                    AutomationService.start(appContext)
-                }
+                AutomationService.reconcileEnabled(appContext)
             } catch (_: Throwable) {}
         }
     }

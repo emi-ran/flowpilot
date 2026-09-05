@@ -54,6 +54,93 @@ class AutomationRepositoryCryptoTest {
     }
 
     @Test
+    fun add_smsRule_withSenderFilter_usesGenericGeneratedName() = runTest {
+        val rule = repository.add(
+            name = "",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.NFC_ON),
+            smsSenderFilter = "555-0100",
+        )
+
+        assertThat(rule.name).isEqualTo("SMS Received · Turn NFC on")
+        assertThat(rule.name).doesNotContain("555-0100")
+    }
+
+    @Test
+    fun automations_legacySmsGeneratedName_isNormalizedWithoutSender() = runTest {
+        val legacy = Automation(
+            id = "legacy",
+            name = "SMS from 555-0100 · NFC enabled",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            actions = listOf(ActionType.NFC_ON),
+            createdAt = 1L,
+        )
+        repository.rawDataStore.edit { prefs ->
+            prefs[key] = json.encodeToString(listSerializer, listOf(legacy))
+        }
+
+        val loaded = repository.automations.first().single()
+
+        assertThat(loaded.name).isEqualTo("SMS Received · Turn NFC on")
+    }
+
+    @Test
+    fun update_legacySmsGeneratedName_persistsNormalizedName() = runTest {
+        val legacy = Automation(
+            id = "legacy",
+            name = "SMS from 555-0100 · NFC enabled",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            actions = listOf(ActionType.NFC_ON),
+            createdAt = 1L,
+        )
+        repository.rawDataStore.edit { prefs ->
+            prefs[key] = json.encodeToString(listSerializer, listOf(legacy))
+        }
+
+        repository.update(legacy)
+
+        assertThat(repository.automations.first().single().name)
+            .isEqualTo("SMS Received · Turn NFC on")
+    }
+
+    @Test
+    fun customSmsName_isPreserved() = runTest {
+        val rule = repository.add(
+            name = "Family alerts",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.NFC_ON),
+        )
+
+        assertThat(repository.automations.first().single().name).isEqualTo(rule.name)
+        assertThat(rule.name).isEqualTo("Family alerts")
+    }
+
+    @Test
+    fun importAutomations_normalizesLegacySmsNamesBeforePersisting() = runTest {
+        val legacy = Automation("legacy", "SMS from 555-0100 · NFC enabled", triggerEvent = TriggerEvent.SMS_RECEIVED, actions = listOf(ActionType.NFC_ON), createdAt = 1L)
+        val custom = legacy.copy(id = "custom", name = "SMS from Alice · NFC enabled")
+
+        repository.importAutomations(listOf(legacy, custom), com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL)
+
+        val stored = json.decodeFromString(listSerializer, repository.rawDataStore.data.first()[key]!!)
+        assertThat(stored.map { it.name }).containsExactly("SMS Received · Turn NFC on", custom.name).inOrder()
+    }
+
+    @Test
+    fun replaceAll_normalizesLegacySmsNamesBeforePersisting() = runTest {
+        val legacy = Automation("legacy", "SMS from 555-0100 · NFC enabled", triggerEvent = TriggerEvent.SMS_RECEIVED, actions = listOf(ActionType.NFC_ON), createdAt = 1L)
+
+        repository.replaceAll(listOf(legacy))
+
+        val stored = json.decodeFromString(listSerializer, repository.rawDataStore.data.first()[key]!!)
+        assertThat(stored.single().name).isEqualTo("SMS Received · Turn NFC on")
+    }
+
+    @Test
     fun add_webhookRule_persistsEncryptedInStore_andEmitsDecryptedInFlow() = runTest {
         val rule = repository.add(
             name = "Webhook Alert",

@@ -58,9 +58,18 @@ fun HomeScreen(
 ) {
     val rules by vm.automations.collectAsState()
     val engine by vm.engineRunning.collectAsState()
+    val engineEnabled by vm.engineEnabled.collectAsState()
+    val engineFailure by vm.engineFailure.collectAsState()
     var selectedRuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPresetsSheet by remember { mutableStateOf(false) }
+    var pendingShare by remember { mutableStateOf<List<Automation>?>(null) }
+    pendingShare?.let { selected ->
+        BackupDisclosureDialog(
+            onConfirm = { pendingShare = null; vm.shareBackup(selected) },
+            onDismiss = { pendingShare = null },
+        )
+    }
     val isSelectionMode = selectedRuleIds.isNotEmpty()
 
     BackHandler(enabled = isSelectionMode) {
@@ -114,7 +123,7 @@ fun HomeScreen(
                         }
                         IconButton({
                             val selected = rules.filter { it.rule.id in selectedRuleIds }.map { it.rule }
-                            vm.shareBackup(selected)
+                            pendingShare = selected
                         }) {
                             Icon(Icons.Default.Share, stringResource(R.string.btn_share))
                         }
@@ -196,12 +205,19 @@ fun HomeScreen(
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
-                            if (engine) stringResource(R.string.home_engine_active) else stringResource(R.string.home_engine_paused),
+                            stringResource(when {
+                                engineFailure -> R.string.notif_engine_failure_title
+                                engine -> R.string.home_engine_active
+                                engineEnabled -> R.string.engine_not_running
+                                else -> R.string.home_engine_paused
+                            }),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
                         val activeCount = rules.count { it.rule.enabled }
                         val subtitleText = when {
+                            engineFailure -> stringResource(R.string.notif_engine_failure_text)
+                            engineEnabled && !engine -> stringResource(R.string.engine_not_running)
                             !engine -> stringResource(R.string.home_engine_paused_desc)
                             rules.isEmpty() -> stringResource(R.string.home_no_rules_yet)
                             else -> stringResource(R.string.home_engine_active_count, activeCount, rules.size)
@@ -212,7 +228,7 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    FollowSwitch(engine, { if (it) vm.startEngine() else vm.stopEngine() })
+                    FollowSwitch(engineEnabled, { if (it) vm.startEngine() else vm.stopEngine() })
                 }
             }
 
@@ -454,9 +470,7 @@ private fun RuleCard(
                     TriggerEvent.LIGHT_BELOW,
                     TriggerEvent.LIGHT_ABOVE -> stringResource(R.string.detail_threshold_light, item.rule.lightLux)
                     TriggerEvent.SMS_RECEIVED -> {
-                        val sender = if (item.rule.smsSenderFilter.isBlank()) stringResource(R.string.detail_any_sender) else item.rule.smsSenderFilter
-                        val filter = if (item.rule.smsKeyword.isNotBlank()) " · \"${item.rule.smsKeyword}\"" else ""
-                        "$sender$filter"
+                        if (item.rule.smsKeyword.isNotBlank()) "\"${item.rule.smsKeyword}\"" else ""
                     }
                     else -> item.rule.appName.ifBlank { item.rule.appPackage }
                 }

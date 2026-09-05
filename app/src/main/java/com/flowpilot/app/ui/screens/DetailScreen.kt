@@ -76,6 +76,13 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
+    var pendingShare by remember { mutableStateOf<Automation?>(null) }
+    pendingShare?.let { rule ->
+        BackupDisclosureDialog(
+            onConfirm = { pendingShare = null; vm.shareRule(rule) },
+            onDismiss = { pendingShare = null },
+        )
+    }
     BackHandler(onBack = back)
     val context = LocalContext.current
     var event by remember(initialRule.id) { mutableStateOf(initialRule.triggerEvent) }
@@ -432,7 +439,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 actions = actions,
                                 actionDelays = actions.indices.map { actionDelays.getOrElse(it) { 0 } },
                             )
-                            vm.shareRule(currentFormRule)
+                            pendingShare = currentFormRule
                         }
                     ) {
                         Icon(

@@ -379,8 +379,8 @@ fun AppLocaleProvider(
 
     val targetLocale = androidx.compose.runtime.remember(language) {
         when (language.lowercase()) {
-            "tr" -> java.util.Locale("tr")
-            "en" -> java.util.Locale("en")
+            "tr" -> java.util.Locale.forLanguageTag("tr")
+            "en" -> java.util.Locale.forLanguageTag("en")
             else -> java.util.Locale.getDefault()
         }
     }

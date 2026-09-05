@@ -52,6 +52,16 @@ data class ExecutionHistoryEntry(
     val status: ExecutionStatus,
     val actions: List<ActionExecutionRecord>,
 ) {
+    /** Normalize only legacy generated SMS snapshots, never today's rule name. */
+    val normalizedRuleName: String
+        get() = if ((trigger == TriggerEvent.SMS_RECEIVED.name || trigger == "MANUAL") &&
+            Automation.LEGACY_SMS_GENERATED_NAME.matches(ruleName)
+        ) {
+            "SMS Received · ${ruleName.substringAfter(" · ")}"
+        } else {
+            ruleName
+        }
+
     companion object {
         fun create(
             id: String = java.util.UUID.randomUUID().toString(),

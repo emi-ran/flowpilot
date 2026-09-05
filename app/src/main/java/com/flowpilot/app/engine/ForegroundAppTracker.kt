@@ -16,6 +16,8 @@ class ForegroundAppTracker(
     @Volatile
     private var lastEventTime: Long = initialEventTime
 
+    fun reset() { lastEventTime = System.currentTimeMillis() }
+
     data class Transition(
         val packageName: String,
         val isForeground: Boolean,

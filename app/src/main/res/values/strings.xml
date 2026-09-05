@@ -5,6 +5,10 @@
     <string name="notif_channel_engine_desc">Silent status required while FlowPilot automations run</string>
     <string name="notif_engine_title">Automation active</string>
     <string name="notif_engine_text">FlowPilot is running schedules</string>
+    <string name="notif_channel_engine_failure">Automation startup problems</string>
+    <string name="notif_channel_engine_failure_desc">Alerts when FlowPilot cannot start automation after startup</string>
+    <string name="notif_engine_failure_title">Automation did not start</string>
+    <string name="notif_engine_failure_text">Open FlowPilot to check permissions and restart automation.</string>
     <string name="special_use_subtype">Detects foreground app changes and applies user-configured automations (NFC, battery saver).</string>
 
     <!-- General / Navigation -->
@@ -180,7 +184,7 @@
     <string name="action_start_timer">Start timer</string>
     <string name="action_launch_app">Launch app</string>
     <string name="action_open_url">Open URL</string>
-    <string name="action_http_webhook">Send HTTP webhook</string>
+    <string name="action_http_webhook">Send HTTPS webhook</string>
     <string name="action_open_dialer">Open dialer</string>
     <string name="action_dial_number">Dial phone number</string>
     <string name="action_call_number">Call phone number directly</string>
@@ -346,7 +350,7 @@
     <string name="action_speak_text_desc">Synthesize and speak voice text with TTS</string>
     <string name="action_launch_app_desc">Start an installed app into the foreground</string>
     <string name="action_open_url_desc">Open website or deep link in default browser</string>
-    <string name="action_http_webhook_desc">Send HTTP request (Home Assistant, Discord, ntfy)</string>
+    <string name="action_http_webhook_desc">Send HTTPS request (Home Assistant, Discord, ntfy)</string>
     <string name="action_force_stop_app_desc">Force terminate a running application (requires Shizuku)</string>
     <string name="action_dark_theme_on_desc">Enable system-wide dark theme (requires Shizuku)</string>
     <string name="action_dark_theme_off_desc">Disable dark theme / switch to light mode (requires Shizuku)</string>
@@ -668,7 +672,7 @@
     <string name="trigger_bluetooth_title">Bluetooth device</string>
     <string name="trigger_notif_title">App notification</string>
     <string name="trigger_notif_keyword_label">Keyword filter (optional, case-insensitive)</string>
-    <string name="trigger_webhook_title">HTTP Webhook</string>
+    <string name="trigger_webhook_title">HTTPS Webhook</string>
     <string name="action_delay_before">Delay before action: %1$ds</string>
     <string name="action_no_delay_label">No delay</string>
 
@@ -694,7 +698,7 @@
     <string name="about_badge_version">v%1$s (Build %2$d)</string>
     <string name="about_badge_license">GPL-3.0 License</string>
     <string name="about_feat_offline_title">100% Offline &amp; Private</string>
-    <string name="about_feat_offline_desc">Zero trackers, no analytics, no cloud account. All rules and sensor data strictly remain on your device.</string>
+    <string name="about_feat_offline_desc">No telemetry or cloud sync. Configured Webhooks, SMS, and exports can send only data you choose.</string>
     <string name="about_feat_battery_title">Optimized &amp; Battery-Friendly</string>
     <string name="about_feat_battery_desc">Event-driven architecture. Sensors and listeners activate only when matching rules require them.</string>
     <string name="about_feat_shizuku_title">Shizuku Integration</string>
@@ -703,4 +707,5 @@
     <string name="about_feat_extensible_desc">Offline TTS speech synthesis, NFC, SMS matching, Webhooks, Home Screen widget &amp; Quick Settings tile.</string>
     <string name="about_btn_github">GitHub Repository</string>
     <string name="about_btn_issues">Report Issue / Feedback</string>
+    <string name="engine_not_running">Engine is not running</string>
 </resources>

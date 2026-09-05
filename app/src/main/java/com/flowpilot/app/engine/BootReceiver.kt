@@ -22,10 +22,11 @@ class BootReceiver : BroadcastReceiver() {
             val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    if (AutomationRepository(context.applicationContext).isEngineEnabled.first()) {
-                        AutomationService.start(context.applicationContext)
+                    if (!AutomationService.reconcileEnabled(context.applicationContext)) {
+                        Log.w("BootReceiver", "AutomationService startup blocked; failure saved in automation_service_status")
                     }
                 } catch (t: Throwable) {
+                    AutomationService.reportStartupFailure(context.applicationContext)
                     Log.e("BootReceiver", "Failed to start AutomationService on boot: ${t.message}", t)
                 } finally {
                     try {

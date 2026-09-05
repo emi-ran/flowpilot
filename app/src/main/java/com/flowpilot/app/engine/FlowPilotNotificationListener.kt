@@ -111,9 +111,7 @@ class FlowPilotNotificationListener : NotificationListenerService() {
             lastWatchdogCheckMs = now
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    if (AutomationRepository(applicationContext).isEngineEnabled.first()) {
-                        AutomationService.start(applicationContext)
-                    }
+                    AutomationService.reconcileEnabled(applicationContext)
                 } catch (_: Throwable) {}
             }
         }

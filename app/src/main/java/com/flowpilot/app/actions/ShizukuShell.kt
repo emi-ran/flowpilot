@@ -98,16 +98,16 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
             val result = service.run(command)
             val newline = result.indexOf('\n')
             val pair = if (newline < 0) (-1 to result) else (result.substring(0, newline).toIntOrNull() ?: -1) to result.substring(newline + 1)
-            android.util.Log.i("ShizukuShell", "Executed '$command' -> exitCode=${pair.first}, output='${pair.second}'")
+            android.util.Log.i("ShizukuShell", "Command completed: exitCode=${pair.first}")
             pair
-        } catch (t: Throwable) {
-            android.util.Log.e("ShizukuShell", "Command error: ${t.message}", t)
+        } catch (_: Throwable) {
+            android.util.Log.e("ShizukuShell", "Command execution failed")
             synchronized(bindLock) {
                 commandService = null
                 bindLatch?.countDown()
                 bindLatch = null
             }
-            -1 to (t.message ?: t.javaClass.simpleName)
+            -1 to "Shizuku command execution failed"
         }
     }
 
@@ -147,9 +147,9 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
             ).daemon(false).tag("flowpilot-command").version(BuildConfig.VERSION_CODE).debuggable(BuildConfig.DEBUG).processNameSuffix("command")
             Shizuku.bindUserService(args, connection)
             latch
-        } catch (t: Throwable) {
+        } catch (_: Throwable) {
             bindLatch = null
-            android.util.Log.e("ShizukuShell", "bindUserService failed: ${t.message}", t)
+            android.util.Log.e("ShizukuShell", "User service binding failed")
             null
         }
     }

@@ -5,6 +5,10 @@
     <string name="notif_channel_engine_desc">FlowPilot otomasyonları çalışırken gerekli sessiz durum bildirimi</string>
     <string name="notif_engine_title">Otomasyon etkin</string>
     <string name="notif_engine_text">FlowPilot kuralları çalıştırılıyor</string>
+    <string name="notif_channel_engine_failure">Otomasyon başlatma sorunları</string>
+    <string name="notif_channel_engine_failure_desc">FlowPilot açılıştan sonra otomasyonu başlatamadığında uyarır</string>
+    <string name="notif_engine_failure_title">Otomasyon başlatılamadı</string>
+    <string name="notif_engine_failure_text">İzinleri kontrol etmek ve otomasyonu yeniden başlatmak için FlowPilot uygulamasını açın.</string>
     <string name="special_use_subtype">Ön plan uygulama değişikliklerini algılar ve yapılandırılmış otomasyonları uygular.</string>
 
     <!-- General / Navigation -->
@@ -180,7 +184,7 @@
     <string name="action_start_timer">Zamanlayıcı başlat</string>
     <string name="action_launch_app">Uygulama başlat</string>
     <string name="action_open_url">URL aç</string>
-    <string name="action_http_webhook">HTTP Webhook gönder</string>
+    <string name="action_http_webhook">HTTPS Webhook gönder</string>
     <string name="action_open_dialer">Arama ekranını aç</string>
     <string name="action_dial_number">Numarayı tuşla</string>
     <string name="action_call_number">Doğrudan telefon araması yap</string>
@@ -346,7 +350,7 @@
     <string name="action_speak_text_desc">Metni sesli okuma (TTS) ile seslendirir</string>
     <string name="action_launch_app_desc">Yüklü bir uygulamayı ön planda açar</string>
     <string name="action_open_url_desc">Web sitesini veya bağlantıyı tarayıcıda açar</string>
-    <string name="action_http_webhook_desc">HTTP isteği gönderir (Home Assistant, Discord, ntfy vb.)</string>
+    <string name="action_http_webhook_desc">HTTPS isteği gönderir (Home Assistant, Discord, ntfy vb.)</string>
     <string name="action_force_stop_app_desc">Çalışan bir uygulamayı zorla durdurur (Shizuku gerekir)</string>
     <string name="action_dark_theme_on_desc">Sistem genelinde koyu temayı açar (Shizuku gerekir)</string>
     <string name="action_dark_theme_off_desc">Koyu temayı kapatır / açık temaya geçer (Shizuku gerekir)</string>
@@ -668,7 +672,7 @@
     <string name="trigger_bluetooth_title">Bluetooth cihazı</string>
     <string name="trigger_notif_title">Uygulama bildirimi</string>
     <string name="trigger_notif_keyword_label">Anahtar kelime filtresi (isteğe bağlı, büyük/küçük harf duyarsız)</string>
-    <string name="trigger_webhook_title">HTTP Webhook</string>
+    <string name="trigger_webhook_title">HTTPS Webhook</string>
     <string name="action_delay_before">Eylem öncesi gecikme: %1$ds</string>
     <string name="action_no_delay_label">Gecikmesiz</string>
 
@@ -694,7 +698,7 @@
     <string name="about_badge_version">v%1$s (Derleme %2$d)</string>
     <string name="about_badge_license">GPL-3.0 Lisansı</string>
     <string name="about_feat_offline_title">%100 Çevrimdışı &amp; Gizli</string>
-    <string name="about_feat_offline_desc">Sıfır izleyici, telemetri yok, bulut hesabı yok. Tüm kurallarınız ve verileriniz yalnızca cihazınızda kalır.</string>
+    <string name="about_feat_offline_desc">Telemetri veya bulut eşitlemesi yoktur. Yapılandırılmış Webhook, SMS ve dışa aktarma işlemleri yalnızca seçtiğiniz verileri gönderebilir.</string>
     <string name="about_feat_battery_title">Optimize &amp; Pil Dostu</string>
     <string name="about_feat_battery_desc">Olay odaklı mimari. Sensörler ve dinleyiciler yalnızca eşleşen kurallar aktif olduğunda çalışır.</string>
     <string name="about_feat_shizuku_title">Shizuku Entegrasyonu</string>
@@ -703,4 +707,5 @@
     <string name="about_feat_extensible_desc">Çevrimdışı TTS metin okuma, NFC, SMS filtreleme, Webhook\'lar, Ana Ekran widget\'ı ve Hızlı Ayar kutusu.</string>
     <string name="about_btn_github">GitHub Deposu</string>
     <string name="about_btn_issues">Sorun Bildir / Geri Bildirim</string>
+    <string name="engine_not_running">Motor çalışmıyor</string>
 </resources>

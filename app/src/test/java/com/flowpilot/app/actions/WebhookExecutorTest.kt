@@ -6,9 +6,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.InetAddress
+import java.net.Socket
 import java.net.URL
 import java.nio.charset.StandardCharsets
 
@@ -46,7 +49,195 @@ class WebhookExecutorTest {
         )
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).contains("must use http or https scheme")
+        assertThat(result.message).contains("must use HTTPS scheme")
+    }
+
+    @Test
+    fun execute_httpUrl_returnsFailureBeforeConnection() {
+        var connectionFactoryCalled = false
+        val executor = WebhookExecutor(connectionFactory = { _, _ ->
+            connectionFactoryCalled = true
+            error("HTTP webhook must not open connection")
+        })
+
+        val result = executor.execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(webhookUrl = "http://example.com/api"),
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.message).contains("must use HTTPS scheme")
+        assertThat(connectionFactoryCalled).isFalse()
+    }
+
+    @Test
+    fun execute_localhost_privateAndMetadataTargets_areRejectedBeforeConnection() {
+        listOf("127.0.0.1", "10.0.0.1", "169.254.169.254").forEach { addressText ->
+            var connectionFactoryCalled = false
+            val executor = WebhookExecutor(
+                connectionFactory = { _, _ ->
+                    connectionFactoryCalled = true
+                    error("SSRF target must not open connection")
+                },
+                addressLookup = { arrayOf(InetAddress.getByName(addressText)) },
+            )
+
+            val result = executor.execute(
+                ActionType.HTTP_WEBHOOK,
+                ActionParameters(webhookUrl = "https://target.example/webhook"),
+            )
+
+            assertThat(result.success).isFalse()
+            assertThat(result.message).contains("non-public address")
+            assertThat(connectionFactoryCalled).isFalse()
+        }
+    }
+
+    @Test
+    fun execute_mappedLoopbackPrivateAndMetadataTargets_areRejectedBeforeConnection() {
+        listOf("::ffff:127.0.0.1", "::ffff:10.0.0.1", "::ffff:169.254.169.254").forEach { addressText ->
+            var connectionFactoryCalled = false
+            val executor = WebhookExecutor(
+                connectionFactory = { _, _ ->
+                    connectionFactoryCalled = true
+                    error("SSRF target must not open connection")
+                },
+                addressLookup = { arrayOf(InetAddress.getByName(addressText)) },
+            )
+
+            val result = executor.execute(
+                ActionType.HTTP_WEBHOOK,
+                ActionParameters(webhookUrl = "https://target.example/webhook"),
+            )
+
+            assertThat(result.success).isFalse()
+            assertThat(result.message).contains("non-public address")
+            assertThat(connectionFactoryCalled).isFalse()
+        }
+    }
+
+    @Test
+    fun execute_mappedPublicTarget_allowsConnection() {
+        val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
+        val executor = WebhookExecutor(
+            connectionFactory = { _, _ -> mockConnection },
+            addressLookup = { arrayOf(InetAddress.getByName("::ffff:93.184.216.34")) },
+        )
+
+        val result = executor.execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(webhookUrl = "https://target.example/webhook"),
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(result.message).contains("status 204")
+    }
+
+    @Test
+    fun execute_publicHttpsTarget_allowsConnection() {
+        val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
+        val executor = WebhookExecutor(
+            connectionFactory = { _, _ -> mockConnection },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        )
+
+        val result = executor.execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(webhookUrl = "https://target.example/webhook"),
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(result.message).contains("status 204")
+    }
+
+    @Test
+    fun execute_pinsConnectionToValidatedAddress_withoutSecondDnsLookup() {
+        val validatedAddress = InetAddress.getByName("93.184.216.34")
+        val redirectedAddress = InetAddress.getByName("10.0.0.1")
+        var lookupCount = 0
+        var connectedAddress: InetAddress? = null
+        val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
+        val executor = WebhookExecutor(
+            connectionFactory = { _, address ->
+                connectedAddress = address
+                mockConnection
+            },
+            addressLookup = {
+                lookupCount++
+                if (lookupCount == 1) arrayOf(validatedAddress) else arrayOf(redirectedAddress)
+            },
+        )
+
+        val result = executor.execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(webhookUrl = "https://target.example/webhook"),
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(lookupCount).isEqualTo(1)
+        assertThat(connectedAddress).isEqualTo(validatedAddress)
+    }
+
+    @Test
+    fun pinnedSocketFactory_allOverloadsConnectValidatedAddressAndPreserveTlsHost() {
+        val validated = InetAddress.getByName("93.184.216.34")
+        val delegate = RecordingSslSocketFactory()
+        val factory = PinnedSocketFactory(delegate, validated, "original.example")
+
+        factory.createSocket("original.example", 443)
+        factory.createSocket("original.example", 443, InetAddress.getByName("192.0.2.1"), 0)
+        factory.createSocket(InetAddress.getByName("10.0.0.1"), 443)
+        factory.createSocket(InetAddress.getByName("10.0.0.1"), 443, InetAddress.getByName("192.0.2.1"), 0)
+        factory.createSocket(RecordingSocket(delegate.connectedAddresses), "original.example", 443, true)
+
+        assertThat(delegate.connectedAddresses).containsExactlyElementsIn(List(5) { validated }).inOrder()
+        assertThat(delegate.layeredHosts).containsExactly("original.example", "original.example", "original.example", "original.example", "original.example").inOrder()
+    }
+
+    @Test
+    fun pinnedSocketFactory_rejectsAlreadyConnectedSocketToOtherAddress() {
+        val validated = InetAddress.getByName("93.184.216.34")
+        val server = java.net.ServerSocket(0)
+        val socket = Socket("127.0.0.1", server.localPort)
+        val factory = PinnedSocketFactory(RecordingSslSocketFactory(), validated, "original.example")
+
+        try {
+            factory.createSocket(socket, "original.example", 443, true)
+            throw AssertionError("connected socket must be rejected")
+        } catch (expected: SecurityException) {
+            assertThat(expected).hasMessageThat().contains("validated address")
+        } finally {
+            socket.close()
+        }
+    }
+
+    @Test
+    fun execute_allKnownNonGlobalSpecialUseRanges_areRejected() {
+        listOf(
+            "0.1.2.3", "100.64.0.1", "192.0.0.1", "192.0.2.1", "192.88.99.1",
+            "198.18.0.1", "198.51.100.1", "203.0.113.1", "224.0.0.1", "240.0.0.1",
+            "::", "::1", "2001:db8::1", "2001:10::1", "2001:20::1", "2001:0000::1",
+            "64:ff9b::1", "100::1", "2002::1", "fc00::1", "fe80::1", "ff02::1",
+            "::ffff:192.0.2.1",
+        ).forEach { addressText ->
+            var opened = false
+            val result = WebhookExecutor(
+                connectionFactory = { _, _ -> opened = true; error("special-use target opened") },
+                addressLookup = { arrayOf(InetAddress.getByName(addressText)) },
+            ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/webhook"))
+            assertThat(result.success).isFalse()
+            assertThat(opened).isFalse()
+        }
+    }
+
+    @Test
+    fun execute_globalAddress_remainsAllowed() {
+        val connection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
+        val result = WebhookExecutor(
+            connectionFactory = { _, _ -> connection },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/webhook"))
+        assertThat(result.success).isTrue()
     }
 
     @Test
@@ -67,7 +258,10 @@ class WebhookExecutorTest {
     @Test
     fun execute_rendersTemplateVariablesInHeadersAndBody() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 200)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(
+            connectionFactory = { _, _ -> mockConnection },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        )
         val templateContext = WebhookTemplateContext(
             trigger = "CHARGER_CONNECTED",
             timestamp = 1700000000000L,
@@ -98,7 +292,10 @@ class WebhookExecutorTest {
     @Test
     fun execute_successful200Response_returnsSuccess() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 200)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(
+            connectionFactory = { _, _ -> mockConnection },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        )
 
         val result = executor.execute(
             ActionType.HTTP_WEBHOOK,
@@ -125,7 +322,10 @@ class WebhookExecutorTest {
     @Test
     fun execute_204NoContent_returnsSuccess() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 204)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(
+            connectionFactory = { _, _ -> mockConnection },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        )
 
         val result = executor.execute(
             ActionType.HTTP_WEBHOOK,
@@ -142,7 +342,10 @@ class WebhookExecutorTest {
     @Test
     fun execute_http400Response_returnsFailure() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 400)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(
+            connectionFactory = { _, _ -> mockConnection },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        )
 
         val result = executor.execute(
             ActionType.HTTP_WEBHOOK,
@@ -159,7 +362,10 @@ class WebhookExecutorTest {
     @Test
     fun execute_http500Response_returnsFailure() {
         val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 500)
-        val executor = WebhookExecutor(connectionFactory = { mockConnection })
+        val executor = WebhookExecutor(
+            connectionFactory = { _, _ -> mockConnection },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        )
 
         val result = executor.execute(
             ActionType.HTTP_WEBHOOK,
@@ -175,9 +381,14 @@ class WebhookExecutorTest {
 
     @Test
     fun execute_networkExceptionWithSensitiveAuth_redactsAuthInFailureMessage() {
-        val executor = WebhookExecutor(connectionFactory = {
-            throw IOException("Failed to connect with Authorization: Bearer my_super_secret_token and key=secret123")
-        })
+        val bearer = "SYNTHETIC_BEARER_DO_NOT_LOG_123"
+        ShadowLog.clear()
+        val executor = WebhookExecutor(
+            connectionFactory = { _, _ ->
+                throw IOException("Failed to connect with Authorization: Bearer $bearer and key=secret123")
+            },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        )
 
         val result = executor.execute(
             ActionType.HTTP_WEBHOOK,
@@ -188,9 +399,16 @@ class WebhookExecutorTest {
         )
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).doesNotContain("my_super_secret_token")
+        assertThat(result.message).doesNotContain(bearer)
         assertThat(result.message).doesNotContain("secret123")
         assertThat(result.message).contains("[REDACTED]")
+        val logs = ShadowLog.getLogsForTag(WebhookExecutor.TAG)
+        assertThat(logs).isNotEmpty()
+        logs.forEach { log ->
+            assertThat(log.msg).doesNotContain(bearer)
+            assertThat(log.msg).doesNotContain("secret123")
+            assertThat(log.throwable).isNull()
+        }
     }
 
     @Test
@@ -292,6 +510,32 @@ class WebhookExecutorTest {
 
         val malformedError = WebhookExecutor.validateHeaders("MalformedHeader")
         assertThat(malformedError).contains("Invalid header format on line 1")
+    }
+
+    private class RecordingSslSocketFactory : javax.net.ssl.SSLSocketFactory() {
+        val connectedAddresses = mutableListOf<InetAddress>()
+        val layeredHosts = mutableListOf<String>()
+
+        override fun createSocket(): Socket = RecordingSocket(connectedAddresses)
+        override fun createSocket(socket: Socket, host: String, port: Int, autoClose: Boolean): Socket {
+            layeredHosts += host
+            return socket
+        }
+        override fun createSocket(host: String, port: Int): Socket = error("unexpected direct delegate call")
+        override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket = error("unexpected direct delegate call")
+        override fun createSocket(address: InetAddress, port: Int): Socket = error("unexpected direct delegate call")
+        override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket = error("unexpected direct delegate call")
+        override fun getDefaultCipherSuites(): Array<String> = emptyArray()
+        override fun getSupportedCipherSuites(): Array<String> = emptyArray()
+    }
+
+    private class RecordingSocket(private val connectedAddresses: MutableList<InetAddress>) : Socket() {
+        override fun connect(endpoint: java.net.SocketAddress?) {
+            connectedAddresses += (endpoint as java.net.InetSocketAddress).address
+        }
+        override fun connect(endpoint: java.net.SocketAddress?, timeout: Int) = connect(endpoint)
+        override fun bind(endpoint: java.net.SocketAddress?) {}
+        override fun isConnected(): Boolean = false
     }
 
     private class FakeHttpURLConnection(url: URL, private val responseCodeStub: Int) : HttpURLConnection(url) {
