@@ -49,6 +49,7 @@ class DeviceFlipTracker(
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
+            if (!registered) return
             when (event.sensor.type) {
                 Sensor.TYPE_PROXIMITY -> {
                     val distance = event.values.getOrNull(0) ?: return
@@ -113,7 +114,7 @@ class DeviceFlipTracker(
         if (shouldListen && !registered) {
             registerSensors()
         } else if (!shouldListen && registered) {
-            unregisterSensors()
+            stop()
         }
     }
 
@@ -127,6 +128,10 @@ class DeviceFlipTracker(
             state = FlipTrackerState()
         }
         events.clear()
+        isNear = false
+        gravityX = 0f
+        gravityY = 0f
+        gravityZ = 9.8f
     }
 
     private fun registerSensors() {

@@ -13,10 +13,15 @@ data class BatteryLevelTransition(val previous: Int, val current: Int)
 class BatteryLevelTracker(private val context: Context) {
     private val transitions = ConcurrentLinkedQueue<BatteryLevelTransition>()
     private var registered = false
-    private var currentLevel: Int? = null
+    @Volatile var currentLevel: Int? = null
+        private set
+    @Volatile var isChargerConnected: Boolean? = null
+        private set
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            if (!registered || intent.action != Intent.ACTION_BATTERY_CHANGED) return
+            isChargerConnected = intent.chargerConnected()
             val next = intent.batteryLevel() ?: return
             val previous = currentLevel
             currentLevel = next
@@ -36,6 +41,7 @@ class BatteryLevelTracker(private val context: Context) {
             context.registerReceiver(receiver, filter)
         }
         currentLevel = initial?.batteryLevel()
+        isChargerConnected = initial?.chargerConnected()
         registered = true
     }
 
@@ -49,7 +55,12 @@ class BatteryLevelTracker(private val context: Context) {
         registered = false
         transitions.clear()
         currentLevel = null
+        isChargerConnected = null
     }
+
+    private fun Intent.chargerConnected(): Boolean? =
+        if (hasExtra(android.os.BatteryManager.EXTRA_PLUGGED))
+            getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) != 0 else null
 
     private fun Intent.batteryLevel(): Int? {
         val level = getIntExtra("level", -1)

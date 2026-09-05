@@ -34,7 +34,7 @@ class LightSensorTracker(
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
-            if (event.sensor.type != Sensor.TYPE_LIGHT) return
+            if (!registered || event.sensor.type != Sensor.TYPE_LIGHT) return
             val lux = event.values.getOrNull(0) ?: return
 
             synchronized(stateLock) {
@@ -63,8 +63,7 @@ class LightSensorTracker(
 
     fun start() {
         if (registered || lightSensor == null || sensorManager == null) return
-        sensorManager.registerListener(sensorListener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL)
-        registered = true
+        registered = sensorManager.registerListener(sensorListener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL)
         Log.i("LightSensorTracker", "Registered ambient light sensor")
     }
 

@@ -20,6 +20,7 @@ class ChargerStateTracker(private val context: Context) {
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            if (!registered) return
             val event = when (intent.action) {
                 Intent.ACTION_POWER_CONNECTED -> ChargerEvent.CONNECTED
                 Intent.ACTION_POWER_DISCONNECTED -> ChargerEvent.DISCONNECTED
@@ -56,5 +57,6 @@ class ChargerStateTracker(private val context: Context) {
         context.unregisterReceiver(receiver)
         registered = false
         events.clear()
+        lastEvent = null
     }
 }

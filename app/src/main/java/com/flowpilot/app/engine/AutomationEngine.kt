@@ -7,6 +7,12 @@ import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.TriggerEvent
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +20,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -42,85 +49,108 @@ class AutomationEngine(
     private val repository = AutomationRepository(appContext)
     private val dispatcher = ActionDispatcher.get(appContext)
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private var job: Job? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    @Volatile private var job: Job? = null
 
-    @Volatile
-    var running: Boolean = false
-        private set
+    val running: Boolean get() = job?.isActive == true
 
     @Volatile
     private var state: ForegroundState = ForegroundState()
-    private var lastScheduleOccurrence: Long? = null
+    private val scheduleWindow = ScheduleWindow()
 
+    @Synchronized
     fun start() {
         if (job?.isActive == true) return
-        running = true
+        val previous = job
+        job = scope.launch(start = CoroutineStart.LAZY) {
+            previous?.join()
+            // Across service instances, old actions/history and cleanup finish before new trackers start.
+            engineLifetime.withLock {
+                try {
+                    if (repository.isEngineEnabled.first()) runLoop()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "Engine failed (${e.javaClass.simpleName})")
+                } finally {
+                    stopTrackers()
+                }
+            }
+        }
+        job?.start()
+    }
+
+    private suspend fun runLoop() = coroutineScope {
+        scheduleWindow.advance(LocalDateTime.now())
+        tracker.reset()
+        state = ForegroundState()
         chargerTracker.start()
         batteryTracker.start()
         screenTracker.start()
         wifiTracker.start()
         bluetoothTracker.start()
         callTracker.start()
-        flipTracker.start()
-        shakeTracker.start()
-        lightTracker.start()
         Log.i(TAG, "Starting FlowPilot Automation Engine")
-        job = scope.launch {
-            while (isActive) {
-                try {
-                    val liveState = getLiveSystemState()
-                    updateFlipListeningPolicy(liveState)
-                    updateShakeListeningPolicy(liveState)
-                    updateLightListeningPolicy(liveState)
-                    poll(liveState)
-                    pollChargerEvents(liveState)
-                    pollBatteryTransitions(liveState)
-                    pollScreenEvents(liveState)
-                    pollShakeEvents(liveState)
-                    pollLightTransitions(liveState)
-                    pollWifiTransitions(liveState)
-                    pollBluetoothTransitions(liveState)
-                    pollCallTransitions(liveState)
-                    pollDeviceFlipEvents(liveState)
-                    pollNfcTagEvents(liveState)
-                    pollNotificationEvents(liveState)
-                    pollSmsEvents(liveState)
-                    pollSchedules(liveState)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Log.w(TAG, "Exception during engine poll (${e.javaClass.simpleName})")
+        // Policy stays responsive while action execution suspends (including long action delays).
+        launch {
+            repository.automations.collectLatest { rules ->
+                while (isActive) {
+                    val pm = appContext.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                    val liveState = LiveSystemState(isScreenOn = pm?.isInteractive)
+                    updateFlipListeningPolicy(rules, liveState)
+                    updateShakeListeningPolicy(rules, liveState)
+                    updateLightListeningPolicy(rules, liveState)
+                    delay(POLL_INTERVAL_MS)
                 }
-                delay(POLL_INTERVAL_MS)
+            }
+        }
+        while (isActive) {
+            try {
+                val liveState = getLiveSystemState()
+                poll(liveState)
+                pollChargerEvents(liveState)
+                pollBatteryTransitions(liveState)
+                pollScreenEvents(liveState)
+                pollShakeEvents(liveState)
+                pollLightTransitions(liveState)
+                pollWifiTransitions(liveState)
+                pollBluetoothTransitions(liveState)
+                pollCallTransitions(liveState)
+                pollDeviceFlipEvents(liveState)
+                pollNfcTagEvents(liveState)
+                pollNotificationEvents(liveState)
+                pollSmsEvents(liveState)
+                pollSchedules(liveState)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Exception during engine poll (${e.javaClass.simpleName})")
+            }
+            delay(POLL_INTERVAL_MS)
+        }
+    }
+
+    @Synchronized
+    fun stop() {
+        Log.i(TAG, "Stopping FlowPilot Automation Engine")
+        job?.cancel()
+    }
+
+    private fun stopTrackers() {
+        listOf<() -> Unit>(
+            chargerTracker::stop, batteryTracker::stop, screenTracker::stop,
+            wifiTracker::stop, bluetoothTracker::stop, callTracker::stop,
+            flipTracker::stop, shakeTracker::stop, lightTracker::stop,
+        ).forEach { stop ->
+            try { stop() } catch (e: Exception) {
+                Log.w(TAG, "Tracker cleanup failed (${e.javaClass.simpleName})")
             }
         }
     }
 
-    fun stop() {
-        Log.i(TAG, "Stopping FlowPilot Automation Engine")
-        running = false
-        job?.cancel()
-        job = null
-        chargerTracker.stop()
-        batteryTracker.stop()
-        screenTracker.stop()
-        wifiTracker.stop()
-        bluetoothTracker.stop()
-        callTracker.stop()
-        flipTracker.stop()
-        shakeTracker.stop()
-        lightTracker.stop()
-    }
-
     private fun getLiveSystemState(): LiveSystemState {
-        val batteryIntent = appContext.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
-        val level = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
-        val batteryPercent = if (level >= 0 && scale > 0) (level * 100) / scale else null
-
-        val plugged = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
-        val isChargerConnected = plugged != 0
+        val batteryPercent = batteryTracker.currentLevel
+        val isChargerConnected = batteryTracker.isChargerConnected
 
         val pm = appContext.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
         val isScreenOn = pm?.isInteractive
@@ -136,6 +166,12 @@ class AutomationEngine(
     }
 
     suspend fun poll(liveState: LiveSystemState = getLiveSystemState()) {
+        val rules = repository.automations.first()
+        if (rules.none { it.enabled && (it.triggerEvent == TriggerEvent.APP_OPENED || it.triggerEvent == TriggerEvent.APP_CLOSED) }) {
+            tracker.reset()
+            state = ForegroundState()
+            return
+        }
         val transitions = withContext(Dispatchers.IO) { tracker.queryNewTransitions() }
         if (transitions.isEmpty()) return
 
@@ -155,8 +191,6 @@ class AutomationEngine(
             output
         }
 
-        val rules = repository.automations.first()
-
         stepOutput.closedPackage?.let { pkg ->
             val result = RuleEvaluator.evaluate(rules, AppEvent.CLOSED, pkg, heldOpenLock = false, liveState = liveState)
             if (result.toExecute.isNotEmpty()) {
@@ -175,16 +209,12 @@ class AutomationEngine(
     }
 
     private suspend fun pollSchedules(liveState: LiveSystemState) {
-        val now = LocalDateTime.now()
-        val occurrence = now.toLocalDate().toEpochDay() * 1440 + now.hour * 60 + now.minute
-        val previous = lastScheduleOccurrence
-        lastScheduleOccurrence = occurrence
-        if (previous == null || previous == occurrence) return
-
-        val matches = ScheduleEvaluator.matchingRules(repository.automations.first(), now, liveState)
-        if (matches.isNotEmpty()) {
-            Log.i(TAG, "Executing scheduled rules (${matches.size} rule(s))")
-            executeAll(matches, trigger = TriggerEvent.TIME_SCHEDULE, liveState = liveState)
+        for (minute in scheduleWindow.advance(LocalDateTime.now())) {
+            currentCoroutineContext().ensureActive()
+            val matches = ScheduleEvaluator.matchingRules(repository.automations.first(), minute, liveState)
+            if (matches.isNotEmpty()) {
+                executeAll(matches, trigger = TriggerEvent.TIME_SCHEDULE, liveState = liveState)
+            }
         }
     }
 
@@ -285,8 +315,10 @@ class AutomationEngine(
         }
     }
 
-    private suspend fun updateFlipListeningPolicy(liveState: LiveSystemState) {
-        val rules = repository.automations.first()
+    private fun updateFlipListeningPolicy(
+        rules: List<com.flowpilot.app.data.model.Automation>,
+        liveState: LiveSystemState,
+    ) {
         val flipRules = rules.filter {
             it.enabled && (it.triggerEvent == TriggerEvent.DEVICE_FLIPPED_DOWN || it.triggerEvent == TriggerEvent.DEVICE_FLIPPED_UP)
         }
@@ -314,8 +346,10 @@ class AutomationEngine(
         }
     }
 
-    private suspend fun updateShakeListeningPolicy(liveState: LiveSystemState) {
-        val rules = repository.automations.first()
+    private fun updateShakeListeningPolicy(
+        rules: List<com.flowpilot.app.data.model.Automation>,
+        liveState: LiveSystemState,
+    ) {
         val hasShake = rules.any { it.enabled && it.triggerEvent == TriggerEvent.DEVICE_SHAKE }
         shakeTracker.updateListeningPolicy(
             hasActiveRules = hasShake,
@@ -323,8 +357,10 @@ class AutomationEngine(
         )
     }
 
-    private suspend fun updateLightListeningPolicy(liveState: LiveSystemState) {
-        val rules = repository.automations.first()
+    private fun updateLightListeningPolicy(
+        rules: List<com.flowpilot.app.data.model.Automation>,
+        liveState: LiveSystemState,
+    ) {
         val hasLight = rules.any {
             it.enabled && (it.triggerEvent == TriggerEvent.LIGHT_BELOW || it.triggerEvent == TriggerEvent.LIGHT_ABOVE)
         }
@@ -450,6 +486,7 @@ class AutomationEngine(
 
                 try {
                     for (i in actions.indices) {
+                        currentCoroutineContext().ensureActive()
                         val action = actions[i]
                         currentAction = action
                         val delaySec = delays.getOrElse(i) { 0 }
@@ -458,6 +495,7 @@ class AutomationEngine(
                             delay(delaySec * 1000L)
                         }
 
+                        currentCoroutineContext().ensureActive()
                         val result = dispatcher.execute(
                             action,
                             com.flowpilot.app.actions.ActionParameters(
@@ -539,6 +577,7 @@ class AutomationEngine(
     }
 
     private companion object {
+        val engineLifetime = Mutex()
         const val TAG = "FlowPilotEngine"
         const val BLUETOOTH_TAG = "FlowPilotBluetooth"
         const val POLL_INTERVAL_MS = 500L

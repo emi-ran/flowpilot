@@ -31,7 +31,7 @@ class DeviceShakeTracker(
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
-            if (event.sensor.type != Sensor.TYPE_ACCELEROMETER) return
+            if (!registered || event.sensor.type != Sensor.TYPE_ACCELEROMETER) return
             val x = event.values.getOrNull(0) ?: return
             val y = event.values.getOrNull(1) ?: return
             val z = event.values.getOrNull(2) ?: return
@@ -71,8 +71,7 @@ class DeviceShakeTracker(
 
     fun start() {
         if (registered || accelerometer == null || sensorManager == null) return
-        sensorManager.registerListener(sensorListener, accelerometer, SensorManager.SENSOR_DELAY_UI)
-        registered = true
+        registered = sensorManager.registerListener(sensorListener, accelerometer, SensorManager.SENSOR_DELAY_UI)
         Log.i("DeviceShakeTracker", "Registered accelerometer for shake detection")
     }
 
@@ -80,6 +79,8 @@ class DeviceShakeTracker(
         if (!registered || sensorManager == null) return
         sensorManager.unregisterListener(sensorListener)
         registered = false
+        synchronized(stateLock) { state = ShakeState() }
+        events.clear()
         Log.i("DeviceShakeTracker", "Unregistered accelerometer for shake detection")
     }
 

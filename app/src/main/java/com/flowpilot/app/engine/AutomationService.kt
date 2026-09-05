@@ -14,6 +14,16 @@ import android.os.IBinder
 import android.util.Log
 import com.flowpilot.app.MainActivity
 import com.flowpilot.app.R
+import com.flowpilot.app.data.AutomationRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Holds the automation engine in a foreground "special use" service so it survives
@@ -22,7 +32,8 @@ import com.flowpilot.app.R
  */
 class AutomationService : Service() {
 
-    private val lifecycleLock = Any()
+    private val lifecycleScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val lifecycleLock = Mutex()
     private var engine: AutomationEngine? = null
 
     override fun onCreate() {
@@ -32,10 +43,6 @@ class AutomationService : Service() {
             stopSelf()
             return
         }
-        synchronized(lifecycleLock) {
-            ensureEngineRunning()
-        }
-        com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -44,10 +51,25 @@ class AutomationService : Service() {
             return START_NOT_STICKY
         }
         // (Re)start the engine if it died.
-        synchronized(lifecycleLock) {
-            ensureEngineRunning()
+        lifecycleScope.launch {
+            try {
+                lifecycleLock.withLock {
+                    if (!AutomationRepository(applicationContext).isEngineEnabled.first()) {
+                        engine?.stop()
+                        stopSelfResult(startId)
+                        return@withLock
+                    }
+                    ensureEngineRunning()
+                    com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this@AutomationService)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                engine?.stop()
+                Log.e("AutomationService", "Engine reconciliation failed (${e.javaClass.simpleName})")
+                stopSelfResult(startId)
+            }
         }
-        com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
         return START_STICKY
     }
 
@@ -58,16 +80,13 @@ class AutomationService : Service() {
             stopSelf()
             return
         }
-        synchronized(lifecycleLock) {
-            ensureEngineRunning()
-        }
+        // onStartCommand owns persisted-enabled reconciliation; never restart from stale task callback.
     }
 
     override fun onDestroy() {
-        synchronized(lifecycleLock) {
-            engine?.stop()
-            engine = null
-        }
+        lifecycleScope.cancel()
+        engine?.stop()
+        engine = null
         com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(this)
         super.onDestroy()
     }
@@ -75,9 +94,8 @@ class AutomationService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun ensureEngineRunning() {
-        if (engine?.running != true) {
-            engine = AutomationEngine(this).also { it.start() }
-        }
+        val current = engine ?: AutomationEngine(this).also { engine = it }
+        current.start()
     }
 
     private fun createChannel() {
