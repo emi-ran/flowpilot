@@ -1,7 +1,6 @@
 package com.flowpilot.app.actions
 
 import android.content.Context
-import android.os.Build
 import android.os.SystemClock
 import android.provider.Settings
 import android.telephony.TelephonyManager
@@ -27,10 +26,10 @@ class MobileDataExecutor(
             } else {
                 // Fallback to TelephonyManager if accessible
                 val tm = telephonyManagerProvider(context)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    tm?.isDataEnabled
-                } else null
+                tm?.isDataEnabled
             }
+        } catch (_: SecurityException) {
+            null
         } catch (_: Throwable) {
             null
         }

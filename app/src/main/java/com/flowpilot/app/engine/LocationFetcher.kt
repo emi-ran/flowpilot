@@ -187,6 +187,8 @@ object LocationFetcher {
                     listener,
                     Looper.getMainLooper(),
                 )
+            } catch (_: SecurityException) {
+                if (cont.isActive) cont.resume(null)
             } catch (_: Throwable) {
                 if (cont.isActive) cont.resume(null)
             }

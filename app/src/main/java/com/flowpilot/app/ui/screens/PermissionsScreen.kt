@@ -100,7 +100,9 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
             }
             PermissionCard(stringResource(R.string.perms_notif_title), stringResource(R.string.perms_notif_desc), notif) {
-                notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
             PermissionCard(
                 stringResource(R.string.perms_phone_state_title),

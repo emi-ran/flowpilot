@@ -236,6 +236,8 @@ fun WifiScanDialog(
                         val cleaned = WifiStateTracker.normalizeSsid(result.SSID)
                         if (WifiStateTracker.isValidSsid(cleaned)) cleaned else null
                     }?.distinct()?.sortedBy { it.lowercase() } ?: emptyList()
+                } catch (_: SecurityException) {
+                    emptyList()
                 } catch (_: Throwable) {
                     emptyList()
                 }
