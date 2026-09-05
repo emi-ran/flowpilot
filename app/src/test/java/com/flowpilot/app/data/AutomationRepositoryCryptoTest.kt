@@ -121,7 +121,7 @@ class AutomationRepositoryCryptoTest {
 
     @Test
     fun importAutomations_normalizesLegacySmsNamesBeforePersisting() = runTest {
-        val legacy = Automation("legacy", "SMS from 555-0100 · NFC enabled", TriggerEvent.SMS_RECEIVED, actions = listOf(ActionType.NFC_ON), createdAt = 1L)
+        val legacy = Automation("legacy", "SMS from 555-0100 · NFC enabled", triggerEvent = TriggerEvent.SMS_RECEIVED, actions = listOf(ActionType.NFC_ON), createdAt = 1L)
         val custom = legacy.copy(id = "custom", name = "SMS from Alice · NFC enabled")
 
         repository.importAutomations(listOf(legacy, custom), com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL)
@@ -132,7 +132,7 @@ class AutomationRepositoryCryptoTest {
 
     @Test
     fun replaceAll_normalizesLegacySmsNamesBeforePersisting() = runTest {
-        val legacy = Automation("legacy", "SMS from 555-0100 · NFC enabled", TriggerEvent.SMS_RECEIVED, actions = listOf(ActionType.NFC_ON), createdAt = 1L)
+        val legacy = Automation("legacy", "SMS from 555-0100 · NFC enabled", triggerEvent = TriggerEvent.SMS_RECEIVED, actions = listOf(ActionType.NFC_ON), createdAt = 1L)
 
         repository.replaceAll(listOf(legacy))
 
