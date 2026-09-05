@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -54,6 +55,7 @@ fun SettingsScreen(
     var pendingImportJson by remember { mutableStateOf<String?>(null) }
     var pendingImportRules by remember { mutableStateOf<List<Automation>>(emptyList()) }
     var showImportDialog by remember { mutableStateOf(false) }
+    var pendingExport by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -202,7 +204,7 @@ fun SettingsScreen(
                     icon = Icons.Default.FileDownload,
                     checked = null,
                 ) {
-                    exportLauncher.launch(BackupManager.generateBackupFileName())
+                    pendingExport = { exportLauncher.launch(BackupManager.generateBackupFileName()) }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
                 SettingRow(
@@ -218,10 +220,17 @@ fun SettingsScreen(
                     icon = Icons.Default.Share,
                     checked = null,
                 ) {
-                    vm.shareBackup()
+                    pendingExport = { vm.shareBackup() }
                 }
             }
         }
+    }
+
+    pendingExport?.let { export ->
+        BackupDisclosureDialog(
+            onConfirm = { pendingExport = null; export() },
+            onDismiss = { pendingExport = null },
+        )
     }
 
     if (showImportDialog && pendingImportJson != null) {
@@ -422,6 +431,7 @@ private fun ImportStrategyDialog(
     onDismiss: () -> Unit,
 ) {
     var selectedStrategy by remember { mutableStateOf(ImportStrategy.MERGE) }
+    var replaceAcknowledged by remember(selectedStrategy) { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -432,7 +442,8 @@ private fun ImportStrategyDialog(
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(stringResource(R.string.backup_import_omissions))
                 Text(
                     stringResource(R.string.backup_import_dialog_desc, count),
                     style = MaterialTheme.typography.bodyMedium,
@@ -508,11 +519,30 @@ private fun ImportStrategyDialog(
                         }
                     }
                 }
+                if (selectedStrategy == ImportStrategy.REPLACE_ALL) {
+                    Text(stringResource(R.string.backup_replace_warning), color = MaterialTheme.colorScheme.error)
+                    Row(
+                        modifier = Modifier.toggleable(
+                            value = replaceAcknowledged,
+                            role = androidx.compose.ui.semantics.Role.Checkbox,
+                            onValueChange = { replaceAcknowledged = it },
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = replaceAcknowledged, onCheckedChange = null)
+                        Text(stringResource(R.string.backup_replace_acknowledge))
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(selectedStrategy) },
+                enabled = selectedStrategy != ImportStrategy.REPLACE_ALL || replaceAcknowledged,
+                onClick = {
+                    if (selectedStrategy != ImportStrategy.REPLACE_ALL || replaceAcknowledged) {
+                        onConfirm(selectedStrategy)
+                    }
+                },
                 colors = if (selectedStrategy == ImportStrategy.REPLACE_ALL) {
                     ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 } else {

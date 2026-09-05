@@ -436,7 +436,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 type = "application/json"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, app.getString(R.string.backup_share_rule_subject, rule.name))
-                putExtra(Intent.EXTRA_TEXT, content)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val chooser = Intent.createChooser(intent, app.getString(R.string.backup_share_rule_title)).apply {
@@ -459,7 +458,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 type = "application/json"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, app.getString(R.string.backup_share_all_subject, targets.size))
-                putExtra(Intent.EXTRA_TEXT, content)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val chooser = Intent.createChooser(intent, app.getString(R.string.settings_backup_title)).apply {

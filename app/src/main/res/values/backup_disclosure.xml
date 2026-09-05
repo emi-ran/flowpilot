@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_disclosure_title">Before exporting or sharing</string>
+    <string name="backup_disclosure_body">This is a partial, unencrypted export. Webhook URLs, headers (including credentials), and bodies are removed. You must re-enter them after import. Other personal data remains, including phone numbers, SMS recipients and messages, Wi-Fi names, Bluetooth addresses, NFC IDs, app names, URLs, and notification or speech text. Review the file and share only with trusted recipients. This file cannot fully restore your current setup.</string>
+    <string name="backup_disclosure_continue">Continue</string>
+    <string name="backup_import_omissions">FlowPilot exports omit webhook URLs, headers, and bodies. Re-enter missing fields after import. Imported rules remain disabled until you enable them.</string>
+    <string name="backup_replace_warning">Replace all permanently deletes your existing rules and their saved webhook settings. Missing URLs, headers, credentials, and bodies cannot be recovered from a sanitized export. Re-enter them manually. Merge instead to keep existing rules.</string>
+    <string name="backup_replace_acknowledge">I understand that existing rules and saved webhook settings will be deleted.</string>
+</resources>

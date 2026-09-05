@@ -61,6 +61,13 @@ fun HomeScreen(
     var selectedRuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPresetsSheet by remember { mutableStateOf(false) }
+    var pendingShare by remember { mutableStateOf<List<Automation>?>(null) }
+    pendingShare?.let { selected ->
+        BackupDisclosureDialog(
+            onConfirm = { pendingShare = null; vm.shareBackup(selected) },
+            onDismiss = { pendingShare = null },
+        )
+    }
     val isSelectionMode = selectedRuleIds.isNotEmpty()
 
     BackHandler(enabled = isSelectionMode) {
@@ -114,7 +121,7 @@ fun HomeScreen(
                         }
                         IconButton({
                             val selected = rules.filter { it.rule.id in selectedRuleIds }.map { it.rule }
-                            vm.shareBackup(selected)
+                            pendingShare = selected
                         }) {
                             Icon(Icons.Default.Share, stringResource(R.string.btn_share))
                         }
