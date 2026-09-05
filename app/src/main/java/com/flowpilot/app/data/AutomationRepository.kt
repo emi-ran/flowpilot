@@ -71,7 +71,9 @@ class AutomationRepository(private val context: Context) {
     val automations: Flow<List<Automation>> = context.dataStore.data.map { prefs ->
         prefs[key]?.let { raw ->
             val list = safeDecode(raw)
-            list.map { it.withDecryptedSecrets() }
+            list.map { stored ->
+                stored.withDecryptedSecrets().copy(name = stored.normalizedName)
+            }
         } ?: emptyList()
     }
 
@@ -267,7 +269,7 @@ class AutomationRepository(private val context: Context) {
     suspend fun update(rule: Automation) {
         context.dataStore.edit { prefs ->
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
-            val encryptedRule = rule.withEncryptedSecrets()
+            val encryptedRule = rule.copy(name = rule.normalizedName).withEncryptedSecrets()
             val updated = current.map {
                 if (it.id == rule.id) encryptedRule else it.withEncryptedSecrets()
             }

@@ -311,6 +311,16 @@ data class Automation(
     val createdAt: Long,
     val lastTriggeredAt: Long = 0L,
 ) {
+    /** Legacy SMS-generated names exposed sender filters; keep custom names unchanged. */
+    val normalizedName: String
+        get() = if (triggerEvent == TriggerEvent.SMS_RECEIVED &&
+            LEGACY_SMS_GENERATED_NAME.matches(name)
+        ) {
+            "SMS Received · ${effectiveActions.joinToString(" + ") { it.label }}"
+        } else {
+            name
+        }
+
     val effectiveActions: List<ActionType>
         get() = if (actions.isNotEmpty()) actions else listOf(action)
 
@@ -369,5 +379,9 @@ data class Automation(
             webhookHeaders = SecretCipher.decrypt(webhookHeaders),
             webhookBody = SecretCipher.decrypt(webhookBody),
         )
+    }
+
+    private companion object {
+        val LEGACY_SMS_GENERATED_NAME = Regex("SMS from .+ · .+")
     }
 }

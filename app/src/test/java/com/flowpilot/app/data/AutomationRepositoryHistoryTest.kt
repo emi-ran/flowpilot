@@ -5,7 +5,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
+import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.ExecutionStatus
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
@@ -69,6 +71,19 @@ class AutomationRepositoryHistoryTest {
         // Oldest retained must be entry-6 (105 down to 6 = 100 items)
         assertThat(history.last().id).isEqualTo("entry-6")
         assertThat(history.last().timestamp).isEqualTo(1006L)
+    }
+
+    @Test
+    fun legacySmsRule_historyName_isNormalized() {
+        val rule = Automation(
+            id = "legacy",
+            name = "SMS from 555-0100 · NFC enabled",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            actions = listOf(ActionType.NFC_ON),
+            createdAt = 1L,
+        )
+
+        assertThat(rule.normalizedName).isEqualTo("SMS Received · NFC enabled")
     }
 
     @Test

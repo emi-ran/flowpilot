@@ -521,7 +521,7 @@ class AutomationEngine(
                 } finally {
                     val historyEntry = ExecutionHistoryEntry.create(
                         ruleId = rule.id,
-                        ruleName = rule.name,
+                        ruleName = rule.normalizedName,
                         trigger = trigger?.name ?: rule.triggerEvent.name,
                         timestamp = System.currentTimeMillis(),
                         actions = actionRecords,
