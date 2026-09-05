@@ -3,12 +3,12 @@ package com.flowpilot.app.data
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
-import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.security.SecretCipher
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -79,21 +79,20 @@ class AutomationRepository(private val context: Context) {
     }
 
     val executionHistory: Flow<List<ExecutionHistoryEntry>> = context.dataStore.data.map { prefs ->
-        prefs[historyKey]?.let { raw ->
-            val rulesById = prefs[key]?.let { safeDecode(it) }?.associateBy { it.id }.orEmpty()
-            safeDecodeHistory(raw).map { entry ->
-                rulesById[entry.ruleId]
-                    ?.takeIf { it.triggerEvent == TriggerEvent.SMS_RECEIVED }
-                    ?.let { entry.copy(ruleName = it.normalizedName) }
-                    ?: entry
-            }
-        } ?: emptyList()
+        val history = prefs[historyKey]?.let { safeDecodeHistory(it) }.orEmpty()
+        if (history.any { it.ruleName != it.normalizedRuleName }) {
+            val migrated = context.dataStore.edit { migrateHistory(it) }
+            migrated[historyKey]?.let { safeDecodeHistory(it) }.orEmpty()
+        } else {
+            history
+        }
     }
 
     suspend fun appendHistory(entry: ExecutionHistoryEntry) {
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val current = prefs[historyKey]?.let { safeDecodeHistory(it) } ?: emptyList()
-            val updated = (listOf(entry) + current).take(MAX_HISTORY_ENTRIES)
+            val updated = (listOf(entry.copy(ruleName = entry.normalizedRuleName)) + current).take(MAX_HISTORY_ENTRIES)
             prefs[historyKey] = json.encodeToString(historySerializer, updated)
         }
     }
@@ -263,6 +262,7 @@ class AutomationRepository(private val context: Context) {
             createdAt = System.currentTimeMillis(),
         )
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
             val encryptedRule = rule.withEncryptedSecrets()
             val updated = current.map { it.withEncryptedSecrets() } + encryptedRule
@@ -275,6 +275,7 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun update(rule: Automation) {
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
             val encryptedRule = rule.copy(name = rule.normalizedName).withEncryptedSecrets()
             val updated = current.map {
@@ -288,6 +289,7 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun patchLastTriggeredAt(id: String, at: Long) {
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
             val updated = current.map {
                 val base = if (it.id == id) it.copy(lastTriggeredAt = at) else it
@@ -299,6 +301,7 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun setEnabled(id: String, enabled: Boolean) {
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
             val updated = current.map {
                 val base = if (it.id == id) it.copy(enabled = enabled) else it
@@ -311,6 +314,7 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun delete(id: String) {
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
             val updated = current.filterNot { it.id == id }.map { it.withEncryptedSecrets() }
             prefs[key] = json.encodeToString(listSerializer, updated)
@@ -322,6 +326,7 @@ class AutomationRepository(private val context: Context) {
     suspend fun deleteMany(ids: Set<String>) {
         if (ids.isEmpty()) return
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
             val updated = current.filterNot { it.id in ids }.map { it.withEncryptedSecrets() }
             prefs[key] = json.encodeToString(listSerializer, updated)
@@ -336,6 +341,7 @@ class AutomationRepository(private val context: Context) {
     ): Int {
         if (imported.isEmpty()) return 0
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
             val finalRules = when (strategy) {
                 com.flowpilot.app.data.backup.ImportStrategy.MERGE -> {
@@ -361,6 +367,7 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun replaceAll(rules: List<Automation>) {
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val encrypted = rules.map { it.copy(name = it.normalizedName).withEncryptedSecrets() }
             prefs[key] = json.encodeToString(listSerializer, encrypted)
         }
@@ -380,6 +387,15 @@ class AutomationRepository(private val context: Context) {
         emptyList()
     }
 
+    private fun migrateHistory(prefs: MutablePreferences) {
+        val raw = prefs[historyKey] ?: return
+        val history = safeDecodeHistory(raw)
+        val migrated = history.map { it.copy(ruleName = it.normalizedRuleName) }
+        if (migrated != history) {
+            prefs[historyKey] = json.encodeToString(historySerializer, migrated)
+        }
+    }
+
     private fun safeDecodeHistory(raw: String): List<ExecutionHistoryEntry> = try {
         json.decodeFromString(historySerializer, raw)
     } catch (_: Exception) {
@@ -392,6 +408,7 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun migrateLegacySecretsIfNeeded() {
         context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
             val raw = prefs[key] ?: return@edit
             val list = safeDecode(raw)
             val hasPlaintext = list.any { rule ->

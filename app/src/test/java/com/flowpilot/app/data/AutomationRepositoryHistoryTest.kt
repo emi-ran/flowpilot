@@ -122,7 +122,7 @@ class AutomationRepositoryHistoryTest {
     }
 
     @Test
-    fun executionHistory_normalizesLegacySmsNamesUsingStoredRules_only() = runTest {
+    fun executionHistory_normalizesLegacySmsNames_preservesCustomNames() = runTest {
         val legacySmsRule = Automation(
             id = "legacy",
             name = "SMS from 555-0100 · NFC enabled",
@@ -163,6 +163,110 @@ class AutomationRepositoryHistoryTest {
             "SMS Received · NFC enabled",
             customSmsRule.name,
         ).inOrder()
+    }
+
+    private fun smsSnapshot(name: String = "SMS from 555-0100 · NFC enabled") =
+        ExecutionHistoryEntry.create(
+            id = "snapshot", ruleId = "legacy", ruleName = name,
+            trigger = TriggerEvent.SMS_RECEIVED.name, timestamp = 1L, actions = emptyList(),
+        )
+
+    private suspend fun seedLegacyHistory(): Automation {
+        val rule = Automation(
+            id = "legacy", name = "Current custom name",
+            triggerEvent = TriggerEvent.SMS_RECEIVED,
+            actions = listOf(ActionType.VIBRATE), createdAt = 1L,
+        )
+        repository.rawDataStore.edit { prefs ->
+            prefs[rulesKey] = json.encodeToString(rulesSerializer, listOf(rule))
+            prefs[historyKey] = json.encodeToString(historySerializer, listOf(
+                smsSnapshot(), smsSnapshot("Historical custom name").copy(id = "custom"),
+            ))
+        }
+        return rule
+    }
+
+    private suspend fun assertPersistedSnapshots() {
+        val raw = repository.rawDataStore.data.first()[historyKey]!!
+        assertThat(raw).doesNotContain("555-0100")
+        assertThat(json.decodeFromString(historySerializer, raw).map { it.ruleName })
+            .containsExactly("SMS Received · NFC enabled", "Historical custom name").inOrder()
+        assertThat(repository.executionHistory.first().map { it.ruleName })
+            .containsExactly("SMS Received · NFC enabled", "Historical custom name").inOrder()
+    }
+
+    @Test
+    fun historyRead_persistsMigration_preservesHistoricalNamesAndSummary() = runTest {
+        seedLegacyHistory()
+        repository.executionHistory.first()
+        assertPersistedSnapshots()
+        repository.delete("legacy")
+        assertPersistedSnapshots()
+    }
+
+    @Test
+    fun deleteBeforeHistoryRead_persistsMigration() = runTest {
+        seedLegacyHistory()
+        repository.delete("legacy")
+        assertPersistedSnapshots()
+    }
+
+    @Test
+    fun deleteManyBeforeHistoryRead_persistsMigration() = runTest {
+        seedLegacyHistory()
+        repository.deleteMany(setOf("legacy"))
+        assertPersistedSnapshots()
+    }
+
+    @Test
+    fun renameAndTriggerChangeBeforeHistoryRead_preserveSnapshots() = runTest {
+        val rule = seedLegacyHistory()
+        repository.update(rule.copy(name = "Renamed", triggerEvent = TriggerEvent.CHARGER_CONNECTED))
+        assertPersistedSnapshots()
+    }
+
+    @Test
+    fun replaceImportBeforeHistoryRead_preservesSnapshots() = runTest {
+        val rule = seedLegacyHistory()
+        repository.importAutomations(
+            listOf(rule.copy(name = "Imported", triggerEvent = TriggerEvent.CHARGER_CONNECTED)),
+            com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL,
+        )
+        assertPersistedSnapshots()
+    }
+
+    @Test
+    fun replaceAllBeforeHistoryRead_persistsMigration() = runTest {
+        seedLegacyHistory()
+        repository.replaceAll(emptyList())
+        assertPersistedSnapshots()
+    }
+
+    @Test
+    fun orphanedAndManualSnapshots_migrateWithoutCurrentRule() = runTest {
+        repository.rawDataStore.edit { prefs ->
+            prefs[historyKey] = json.encodeToString(historySerializer, listOf(
+                smsSnapshot(), smsSnapshot().copy(id = "manual", trigger = "MANUAL"),
+            ))
+        }
+        assertThat(repository.executionHistory.first().map { it.ruleName })
+            .containsExactly("SMS Received · NFC enabled", "SMS Received · NFC enabled")
+        assertThat(repository.rawDataStore.data.first()[historyKey]).doesNotContain("555-0100")
+    }
+
+    @Test
+    fun appendHistory_normalizesBeforePersistence() = runTest {
+        repository.appendHistory(smsSnapshot())
+        assertThat(repository.rawDataStore.data.first()[historyKey]).doesNotContain("555-0100")
+    }
+
+    @Test
+    fun nonSmsSnapshotAndCustomSmsNames_stayUnchanged() {
+        for (name in listOf("SMS from Alice · NFC enabled", "SMS from 12 · NFC enabled", "My SMS rule")) {
+            assertThat(smsSnapshot(name).normalizedRuleName).isEqualTo(name)
+        }
+        val nonSms = smsSnapshot().copy(trigger = TriggerEvent.CHARGER_CONNECTED.name)
+        assertThat(nonSms.normalizedRuleName).isEqualTo(nonSms.ruleName)
     }
 
     @Test
