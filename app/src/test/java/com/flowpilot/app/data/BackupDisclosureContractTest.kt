@@ -24,6 +24,7 @@ class BackupDisclosureContractTest {
             bluetoothDeviceAddress = "AA:BB:CC:DD:EE:FF",
             nfcTagId = "01234567",
             url = "https://example.com/personal-link",
+            createdAt = 1L,
         )
         for (json in listOf(BackupManager.exportToString(listOf(rule)), BackupManager.exportSingleToString(rule))) {
             val imported = BackupManager.parseImport(json).getOrThrow().single()

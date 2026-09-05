@@ -64,7 +64,7 @@ class AutomationRepositoryCryptoTest {
             smsSenderFilter = "555-0100",
         )
 
-        assertThat(rule.name).isEqualTo("SMS Received · NFC enabled")
+        assertThat(rule.name).isEqualTo("SMS Received · Turn NFC on")
         assertThat(rule.name).doesNotContain("555-0100")
     }
 
@@ -83,7 +83,7 @@ class AutomationRepositoryCryptoTest {
 
         val loaded = repository.automations.first().single()
 
-        assertThat(loaded.name).isEqualTo("SMS Received · NFC enabled")
+        assertThat(loaded.name).isEqualTo("SMS Received · Turn NFC on")
     }
 
     @Test
@@ -102,7 +102,7 @@ class AutomationRepositoryCryptoTest {
         repository.update(legacy)
 
         assertThat(repository.automations.first().single().name)
-            .isEqualTo("SMS Received · NFC enabled")
+            .isEqualTo("SMS Received · Turn NFC on")
     }
 
     @Test
@@ -127,7 +127,7 @@ class AutomationRepositoryCryptoTest {
         repository.importAutomations(listOf(legacy, custom), com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL)
 
         val stored = json.decodeFromString(listSerializer, repository.rawDataStore.data.first()[key]!!)
-        assertThat(stored.map { it.name }).containsExactly("SMS Received · NFC enabled", custom.name).inOrder()
+        assertThat(stored.map { it.name }).containsExactly("SMS Received · Turn NFC on", custom.name).inOrder()
     }
 
     @Test
@@ -137,7 +137,7 @@ class AutomationRepositoryCryptoTest {
         repository.replaceAll(listOf(legacy))
 
         val stored = json.decodeFromString(listSerializer, repository.rawDataStore.data.first()[key]!!)
-        assertThat(stored.single().name).isEqualTo("SMS Received · NFC enabled")
+        assertThat(stored.single().name).isEqualTo("SMS Received · Turn NFC on")
     }
 
     @Test

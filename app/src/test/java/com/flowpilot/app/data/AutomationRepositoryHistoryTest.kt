@@ -85,7 +85,7 @@ class AutomationRepositoryHistoryTest {
             createdAt = 1L,
         )
 
-        assertThat(rule.normalizedName).isEqualTo("SMS Received · NFC enabled")
+        assertThat(rule.normalizedName).isEqualTo("SMS Received · Turn NFC on")
     }
 
     @Test
@@ -118,7 +118,7 @@ class AutomationRepositoryHistoryTest {
         assertThat(base.copy(name = "SMS from 12 · NFC enabled").normalizedName)
             .isEqualTo("SMS from 12 · NFC enabled")
         assertThat(base.copy(name = "SMS from +1 (555) 010-0 · NFC enabled").normalizedName)
-            .isEqualTo("SMS Received · NFC enabled")
+            .isEqualTo("SMS Received · Turn NFC on")
     }
 
     @Test
