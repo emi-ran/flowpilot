@@ -9,6 +9,10 @@ import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.ExecutionStatus
+import com.flowpilot.app.data.model.resolvedResultArgs
+import com.flowpilot.app.data.model.resolvedResultCode
+import com.flowpilot.app.actions.ActionResult
+import com.flowpilot.app.actions.ActionResultCode
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -314,6 +318,29 @@ class AutomationRepositoryHistoryTest {
     }
 
     @Test
+    fun add_blankName_usesStoredAppLanguageAndPreservesCustomNames() = runTest {
+        repository.setAppLanguage("tr")
+
+        val generated = repository.add(
+            name = "",
+            triggerEvent = TriggerEvent.APP_OPENED,
+            appPackage = "com.akbank",
+            appName = "Akbank",
+            actions = listOf(ActionType.SHOW_NOTIFICATION),
+        )
+        val custom = repository.add(
+            name = "Özel ad",
+            triggerEvent = TriggerEvent.APP_OPENED,
+            appPackage = "com.akbank",
+            appName = "Akbank",
+            actions = listOf(ActionType.SHOW_NOTIFICATION),
+        )
+
+        assertThat(generated.name).isEqualTo("Akbank · Bildirim göster")
+        assertThat(custom.name).isEqualTo("Özel ad")
+    }
+
+    @Test
     fun actionExecutionRecord_redactsSensitiveInformation() {
         val rawMessage = "Failed contacting https://admin:password123@example.com/api?token=sec_abc123 with Bearer my_secret_token"
         val record = ActionExecutionRecord.create(
@@ -326,5 +353,38 @@ class AutomationRepositoryHistoryTest {
         assertThat(record.message).doesNotContain("sec_abc123")
         assertThat(record.message).doesNotContain("my_secret_token")
         assertThat(record.message).contains("[REDACTED]")
+    }
+
+    @Test
+    fun actionExecutionRecord_persistsStructuredLocalizedOutcomeMetadata() {
+        val record = ActionExecutionRecord.create(
+            ActionType.SEND_SMS,
+            ActionResult(true, "SMS sent to +90 555 123 4567", ActionResultCode.SMS_SENT, listOf("+90 555 123 4567")),
+        )
+
+        assertThat(record.resultCode).isEqualTo(ActionResultCode.SMS_SENT)
+        assertThat(record.resultArgs.single()).doesNotContain("555 123")
+        assertThat(record.resolvedResultArgs().single()).contains("••••")
+    }
+
+    @Test
+    fun legacyHistory_successesResolveByActionType_withoutTranslatingTechnicalErrors() {
+        val notification = ActionExecutionRecord.create(ActionType.SHOW_NOTIFICATION, true, "Notification posted")
+        val location = ActionExecutionRecord.create(ActionType.LOCATION_ON, true, "Location turned on")
+        val genericSuccess = ActionExecutionRecord.create(ActionType.SPEAK_TEXT, true, "TTS audio played from offline cache")
+        val enabledSuccess = ActionExecutionRecord.create(ActionType.WIFI_ON, true, "Wi-Fi turned on")
+        val permission = ActionExecutionRecord.create(
+            ActionType.SEND_SMS,
+            ActionResult(false, "SEND_SMS permission required", ActionResultCode.PERMISSION_REQUIRED),
+        )
+        val technicalError = ActionExecutionRecord.create(ActionType.HTTP_WEBHOOK, false, "HTTP 503 from upstream")
+
+        assertThat(notification.resolvedResultCode()).isEqualTo(ActionResultCode.NOTIFICATION_POSTED)
+        assertThat(location.resolvedResultCode()).isEqualTo(ActionResultCode.STATE_ENABLED)
+        assertThat(genericSuccess.resolvedResultCode()).isEqualTo(ActionResultCode.COMPLETED)
+        assertThat(enabledSuccess.resolvedResultCode()).isEqualTo(ActionResultCode.STATE_ENABLED)
+        assertThat(permission.resolvedResultCode()).isEqualTo(ActionResultCode.PERMISSION_REQUIRED)
+        assertThat(technicalError.resolvedResultCode()).isNull()
+        assertThat(technicalError.message).isEqualTo("HTTP 503 from upstream")
     }
 }

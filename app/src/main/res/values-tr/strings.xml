@@ -61,7 +61,7 @@
 
     <!-- Create & Detail Screens -->
     <string name="create_title">Otomasyon oluştur</string>
-    <string name="edit_title">Otomasyonu düzenle</string>
+    <string name="edit_title">Düzenle</string>
     <string name="presets_banner_title">Hazır Şablonlar (Presets)</string>
     <string name="presets_banner_desc">Popüler senaryolardan birini tek tıkla seçin</string>
     <string name="automation_name_label">Otomasyon adı</string>
@@ -298,7 +298,7 @@
     <string name="test_run_executed_success">%1$d eylem başarıyla çalıştırıldı</string>
     <string name="test_run_executed_errors">Hatalarla tamamlandı: %1$d başarılı, %2$d başarısız (%3$s)</string>
     <string name="msg_add_action_to_test">Test etmek için en az bir eylem ekleyin</string>
-    <string name="btn_save_changes">Değişiklikleri kaydet</string>
+    <string name="btn_save_changes">Kaydet</string>
     <string name="btn_create_rule">Kuralı oluştur</string>
     <string name="search_triggers_hint">Tetikleyici ara (örn. pil, arama, sms, ekran, zaman)...</string>
     <string name="search_actions_hint">Eylem ara (örn. bluetooth, wifi, ses, bildirim)...</string>
@@ -581,6 +581,17 @@
     <string name="history_empty_desc">Motor tarafından tetiklenen veya manuel test edilen çalıştırmalar burada listelenir.</string>
     <string name="history_untitled_rule">İsimsiz kural</string>
     <string name="history_section_actions">Eylemler</string>
+    <string name="history_result_completed">Tamamlandı</string>
+    <string name="history_result_enabled">Etkinleştirildi</string>
+    <string name="history_result_disabled">Devre dışı bırakıldı</string>
+    <string name="history_result_notification_posted">Bildirim gönderildi</string>
+    <string name="history_result_sms_sent">SMS %1$s numarasına gönderildi</string>
+    <string name="history_result_permission_required">Gerekli izin verilmedi</string>
+    <string name="history_result_execution_cancelled">Çalıştırma iptal edildi</string>
+    <string name="automatic_name_schedule">Zamanlama %1$02d:%2$02d · %3$s</string>
+    <string name="automatic_name_any_wifi">Herhangi bir Wi-Fi</string>
+    <string name="automatic_name_nfc_tag">NFC etiketi (%1$s) · %2$s</string>
+    <string name="automatic_name_notification">Bildirim (%1$s) · %2$s</string>
     <string name="status_success">Başarılı</string>
     <string name="status_partial">Kısmi</string>
     <string name="status_failed">Başarısız</string>
@@ -642,6 +653,20 @@
     <string name="backup_share_all_subject">FlowPilot Otomasyon Yedeği (%1$d kural)</string>
     <string name="btn_share">Paylaş</string>
     <string name="btn_export_selected">Seçilenleri dışa aktar (%1$d)</string>
+    <string name="backup_encrypt_opt_in_label">Şifreli tam yedekleme (webhook ve gizli verileri içerir)</string>
+    <string name="backup_encrypted_warning">Şifreli tam yedek webhook ve kişisel verileri içerir. Parolayı unutursanız geri yükleyemezsiniz.</string>
+    <string name="backup_password_label">Şifre</string>
+    <string name="backup_confirm_password_label">Şifreyi onayla</string>
+    <string name="backup_password_too_short">Şifre en az 6 karakter olmalıdır</string>
+    <string name="backup_password_mismatch">Şifreler eşleşmiyor</string>
+    <string name="backup_decrypt_dialog_title">Şifreli Yedekleme</string>
+    <string name="backup_decrypt_dialog_desc">Bu yedekleme şifre korumalıdır. Otomasyonların şifresini çözüp geri yüklemek için şifreyi girin.</string>
+    <string name="backup_decrypt_button">Kilidi Aç</string>
+    <string name="backup_decrypt_failed">Hatalı şifre veya geçersiz yedekleme dosyası</string>
+    <string name="backup_btn_export_encrypted">Şifreli tam yedek</string>
+    <string name="backup_encrypted_action_title">Şifre Korumalı Tam Yedekleme</string>
+    <string name="backup_import_encrypted_notice">Bu şifreli yedekleme eksiksiz webhook URL’lerini, başlıklarını ve istek gövdelerini içerir. İçe aktarılan kurallar kaydedilmiş etkin durumlarını korur.</string>
+    <string name="backup_replace_encrypted_warning">Tümünü değiştir, mevcut kurallarınızı ve kayıtlı webhook ayarlarını kalıcı olarak siler. Bu şifreli yedekleme tüm alanları ve kuralların kaydedilmiş etkin durumlarını geri yükler. Mevcut kuralları korumak için Birleştirmeyi seçin.</string>
 
     <!-- Quick Settings Tile -->
     <string name="tile_engine_name">FlowPilot</string>

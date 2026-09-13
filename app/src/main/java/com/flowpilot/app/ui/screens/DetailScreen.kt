@@ -51,6 +51,7 @@ import com.flowpilot.app.engine.isValidGeofenceConfig
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.ui.util.localizedLabel
+import com.flowpilot.app.ui.util.automaticAutomationName
 import com.flowpilot.app.actions.ActionParameters
 import com.flowpilot.app.actions.SoundExecutor
 import com.flowpilot.app.actions.TtsExecutor
@@ -80,8 +81,11 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var pendingShare by remember { mutableStateOf<Automation?>(null) }
     pendingShare?.let { rule ->
         BackupDisclosureDialog(
-            onConfirm = { pendingShare = null; vm.shareRule(rule) },
             onDismiss = { pendingShare = null },
+            onConfirmWithPassword = { password ->
+                pendingShare = null
+                vm.shareRule(rule, password)
+            },
         )
     }
     BackHandler(onBack = back)
@@ -842,28 +846,25 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 OutlinedButton(back, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.btn_cancel)) }
                 Button(
                     onClick = {
-                        val summary = actions.joinToString(" + ") { it.label }
                         val finalName = name.ifBlank {
-                            when (event) {
-                                TriggerEvent.TIME_SCHEDULE -> "Schedule %02d:%02d · %s".format(scheduledMinute / 60, scheduledMinute % 60, summary)
-                                TriggerEvent.CHARGER_CONNECTED,
-                                TriggerEvent.CHARGER_DISCONNECTED -> "${event.label} · $summary"
-                                TriggerEvent.BATTERY_BELOW,
-                                TriggerEvent.BATTERY_ABOVE -> "${event.label} ${batteryLevel}% · $summary"
-                                TriggerEvent.WIFI_CONNECTED,
-                                TriggerEvent.WIFI_DISCONNECTED -> "${event.label} ${wifiSsid.ifBlank { "Any Wi-Fi" }} · $summary"
-                                TriggerEvent.BLUETOOTH_CONNECTED,
-                                TriggerEvent.BLUETOOTH_DISCONNECTED -> "${event.label} ${bluetoothDeviceName.ifBlank { bluetoothDeviceAddress }} · $summary"
-                                TriggerEvent.NFC_TAG_SCANNED -> "NFC Tag ($nfcTagId) · $summary"
-                                TriggerEvent.NOTIFICATION_RECEIVED -> "Notification (${notificationAppName.ifBlank { notificationAppPackage }}) · $summary"
-                                TriggerEvent.CALL_RINGING,
-                                TriggerEvent.CALL_ANSWERED,
-                                TriggerEvent.CALL_OUTGOING,
-                                TriggerEvent.CALL_ENDED,
-                                TriggerEvent.DEVICE_FLIPPED_DOWN,
-                                TriggerEvent.DEVICE_FLIPPED_UP -> "${event.label} · $summary"
-                                else -> "${appName.ifBlank { pkg }} · $summary"
-                            }
+                            automaticAutomationName(
+                                context = context,
+                                trigger = event,
+                                actions = actions,
+                                appName = appName,
+                                appPackage = pkg,
+                                scheduledMinute = scheduledMinute,
+                                batteryLevel = batteryLevel,
+                                wifiSsid = wifiSsid,
+                                bluetoothDeviceName = bluetoothDeviceName,
+                                bluetoothDeviceAddress = bluetoothDeviceAddress,
+                                nfcTagId = nfcTagId,
+                                notificationAppName = notificationAppName,
+                                notificationAppPackage = notificationAppPackage,
+                                lightLux = lightLux,
+                                geofenceName = geofenceName,
+                                geofenceRadiusMeters = geofenceRadiusMeters,
+                            )
                         }
                         vm.updateRule(
                             initialRule.copy(

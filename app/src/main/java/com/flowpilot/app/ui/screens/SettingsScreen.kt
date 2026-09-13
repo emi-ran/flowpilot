@@ -35,6 +35,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private enum class PendingExportType {
+    EXPORT_FILE,
+    SHARE_ALL,
+}
+
 @Composable
 fun SettingsScreen(
     vm: AppViewModel,
@@ -52,20 +57,30 @@ fun SettingsScreen(
     var showAboutDialog by remember { mutableStateOf(false) }
 
     // Backup & Restore states
-    var pendingImportJson by remember { mutableStateOf<String?>(null) }
+    var pendingImportContent by remember { mutableStateOf<String?>(null) }
     var pendingImportRules by remember { mutableStateOf<List<Automation>>(emptyList()) }
+    var pendingImportIsEncrypted by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
-    var pendingExport by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var decryptError by remember { mutableStateOf<String?>(null) }
+    var pendingExportType by remember { mutableStateOf<PendingExportType?>(null) }
+    var pendingExportPassword by remember { mutableStateOf<String?>(null) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
+        val exportPassword = pendingExportPassword
+        pendingExportPassword = null
         uri ?: return@rememberLauncherForActivityResult
         scope.launch(Dispatchers.IO) {
             try {
-                val json = vm.exportBackup()
+                val content = if (exportPassword != null) {
+                    vm.exportEncryptedBackup(password = exportPassword)
+                } else {
+                    vm.exportBackup()
+                }
                 context.contentResolver.openOutputStream(uri)?.use { os ->
-                    os.write(json.toByteArray(Charsets.UTF_8))
+                    os.write(content.toByteArray(Charsets.UTF_8))
                 }
                 withContext(Dispatchers.Main) {
                     val count = vm.automations.value.size
@@ -88,20 +103,33 @@ fun SettingsScreen(
                 val content = context.contentResolver.openInputStream(uri)?.use { stream ->
                     stream.bufferedReader(Charsets.UTF_8).readText()
                 } ?: ""
-                val parseResult = BackupManager.parseImport(content)
                 withContext(Dispatchers.Main) {
-                    if (parseResult.isSuccess) {
-                        val rules = parseResult.getOrNull() ?: emptyList()
-                        if (rules.isNotEmpty()) {
-                            pendingImportJson = content
-                            pendingImportRules = rules
-                            showImportDialog = true
-                        } else {
-                            Toast.makeText(context, context.getString(R.string.backup_import_empty), Toast.LENGTH_SHORT).show()
-                        }
+                    val trimmed = content.trim()
+                    if (trimmed.isEmpty()) {
+                        Toast.makeText(context, context.getString(R.string.backup_import_empty), Toast.LENGTH_SHORT).show()
+                        return@withContext
+                    }
+                    if (BackupManager.isEncryptedBackup(trimmed)) {
+                        pendingImportContent = trimmed
+                        pendingImportIsEncrypted = true
+                        decryptError = null
+                        showPasswordDialog = true
                     } else {
-                        val error = parseResult.exceptionOrNull()?.message ?: "Invalid format"
-                        Toast.makeText(context, context.getString(R.string.backup_import_error, error), Toast.LENGTH_LONG).show()
+                        val parseResult = BackupManager.parseImport(trimmed)
+                        if (parseResult.isSuccess) {
+                            val rules = parseResult.getOrNull() ?: emptyList()
+                            if (rules.isNotEmpty()) {
+                                pendingImportContent = trimmed
+                                pendingImportRules = rules
+                                pendingImportIsEncrypted = false
+                                showImportDialog = true
+                            } else {
+                                Toast.makeText(context, context.getString(R.string.backup_import_empty), Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            val error = parseResult.exceptionOrNull()?.message ?: "Invalid format"
+                            Toast.makeText(context, context.getString(R.string.backup_import_error, error), Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -204,7 +232,7 @@ fun SettingsScreen(
                     icon = Icons.Default.FileDownload,
                     checked = null,
                 ) {
-                    pendingExport = { exportLauncher.launch(BackupManager.generateBackupFileName()) }
+                    pendingExportType = PendingExportType.EXPORT_FILE
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
                 SettingRow(
@@ -220,25 +248,70 @@ fun SettingsScreen(
                     icon = Icons.Default.Share,
                     checked = null,
                 ) {
-                    pendingExport = { vm.shareBackup() }
+                    pendingExportType = PendingExportType.SHARE_ALL
                 }
             }
         }
     }
 
-    pendingExport?.let { export ->
+    pendingExportType?.let { exportType ->
         BackupDisclosureDialog(
-            onConfirm = { pendingExport = null; export() },
-            onDismiss = { pendingExport = null },
+            onDismiss = { pendingExportType = null },
+            onConfirmWithPassword = { password ->
+                pendingExportType = null
+                when (exportType) {
+                    PendingExportType.EXPORT_FILE -> {
+                        pendingExportPassword = password
+                        val fileName = if (password != null) {
+                            BackupManager.generateEncryptedBackupFileName()
+                        } else {
+                            BackupManager.generateBackupFileName()
+                        }
+                        exportLauncher.launch(fileName)
+                    }
+                    PendingExportType.SHARE_ALL -> {
+                        vm.shareBackup(password = password)
+                    }
+                }
+            },
         )
     }
 
-    if (showImportDialog && pendingImportJson != null) {
+    if (showPasswordDialog && pendingImportContent != null) {
+        DecryptBackupDialog(
+            errorMessage = decryptError,
+            onDismiss = {
+                showPasswordDialog = false
+                pendingImportContent = null
+                decryptError = null
+            },
+            onDecrypt = { password ->
+                val content = pendingImportContent ?: return@DecryptBackupDialog
+                val decryptResult = vm.decryptEncryptedBackup(content, password)
+                if (decryptResult.isSuccess) {
+                    val rules = decryptResult.getOrNull() ?: emptyList()
+                    if (rules.isNotEmpty()) {
+                        pendingImportRules = rules
+                        showPasswordDialog = false
+                        decryptError = null
+                        showImportDialog = true
+                    } else {
+                        decryptError = context.getString(R.string.backup_import_empty)
+                    }
+                } else {
+                    decryptError = decryptResult.exceptionOrNull()?.message
+                        ?: context.getString(R.string.backup_decrypt_failed)
+                }
+            },
+        )
+    }
+
+    if (showImportDialog && pendingImportRules.isNotEmpty()) {
         ImportStrategyDialog(
             count = pendingImportRules.size,
+            isEncrypted = pendingImportIsEncrypted,
             onConfirm = { strategy ->
-                val json = pendingImportJson ?: return@ImportStrategyDialog
-                vm.importAutomations(json, strategy) { result ->
+                vm.importAutomations(pendingImportRules, strategy) { result ->
                     if (result.isSuccess) {
                         val importedCount = result.getOrNull() ?: 0
                         Toast.makeText(context, context.getString(R.string.backup_import_success, importedCount), Toast.LENGTH_SHORT).show()
@@ -248,13 +321,15 @@ fun SettingsScreen(
                     }
                 }
                 showImportDialog = false
-                pendingImportJson = null
+                pendingImportContent = null
                 pendingImportRules = emptyList()
+                pendingImportIsEncrypted = false
             },
             onDismiss = {
                 showImportDialog = false
-                pendingImportJson = null
+                pendingImportContent = null
                 pendingImportRules = emptyList()
+                pendingImportIsEncrypted = false
             },
         )
     }
@@ -427,6 +502,7 @@ private fun Boolean?.orFalse() = this ?: false
 @Composable
 private fun ImportStrategyDialog(
     count: Int,
+    isEncrypted: Boolean = false,
     onConfirm: (ImportStrategy) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -443,7 +519,11 @@ private fun ImportStrategyDialog(
         },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(stringResource(R.string.backup_import_omissions))
+                if (isEncrypted) {
+                    Text(stringResource(R.string.backup_import_encrypted_notice))
+                } else {
+                    Text(stringResource(R.string.backup_import_omissions))
+                }
                 Text(
                     stringResource(R.string.backup_import_dialog_desc, count),
                     style = MaterialTheme.typography.bodyMedium,
@@ -520,7 +600,12 @@ private fun ImportStrategyDialog(
                     }
                 }
                 if (selectedStrategy == ImportStrategy.REPLACE_ALL) {
-                    Text(stringResource(R.string.backup_replace_warning), color = MaterialTheme.colorScheme.error)
+                    val warningText = if (isEncrypted) {
+                        stringResource(R.string.backup_replace_encrypted_warning)
+                    } else {
+                        stringResource(R.string.backup_replace_warning)
+                    }
+                    Text(warningText, color = MaterialTheme.colorScheme.error)
                     Row(
                         modifier = Modifier.toggleable(
                             value = replaceAcknowledged,

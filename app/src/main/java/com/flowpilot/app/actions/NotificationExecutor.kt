@@ -26,7 +26,9 @@ class NotificationExecutor(
 
     override fun execute(action: ActionType, parameters: ActionParameters): ActionResult {
         if (action != ActionType.SHOW_NOTIFICATION) return ActionResult(false, "Unsupported action for notification")
-        if (!permissionChecker(context)) return ActionResult(false, "Notification permission not granted")
+        if (!permissionChecker(context)) {
+            return ActionResult(false, "Notification permission not granted", ActionResultCode.PERMISSION_REQUIRED)
+        }
         return try {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -41,7 +43,7 @@ class NotificationExecutor(
                 .setAutoCancel(true)
                 .build()
             poster(nextId.incrementAndGet(), notification)
-            ActionResult(true, "Notification posted")
+            ActionResult(true, "Notification posted", ActionResultCode.NOTIFICATION_POSTED)
         } catch (t: Throwable) {
             ActionResult(false, t.message ?: t.javaClass.simpleName)
         }

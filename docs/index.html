@@ -796,7 +796,7 @@
         </div>
         <div class="attr-item">
           <div class="attr-title" data-i18n="stat_telemetry_label">Telemetri & Ağ</div>
-          <div class="attr-val">0 İstek <small>(%100 Yerel)</small></div>
+          <div class="attr-val" data-i18n-html="stat_telemetry_val">0 telemetri <small>(Yalnızca yapılandırılan webhook'lar ağ kullanır)</small></div>
         </div>
       </div>
     </div>
@@ -906,7 +906,7 @@
             <tr>
               <td data-i18n="comp_row_4_title">Gizlilik & Telemetri</td>
               <td><span class="badge-warn" data-i18n="comp_row_4_old">Crashlytics, analitik SDK'ları, hesap zorunluluğu</span></td>
-              <td><span class="badge-good" data-i18n="comp_row_4_new">Sıfır telemetri, sıfır hesap, sıfır internet izni</span></td>
+              <td><span class="badge-good" data-i18n="comp_row_4_new">Sıfır telemetri, sıfır hesap, yalnızca kullanıcı yapılandırırsa ağ</span></td>
             </tr>
             <tr>
               <td data-i18n="comp_row_5_title">Kaynak Kod Lisansı</td>
@@ -1068,6 +1068,15 @@
             </div>
           </div>
 
+          <!-- Backup & Privacy Note -->
+          <div style="background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--emerald); padding: 18px; border-radius: 6px;">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--emerald); margin-bottom: 4px;">BACKUP &amp; PRIVACY</div>
+            <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px;" data-i18n="backup_box_title">Şifreli Tam Yedek</div>
+            <div style="font-size: 13px; color: var(--text-muted); line-height: 1.55;" data-i18n="backup_box_desc">
+              Normal JSON dışa aktarma webhook sırlarını çıkarır ve içe aktarılan kuralları devre dışı bırakır. Şifreli tam yedek; tüm kural verisini, AES-256-GCM ve parola ile taşır; geri yükleme etkinlik durumunu da korur.
+            </div>
+          </div>
+
           <!-- Step 3 (HyperOS / OEM Warning) -->
           <div class="oem-box">
             <div class="oem-title">
@@ -1172,6 +1181,7 @@
         stat_runtime_label: "Çalışma Modeli",
         stat_shizuku_label: "Yetki Katmanı",
         stat_telemetry_label: "Telemetri & Ağ",
+        stat_telemetry_val: "0 telemetri <small>(Yalnızca yapılandırılan webhook'lar ağ kullanır)</small>",
         wb_label: "İnteraktif Kural Mühendisliği",
         wb_title: "Uygulamayı ve Otomasyon Mantığını İnceleyin",
         wb_desc: "Aşağıdaki hazır kuralları seçerek hem cihaz ekranındaki görünümünü hem de arkasındaki veri/eylem yapısını canlı olarak görün.",
@@ -1197,7 +1207,7 @@
         comp_row_3_title: "Uygulama Boyutu & Şişkinlik",
         comp_row_4_title: "Gizlilik & Telemetri",
         comp_row_4_old: "Crashlytics, analitik SDK'ları, hesap zorunluluğu",
-        comp_row_4_new: "Sıfır telemetri, sıfır hesap, sıfır internet izni",
+        comp_row_4_new: "Sıfır telemetri, sıfır hesap, yalnızca kullanıcı yapılandırırsa ağ",
         comp_row_5_title: "Kaynak Kod Lisansı",
         comp_row_5_old: "Kapalı kaynak (Proprietary / Ücretli)",
         comp_row_5_new: "%100 Açık Kaynak (GitHub / Bağımsız)",
@@ -1244,6 +1254,8 @@
         step_2_desc: "Geliştirici Seçenekleri'nden Kablosuz Hata Ayıklama üzerinden eşleyin veya cihazınızı USB ile bağlayıp terminalden başlatın.",
         geofence_box_title: "Donanım Tabanlı Konum Alanı (Geofencing)",
         geofence_box_desc: "Sürekli GPS taraması ve pil tüketen döngüler yerine Google Play Services donanım geofence API'si kullanılır. Giriş ve çıkışların arka planda güvenle algılanması için Hassas Konum (Fine Location) ve Arka Planda Her Zaman İzin Ver (Allow all the time) izni gereklidir.",
+        backup_box_title: "Şifreli Tam Yedek",
+        backup_box_desc: "Normal JSON dışa aktarma webhook sırlarını çıkarır ve içe aktarılan kuralları devre dışı bırakır. Şifreli tam yedek; tüm kural verisini, AES-256-GCM ve parola ile taşır; geri yükleme etkinlik durumunu da korur.",
         oem_box_title: "Xiaomi HyperOS / Cihaz Optimizasyonu Notu",
         oem_box_desc: "Xiaomi 15T Pro veya HyperOS/MIUI cihazlarda kuralların ekran kapalıyken dakik çalışması için: FlowPilot için Otomatik Başlatma (Autostart) iznini açın ve Pil Tasarrufu: Kısıtlama Yok (No Restrictions) olarak ayarlayın."
       },
@@ -1262,6 +1274,7 @@
         stat_runtime_label: "Runtime Model",
         stat_shizuku_label: "Privilege Layer",
         stat_telemetry_label: "Telemetry & Network",
+        stat_telemetry_val: "Zero telemetry <small>(network only for configured webhooks)</small>",
         wb_label: "Interactive Rule Engineering",
         wb_title: "Inspect the App & Automation Logic",
         wb_desc: "Select any rule preset below to inspect both its on-device screenshot and the underlying structured rule definition AST.",
@@ -1287,7 +1300,7 @@
         comp_row_3_title: "App Size & Bloat",
         comp_row_4_title: "Privacy & Telemetry",
         comp_row_4_old: "Crashlytics, third-party analytics SDKs, mandatory account",
-        comp_row_4_new: "Zero telemetry, zero analytics, zero network permission",
+        comp_row_4_new: "Zero telemetry, zero accounts, network only when user configures it",
         comp_row_5_title: "Source Code License",
         comp_row_5_old: "Closed source (Proprietary / Paid subscriptions)",
         comp_row_5_new: "100% Open Source (GitHub / Independent)",
@@ -1334,6 +1347,8 @@
         step_2_desc: "Pair via Wireless Debugging in Developer Options or start it over USB via the standard start script.",
         geofence_box_title: "Hardware-Backed Geofencing",
         geofence_box_desc: "Instead of continuous battery-draining GPS loops, FlowPilot uses Google Play Services hardware geofencing. Reliable arrival and departure detection requires Precise Location ('Fine Location') and Background Location ('Allow all the time').",
+        backup_box_title: "Encrypted Full Backup",
+        backup_box_desc: "Normal JSON export removes webhook secrets and disables imported rules. Encrypted full backup carries complete rule data with AES-256-GCM and a password; restore also preserves enabled state.",
         oem_box_title: "Xiaomi HyperOS / OEM Optimization Note",
         oem_box_desc: "To ensure rules execute accurately when screen is off on Xiaomi 15T Pro or HyperOS/MIUI devices: grant Autostart permission for FlowPilot and set Battery Saver to 'No Restrictions'."
       }
@@ -1392,6 +1407,10 @@
         if (dict[key]) {
           el.textContent = dict[key];
         }
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        if (dict[key]) el.innerHTML = dict[key];
       });
 
       // Update gallery screenshots

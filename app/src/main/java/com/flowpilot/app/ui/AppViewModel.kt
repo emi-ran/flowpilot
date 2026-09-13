@@ -9,10 +9,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.flowpilot.app.R
 import com.flowpilot.app.actions.ShizukuShell
+import com.flowpilot.app.actions.ActionResultCode
+import com.flowpilot.app.ui.util.labelRes
 import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
+import com.flowpilot.app.ui.util.localizedForAppLanguage
 import com.flowpilot.app.engine.AutomationService
 import com.flowpilot.app.engine.GeofenceDiagnostic
 import com.flowpilot.app.engine.requiresLocation
@@ -292,7 +295,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     ) {
         viewModelScope.launch {
             repository.add(
-                name = name ?: "",
+                name = name.orEmpty(),
                 triggerEvent = triggerEvent,
                 appPackage = appPackage,
                 appName = appName,
@@ -398,8 +401,37 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return com.flowpilot.app.data.backup.BackupManager.exportToString(targets)
     }
 
+    fun exportEncryptedBackup(rules: List<Automation>? = null, password: String): String {
+        val targets = rules ?: automations.value.map { it.rule }
+        return com.flowpilot.app.data.backup.BackupManager.exportEncryptedToString(targets, password)
+    }
+
     fun exportSingleRule(rule: Automation): String {
         return com.flowpilot.app.data.backup.BackupManager.exportSingleToString(rule)
+    }
+
+    fun exportSingleEncryptedRule(rule: Automation, password: String): String {
+        return com.flowpilot.app.data.backup.BackupManager.exportEncryptedSingleToString(rule, password)
+    }
+
+    fun decryptEncryptedBackup(content: String, password: String): Result<List<Automation>> {
+        return com.flowpilot.app.data.backup.BackupManager.parseEncryptedImport(content, password)
+    }
+
+    fun importAutomations(
+        rules: List<Automation>,
+        strategy: com.flowpilot.app.data.backup.ImportStrategy,
+        onResult: (Result<Int>) -> Unit,
+    ) {
+        viewModelScope.launch {
+            if (rules.isEmpty()) {
+                onResult(Result.failure(Exception("No automations found in backup")))
+                return@launch
+            }
+            val count = repository.importAutomations(rules, strategy)
+            refreshPermissions()
+            onResult(Result.success(count))
+        }
     }
 
     fun importAutomations(
@@ -424,10 +456,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun shareRule(rule: Automation) {
+    fun shareRule(rule: Automation, password: String? = null) {
         try {
-            val content = exportSingleRule(rule)
-            val fileName = com.flowpilot.app.data.backup.BackupManager.generateRuleFileName(rule.name)
+            val content = if (password != null) {
+                exportSingleEncryptedRule(rule, password)
+            } else {
+                exportSingleRule(rule)
+            }
+            val fileName = if (password != null) {
+                com.flowpilot.app.data.backup.BackupManager.generateEncryptedRuleFileName(rule.name)
+            } else {
+                com.flowpilot.app.data.backup.BackupManager.generateRuleFileName(rule.name)
+            }
             val uri = com.flowpilot.app.data.backup.BackupManager.prepareShareFile(app, fileName, content)
 
             val intent = Intent(Intent.ACTION_SEND).apply {
@@ -445,11 +485,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun shareBackup(rules: List<Automation>? = null) {
+    fun shareBackup(rules: List<Automation>? = null, password: String? = null) {
         try {
             val targets = rules ?: automations.value.map { it.rule }
-            val content = exportBackup(targets)
-            val fileName = com.flowpilot.app.data.backup.BackupManager.generateBackupFileName()
+            val content = if (password != null) {
+                exportEncryptedBackup(targets, password)
+            } else {
+                exportBackup(targets)
+            }
+            val fileName = if (password != null) {
+                com.flowpilot.app.data.backup.BackupManager.generateEncryptedBackupFileName()
+            } else {
+                com.flowpilot.app.data.backup.BackupManager.generateBackupFileName()
+            }
             val uri = com.flowpilot.app.data.backup.BackupManager.prepareShareFile(app, fileName, content)
 
             val intent = Intent(Intent.ACTION_SEND).apply {
@@ -523,6 +571,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 smsMessage = rule.smsMessage,
             )
             val dispatcher = com.flowpilot.app.actions.ActionDispatcher.get(app)
+            val localizedContext = app.localizedForAppLanguage(appLanguage.value)
             var successCount = 0
             var failureCount = 0
             val failureMessages = mutableListOf<String>()
@@ -543,13 +592,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         } catch (ce: CancellationException) {
                             failureCount++
                             val msg = "Execution cancelled during ${delaySec}s delay"
-                            failureMessages.add("${action.label}: $msg")
+                            failureMessages.add("${localizedContext.getString(action.labelRes)}: $msg")
                             actionRecords.add(
-                                ActionExecutionRecord.create(
-                                    actionType = action,
-                                    success = false,
-                                    message = msg,
-                                )
+                            ActionExecutionRecord.create(
+                                actionType = action,
+                                success = false,
+                                message = msg,
+                                resultCode = ActionResultCode.EXECUTION_CANCELLED,
+                            )
                             )
                             throw ce
                         }
@@ -561,15 +611,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     } else {
                         failureCount++
                         val redacted = com.flowpilot.app.actions.WebhookExecutor.redactSensitiveText(result.message)
-                        failureMessages.add("${action.label}: $redacted")
+                        failureMessages.add("${localizedContext.getString(action.labelRes)}: $redacted")
                     }
-                    actionRecords.add(
-                        ActionExecutionRecord.create(
-                            actionType = action,
-                            success = result.success,
-                            message = result.message,
-                        )
-                    )
+                    actionRecords.add(ActionExecutionRecord.create(action, result))
                 }
             } catch (ce: CancellationException) {
                 cancellation = ce

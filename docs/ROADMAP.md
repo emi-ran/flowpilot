@@ -90,6 +90,7 @@ Do not bundle unrelated features. One feature family at a time.
     - Location prerequisites gating: requires `ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION` ("Allow all the time"), and enabled system location services.
     - Event-driven battery behavior: transition coordinates directly forwarded to rule execution for location template resolution, avoiding fresh GPS lock queries for notification-only or template-driven geofence actions.
     - Status & diagnostics UI: per-rule state indicators (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, `REGISTRATION_FAILED`) and receiver error banners.
+    - Prerequisite/registration errors retry with bounded backoff (10s base, 60s maximum); a config or prerequisite change retries immediately.
 
 ## Planned Actions
 
@@ -229,6 +230,11 @@ Each must expose its required permission or Shizuku state. Do not show success u
    - Verify rule evaluation correctly filters `ENTER` vs `EXIT` triggers.
    - Verify transition coordinates populate `${location.lat}` and `${location.lng}` without performing redundant fresh GPS lookups for notification-only actions.
    - Disable rule or stop engine: verify geofences are unregistered from Google Play Services and status reflects `Unregistered`.
+10. **Encrypted backup and localization device smoke test**
+    - Export a normal JSON backup; verify webhook URL/headers/body are absent and imported rules are disabled.
+    - Export an encrypted full backup with a six-character-or-longer password; verify plaintext secrets are absent from file, wrong password leaves rules unchanged, and correct password restores secrets plus enabled state.
+    - Share/import one encrypted rule and verify its full configuration is restored.
+    - Switch app language to Turkish; execute notification, SMS, and location actions, then verify History results and newly generated automatic rule names are Turkish. Verify custom rule names are unchanged.
 
 ## Acceptance Gate
 

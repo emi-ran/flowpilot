@@ -3,12 +3,27 @@ package com.flowpilot.app.actions
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.data.model.SoundPreset
+import kotlinx.serialization.Serializable
 
 /** Result of attempting to execute an action. Kept honest — never claims success on a no-op. */
 data class ActionResult(
     val success: Boolean,
     val message: String,
+    val resultCode: ActionResultCode? = null,
+    val resultArgs: List<String> = emptyList(),
 )
+
+/** Locale-neutral outcome metadata persisted by execution history. */
+@Serializable
+enum class ActionResultCode {
+    COMPLETED,
+    STATE_ENABLED,
+    STATE_DISABLED,
+    NOTIFICATION_POSTED,
+    SMS_SENT,
+    PERMISSION_REQUIRED,
+    EXECUTION_CANCELLED,
+}
 
 data class ActionParameters(
     val notificationTitle: String = "",

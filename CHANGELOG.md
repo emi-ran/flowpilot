@@ -18,6 +18,14 @@ All notable FlowPilot changes are documented here.
   - Lifecycle persistence: system geofences remain registered during temporary engine restarts while engine is enabled, and are fully unregistered only when engine is disabled by the user.
   - Real-time registration diagnostics and status UI: home screen rule cards display live geofence state (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, `REGISTRATION_FAILED`) and receiver error banners.
   - Unit test suite: coverage for persistent queueing, config validation, diff calculation, prerequisites evaluation, location dependency coordinate resolution, and rule evaluator matching.
+- Password-encrypted full backup and restore: explicit encrypted export/share for full backups and single rules, while normal JSON export/share stays sanitized. Portable envelopes use AES-256-GCM, random salt/IV, and PBKDF2-HMAC-SHA256 (100,000 iterations); passwords require six characters. Encrypted restore preserves full rule data and enabled state, validates format/version/KDF bounds/password/authentication before mutation, then re-encrypts secrets with the target device Android Keystore.
+- Localized automation history and generated names: new history records persist locale-neutral outcome codes; History renders known outcomes in selected app language. SMS recipients remain masked, technical/redacted failures remain visible, legacy successful history maps to localized generic outcomes, and automatic rule names use saved English or Turkish app language without changing custom names.
+
+### Changed
+
+- Normal exports continue omitting webhook secrets and normal imports continue disabling imported rules.
+- Geofence prerequisite and registration failures now use bounded retry backoff (10 seconds to 60 seconds), avoiding rapid retry/DataStore/UI loops. A prerequisite or desired-config change retries immediately.
+- Geofence transition coordinates are reused for template context before requesting a fresh location, so notification-only and template-driven geofence actions avoid an unnecessary GPS wait.
 
 ## [1.0.1] - 2026-09-05
 

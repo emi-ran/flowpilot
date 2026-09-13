@@ -35,7 +35,7 @@ Android ekosistemindeki popüler otomasyon araçlarının büyük kısmı zorunl
 - 🛡️ **Shizuku Entegrasyonu:** Mobil Veri, Uçak Modu, GPS ve Koyu Tema gibi sistem düzeyindeki ayarları root erişimine gerek kalmadan güvenli ADB yetkileriyle kontrol edin.
 - 🎨 **Modern Material 3 Tasarımı:** Dinamik Aydınlık ve Koyu tema, akıcı animasyonlar ve yüksek erişilebilirlik standartlarına sahip saf Jetpack Compose mimarisi.
 - 🔊 **Çevrimdışı Metin Okuma (TTS):** İnternet bağlantısı gerektirmeyen, cihaz üzerinde önbelleklenen yüksek kaliteli sesli duyuru altyapısı.
-- 🔄 **Açık Ekosistem:** Otomasyon kurallarını JSON formatında dışa aktarın, paylaşın veya Birleştirme / Üzerine Yazma seçenekleriyle içe aktarın.
+- 🔄 **Açık Ekosistem:** Otomasyon kurallarını güvenli JSON olarak dışa aktarın/paylaşın veya parola şifreli tam yedeklerle Birleştirme / Üzerine Yazma seçeneklerini kullanın.
 
 ---
 
@@ -124,7 +124,7 @@ Tek tıkla kullanıma hazır popüler senaryolar:
 - **Hızlı Ayarlar Kutusu (Quick Settings Tile):** Bildirim panelinden tek tıkla otomasyon motorunu açıp kapatabilme veya durum izleme.
 - **Ana Ekran Widget'ı (Jetpack Glance):** Aktif kural sayısını gösteren ve tek dokunuşla motoru duraklatıp devam ettiren şık Material 3 widget'ı.
 - **Canlı Eylem Testi:** Bir kuralı kaydetmeden önce, üzerindeki tüm düzenlemeleri doğrudan cihazda anında test edebilme.
-- **Çalışma Geçmişi:** Son 100 kural tetiklenmesini ve eylem sonuçlarını gizlilik ilkeleriyle kaydeden yerel denetim günlüğü.
+- **Çalışma Geçmişi:** Son 100 kural tetiklenmesini, seçili uygulama dilinde gösterilen eylem sonuçlarıyla kaydeden yerel denetim günlüğü. Kimlik bilgileri ve telefon numaraları gizlenir/maskelenir.
 
 ---
 
@@ -178,6 +178,14 @@ Derlenen APK şu yolda yer alır:
 ```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
+
+### Yedekleme ve Geri Yükleme
+
+- **Normal JSON dışa aktarma/paylaşma:** Taşınabilir ve güvenli kural verisi üretir. Webhook URL'si, başlıkları ve gövdesi çıkarılır; normal içe aktarma kuralları Birleştir veya Üzerine Yaz öncesinde devre dışı bırakır.
+- **Şifreli tam yedek:** Ayarlar ekranından **Şifreli tam yedek** seçin veya tek kural paylaşırken bu seçeneği kullanın. En az altı karakterlik parola; webhook yapılandırması, telefon/SMS alanları ve etkinlik durumu dahil tüm kural verisini şifreler.
+- **Taşınabilir format:** Rastgele salt ve IV ile PBKDF2-HMAC-SHA256 (100.000 iterasyon) anahtar türetme kullanan AES-256-GCM doğrulanmış şifreleme. Yanlış parola veya değiştirilmiş yedek, kurallar değiştirilmeden önce reddedilir.
+- **Geri yükleme:** Şifreli yedeği seçin, parolasını girin, sonra Birleştir veya Üzerine Yaz seçin. İçe aktarılan sırlar hedef cihazın Android Keystore'u ile yeniden şifrelenir.
+- **Kapsam dışı:** Çalışma geçmişi, geçici geofence tanılama/kuyruk verisi, motor durumu, Android izinleri, Shizuku durumu ve TTS ses önbelleği yedeğe dahil edilmez.
 
 ### Cihaza ADB ile Yükleme
 ```bash

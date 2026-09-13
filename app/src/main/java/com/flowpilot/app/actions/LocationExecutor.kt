@@ -54,7 +54,11 @@ class LocationExecutor(
             if (enabled != expectedEnabled) {
                 return ActionResult(false, "Location state mismatch: expected ${if (expectedEnabled) "on" else "off"} but read ${if (enabled) "on" else "off"}")
             }
-            ActionResult(true, "Location turned $label")
+            ActionResult(
+                true,
+                "Location turned $label",
+                if (expectedEnabled) ActionResultCode.STATE_ENABLED else ActionResultCode.STATE_DISABLED,
+            )
         } catch (t: Throwable) {
             ActionResult(false, "Location toggle error: ${t.message ?: t.javaClass.simpleName}")
         }

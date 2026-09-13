@@ -82,14 +82,14 @@ class SmsExecutor(
         val hasSendPermission = context.checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
         if (!hasSendPermission) {
             Log.w(TAG, "Direct SMS blocked: SEND_SMS permission not granted")
-            return ActionResult(false, "SEND_SMS permission required")
+            return ActionResult(false, "SEND_SMS permission required", ActionResultCode.PERMISSION_REQUIRED)
         }
 
         return try {
             sendTextMessage(recipient, message)
             val masked = PhoneNumberUtils.mask(recipient)
             Log.i(TAG, "Direct SMS sent successfully to $masked")
-            ActionResult(true, "SMS sent to $masked")
+            ActionResult(true, "SMS sent to $masked", ActionResultCode.SMS_SENT, listOf(recipient))
         } catch (e: Exception) {
             Log.w(TAG, "Failed to send SMS (${e.javaClass.simpleName})")
             ActionResult(false, "Failed to send SMS")

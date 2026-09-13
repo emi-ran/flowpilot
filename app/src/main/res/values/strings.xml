@@ -61,7 +61,7 @@
 
     <!-- Create & Detail Screens -->
     <string name="create_title">Create automation</string>
-    <string name="edit_title">Edit automation</string>
+    <string name="edit_title">Edit</string>
     <string name="presets_banner_title">Ready-to-use Presets</string>
     <string name="presets_banner_desc">Choose from popular scenarios with a single tap</string>
     <string name="automation_name_label">Automation name</string>
@@ -298,7 +298,7 @@
     <string name="test_run_executed_success">Executed %1$d action(s) successfully</string>
     <string name="test_run_executed_errors">Ran with errors: %1$d succeeded, %2$d failed (%3$s)</string>
     <string name="msg_add_action_to_test">Add at least one action to test</string>
-    <string name="btn_save_changes">Save changes</string>
+    <string name="btn_save_changes">Save</string>
     <string name="btn_create_rule">Create rule</string>
     <string name="search_triggers_hint">Search triggers (e.g. battery, call, sms, screen, time)...</string>
     <string name="search_actions_hint">Search actions (e.g. bluetooth, wifi, volume, notification)...</string>
@@ -581,6 +581,17 @@
     <string name="history_empty_desc">Runs triggered by the engine or tested manually will appear here.</string>
     <string name="history_untitled_rule">Untitled rule</string>
     <string name="history_section_actions">Actions</string>
+    <string name="history_result_completed">Completed</string>
+    <string name="history_result_enabled">Enabled</string>
+    <string name="history_result_disabled">Disabled</string>
+    <string name="history_result_notification_posted">Notification posted</string>
+    <string name="history_result_sms_sent">SMS sent to %1$s</string>
+    <string name="history_result_permission_required">Required permission not granted</string>
+    <string name="history_result_execution_cancelled">Execution cancelled</string>
+    <string name="automatic_name_schedule">Schedule %1$02d:%2$02d · %3$s</string>
+    <string name="automatic_name_any_wifi">Any Wi-Fi</string>
+    <string name="automatic_name_nfc_tag">NFC tag (%1$s) · %2$s</string>
+    <string name="automatic_name_notification">Notification (%1$s) · %2$s</string>
     <string name="status_success">Success</string>
     <string name="status_partial">Partial</string>
     <string name="status_failed">Failed</string>
@@ -642,6 +653,20 @@
     <string name="backup_share_all_subject">FlowPilot Automations Backup (%1$d rules)</string>
     <string name="btn_share">Share</string>
     <string name="btn_export_selected">Export selected (%1$d)</string>
+    <string name="backup_encrypt_opt_in_label">Password-encrypted full backup (includes webhooks &amp; secrets)</string>
+    <string name="backup_encrypted_warning">Encrypted full backup includes webhook and personal data. Lost password means no recovery.</string>
+    <string name="backup_password_label">Password</string>
+    <string name="backup_confirm_password_label">Confirm password</string>
+    <string name="backup_password_too_short">Password must be at least 6 characters</string>
+    <string name="backup_password_mismatch">Passwords do not match</string>
+    <string name="backup_decrypt_dialog_title">Encrypted Backup</string>
+    <string name="backup_decrypt_dialog_desc">This backup is password-protected. Enter the password to decrypt and restore automations.</string>
+    <string name="backup_decrypt_button">Unlock</string>
+    <string name="backup_decrypt_failed">Incorrect password or invalid backup file</string>
+    <string name="backup_btn_export_encrypted">Encrypted full backup</string>
+    <string name="backup_encrypted_action_title">Password-Protected Full Backup</string>
+    <string name="backup_import_encrypted_notice">This encrypted backup includes complete webhook URLs, headers, and request bodies. Imported rules retain their original enabled state upon restoration.</string>
+    <string name="backup_replace_encrypted_warning">Replace all permanently deletes existing rules and saved webhook secrets. This encrypted backup restores all fields and the saved enabled state for every included rule. Choose Merge to keep current rules.</string>
 
     <!-- Quick Settings Tile -->
     <string name="tile_engine_name">FlowPilot</string>

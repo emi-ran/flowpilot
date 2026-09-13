@@ -64,7 +64,7 @@ class AutomationRepositoryCryptoTest {
             smsSenderFilter = "555-0100",
         )
 
-        assertThat(rule.name).isEqualTo("SMS Received · Turn NFC on")
+        assertThat(rule.name).isEqualTo("SMS received · Turn NFC on")
         assertThat(rule.name).doesNotContain("555-0100")
     }
 

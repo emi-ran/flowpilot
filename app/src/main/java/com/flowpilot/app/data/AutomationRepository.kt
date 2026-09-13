@@ -14,6 +14,8 @@ import com.flowpilot.app.engine.GeofenceTransition
 import com.flowpilot.app.engine.GeofenceDiagnostic
 import com.flowpilot.app.engine.GeofenceDiagnosticStatus
 import com.flowpilot.app.engine.GeofenceEvent
+import com.flowpilot.app.ui.util.automaticAutomationName
+import com.flowpilot.app.ui.util.localizedForAppLanguage
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -319,49 +321,27 @@ class AutomationRepository(private val context: Context) {
         id: String = UUID.randomUUID().toString(),
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
-        val summary = actions.joinToString(" + ") { it.label }
+        val automaticName = automaticAutomationName(
+            context = context.localizedForAppLanguage(appLanguage.first()),
+            trigger = triggerEvent,
+            actions = actions,
+            appName = appName,
+            appPackage = appPackage,
+            scheduledMinute = scheduledMinute,
+            batteryLevel = batteryLevel,
+            wifiSsid = wifiSsid,
+            bluetoothDeviceName = bluetoothDeviceName,
+            bluetoothDeviceAddress = bluetoothDeviceAddress,
+            nfcTagId = nfcTagId,
+            notificationAppName = notificationAppName,
+            notificationAppPackage = notificationAppPackage,
+            lightLux = lightLux,
+            geofenceName = geofenceName,
+            geofenceRadiusMeters = geofenceRadiusMeters,
+        )
         val rule = Automation(
             id = id,
-            name = name.ifBlank {
-                when (triggerEvent) {
-                    com.flowpilot.app.data.model.TriggerEvent.TIME_SCHEDULE ->
-                        "Schedule %02d:%02d · %s".format(scheduledMinute / 60, scheduledMinute % 60, summary)
-                    com.flowpilot.app.data.model.TriggerEvent.CHARGER_CONNECTED,
-                    com.flowpilot.app.data.model.TriggerEvent.CHARGER_DISCONNECTED ->
-                        "${triggerEvent.label} · $summary"
-                    com.flowpilot.app.data.model.TriggerEvent.BATTERY_BELOW,
-                    com.flowpilot.app.data.model.TriggerEvent.BATTERY_ABOVE ->
-                        "${triggerEvent.label} ${batteryLevel}% · $summary"
-                    com.flowpilot.app.data.model.TriggerEvent.WIFI_CONNECTED,
-                    com.flowpilot.app.data.model.TriggerEvent.WIFI_DISCONNECTED ->
-                        "${triggerEvent.label} ${wifiSsid.ifBlank { "Any Wi-Fi" }} · $summary"
-                    com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED,
-                    com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED ->
-                        "${triggerEvent.label} ${bluetoothDeviceName.ifBlank { bluetoothDeviceAddress }} · $summary"
-                    com.flowpilot.app.data.model.TriggerEvent.NFC_TAG_SCANNED ->
-                        "NFC Tag ($nfcTagId) · $summary"
-                    com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED ->
-                        "Notification (${notificationAppName.ifBlank { notificationAppPackage }}) · $summary"
-                    com.flowpilot.app.data.model.TriggerEvent.CALL_RINGING,
-                    com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED,
-                    com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING,
-                    com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED,
-                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_DOWN,
-                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_UP,
-                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_SHAKE,
-                    com.flowpilot.app.data.model.TriggerEvent.DEVICE_UNLOCKED ->
-                        "${triggerEvent.label} · $summary"
-                    com.flowpilot.app.data.model.TriggerEvent.LIGHT_BELOW,
-                    com.flowpilot.app.data.model.TriggerEvent.LIGHT_ABOVE ->
-                        "${triggerEvent.label} ${lightLux}lx · $summary"
-                    com.flowpilot.app.data.model.TriggerEvent.SMS_RECEIVED ->
-                        "SMS Received · $summary"
-                    com.flowpilot.app.data.model.TriggerEvent.GEOFENCE_ENTER,
-                    com.flowpilot.app.data.model.TriggerEvent.GEOFENCE_EXIT ->
-                        "${triggerEvent.label} (${geofenceName.ifBlank { "${geofenceRadiusMeters}m" }}) · $summary"
-                    else -> "${appName.ifBlank { appPackage }} · $summary"
-                }
-            },
+            name = name.ifBlank { automaticName },
             triggerEvent = triggerEvent,
             appPackage = appPackage,
             appName = appName,

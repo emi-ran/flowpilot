@@ -576,11 +576,7 @@ class AutomationEngine(
                             anySuccess = true
                         }
                         actionRecords.add(
-                            ActionExecutionRecord.create(
-                                actionType = action,
-                                success = result.success,
-                                message = result.message,
-                            )
+                            ActionExecutionRecord.create(action, result)
                         )
                         currentAction = null
                     }
@@ -591,6 +587,7 @@ class AutomationEngine(
                                 actionType = action,
                                 success = false,
                                 message = "Execution cancelled",
+                                resultCode = com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED,
                             )
                         )
                     }

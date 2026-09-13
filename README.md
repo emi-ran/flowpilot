@@ -37,7 +37,7 @@ Most popular automation tools on Android are burdened with cloud requirements, a
 - 🛡️ **Shizuku Integration:** Execute system-level tasks (toggle Mobile Data, Airplane Mode, GPS, Dark Mode) securely with user-granted ADB permissions—without requiring root access.
 - 🎨 **Modern Material 3 Design:** Fully native Jetpack Compose architecture supporting dynamic Dark & Light themes, fluid animations, and high accessibility standards.
 - 🔊 **Offline Text-to-Speech (TTS):** Pre-synthesized on-device voice audio caching with zero cloud dependency.
-- 🔄 **Open Ecosystem:** Export, import, and share automation rules in plain JSON format with Merge and Replace strategies.
+- 🔄 **Open Ecosystem:** Export, import, and share automation rules as sanitized JSON, or choose password-encrypted full backups with Merge and Replace strategies.
 
 ---
 
@@ -126,7 +126,7 @@ FlowPilot includes pre-built one-tap templates to get started quickly:
 - **Quick Settings Tile:** Toggle the automation engine or view live status directly from Android notification shade.
 - **Home Screen Widget (Jetpack Glance):** Modern widget displaying active rule counts with one-tap pause/resume button.
 - **In-App Manual Test Run:** Test rule actions directly while editing with real parameters without needing to save first.
-- **Execution Run History:** Local persistent audit log of the last 100 executions with detailed per-action results (strictly sanitized of credentials and phone numbers).
+- **Execution Run History:** Local persistent audit log of the last 100 executions with per-action outcomes rendered in the selected app language; credentials and phone numbers remain redacted/masked.
 
 ---
 
@@ -180,6 +180,14 @@ The compiled APK will be located at:
 ```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
+
+### Backup & Restore
+
+- **Normal JSON export/share:** Portable sanitized rule data. Webhook URL, headers, and body are omitted; normal imports disable imported rules before Merge or Replace.
+- **Encrypted full backup:** Choose **Encrypted full backup** in Settings, or when sharing one rule. A password of at least six characters encrypts all rule data, including webhook configuration, phone/SMS fields, and enabled state.
+- **Portable format:** AES-256-GCM authenticated encryption with PBKDF2-HMAC-SHA256 key derivation (100,000 iterations), random salt, and random IV. A wrong password or modified backup is rejected before rules are changed.
+- **Restore:** Select an encrypted backup, enter its password, then choose Merge or Replace. Secrets are re-encrypted with the receiving device's Android Keystore after import.
+- **Scope:** Execution history, temporary geofence diagnostics/queue state, engine state, Android permissions, Shizuku state, and TTS audio cache are not included.
 
 ### Install to Device via ADB
 ```bash

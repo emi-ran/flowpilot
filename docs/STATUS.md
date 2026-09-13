@@ -1,13 +1,16 @@
 # FlowPilot Status
 
-Last updated: 2026-09-13
+Last updated: 2026-09-14
 
 ## Build state
 
-- Debug build and unit tests passed: `.\gradlew.bat testDebugUnitTest assembleDebug`.
+- Debug/release builds, unit tests, and lint passed: `.\gradlew.bat testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`.
+- Resource contract test passed: `python scripts/test_lint_resource_contracts.py`.
 - Latest debug APK was installed and launched on Xiaomi (2506BPN68G) / HyperOS (Android 16).
 - Background resilience and Shizuku startup safety fixes verified on connected device.
 - Action reordering, live location fetcher, Automation Presets, and Geofencing unit tests (`AutomationRepositoryGeofenceQueueTest`, `GeofenceConfigValidationTest`, `GeofenceDiffTest`, `GeofencePrerequisitesTest`, `LocationDependencyTest`, `RuleEvaluatorGeofenceTest`) implemented and verified.
+- Encrypted backup unit coverage verifies full-secret round trips, enabled-state preservation, plaintext non-leakage, wrong-password/tamper rejection, format/version/KDF bounds, single-rule backup, normal-export regression, and cross-device Android Keystore re-encryption.
+- History localization unit coverage verifies locale-neutral outcome records, masked SMS result arguments, legacy successful outcome mapping, technical failure fallback, and Turkish automatic rule-name generation.
 
 ## Background stability & engine keepalive
 
@@ -64,6 +67,13 @@ Last updated: 2026-09-13
   - Transition coordinate reuse (`resolveExecutionCoordinates`): event coordinates reused directly for location template variables; skips fresh GPS lookup for notification-only or template-driven geofence actions.
   - Engine lifecycle integration: system geofences remain registered during temporary engine restarts while enabled; unregistered only when engine is disabled.
   - Registration diagnostics and status UI on Home screen (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, `REGISTRATION_FAILED`) and receiver error banners.
+- Password-encrypted full backup and restore (unit tests passed; device smoke test pending):
+  - AES-256-GCM portable envelope with PBKDF2-HMAC-SHA256 (100,000 iterations), random salt/IV, and six-character minimum password.
+  - Encrypted export/share retains full rule data and enabled state; wrong passwords, altered payloads, unsupported versions/formats, and unsafe KDF bounds fail before import mutation.
+  - Normal JSON export/share remains sanitized and normal import disables imported rules.
+- Localized history results and automatic rule names (unit tests passed; Turkish UI smoke test pending):
+  - New records store locale-neutral result codes; known legacy successful results render in current app language.
+  - SMS recipients stay masked; raw technical failures remain redacted fallback text.
 - Sound profile denied Notification Policy Access behavior.
 - Run history screen smoke test on Xiaomi 15T Pro / HyperOS 3.
 - NFC tag trigger non-matching/engine-stopped paths.
@@ -72,6 +82,7 @@ Last updated: 2026-09-13
 ## Current constraints
 
 - Geofence triggers require Google Play Services, `ACCESS_FINE_LOCATION`, and `ACCESS_BACKGROUND_LOCATION` ("Allow all the time"). If permissions or system location services are missing, registration is withheld and an error is displayed in the UI.
+- Geofence prerequisite and registration failures retry with bounded backoff (10s to 60s); config or prerequisite changes retry immediately.
 - Geofence radius is bounded between 50m and 1000m in the UI configuration.
 - Phone call triggers require `android.permission.READ_PHONE_STATE`. Direct call action (`CALL_NUMBER`) requires `android.permission.CALL_PHONE`. FlowPilot does not request the default dialer role or change the default Phone app.
 - Phone numbers are masked in UI and rule summaries (`+905 •••• 567`). Execution history, action results, logcat, and diagnostic messages contain no phone numbers.
@@ -83,6 +94,7 @@ Last updated: 2026-09-13
 - Per-action delay is bounded to 300 seconds in UI. Engine cancellation during delay creates failed run-history record.
 - Rule cooldown begins only after successful automatic execution, applies to every automatic trigger, and is bypassed by manual test runs.
 - Xiaomi 15T Pro maps Sound profile Vibrate and Silent to the same observed ringer behavior; other devices can differ.
+- Encrypted full backups intentionally exclude execution history, transient geofence queue/diagnostics, engine state, Android permissions, Shizuku state, and TTS cache.
 
 ## Next validation
 

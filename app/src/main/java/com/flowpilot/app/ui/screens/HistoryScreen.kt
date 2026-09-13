@@ -20,6 +20,9 @@ import com.flowpilot.app.R
 import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.ExecutionStatus
+import com.flowpilot.app.data.model.resolvedResultArgs
+import com.flowpilot.app.data.model.resolvedResultCode
+import com.flowpilot.app.actions.ActionResultCode
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.util.labelRes
 import com.flowpilot.app.ui.util.localizedLabel
@@ -233,13 +236,29 @@ private fun ActionOutcomeRow(action: ActionExecutionRecord) {
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
             )
-            if (action.message.isNotBlank()) {
+            val resultText = action.localizedResultText()
+            if (resultText.isNotBlank()) {
                 Text(
-                    text = action.message,
+                    text = resultText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
+}
+
+@Composable
+private fun ActionExecutionRecord.localizedResultText(): String = when (resolvedResultCode()) {
+    ActionResultCode.COMPLETED -> stringResource(R.string.history_result_completed)
+    ActionResultCode.STATE_ENABLED -> stringResource(R.string.history_result_enabled)
+    ActionResultCode.STATE_DISABLED -> stringResource(R.string.history_result_disabled)
+    ActionResultCode.NOTIFICATION_POSTED -> stringResource(R.string.history_result_notification_posted)
+    ActionResultCode.SMS_SENT -> stringResource(
+        R.string.history_result_sms_sent,
+        resolvedResultArgs().firstOrNull().orEmpty(),
+    )
+    ActionResultCode.PERMISSION_REQUIRED -> stringResource(R.string.history_result_permission_required)
+    ActionResultCode.EXECUTION_CANCELLED -> stringResource(R.string.history_result_execution_cancelled)
+    null -> message
 }
