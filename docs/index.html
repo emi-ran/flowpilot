@@ -1878,7 +1878,7 @@
       codeEl.innerHTML = formatted;
     }
 
-    function setLang(lang) {
+    function setLang(lang, persist = true) {
       currentLang = lang;
       document.getElementById('btn-tr').classList.toggle('active', lang === 'tr');
       document.getElementById('btn-en').classList.toggle('active', lang === 'en');
@@ -1906,9 +1906,11 @@
       // Update workbench screen
       selectRule(currentRuleIdx);
 
-      try {
-        localStorage.setItem('flowpilot_lang', lang);
-      } catch (e) {}
+      if (persist) {
+        try {
+          localStorage.setItem('flowpilot_lang_v2', lang);
+        } catch (e) {}
+      }
     }
 
     function copyAdbInstall(el) {
@@ -2067,9 +2069,10 @@
 
     // Init on DOMContentLoaded
     window.addEventListener('DOMContentLoaded', () => {
-      const saved = localStorage.getItem('flowpilot_lang') ||
+      const saved = localStorage.getItem('flowpilot_lang_v2');
+      const initialLang = saved ||
         (navigator.language.toLowerCase().startsWith('tr') ? 'tr' : 'en');
-      setLang(saved);
+      setLang(initialLang, Boolean(saved));
       selectRule(0);
 
       initHeaderScroll();
