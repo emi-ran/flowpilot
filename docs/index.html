@@ -2067,7 +2067,8 @@
 
     // Init on DOMContentLoaded
     window.addEventListener('DOMContentLoaded', () => {
-      const saved = localStorage.getItem('flowpilot_lang') || 'tr';
+      const saved = localStorage.getItem('flowpilot_lang') ||
+        (navigator.language.toLowerCase().startsWith('tr') ? 'tr' : 'en');
       setLang(saved);
       selectRule(0);
 
