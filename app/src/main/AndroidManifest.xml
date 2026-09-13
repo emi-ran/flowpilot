@@ -162,6 +162,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- Geofence receiver for system location boundary events. -->
+        <receiver
+            android:name=".engine.GeofenceBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.flowpilot.app.ACTION_GEOFENCE_TRANSITION" />
+            </intent-filter>
+        </receiver>
+
         <!-- Notification listener service for notification received triggers. -->
         <service
             android:name=".engine.FlowPilotNotificationListener"

@@ -43,6 +43,7 @@ class AutomationEngine(
     private val flipTracker: DeviceFlipTracker = DeviceFlipTracker(context.applicationContext),
     private val shakeTracker: DeviceShakeTracker = DeviceShakeTracker(context.applicationContext),
     private val lightTracker: LightSensorTracker = LightSensorTracker(context.applicationContext),
+    private val geofenceTracker: GeofenceTracker = GeofenceTracker(context.applicationContext),
     private val onRunningChanged: (Boolean) -> Unit = {},
     private val onFailure: () -> Unit = {},
 ) {
@@ -76,7 +77,8 @@ class AutomationEngine(
                     onFailure()
                     Log.e(TAG, "Engine failed (${e.javaClass.simpleName})")
                 } finally {
-                    stopTrackers()
+                    val engineDisabled = runCatching { !repository.isEngineEnabled.first() }.getOrDefault(false)
+                    stopTrackers(teardownGeofences = engineDisabled)
                     onRunningChanged(false)
                 }
             }
@@ -105,6 +107,7 @@ class AutomationEngine(
                     updateFlipListeningPolicy(rules, liveState)
                     updateShakeListeningPolicy(rules, liveState)
                     updateLightListeningPolicy(rules, liveState)
+                    geofenceTracker.updateListeningPolicy(rules)
                     delay(POLL_INTERVAL_MS)
                 }
             }
@@ -125,6 +128,7 @@ class AutomationEngine(
                 pollNfcTagEvents(liveState)
                 pollNotificationEvents(liveState)
                 pollSmsEvents(liveState)
+                pollGeofenceEvents(liveState)
                 pollSchedules(liveState)
             } catch (e: CancellationException) {
                 throw e
@@ -141,7 +145,7 @@ class AutomationEngine(
         job?.cancel()
     }
 
-    private fun stopTrackers() {
+    private fun stopTrackers(teardownGeofences: Boolean = false) {
         listOf<() -> Unit>(
             chargerTracker::stop, batteryTracker::stop, screenTracker::stop,
             wifiTracker::stop, bluetoothTracker::stop, callTracker::stop,
@@ -150,6 +154,11 @@ class AutomationEngine(
             try { stop() } catch (e: Exception) {
                 Log.w(TAG, "Tracker cleanup failed (${e.javaClass.simpleName})")
             }
+        }
+        try {
+            geofenceTracker.stop(removeSystemGeofences = teardownGeofences)
+        } catch (e: Exception) {
+            Log.w(TAG, "Geofence tracker cleanup failed (${e.javaClass.simpleName})")
         }
     }
 
@@ -458,18 +467,43 @@ class AutomationEngine(
         }
     }
 
+    private suspend fun pollGeofenceEvents(liveState: LiveSystemState) {
+        val transitions = geofenceTracker.drainTransitions()
+        if (transitions.isEmpty()) return
+        val rules = repository.automations.first()
+        for (transition in transitions) {
+            val matches = RuleEvaluator.evaluateGeofence(rules, transition, liveState)
+            if (matches.isNotEmpty()) {
+                val trigger = when (transition.event) {
+                    GeofenceEvent.ENTER -> TriggerEvent.GEOFENCE_ENTER
+                    GeofenceEvent.EXIT -> TriggerEvent.GEOFENCE_EXIT
+                }
+                Log.i(TAG, "Executing geofence rules for $trigger (${matches.size} rule(s))")
+                executeAll(
+                    rules = matches,
+                    trigger = trigger,
+                    liveState = liveState,
+                    eventCoordinates = transition.coordinates,
+                )
+            }
+        }
+    }
+
     private suspend fun executeAll(
         rules: List<com.flowpilot.app.data.model.Automation>,
         trigger: TriggerEvent? = null,
         liveState: LiveSystemState = LiveSystemState(),
         smsSender: String? = null,
         smsBody: String? = null,
+        eventCoordinates: Pair<Double, Double>? = null,
     ) {
-        val coords = if (rules.any { it.requiresLocation() }) {
-            LocationFetcher.getCoordinates(appContext, isBackgroundExecution = true)
-        } else {
-            null
-        }
+        val coords = resolveExecutionCoordinates(
+            requiresLocation = rules.any { it.requiresLocation() },
+            eventCoordinates = eventCoordinates,
+            freshLocationProvider = {
+                LocationFetcher.getCoordinates(appContext, isBackgroundExecution = true)
+            },
+        )
         val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
             trigger = trigger?.name ?: "",
             timestamp = System.currentTimeMillis(),

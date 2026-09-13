@@ -57,6 +57,7 @@ import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.engine.isValidGeofenceConfig
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.actions.ActionParameters
@@ -166,6 +167,10 @@ fun CreateScreen(
     var smsKeyword by remember { mutableStateOf("") }
     var smsRecipient by remember { mutableStateOf("") }
     var smsMessage by remember { mutableStateOf("") }
+    var geofenceName by remember { mutableStateOf("") }
+    var geofenceLatitude by remember { mutableStateOf(0.0) }
+    var geofenceLongitude by remember { mutableStateOf(0.0) }
+    var geofenceRadiusMeters by remember { mutableIntStateOf(150) }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var actionDelays by remember { mutableStateOf(emptyList<Int>()) }
@@ -231,6 +236,10 @@ fun CreateScreen(
         smsKeyword = t.smsKeyword
         smsRecipient = t.smsRecipient
         smsMessage = t.smsMessage
+        geofenceName = t.geofenceName
+        geofenceLatitude = t.geofenceLatitude
+        geofenceLongitude = t.geofenceLongitude
+        geofenceRadiusMeters = t.geofenceRadiusMeters
         conditions = t.conditions
         actions = t.effectiveActions
         actionDelays = t.effectiveActionDelays
@@ -415,6 +424,10 @@ fun CreateScreen(
                         screenBrightnessPercent = screenBrightnessPercent,
                         forceStopPackage = forceStopPackage,
                         forceStopAppName = forceStopAppName,
+                        geofenceName = geofenceName,
+                        geofenceLatitude = geofenceLatitude,
+                        geofenceLongitude = geofenceLongitude,
+                        geofenceRadiusMeters = geofenceRadiusMeters,
                         createdAt = System.currentTimeMillis(),
                     )
                     vm.runRuleNow(currentFormRule) { result ->
@@ -573,6 +586,14 @@ fun CreateScreen(
                 onSmsMatchModeChange = { smsMatchMode = it },
                 smsKeyword = smsKeyword,
                 onSmsKeywordChange = { smsKeyword = it },
+                geofenceName = geofenceName,
+                onGeofenceNameChange = { geofenceName = it },
+                geofenceLatitude = geofenceLatitude,
+                onGeofenceLatitudeChange = { geofenceLatitude = it },
+                geofenceLongitude = geofenceLongitude,
+                onGeofenceLongitudeChange = { geofenceLongitude = it },
+                geofenceRadiusMeters = geofenceRadiusMeters,
+                onGeofenceRadiusChange = { geofenceRadiusMeters = it },
             )
 
             Text(
@@ -918,6 +939,10 @@ fun CreateScreen(
                             screenBrightnessPercent = screenBrightnessPercent,
                             forceStopPackage = forceStopPackage,
                             forceStopAppName = forceStopAppName,
+                            geofenceName = geofenceName,
+                            geofenceLatitude = geofenceLatitude,
+                            geofenceLongitude = geofenceLongitude,
+                            geofenceRadiusMeters = geofenceRadiusMeters,
                             ruleId = newRuleId,
                         )
                         done()
@@ -929,6 +954,7 @@ fun CreateScreen(
                             (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
                             (event != TriggerEvent.BLUETOOTH_CONNECTED && event != TriggerEvent.BLUETOOTH_DISCONNECTED || bluetoothDeviceAddress.isNotEmpty()) &&
                             (event != TriggerEvent.NFC_TAG_SCANNED || NfcTagUtils.isValidTagId(nfcTagId)) &&
+                            (event != TriggerEvent.GEOFENCE_ENTER && event != TriggerEvent.GEOFENCE_EXIT || isValidGeofenceConfig(geofenceLatitude, geofenceLongitude, geofenceRadiusMeters)) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&

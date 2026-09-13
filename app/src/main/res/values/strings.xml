@@ -158,6 +158,8 @@
     <string name="trigger_light_below">Ambient light below level</string>
     <string name="trigger_light_above">Ambient light above level</string>
     <string name="trigger_sms_received">SMS received</string>
+    <string name="trigger_geofence_enter">Entered location area</string>
+    <string name="trigger_geofence_exit">Exited location area</string>
 
     <!-- ActionType Labels -->
     <string name="action_bluetooth_on">Turn Bluetooth on</string>
@@ -230,6 +232,7 @@
     <string name="cat_phone">Phone</string>
     <string name="cat_sms">SMS</string>
     <string name="cat_motion">Motion</string>
+    <string name="cat_location">Location</string>
     <string name="cat_connectivity">Connectivity</string>
     <string name="cat_battery">Battery</string>
     <string name="cat_alerts">Alerts</string>
@@ -329,6 +332,8 @@
     <string name="trigger_device_flipped_up_desc">When device is turned face up back to normal position</string>
     <string name="trigger_device_shake_desc">When device is firmly shaken back and forth</string>
     <string name="trigger_sms_received_desc">When an incoming SMS text message is received (filter sender &amp; content)</string>
+    <string name="trigger_geofence_enter_desc">When device enters a designated geographical area</string>
+    <string name="trigger_geofence_exit_desc">When device leaves a designated geographical area</string>
 
     <!-- Action Descriptions -->
     <string name="action_send_sms_desc">Directly sends an SMS in background (requires SEND_SMS)</string>
@@ -428,6 +433,25 @@
     <string name="sms_exact_text">Exact message text</string>
     <string name="sms_prefix_keyword">Prefix keyword</string>
     <string name="sms_regex_pattern">Regular expression pattern</string>
+
+    <!-- Geofence Trigger UI -->
+    <string name="geofence_name_label">Location name</string>
+    <string name="geofence_name_placeholder">e.g. Home, Office, Gym</string>
+    <string name="geofence_use_current_location">Use current location</string>
+    <string name="geofence_getting_location">Acquiring GPS fix...</string>
+    <string name="geofence_lat_label">Latitude</string>
+    <string name="geofence_lng_label">Longitude</string>
+    <string name="geofence_radius_label">Radius: %1$d m</string>
+    <string name="geofence_bg_perm_warning">Geofencing requires Background Location access set to \"Allow all the time\" to detect when you arrive or leave.</string>
+    <string name="geofence_grant_permission">Grant permission</string>
+    <string name="geofence_lat_error">Must be between -90 and 90</string>
+    <string name="geofence_lng_error">Must be between -180 and 180</string>
+    <string name="detail_geofence_area">%1$s · %2$d m</string>
+    <string name="geofence_status_registered">Geofence registered · watches entry and exit</string>
+    <string name="geofence_status_unregistered">Geofence not registered</string>
+    <string name="geofence_status_transition_enter">Last boundary: entered</string>
+    <string name="geofence_status_transition_exit">Last boundary: exited</string>
+    <string name="geofence_status_error">Geofence error: %1$s</string>
     <string name="sms_keyword_phrase">Keyword or phrase</string>
     <string name="sms_any_sms">any SMS</string>
     <string name="sms_contains_quoted">contains \"%1$s\"</string>

@@ -1,13 +1,13 @@
 # FlowPilot Status
 
-Last updated: 2026-09-05
+Last updated: 2026-09-13
 
 ## Build state
 
 - Debug build and unit tests passed: `.\gradlew.bat testDebugUnitTest assembleDebug`.
 - Latest debug APK was installed and launched on Xiaomi (2506BPN68G) / HyperOS (Android 16).
 - Background resilience and Shizuku startup safety fixes verified on connected device.
-- Action reordering, live location fetcher, and Automation Presets (9 categorized templates with delayed GPS SMS) unit tests passed.
+- Action reordering, live location fetcher, Automation Presets, and Geofencing unit tests (`AutomationRepositoryGeofenceQueueTest`, `GeofenceConfigValidationTest`, `GeofenceDiffTest`, `GeofencePrerequisitesTest`, `LocationDependencyTest`, `RuleEvaluatorGeofenceTest`) implemented and verified.
 
 ## Background stability & engine keepalive
 
@@ -54,6 +54,16 @@ Last updated: 2026-09-05
   - Background location permission flow (`ACCESS_BACKGROUND_LOCATION`) with system app settings guidance for "Allow all the time".
   - Foreground service location type (`FOREGROUND_SERVICE_LOCATION`) attached to `AutomationService`.
   - Dynamic template variables: `${location.lat}`, `${location.lng}`, `${location.coords}`, and `${location.maps_url}` in `WebhookTemplateRenderer` and manual run context.
+- Location Geofencing triggers (`GEOFENCE_ENTER`, `GEOFENCE_EXIT`) (unit tests passed; device smoke test pending):
+  - Hardware-assisted geofencing via Google Play Services `GeofencingClient` with event-driven battery behavior and zero CPU wake-locks while idle.
+  - Persistent DataStore event queue (`geofence_event_queue`, max 50 events) with `GeofenceBroadcastReceiver` and `AutomationService` reconciliation.
+  - Prerequisites validation (`ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION` "Allow all the time", system location services enabled).
+  - Strict circular boundary config validation (latitude: -90..90, longitude: -180..180 excluding 0,0; radius: 50..1000m).
+  - Lifecycle diffing (`calculateGeofenceDiff`): dynamically adds new geofences, unregisters disabled/deleted rules, and removes-before-re-adding modified rules to prevent request ID collisions.
+  - Rule evaluation filtering for `ENTER` vs `EXIT` events (`RuleEvaluator.evaluateGeofence`) with cooldown and live condition checks.
+  - Transition coordinate reuse (`resolveExecutionCoordinates`): event coordinates reused directly for location template variables; skips fresh GPS lookup for notification-only or template-driven geofence actions.
+  - Engine lifecycle integration: system geofences remain registered during temporary engine restarts while enabled; unregistered only when engine is disabled.
+  - Registration diagnostics and status UI on Home screen (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, `REGISTRATION_FAILED`) and receiver error banners.
 - Sound profile denied Notification Policy Access behavior.
 - Run history screen smoke test on Xiaomi 15T Pro / HyperOS 3.
 - NFC tag trigger non-matching/engine-stopped paths.
@@ -61,6 +71,8 @@ Last updated: 2026-09-05
 
 ## Current constraints
 
+- Geofence triggers require Google Play Services, `ACCESS_FINE_LOCATION`, and `ACCESS_BACKGROUND_LOCATION` ("Allow all the time"). If permissions or system location services are missing, registration is withheld and an error is displayed in the UI.
+- Geofence radius is bounded between 50m and 1000m in the UI configuration.
 - Phone call triggers require `android.permission.READ_PHONE_STATE`. Direct call action (`CALL_NUMBER`) requires `android.permission.CALL_PHONE`. FlowPilot does not request the default dialer role or change the default Phone app.
 - Phone numbers are masked in UI and rule summaries (`+905 •••• 567`). Execution history, action results, logcat, and diagnostic messages contain no phone numbers.
 - Dark theme, NFC, and Bluetooth on/off require active Shizuku permission. Bluetooth on/off also requires `BLUETOOTH_CONNECT` on Android 12+ and verifies adapter state after exact allowlisted `svc bluetooth enable|disable`.

@@ -47,6 +47,7 @@ import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.engine.isValidGeofenceConfig
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.ui.util.localizedLabel
@@ -154,6 +155,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     var smsKeyword by remember(initialRule.id) { mutableStateOf(initialRule.smsKeyword) }
     var smsRecipient by remember(initialRule.id) { mutableStateOf(initialRule.smsRecipient) }
     var smsMessage by remember(initialRule.id) { mutableStateOf(initialRule.smsMessage) }
+    var geofenceName by remember(initialRule.id) { mutableStateOf(initialRule.geofenceName) }
+    var geofenceLatitude by remember(initialRule.id) { mutableStateOf(initialRule.geofenceLatitude) }
+    var geofenceLongitude by remember(initialRule.id) { mutableStateOf(initialRule.geofenceLongitude) }
+    var geofenceRadiusMeters by remember(initialRule.id) { mutableIntStateOf(initialRule.geofenceRadiusMeters) }
     var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActions.distinct()) }
     var actionDelays by remember(initialRule.id) { mutableStateOf(initialRule.effectiveActionDelays) }
@@ -324,6 +329,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                         screenBrightnessPercent = screenBrightnessPercent,
                         forceStopPackage = forceStopPackage,
                         forceStopAppName = forceStopAppName,
+                        geofenceName = geofenceName,
+                        geofenceLatitude = geofenceLatitude,
+                        geofenceLongitude = geofenceLongitude,
+                        geofenceRadiusMeters = geofenceRadiusMeters,
                     )
                     vm.runRuleNow(currentFormRule) { result ->
                         scope.launch {
@@ -435,6 +444,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 screenBrightnessPercent = screenBrightnessPercent,
                                 forceStopPackage = forceStopPackage,
                                 forceStopAppName = forceStopAppName,
+                                geofenceName = geofenceName,
+                                geofenceLatitude = geofenceLatitude,
+                                geofenceLongitude = geofenceLongitude,
+                                geofenceRadiusMeters = geofenceRadiusMeters,
                                 action = actions.firstOrNull() ?: initialRule.action,
                                 actions = actions,
                                 actionDelays = actions.indices.map { actionDelays.getOrElse(it) { 0 } },
@@ -531,6 +544,14 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                 onSmsMatchModeChange = { smsMatchMode = it },
                 smsKeyword = smsKeyword,
                 onSmsKeywordChange = { smsKeyword = it },
+                geofenceName = geofenceName,
+                onGeofenceNameChange = { geofenceName = it },
+                geofenceLatitude = geofenceLatitude,
+                onGeofenceLatitudeChange = { geofenceLatitude = it },
+                geofenceLongitude = geofenceLongitude,
+                onGeofenceLongitudeChange = { geofenceLongitude = it },
+                geofenceRadiusMeters = geofenceRadiusMeters,
+                onGeofenceRadiusChange = { geofenceRadiusMeters = it },
             )
 
             Text(
@@ -899,6 +920,10 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 screenBrightnessPercent = screenBrightnessPercent,
                                 forceStopPackage = forceStopPackage,
                                 forceStopAppName = forceStopAppName,
+                                geofenceName = geofenceName,
+                                geofenceLatitude = geofenceLatitude,
+                                geofenceLongitude = geofenceLongitude,
+                                geofenceRadiusMeters = geofenceRadiusMeters,
                                 action = actions.firstOrNull() ?: ActionType.NFC_ON,
                                 actions = actions,
                                 actionDelays = actionDelays,
@@ -914,6 +939,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                             (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
                             (event != TriggerEvent.BLUETOOTH_CONNECTED && event != TriggerEvent.BLUETOOTH_DISCONNECTED || bluetoothDeviceAddress.isNotEmpty()) &&
                             (event != TriggerEvent.NFC_TAG_SCANNED || NfcTagUtils.isValidTagId(nfcTagId)) &&
+                            (event != TriggerEvent.GEOFENCE_ENTER && event != TriggerEvent.GEOFENCE_EXIT || isValidGeofenceConfig(geofenceLatitude, geofenceLongitude, geofenceRadiusMeters)) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&

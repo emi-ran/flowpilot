@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,6 +49,8 @@ fun triggerIcon(event: TriggerEvent): ImageVector = when (event) {
     TriggerEvent.DEVICE_UNLOCKED -> Icons.Default.LockOpen
     TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> Icons.Default.LightMode
     TriggerEvent.SMS_RECEIVED -> Icons.Default.Sms
+    TriggerEvent.GEOFENCE_ENTER -> Icons.Default.LocationOn
+    TriggerEvent.GEOFENCE_EXIT -> Icons.Default.LocationOff
 }
 
 @Composable
@@ -96,6 +99,15 @@ fun TriggerCardItem(
     onSmsMatchModeChange: (com.flowpilot.app.data.model.SmsMatchMode) -> Unit = {},
     smsKeyword: String = "",
     onSmsKeywordChange: (String) -> Unit = {},
+    // Geofence
+    geofenceName: String = "",
+    onGeofenceNameChange: (String) -> Unit = {},
+    geofenceLatitude: Double = 0.0,
+    onGeofenceLatitudeChange: (Double) -> Unit = {},
+    geofenceLongitude: Double = 0.0,
+    onGeofenceLongitudeChange: (Double) -> Unit = {},
+    geofenceRadiusMeters: Int = 150,
+    onGeofenceRadiusChange: (Int) -> Unit = {},
 ) {
     val context = LocalContext.current
     var liveAmbientLux by remember { mutableStateOf<Float?>(null) }
@@ -200,6 +212,22 @@ fun TriggerCardItem(
                                 SmsMatchMode.REGEX -> stringResource(R.string.sms_regex_quoted, smsKeyword)
                             }
                             filterDesc
+                        }
+                        TriggerEvent.GEOFENCE_ENTER -> {
+                            val name = geofenceName.ifBlank {
+                                if (geofenceLatitude != 0.0 || geofenceLongitude != 0.0) {
+                                    "$geofenceLatitude, $geofenceLongitude"
+                                } else stringResource(R.string.trigger_geofence_enter_desc)
+                            }
+                            stringResource(R.string.detail_geofence_area, name, geofenceRadiusMeters)
+                        }
+                        TriggerEvent.GEOFENCE_EXIT -> {
+                            val name = geofenceName.ifBlank {
+                                if (geofenceLatitude != 0.0 || geofenceLongitude != 0.0) {
+                                    "$geofenceLatitude, $geofenceLongitude"
+                                } else stringResource(R.string.trigger_geofence_exit_desc)
+                            }
+                            stringResource(R.string.detail_geofence_area, name, geofenceRadiusMeters)
                         }
                     }
                     Text(
@@ -574,6 +602,192 @@ fun TriggerCardItem(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                         )
+                    }
+                }
+                TriggerEvent.GEOFENCE_ENTER,
+                TriggerEvent.GEOFENCE_EXIT -> {
+                    val coroutineScope = rememberCoroutineScope()
+                    var isAcquiringLocation by remember { mutableStateOf(false) }
+                    var latText by remember(geofenceLatitude) {
+                        mutableStateOf(if (geofenceLatitude != 0.0) geofenceLatitude.toString() else "")
+                    }
+                    var lngText by remember(geofenceLongitude) {
+                        mutableStateOf(if (geofenceLongitude != 0.0) geofenceLongitude.toString() else "")
+                    }
+
+                    val hasBackgroundPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        context.checkSelfPermission(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    } else {
+                        true
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = geofenceName,
+                        onValueChange = onGeofenceNameChange,
+                        label = { Text(stringResource(R.string.geofence_name_label)) },
+                        placeholder = { Text(stringResource(R.string.geofence_name_placeholder)) },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Place, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                isAcquiringLocation = true
+                                val coords = com.flowpilot.app.engine.LocationFetcher.getCoordinates(context, isBackgroundExecution = false)
+                                if (coords != null) {
+                                    onGeofenceLatitudeChange(coords.first)
+                                    onGeofenceLongitudeChange(coords.second)
+                                    latText = coords.first.toString()
+                                    lngText = coords.second.toString()
+                                }
+                                isAcquiringLocation = false
+                            }
+                        },
+                        enabled = !isAcquiringLocation,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        if (isAcquiringLocation) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.geofence_getting_location))
+                        } else {
+                            Icon(Icons.Default.MyLocation, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.geofence_use_current_location))
+                        }
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    val parsedLat = latText.toDoubleOrNull()
+                    val isLatError = latText.isNotBlank() && (parsedLat == null || !parsedLat.isFinite() || parsedLat < -90.0 || parsedLat > 90.0)
+                    val parsedLng = lngText.toDoubleOrNull()
+                    val isLngError = lngText.isNotBlank() && (parsedLng == null || !parsedLng.isFinite() || parsedLng < -180.0 || parsedLng > 180.0)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = latText,
+                            onValueChange = {
+                                latText = it
+                                val d = it.toDoubleOrNull()
+                                if (d != null && d.isFinite() && d in -90.0..90.0) {
+                                    onGeofenceLatitudeChange(d)
+                                } else if (it.isBlank()) {
+                                    onGeofenceLatitudeChange(0.0)
+                                }
+                            },
+                            isError = isLatError,
+                            supportingText = if (isLatError) {
+                                { Text(stringResource(R.string.geofence_lat_error), style = MaterialTheme.typography.bodySmall) }
+                            } else null,
+                            label = { Text(stringResource(R.string.geofence_lat_label)) },
+                            placeholder = { Text("41.0082") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                        OutlinedTextField(
+                            value = lngText,
+                            onValueChange = {
+                                lngText = it
+                                val d = it.toDoubleOrNull()
+                                if (d != null && d.isFinite() && d in -180.0..180.0) {
+                                    onGeofenceLongitudeChange(d)
+                                } else if (it.isBlank()) {
+                                    onGeofenceLongitudeChange(0.0)
+                                }
+                            },
+                            isError = isLngError,
+                            supportingText = if (isLngError) {
+                                { Text(stringResource(R.string.geofence_lng_error), style = MaterialTheme.typography.bodySmall) }
+                            } else null,
+                            label = { Text(stringResource(R.string.geofence_lng_label)) },
+                            placeholder = { Text("28.9784") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    Text(
+                        stringResource(R.string.geofence_radius_label, geofenceRadiusMeters),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Slider(
+                        value = geofenceRadiusMeters.toFloat(),
+                        onValueChange = { onGeofenceRadiusChange(it.toInt()) },
+                        valueRange = 50f..1000f,
+                        steps = 18,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        listOf(50, 100, 150, 250, 500).forEach { radius ->
+                            FilterChip(
+                                selected = geofenceRadiusMeters == radius,
+                                onClick = { onGeofenceRadiusChange(radius) },
+                                label = { Text("${radius}m", style = MaterialTheme.typography.bodySmall) },
+                                shape = RoundedCornerShape(8.dp),
+                            )
+                        }
+                    }
+
+                    if (!hasBackgroundPermission) {
+                        Spacer(Modifier.height(12.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(
+                                    stringResource(R.string.geofence_bg_perm_warning),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                TextButton(
+                                    onClick = {
+                                        val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 0.dp),
+                                ) {
+                                    Text(
+                                        stringResource(R.string.geofence_grant_permission),
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 else -> {

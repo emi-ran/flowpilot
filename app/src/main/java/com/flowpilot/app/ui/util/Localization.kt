@@ -35,6 +35,8 @@ val TriggerEvent.labelRes: Int
         TriggerEvent.LIGHT_BELOW -> R.string.trigger_light_below
         TriggerEvent.LIGHT_ABOVE -> R.string.trigger_light_above
         TriggerEvent.SMS_RECEIVED -> R.string.trigger_sms_received
+        TriggerEvent.GEOFENCE_ENTER -> R.string.trigger_geofence_enter
+        TriggerEvent.GEOFENCE_EXIT -> R.string.trigger_geofence_exit
     }
 
 @get:StringRes
@@ -116,6 +118,7 @@ val TriggerCategory.labelRes: Int
         TriggerCategory.PHONE -> R.string.cat_phone
         TriggerCategory.SMS -> R.string.cat_sms
         TriggerCategory.MOTION -> R.string.cat_motion
+        TriggerCategory.LOCATION -> R.string.cat_location
     }
 
 @get:StringRes
@@ -202,6 +205,8 @@ val TriggerEvent.descriptionRes: Int
         TriggerEvent.LIGHT_BELOW -> R.string.trigger_light_below_desc
         TriggerEvent.LIGHT_ABOVE -> R.string.trigger_light_above_desc
         TriggerEvent.SMS_RECEIVED -> R.string.trigger_sms_received_desc
+        TriggerEvent.GEOFENCE_ENTER -> R.string.trigger_geofence_enter_desc
+        TriggerEvent.GEOFENCE_EXIT -> R.string.trigger_geofence_exit_desc
     }
 
 @get:StringRes

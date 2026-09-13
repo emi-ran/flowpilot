@@ -45,6 +45,8 @@ import com.flowpilot.app.ui.components.triggerIcon
 import com.flowpilot.app.ui.components.AppIconImage
 import com.flowpilot.app.ui.util.localizedActionSummary
 import com.flowpilot.app.ui.util.localizedLabel
+import com.flowpilot.app.engine.GeofenceDiagnosticStatus
+import com.flowpilot.app.data.AutomationRepository
 
 @Composable
 fun HomeScreen(
@@ -60,6 +62,8 @@ fun HomeScreen(
     val engine by vm.engineRunning.collectAsState()
     val engineEnabled by vm.engineEnabled.collectAsState()
     val engineFailure by vm.engineFailure.collectAsState()
+    val geofenceDiagnostics by vm.geofenceDiagnostics.collectAsState()
+    val geofenceReceiverError = geofenceDiagnostics[AutomationRepository.GEOFENCE_RECEIVER_DIAGNOSTIC_ID]
     var selectedRuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPresetsSheet by remember { mutableStateOf(false) }
@@ -227,6 +231,14 @@ fun HomeScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (geofenceReceiverError?.status == GeofenceDiagnosticStatus.RECEIVER_ERROR) {
+                            Text(
+                                text = stringResource(R.string.geofence_status_error, geofenceReceiverError.error),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                        }
                     }
                     FollowSwitch(engineEnabled, { if (it) vm.startEngine() else vm.stopEngine() })
                 }
@@ -472,6 +484,15 @@ private fun RuleCard(
                     TriggerEvent.SMS_RECEIVED -> {
                         if (item.rule.smsKeyword.isNotBlank()) "\"${item.rule.smsKeyword}\"" else ""
                     }
+                    TriggerEvent.GEOFENCE_ENTER,
+                    TriggerEvent.GEOFENCE_EXIT -> {
+                        val name = item.rule.geofenceName.ifBlank {
+                            if (item.rule.geofenceLatitude != 0.0 || item.rule.geofenceLongitude != 0.0) {
+                                "${item.rule.geofenceLatitude}, ${item.rule.geofenceLongitude}"
+                            } else ""
+                        }
+                        if (name.isNotBlank()) stringResource(R.string.detail_geofence_area, name, item.rule.geofenceRadiusMeters) else ""
+                    }
                     else -> item.rule.appName.ifBlank { item.rule.appPackage }
                 }
 
@@ -480,6 +501,27 @@ private fun RuleCard(
                         text = detail,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+
+                item.geofenceDiagnostic?.let { diagnostic ->
+                    val statusText = when (diagnostic.status) {
+                        GeofenceDiagnosticStatus.REGISTERED -> stringResource(R.string.geofence_status_registered)
+                        GeofenceDiagnosticStatus.UNREGISTERED -> stringResource(R.string.geofence_status_unregistered)
+                        GeofenceDiagnosticStatus.TRANSITION_ENTER -> stringResource(R.string.geofence_status_transition_enter)
+                        GeofenceDiagnosticStatus.TRANSITION_EXIT -> stringResource(R.string.geofence_status_transition_exit)
+                        GeofenceDiagnosticStatus.REGISTRATION_FAILED -> stringResource(R.string.geofence_status_error, diagnostic.error)
+                        GeofenceDiagnosticStatus.RECEIVER_ERROR -> stringResource(R.string.geofence_status_error, diagnostic.error)
+                    }
+                    Text(
+                        text = statusText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (diagnostic.status == GeofenceDiagnosticStatus.REGISTRATION_FAILED) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                         modifier = Modifier.padding(top = 2.dp),
                     )
                 }

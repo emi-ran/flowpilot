@@ -2,7 +2,24 @@
 
 All notable FlowPilot changes are documented here.
 
-## Unreleased
+## [1.0.2] - 2026-09-13
+
+### Added
+
+- Location & Geofencing automations feature family:
+  - Triggers: Enter designated geographical area (`GEOFENCE_ENTER`) and exit designated geographical area (`GEOFENCE_EXIT`).
+  - Google Play Services `GeofencingClient` integration: hardware-assisted circular region monitoring with zero CPU wake-locks while idle.
+  - Persistent DataStore event queue (`geofence_event_queue`, max 50 events): `GeofenceBroadcastReceiver` enqueues boundary events and invokes `AutomationService` reconciliation, guaranteeing zero event loss across process restarts or memory pressure.
+  - Permission and system prerequisites validation (`evaluateGeofencePrerequisites`): enforces `ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION` ("Allow all the time"), and system location service availability prior to hardware registration.
+  - Safe lifecycle diff synchronization (`calculateGeofenceDiff`): dynamically adds new geofences, unregisters disabled/deleted rules, and removes-before-re-adding modified rules to prevent request ID collisions in Google Play Services.
+  - Rule evaluation filtering (`RuleEvaluator.evaluateGeofence`): strict `ENTER` vs `EXIT` event matching, per-rule cooldown suppression, and live condition satisfaction (time windows, days of week, battery, Wi-Fi).
+  - Smart coordinate reuse (`resolveExecutionCoordinates`): transition coordinates from Google Play Services are injected directly into rule context for location templates (`${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`), avoiding redundant fresh GPS lookups for notification-only or template-driven geofence actions.
+  - Background service reconciliation: explicit `PendingIntent` delivery from Google Play Services grants API 31+ background foreground-service start exemptions to evaluate events promptly.
+  - Lifecycle persistence: system geofences remain registered during temporary engine restarts while engine is enabled, and are fully unregistered only when engine is disabled by the user.
+  - Real-time registration diagnostics and status UI: home screen rule cards display live geofence state (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, `REGISTRATION_FAILED`) and receiver error banners.
+  - Unit test suite: coverage for persistent queueing, config validation, diff calculation, prerequisites evaluation, location dependency coordinate resolution, and rule evaluator matching.
+
+## [1.0.1] - 2026-09-05
 
 ### Added
 

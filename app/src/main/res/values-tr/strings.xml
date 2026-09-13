@@ -158,6 +158,8 @@
     <string name="trigger_light_below">Ortam ışığı altına indi</string>
     <string name="trigger_light_above">Ortam ışığı üstüne çıktı</string>
     <string name="trigger_sms_received">SMS alındı</string>
+    <string name="trigger_geofence_enter">Konum alanına girildi</string>
+    <string name="trigger_geofence_exit">Konum alanından çıkıldı</string>
 
     <!-- ActionType Labels -->
     <string name="action_bluetooth_on">Bluetooth\'u aç</string>
@@ -229,7 +231,8 @@
     <string name="cat_notification">Bildirim</string>
     <string name="cat_phone">Telefon</string>
     <string name="cat_sms">SMS</string>
-    <string name="cat_motion">Hareket &amp; Sensör</string>
+    <string name="cat_motion">Hareket</string>
+    <string name="cat_location">Konum &amp; Sensör</string>
     <string name="cat_connectivity">Bağlantı</string>
     <string name="cat_battery">Pil</string>
     <string name="cat_alerts">Uyarılar</string>
@@ -328,7 +331,9 @@
     <string name="trigger_device_flipped_down_desc">Telefon yüzüstü masaya veya düz bir zemine bırakıldığında</string>
     <string name="trigger_device_flipped_up_desc">Telefon tekrar normal şekilde yüzü yukarı çevrildiğinde</string>
     <string name="trigger_device_shake_desc">Telefon belirgin şekilde sallandığında</string>
-    <string name="trigger_sms_received_desc">Gelen SMS mesajı alındığında (gönderici ve içerik filtreli)</string>
+    <string name="trigger_sms_received_desc">Gelen SMS metin mesajı alındığında (gönderen ve içerik filtreli)</string>
+    <string name="trigger_geofence_enter_desc">Cihaz belirlenen bir coğrafi alana girdiğinde</string>
+    <string name="trigger_geofence_exit_desc">Cihaz belirlenen bir coğrafi alandan çıktığında</string>
 
     <!-- Action Descriptions -->
     <string name="action_send_sms_desc">Arka planda doğrudan SMS gönderir (SEND_SMS izni gerekir)</string>
@@ -428,6 +433,25 @@
     <string name="sms_exact_text">Birebir mesaj metni</string>
     <string name="sms_prefix_keyword">Başlangıç kelimesi</string>
     <string name="sms_regex_pattern">Düzenli ifade (regex) deseni</string>
+
+    <!-- Geofence Trigger UI -->
+    <string name="geofence_name_label">Konum adı</string>
+    <string name="geofence_name_placeholder">Örn. Ev, İş, Spor Salonu</string>
+    <string name="geofence_use_current_location">Mevcut konumu kullan</string>
+    <string name="geofence_getting_location">GPS konumu alınıyor...</string>
+    <string name="geofence_lat_label">Enlem (Latitude)</string>
+    <string name="geofence_lng_label">Boylam (Longitude)</string>
+    <string name="geofence_radius_label">Yarıçap: %1$d m</string>
+    <string name="geofence_bg_perm_warning">Konum otomasyonlarının geliş ve gidişleri algılayabilmesi için Arka Plan Konum izninin \"Her zaman izin ver\" olarak ayarlanması gerekir.</string>
+    <string name="geofence_grant_permission">İzin ver</string>
+    <string name="geofence_lat_error">-90 ile 90 arasında olmalıdır</string>
+    <string name="geofence_lng_error">-180 ile 180 arasında olmalıdır</string>
+    <string name="detail_geofence_area">%1$s · %2$d m</string>
+    <string name="geofence_status_registered">Konum alanı kayıtlı · giriş ve çıkış izleniyor</string>
+    <string name="geofence_status_unregistered">Konum alanı kayıtlı değil</string>
+    <string name="geofence_status_transition_enter">Son sınır geçişi: giriş</string>
+    <string name="geofence_status_transition_exit">Son sınır geçişi: çıkış</string>
+    <string name="geofence_status_error">Konum alanı hatası: %1$s</string>
     <string name="sms_keyword_phrase">Anahtar kelime veya ifade</string>
     <string name="sms_any_sms">herhangi bir SMS</string>
     <string name="sms_contains_quoted">\"%1$s\" içeren</string>

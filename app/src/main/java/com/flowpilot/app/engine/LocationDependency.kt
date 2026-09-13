@@ -24,3 +24,13 @@ fun isValidCachedLocation(location: Location, nowMs: Long): Boolean {
     val ageMs = nowMs - location.time
     return ageMs in 0 until 60_000L && location.hasAccuracy() && location.accuracy <= 50f
 }
+
+// ponytail: event coordinates reused directly without freshness check; add timestamp validation if transitions are queued for long periods
+suspend fun resolveExecutionCoordinates(
+    requiresLocation: Boolean,
+    eventCoordinates: Pair<Double, Double>?,
+    freshLocationProvider: suspend () -> Pair<Double, Double>?,
+): Pair<Double, Double>? {
+    if (!requiresLocation) return null
+    return eventCoordinates ?: freshLocationProvider()
+}

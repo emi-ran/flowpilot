@@ -81,6 +81,16 @@ Do not bundle unrelated features. One feature family at a time.
     - Dynamic sensor registration: sensors completely detached when no flip rules are enabled or when screen turns off (unless `flipScreenOffDetection = true`).
     - User-configurable screen-off detection with `SENSOR_DELAY_NORMAL` (~5Hz) and background battery-exemption notice.
 
+12. **Location geofencing triggers** (implementation complete; unit tests passed; Xiaomi device smoke test pending)
+    - Geographical area enter (`GEOFENCE_ENTER`) and exit (`GEOFENCE_EXIT`).
+    - Hardware-assisted geofencing via Google Play Services `GeofencingClient` with zero idle CPU wake-locks.
+    - Persistent event queue in DataStore (`geofence_event_queue`, max 50 entries) ensures transitions captured by `GeofenceBroadcastReceiver` survive process restarts.
+    - Dynamic diff synchronization (`calculateGeofenceDiff`): active rules added, disabled/deleted rules removed, and modified rules safely removed before re-adding to prevent request ID collisions.
+    - Strict config bounds (lat: -90..90, lng: -180..180 excluding 0,0; radius: 50..1000m).
+    - Location prerequisites gating: requires `ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION` ("Allow all the time"), and enabled system location services.
+    - Event-driven battery behavior: transition coordinates directly forwarded to rule execution for location template resolution, avoiding fresh GPS lock queries for notification-only or template-driven geofence actions.
+    - Status & diagnostics UI: per-rule state indicators (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, `REGISTRATION_FAILED`) and receiver error banners.
+
 ## Planned Actions
 
 ### Phase 1 — App-level actions
@@ -211,6 +221,14 @@ Each must expose its required permission or Shizuku state. Do not show success u
      - Configure webhook/notification rule using `${location.lat}`, `${location.lng}`, and `${location.maps_url}`.
      - Test rule execution while device screen is off and app is in background; verify live GPS coordinates resolve without blank output.
      - Test with background location permission denied vs granted ("Allow all the time"). Verify GPS timeout (5s) fallback when satellite fix is unavailable.
+9. **Location geofence triggers device smoke test**
+   - Configure `GEOFENCE_ENTER` and `GEOFENCE_EXIT` rules with test coordinates and radius (e.g. 150m).
+   - Verify permission flow: prompts for `ACCESS_FINE_LOCATION` and `ACCESS_BACKGROUND_LOCATION` ("Allow all the time") before registration.
+   - Verify Home screen status shows `Registered` for active geofence rules.
+   - Cross geofence boundary: verify `GeofenceBroadcastReceiver` receives transition intent, persists to DataStore queue, reconciles `AutomationService`, and executes matching rule.
+   - Verify rule evaluation correctly filters `ENTER` vs `EXIT` triggers.
+   - Verify transition coordinates populate `${location.lat}` and `${location.lng}` without performing redundant fresh GPS lookups for notification-only actions.
+   - Disable rule or stop engine: verify geofences are unregistered from Google Play Services and status reflects `Unregistered`.
 
 ## Acceptance Gate
 

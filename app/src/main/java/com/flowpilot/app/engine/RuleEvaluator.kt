@@ -371,4 +371,23 @@ object RuleEvaluator {
             matchesConditions(rule.conditions, liveState, nowMs)
         }
     }
+
+    fun evaluateGeofence(
+        rules: List<Automation>,
+        transition: GeofenceTransition,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> {
+        val trigger = when (transition.event) {
+            GeofenceEvent.ENTER -> TriggerEvent.GEOFENCE_ENTER
+            GeofenceEvent.EXIT -> TriggerEvent.GEOFENCE_EXIT
+        }
+        return rules.filter { rule ->
+            rule.enabled &&
+                rule.id == transition.automationId &&
+                rule.triggerEvent == trigger &&
+                !rule.isCoolingDown(nowMs) &&
+                matchesConditions(rule.conditions, liveState, nowMs)
+        }
+    }
 }

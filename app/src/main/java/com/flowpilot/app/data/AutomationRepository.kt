@@ -10,6 +10,10 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.security.SecretCipher
+import com.flowpilot.app.engine.GeofenceTransition
+import com.flowpilot.app.engine.GeofenceDiagnostic
+import com.flowpilot.app.engine.GeofenceDiagnosticStatus
+import com.flowpilot.app.engine.GeofenceEvent
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -31,15 +35,26 @@ class AutomationRepository(private val context: Context) {
     }
     private val listSerializer = ListSerializer(Automation.serializer())
     private val historySerializer = ListSerializer(ExecutionHistoryEntry.serializer())
+    private val geofenceTransitionListSerializer = ListSerializer(GeofenceTransition.serializer())
+    private val geofenceDiagnosticListSerializer = ListSerializer(GeofenceDiagnostic.serializer())
 
     private val key = stringPreferencesKey("rules")
     private val historyKey = stringPreferencesKey("execution_history")
+    private val geofenceQueueKey = stringPreferencesKey("geofence_event_queue")
+    private val geofenceDiagnosticsKey = stringPreferencesKey("geofence_diagnostics")
     private val engineKey = androidx.datastore.preferences.core.booleanPreferencesKey("engine_enabled")
     private val languageKey = stringPreferencesKey("app_language")
     private val themeKey = stringPreferencesKey("app_theme")
 
     val appLanguage: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[languageKey] ?: "system"
+    }
+
+    val geofenceDiagnostics: Flow<Map<String, GeofenceDiagnostic>> = context.dataStore.data.map { prefs ->
+        prefs[geofenceDiagnosticsKey]
+            ?.let(::safeDecodeGeofenceDiagnostics)
+            .orEmpty()
+            .associateBy { it.automationId }
     }
 
     suspend fun setAppLanguage(language: String) {
@@ -111,6 +126,135 @@ class AutomationRepository(private val context: Context) {
         }
     }
 
+    suspend fun enqueueGeofenceEvents(events: List<GeofenceTransition>) {
+        if (events.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val current = prefs[geofenceQueueKey]?.let { raw ->
+                try {
+                    json.decodeFromString(geofenceTransitionListSerializer, raw)
+                } catch (_: Throwable) {
+                    emptyList()
+                }
+            } ?: emptyList()
+            // Retain up to 50 events to prevent unbounded storage
+            val updated = (current + events).takeLast(50)
+            prefs[geofenceQueueKey] = json.encodeToString(geofenceTransitionListSerializer, updated)
+        }
+    }
+
+    suspend fun drainGeofenceEvents(): List<GeofenceTransition> {
+        var drained: List<GeofenceTransition> = emptyList()
+        context.dataStore.edit { prefs ->
+            val raw = prefs[geofenceQueueKey]
+            if (!raw.isNullOrBlank()) {
+                drained = try {
+                    json.decodeFromString(geofenceTransitionListSerializer, raw)
+                } catch (_: Throwable) {
+                    emptyList()
+                }
+                prefs.remove(geofenceQueueKey)
+            }
+        }
+        return drained
+    }
+
+    suspend fun recordGeofenceRegistration(automationIds: List<String>, at: Long = System.currentTimeMillis()) {
+        updateGeofenceDiagnostics(automationIds, clearReceiverError = true) { id, current ->
+            current.copy(
+                automationId = id,
+                status = GeofenceDiagnosticStatus.REGISTERED,
+                lastRegistrationAt = at,
+                error = "",
+                updatedAt = at,
+            )
+        }
+    }
+
+    suspend fun recordGeofenceUnregistration(automationIds: List<String>, at: Long = System.currentTimeMillis()) {
+        updateGeofenceDiagnostics(automationIds) { id, current ->
+            current.copy(
+                automationId = id,
+                status = GeofenceDiagnosticStatus.UNREGISTERED,
+                error = "",
+                updatedAt = at,
+            )
+        }
+    }
+
+    suspend fun recordGeofenceRegistrationFailure(
+        automationIds: List<String>,
+        error: String,
+        at: Long = System.currentTimeMillis(),
+    ) {
+        updateGeofenceDiagnostics(automationIds) { id, current ->
+            current.copy(
+                automationId = id,
+                status = GeofenceDiagnosticStatus.REGISTRATION_FAILED,
+                error = error.take(MAX_GEOFENCE_ERROR_LENGTH),
+                updatedAt = at,
+            )
+        }
+    }
+
+    suspend fun recordGeofenceTransitions(transitions: List<GeofenceTransition>) {
+        if (transitions.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val current = prefs[geofenceDiagnosticsKey]
+                ?.let(::safeDecodeGeofenceDiagnostics)
+                .orEmpty()
+                .associateBy { it.automationId }
+                .toMutableMap()
+            transitions.forEach { transition ->
+                val prior = current[transition.automationId] ?: GeofenceDiagnostic(
+                    automationId = transition.automationId,
+                    status = GeofenceDiagnosticStatus.REGISTERED,
+                )
+                current[transition.automationId] = prior.copy(
+                    status = when (transition.event) {
+                        GeofenceEvent.ENTER -> GeofenceDiagnosticStatus.TRANSITION_ENTER
+                        GeofenceEvent.EXIT -> GeofenceDiagnosticStatus.TRANSITION_EXIT
+                    },
+                    lastTransitionAt = transition.timestamp,
+                    lastTransition = transition.event,
+                    error = "",
+                    updatedAt = transition.timestamp,
+                )
+            }
+            current.remove(GEOFENCE_RECEIVER_DIAGNOSTIC_ID)
+            prefs[geofenceDiagnosticsKey] = json.encodeToString(
+                geofenceDiagnosticListSerializer,
+                current.values.toList(),
+            )
+        }
+    }
+
+    suspend fun clearGeofenceReceiverError() {
+        context.dataStore.edit { prefs ->
+            val current = prefs[geofenceDiagnosticsKey]
+                ?.let(::safeDecodeGeofenceDiagnostics)
+                .orEmpty()
+                .associateBy { it.automationId }
+                .toMutableMap()
+            if (current.remove(GEOFENCE_RECEIVER_DIAGNOSTIC_ID) != null) {
+                prefs[geofenceDiagnosticsKey] = json.encodeToString(
+                    geofenceDiagnosticListSerializer,
+                    current.values.toList(),
+                )
+            }
+        }
+    }
+
+    suspend fun recordGeofenceReceiverError(error: String, at: Long = System.currentTimeMillis()) {
+        updateGeofenceDiagnostics(listOf(GEOFENCE_RECEIVER_DIAGNOSTIC_ID)) { id, current ->
+            current.copy(
+                automationId = id,
+                status = GeofenceDiagnosticStatus.RECEIVER_ERROR,
+                error = error.take(MAX_GEOFENCE_ERROR_LENGTH),
+                updatedAt = at,
+            )
+        }
+    }
+
     suspend fun add(
         name: String,
         triggerEvent: com.flowpilot.app.data.model.TriggerEvent,
@@ -168,6 +312,10 @@ class AutomationRepository(private val context: Context) {
         smsKeyword: String = "",
         smsRecipient: String = "",
         smsMessage: String = "",
+        geofenceName: String = "",
+        geofenceLatitude: Double = 0.0,
+        geofenceLongitude: Double = 0.0,
+        geofenceRadiusMeters: Int = 150,
         id: String = UUID.randomUUID().toString(),
     ): Automation {
         val primaryAction = actions.firstOrNull() ?: com.flowpilot.app.data.model.ActionType.NFC_ON
@@ -208,6 +356,9 @@ class AutomationRepository(private val context: Context) {
                         "${triggerEvent.label} ${lightLux}lx · $summary"
                     com.flowpilot.app.data.model.TriggerEvent.SMS_RECEIVED ->
                         "SMS Received · $summary"
+                    com.flowpilot.app.data.model.TriggerEvent.GEOFENCE_ENTER,
+                    com.flowpilot.app.data.model.TriggerEvent.GEOFENCE_EXIT ->
+                        "${triggerEvent.label} (${geofenceName.ifBlank { "${geofenceRadiusMeters}m" }}) · $summary"
                     else -> "${appName.ifBlank { appPackage }} · $summary"
                 }
             },
@@ -262,6 +413,10 @@ class AutomationRepository(private val context: Context) {
             screenBrightnessPercent = screenBrightnessPercent,
             forceStopPackage = forceStopPackage,
             forceStopAppName = forceStopAppName,
+            geofenceName = geofenceName,
+            geofenceLatitude = geofenceLatitude,
+            geofenceLongitude = geofenceLongitude,
+            geofenceRadiusMeters = geofenceRadiusMeters,
             action = primaryAction,
             actions = actions,
             actionDelays = actionDelays,
@@ -410,8 +565,45 @@ class AutomationRepository(private val context: Context) {
         emptyList()
     }
 
+    private suspend fun updateGeofenceDiagnostics(
+        automationIds: List<String>,
+        clearReceiverError: Boolean = false,
+        update: (String, GeofenceDiagnostic) -> GeofenceDiagnostic,
+    ) {
+        if (automationIds.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val current = prefs[geofenceDiagnosticsKey]
+                ?.let(::safeDecodeGeofenceDiagnostics)
+                .orEmpty()
+                .associateBy { it.automationId }
+                .toMutableMap()
+            automationIds.distinct().forEach { id ->
+                val prior = current[id] ?: GeofenceDiagnostic(
+                    automationId = id,
+                    status = GeofenceDiagnosticStatus.UNREGISTERED,
+                )
+                current[id] = update(id, prior)
+            }
+            if (clearReceiverError) {
+                current.remove(GEOFENCE_RECEIVER_DIAGNOSTIC_ID)
+            }
+            prefs[geofenceDiagnosticsKey] = json.encodeToString(
+                geofenceDiagnosticListSerializer,
+                current.values.toList(),
+            )
+        }
+    }
+
+    private fun safeDecodeGeofenceDiagnostics(raw: String): List<GeofenceDiagnostic> = try {
+        json.decodeFromString(geofenceDiagnosticListSerializer, raw)
+    } catch (_: Exception) {
+        emptyList()
+    }
+
     companion object {
         const val MAX_HISTORY_ENTRIES = 100
+        const val GEOFENCE_RECEIVER_DIAGNOSTIC_ID = "__geofence_receiver__"
+        private const val MAX_GEOFENCE_ERROR_LENGTH = 300
     }
 
     suspend fun migrateLegacySecretsIfNeeded() {

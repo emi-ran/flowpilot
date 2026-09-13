@@ -478,6 +478,30 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     ),
                 ),
             ),
+            PickerCategoryGroup(
+                id = TriggerCategory.LOCATION.name,
+                label = TriggerCategory.LOCATION.label,
+                icon = Icons.Default.LocationOn,
+                iconTint = Color(0xFF26A69A),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.GEOFENCE_ENTER,
+                        title = TriggerEvent.GEOFENCE_ENTER.label,
+                        subtitle = "When device enters a designated geographical area",
+                        icon = Icons.Default.LocationOn,
+                        iconTint = Color(0xFF26A69A),
+                        keywords = listOf("location", "geofence", "gps", "enter", "arrive", "home", "work", "area"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.GEOFENCE_EXIT,
+                        title = TriggerEvent.GEOFENCE_EXIT.label,
+                        subtitle = "When device leaves a designated geographical area",
+                        icon = Icons.Default.LocationOff,
+                        iconTint = Color(0xFFEF5350),
+                        keywords = listOf("location", "geofence", "gps", "exit", "leave", "depart", "home", "work", "area"),
+                    ),
+                ),
+            ),
         )
     }
 

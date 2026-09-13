@@ -96,6 +96,9 @@ app/src/main/java/com/flowpilot/app/
     NfcTagHandoff.kt                 transient tag UID intent-to-engine queue and UI capture state
     NfcTagUtils.kt                   pure tag UID normalization and validation
     FlowPilotNotificationListener.kt transient notification listener, dedupe, and engine watchdog
+    GeofenceState.kt                 pure geofence models, config validation, registration diff, and prerequisites evaluator
+    GeofenceTracker.kt               Google Play Services GeofencingClient hardware geofence synchronizer with process-local registration state
+    GeofenceBroadcastReceiver.kt     system broadcast receiver with DataStore persistent event queue and FGS engine reconciliation
     AutomationService.kt             foreground service (specialUse|location, stopWithTask="false", onTaskRemoved resilience)
     BootReceiver.kt                  restart on boot and quickboot
   actions/
@@ -124,12 +127,12 @@ app/src/main/java/com/flowpilot/app/
     ShizukuShell.kt                  Shizuku connection, safe permission check, and non-daemon UserService
   permission/
     CapabilityManager.kt             per-action and setup checks
-tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foreground reduction, encrypted persistence, webhook templates, manual execution summaries, and action executors.
+tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foreground reduction, encrypted persistence, webhook templates, manual execution summaries, action executors, geofence queue persistence, diff calculation, config validation, prerequisites evaluation, and evaluator.
 ```
 
 ## Engine loop
 
-1. AutomationEngine polls foreground events, queued charger/battery broadcasts, and schedules every 500 ms.
+1. AutomationEngine polls foreground events, queued charger/battery broadcasts, NFC tags, notifications, SMS, geofence transitions, and schedules every 500 ms.
 2. On foreground package change -> report `AppOpened(pkg)` / `AppClosed(pkg)` event.
 3. RuleEvaluator matches enabled rules whose trigger app == pkg, event matches, conditions match live state, and cooldown period has expired (`now - lastTriggeredAt >= cooldown`).
 4. For each match, check `lastTriggeredAt`/active-lock dedupe (a rule for "app opened" fires once
@@ -167,6 +170,8 @@ MainActivity receives NFC tag/tech discovery intents, extracts only tag UID, and
 Phone call triggers (`CALL_RINGING`, `CALL_ANSWERED`, `CALL_OUTGOING`, `CALL_ENDED`) evaluate state transitions without phone-number filtering. Android 12+ / HyperOS does not expose outgoing numbers to apps without the default-dialer role; call triggers match every call of that state. Legacy filter-configured rules operate as state-only / any-number rules. Device validation for this removal has not been run on device. Direct call and dial actions (`CALL_NUMBER`, `DIAL_NUMBER`) preserve phone number inputs and normalization/masking safeguards.
 
 DeviceFlipTracker tracks device physical placement and orientation changes using Sensor.TYPE_PROXIMITY and Sensor.TYPE_GRAVITY / Sensor.TYPE_ACCELEROMETER. DeviceFlipReducer verifies both proximity coverage (isNear) and earth-gravity Z-axis pull (Z <= -6.5 m/s^2 with lateral horizontal stability <= 6.0 m/s^2) to classify DEVICE_FLIPPED_DOWN, and reverse orientation with clear proximity to classify DEVICE_FLIPPED_UP. A 500ms debounce stability window avoids false triggers during casual hand movements. The tracker uses a demand-driven lifecycle: sensors are unmounted when no active flip rules exist, automatically unregistered when screen turns off (unless flipScreenOffDetection is enabled), and sample at low-power SENSOR_DELAY_NORMAL (~5Hz). Unit tests and Xiaomi 15T Pro / HyperOS 3 device smoke testing passed.
+
+GeofenceTracker integrates with Google Play Services GeofencingClient to register, synchronize, and tear down circular hardware geofences. Geofencing is completely event-driven with zero idle CPU wake-locks. GeofenceState provides pure domain logic for config validation (isValidGeofenceConfig: latitude in -90..90, longitude in -180..180, excluding 0.0,0.0; radius in 50..1000m), registration diff calculation (calculateGeofenceDiff), and location prerequisites evaluation (evaluateGeofencePrerequisites: ACCESS_FINE_LOCATION, ACCESS_BACKGROUND_LOCATION "Allow all the time", and system location enabled). Update synchronization unregisters modified or removed geofences first, waiting for unregister completion before re-registering modified rules to prevent request ID collisions in Google Play Services. When a boundary is crossed, Google Play Services delivers ACTION_GEOFENCE_TRANSITION to GeofenceBroadcastReceiver via explicit PendingIntent, exempting the app from API 31+ background foreground service start restrictions. GeofenceBroadcastReceiver extracts transitions, enqueues them into DataStore (geofence_event_queue, capped at 50 entries to prevent unbounded storage), updates diagnostics, and calls AutomationService.reconcileEnabled. Transitions older than 2 hours are discarded on drain. RuleEvaluator.evaluateGeofence matches rules on automation ID, trigger event (GEOFENCE_ENTER vs GEOFENCE_EXIT), cooldown, and conditions. Inbound transition coordinates are directly reused by resolveExecutionCoordinates for template rendering (${location.lat}, ${location.lng}, etc.), completely bypassing redundant fresh GPS lookups for notification-only or template-driven geofence actions. On engine shutdown, if the engine remains enabled, geofences stay active in the OS to wake the service upon arrival; geofences are fully unregistered from Google Play Services only when the engine is explicitly turned off. Live registration diagnostics (REGISTERED, UNREGISTERED, TRANSITION_ENTER, TRANSITION_EXIT, REGISTRATION_FAILED, RECEIVER_ERROR) are published to DataStore and displayed on Home and Detail screens.
 
 AutoRotateExecutor writes `Settings.System.ACCELEROMETER_ROTATION` to `1` (free rotation) or `0`
 (portrait lock), then reads back the value. It requires `android.permission.WRITE_SETTINGS` checked via

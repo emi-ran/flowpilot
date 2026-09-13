@@ -75,6 +75,7 @@ FlowPilot responds to a wide spectrum of hardware, system, and user events:
   - **Device Flip:** Phone placed face down on a surface or turned face up (dual physical validation: Proximity sensor + Gravity/Accelerometer Z-axis with 500ms debounce).
   - **Shake:** Firm shake detection with configurable sensitivity.
   - **Ambient Light:** Darker than or brighter than lux target with real-time sensor sampling.
+- **Location & Geofencing:** Enter or exit designated geographical areas (`GEOFENCE_ENTER`, `GEOFENCE_EXIT`) backed by Google Play Services `GeofencingClient` hardware geofencing. Event-driven battery behavior with zero CPU wake-locks while idle. Persistent DataStore event queueing (up to 50 events) ensures boundary transitions are never lost across engine or process restarts. Requires precise (`ACCESS_FINE_LOCATION`) and background (`ACCESS_BACKGROUND_LOCATION`) location permissions. Home screen displays live registration diagnostics and status (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, or error). Inbound transition coordinates are directly reused for location template variables (`${location.lat}`, `${location.lng}`, etc.), avoiding unnecessary fresh GPS lookups for notification-only or template-driven geofence actions.
 - **Hardware & Tags:** NFC tag scanned (hex UID matching).
 - **Communications:**
   - **Incoming/Outgoing Calls:** Ringing, answered, outgoing placed, and call ended states.
@@ -206,12 +207,12 @@ Certain privileged actions (toggling Mobile Data, Airplane Mode, GPS, Dark Mode,
 FlowPilot operates on a **zero-trust privacy model**:
 - **No Telemetry or Cloud Sync:** The app contains no crash reporters, analytics endpoints, remote ad SDKs, or cloud synchronization.
 - **Configured Data Sharing:** User-configured Webhooks, SMS actions, and exports can send only data you choose.
-- **Location:** Used strictly locally to read current Wi-Fi SSID and optionally inject coordinates into user-defined Webhooks or SMS replies.
+- **Location:** Used strictly locally to read current Wi-Fi SSID, register hardware geofence boundaries via Google Play Services `GeofencingClient`, and optionally inject coordinates into user-defined Webhooks or SMS replies.
 - **Phone & SMS:** Used only to trigger automations on call states or user-specified SMS text patterns. Phone numbers are masked in all logs and history.
 
 ### Distribution and restricted permissions
 
-FlowPilot declares `QUERY_ALL_PACKAGES` because its user-facing App Picker calls `PackageManager.getInstalledApplications()` and filters launchable packages for app triggers and app-targeted actions. Removing it breaks this core picker on Android versions that limit package visibility. `RECEIVE_SMS` is used by `SmsReceiver` for incoming SMS triggers; `SEND_SMS` is used by `SmsExecutor` for user-configured direct SMS actions. `ACCESS_BACKGROUND_LOCATION` is used by `LocationFetcher` when active rules need coordinates while the activity is not visible; `FOREGROUND_SERVICE_LOCATION` authorizes the location foreground-service subtype. Location is not collected continuously when no rule needs it.
+FlowPilot declares `QUERY_ALL_PACKAGES` because its user-facing App Picker calls `PackageManager.getInstalledApplications()` and filters launchable packages for app triggers and app-targeted actions. Removing it breaks this core picker on Android versions that limit package visibility. `RECEIVE_SMS` is used by `SmsReceiver` for incoming SMS triggers; `SEND_SMS` is used by `SmsExecutor` for user-configured direct SMS actions. `ACCESS_BACKGROUND_LOCATION` is used by Google Play Services hardware geofencing (`GeofencingClient`) for zero-battery background boundary detection and by `LocationFetcher` when active rules need coordinates while the activity is not visible; `FOREGROUND_SERVICE_LOCATION` authorizes the location foreground-service subtype. Location is not collected continuously via polling when no rule needs it.
 
 These permissions are restricted or policy-sensitive on Google Play. This repository does **not** claim Play compliance or guaranteed approval. No Play-specific permission-reduced flavor exists: removing these declarations would disable core features. Any Play release requires current policy review, required declarations, accurate Data safety disclosures, and Google approval. Until then, distribute builds through GitHub releases, F-Droid, or sideloading. Users should install only builds from sources they trust.
 

@@ -723,7 +723,7 @@
           </svg>
         </div>
         <span>FlowPilot</span>
-        <span class="brand-tag">v1.0.1</span>
+        <span class="brand-tag">v1.0.2</span>
       </div>
 
       <div class="nav-items">
@@ -765,17 +765,17 @@
       </p>
 
       <div class="hero-actions">
-        <a href="https://github.com/emi-ran/flowpilot/releases/download/v1.0.1/FlowPilot-v1.0.1.apk" class="btn btn-primary">
+        <a href="https://github.com/emi-ran/flowpilot/releases/download/v1.0.2/FlowPilot-v1.0.2.apk" class="btn btn-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          <span data-i18n="btn_download">APK İndir (v1.0.1)</span>
+          <span data-i18n="btn_download">APK İndir (v1.0.2)</span>
         </a>
 
         <div class="command-box" onclick="copyAdbInstall(this)">
-          <code>adb install FlowPilot-v1.0.1.apk</code>
+          <code>adb install FlowPilot-v1.0.2.apk</code>
           <span class="copy-tag" id="adb-copy-feedback" data-i18n="btn_copy">KOPYALA</span>
         </div>
       </div>
@@ -939,6 +939,7 @@
           </div>
           <ul class="cap-list">
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_time">Belirli Saat / Periyot</span></span><span class="cap-badge">AlarmManager</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_geofence">Coğrafi Konum Alanı (Geofence)</span></span><span class="cap-badge">Play Services</span></li>
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_bat_level">Pil Seviyesi Değişimi</span></span><span class="cap-badge">Broadcast</span></li>
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_bat_state">Şarj Bağlandı / Kesildi</span></span><span class="cap-badge">Broadcast</span></li>
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_wifi_state">Wi-Fi Bağlandı / Kesildi</span></span><span class="cap-badge">NetworkCallback</span></li>
@@ -1045,7 +1046,7 @@
             <div style="font-family: var(--font-mono); font-size: 11px; color: var(--emerald); margin-bottom: 4px;">ADIM 01</div>
             <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px;" data-i18n="step_1_title">APK'yı Yükleyin</div>
             <div style="font-size: 13px; color: var(--text-muted);" data-i18n="step_1_desc">
-              GitHub Releases sayfasından derlenmiş <span class="tag">FlowPilot-v1.0.1.apk</span> dosyasını indirin veya ADB ile doğrudan cihaza kurun.
+              GitHub Releases sayfasından derlenmiş <span class="tag">FlowPilot-v1.0.2.apk</span> dosyasını indirin veya ADB ile doğrudan cihaza kurun.
             </div>
           </div>
 
@@ -1055,6 +1056,15 @@
             <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px;" data-i18n="step_2_title">Shizuku'yu Başlatın</div>
             <div style="font-size: 13px; color: var(--text-muted);" data-i18n="step_2_desc">
               Geliştirici Seçenekleri'nden <em>Kablosuz Hata Ayıklama</em> üzerinden eşleyin veya cihazınızı USB ile bağlayıp terminalden başlatın.
+            </div>
+          </div>
+
+          <!-- Geofence & Location Note -->
+          <div style="background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--blue); padding: 18px; border-radius: 6px;">
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--blue); margin-bottom: 4px;">GEOFENCE & PİL</div>
+            <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px;" data-i18n="geofence_box_title">Donanım Tabanlı Konum Alanı (Geofencing)</div>
+            <div style="font-size: 13px; color: var(--text-muted); line-height: 1.55;" data-i18n="geofence_box_desc">
+              Sürekli GPS taraması ve pil tüketen döngüler yerine Google Play Services donanım geofence API'si kullanılır. Giriş ve çıkışların arka planda güvenle algılanması için <strong>Hassas Konum (Fine Location)</strong> ve <strong>Arka Planda Her Zaman İzin Ver (Allow all the time)</strong> izni gereklidir.
             </div>
           </div>
 
@@ -1086,7 +1096,7 @@
             <div class="term-out">List of devices attached</div>
             <div class="term-out">2407FRK8EC&nbsp;&nbsp;&nbsp;&nbsp;device  # Xiaomi 15T Pro</div>
             <br>
-            <div><span class="term-prompt">$ </span><span class="term-cmd">adb install FlowPilot-v1.0.1.apk</span></div>
+            <div><span class="term-prompt">$ </span><span class="term-cmd">adb install FlowPilot-v1.0.2.apk</span></div>
             <div class="term-out">Performing Streamed Install</div>
             <div class="term-out" style="color: var(--emerald);">Success</div>
             <br>
@@ -1155,7 +1165,7 @@
         hero_badge: "Açık Kaynak & Bağımsız",
         hero_title: "Root Gerektirmeyen Android Otomasyon Motoru.",
         hero_desc: "Gereksiz pil tüketen sürekli arka plan servisleri ve hantal yapılar yerine; Shizuku IPC, Kotlin Coroutines ve modern Android olay yayınlarıyla çalışan hafif, gizlilik odaklı otomasyon.",
-        btn_download: "APK İndir (v1.0.1)",
+        btn_download: "APK İndir (v1.0.2)",
         btn_copy: "KOPYALA",
         copied: "KOPYALANDI!",
         stat_apk_label: "APK Boyutu",
@@ -1196,6 +1206,7 @@
         mat_desc: "FlowPilot, Android'in yerel API sınırları dahilinde çalışırken, ayrıcalıklı işlemler için Shizuku'dan yararlanır.",
         cat_triggers: "Tetikleyiciler (Triggers)",
         trig_time: "Belirli Saat / Periyot",
+        trig_geofence: "Coğrafi Konum Alanı (Geofence)",
         trig_bat_level: "Pil Seviyesi Değişimi",
         trig_bat_state: "Şarj Bağlandı / Kesildi",
         trig_wifi_state: "Wi-Fi Bağlandı / Kesildi",
@@ -1228,9 +1239,11 @@
         inst_title: "Kurulum & Shizuku Yapılandırması",
         inst_desc: "Root gerekmez. Kablosuz Hata Ayıklama (Android 11+) veya tek bir ADB komutuyla 60 saniyede hazır.",
         step_1_title: "APK'yı Yükleyin",
-        step_1_desc: "GitHub Releases sayfasından derlenmiş FlowPilot-v1.0.1.apk dosyasını indirin veya ADB ile doğrudan cihaza kurun.",
+        step_1_desc: "GitHub Releases sayfasından derlenmiş FlowPilot-v1.0.2.apk dosyasını indirin veya ADB ile doğrudan cihaza kurun.",
         step_2_title: "Shizuku'yu Başlatın",
         step_2_desc: "Geliştirici Seçenekleri'nden Kablosuz Hata Ayıklama üzerinden eşleyin veya cihazınızı USB ile bağlayıp terminalden başlatın.",
+        geofence_box_title: "Donanım Tabanlı Konum Alanı (Geofencing)",
+        geofence_box_desc: "Sürekli GPS taraması ve pil tüketen döngüler yerine Google Play Services donanım geofence API'si kullanılır. Giriş ve çıkışların arka planda güvenle algılanması için Hassas Konum (Fine Location) ve Arka Planda Her Zaman İzin Ver (Allow all the time) izni gereklidir.",
         oem_box_title: "Xiaomi HyperOS / Cihaz Optimizasyonu Notu",
         oem_box_desc: "Xiaomi 15T Pro veya HyperOS/MIUI cihazlarda kuralların ekran kapalıyken dakik çalışması için: FlowPilot için Otomatik Başlatma (Autostart) iznini açın ve Pil Tasarrufu: Kısıtlama Yok (No Restrictions) olarak ayarlayın."
       },
@@ -1242,7 +1255,7 @@
         hero_badge: "Open Source & Independent",
         hero_title: "Rootless Android Automation Engine.",
         hero_desc: "Forget bloated battery-draining foreground wake-locks and complex background services. FlowPilot delivers lean, privacy-first automation powered by Shizuku IPC, Kotlin Coroutines, and native Android broadcasts.",
-        btn_download: "Download APK (v1.0.1)",
+        btn_download: "Download APK (v1.0.2)",
         btn_copy: "COPY",
         copied: "COPIED!",
         stat_apk_label: "APK Size",
@@ -1283,6 +1296,7 @@
         mat_desc: "FlowPilot operates within Android's official permission framework and leverages Shizuku for privileged hardware toggles.",
         cat_triggers: "Triggers",
         trig_time: "Specific Time / Interval",
+        trig_geofence: "Geofence Area (Enter / Exit)",
         trig_bat_level: "Battery Level Change",
         trig_bat_state: "Charger Connected / Disconnected",
         trig_wifi_state: "Wi-Fi Connected / Disconnected",
@@ -1315,9 +1329,11 @@
         inst_title: "Installation & Shizuku Setup",
         inst_desc: "No root required. Ready in under 60 seconds via Wireless Debugging (Android 11+) or a single ADB shell command.",
         step_1_title: "Install the APK",
-        step_1_desc: "Download FlowPilot-v1.0.1.apk from GitHub Releases or sideload it directly with adb install.",
+        step_1_desc: "Download FlowPilot-v1.0.2.apk from GitHub Releases or sideload it directly with adb install.",
         step_2_title: "Start Shizuku",
         step_2_desc: "Pair via Wireless Debugging in Developer Options or start it over USB via the standard start script.",
+        geofence_box_title: "Hardware-Backed Geofencing",
+        geofence_box_desc: "Instead of continuous battery-draining GPS loops, FlowPilot uses Google Play Services hardware geofencing. Reliable arrival and departure detection requires Precise Location ('Fine Location') and Background Location ('Allow all the time').",
         oem_box_title: "Xiaomi HyperOS / OEM Optimization Note",
         oem_box_desc: "To ensure rules execute accurately when screen is off on Xiaomi 15T Pro or HyperOS/MIUI devices: grant Autostart permission for FlowPilot and set Battery Saver to 'No Restrictions'."
       }
@@ -1393,7 +1409,7 @@
     }
 
     function copyAdbInstall(el) {
-      const cmd = "adb install FlowPilot-v1.0.1.apk";
+      const cmd = "adb install FlowPilot-v1.0.2.apk";
       navigator.clipboard.writeText(cmd).then(() => {
         const feedback = document.getElementById('adb-copy-feedback');
         const orig = feedback.textContent;

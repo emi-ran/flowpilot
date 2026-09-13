@@ -122,6 +122,7 @@ enum class TriggerCategory(val label: String) {
     PHONE("Phone"),
     SMS("SMS"),
     MOTION("Motion"),
+    LOCATION("Location"),
 }
 
 @Serializable
@@ -201,7 +202,9 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     DEVICE_UNLOCKED("Device unlocked", TriggerCategory.DISPLAY),
     LIGHT_BELOW("Ambient light below level", TriggerCategory.DISPLAY),
     LIGHT_ABOVE("Ambient light above level", TriggerCategory.DISPLAY),
-    SMS_RECEIVED("SMS received", TriggerCategory.SMS);
+    SMS_RECEIVED("SMS received", TriggerCategory.SMS),
+    GEOFENCE_ENTER("Entered location area", TriggerCategory.LOCATION),
+    GEOFENCE_EXIT("Exited location area", TriggerCategory.LOCATION);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }
@@ -308,6 +311,14 @@ data class Automation(
     val forceStopPackage: String = "",
     /** Cached target app display name for FORCE_STOP_APP action. */
     val forceStopAppName: String = "",
+    /** User-defined label for GEOFENCE_ENTER / GEOFENCE_EXIT triggers (e.g. "Home", "Work"). */
+    val geofenceName: String = "",
+    /** Target latitude for GEOFENCE_ENTER / GEOFENCE_EXIT triggers. */
+    val geofenceLatitude: Double = 0.0,
+    /** Target longitude for GEOFENCE_ENTER / GEOFENCE_EXIT triggers. */
+    val geofenceLongitude: Double = 0.0,
+    /** Target radius in meters for GEOFENCE_ENTER / GEOFENCE_EXIT triggers (default 150m, range 50..1000m). */
+    val geofenceRadiusMeters: Int = 150,
     val createdAt: Long,
     val lastTriggeredAt: Long = 0L,
 ) {

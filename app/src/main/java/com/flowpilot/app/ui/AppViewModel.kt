@@ -14,6 +14,7 @@ import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.engine.AutomationService
+import com.flowpilot.app.engine.GeofenceDiagnostic
 import com.flowpilot.app.engine.requiresLocation
 import com.flowpilot.app.permission.CapabilityManager
 import com.flowpilot.app.permission.CapabilityStatus
@@ -31,7 +32,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
-data class AutomationUI(val rule: Automation, val capability: CapabilityStatus)
+data class AutomationUI(
+    val rule: Automation,
+    val capability: CapabilityStatus,
+    val geofenceDiagnostic: GeofenceDiagnostic? = null,
+)
 
 data class ManualRunResult(
     val totalActions: Int,
@@ -73,6 +78,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
     val appLanguage: StateFlow<String> = repository.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "system")
+    val geofenceDiagnostics: StateFlow<Map<String, GeofenceDiagnostic>> = repository.geofenceDiagnostics
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun setAppLanguage(language: String) {
         viewModelScope.launch {
@@ -93,6 +100,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         observeRules()
+        observeGeofenceDiagnostics()
         AutomationService.loadFailure(app)
         refreshPermissions()
         try {
@@ -108,6 +116,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun observeRules() {
         viewModelScope.launch {
             repository.automations.collect { rules -> remapRules(rules) }
+        }
+    }
+
+    private fun observeGeofenceDiagnostics() {
+        viewModelScope.launch {
+            geofenceDiagnostics.collect { remapRules(repository.automations.first()) }
         }
     }
 
@@ -152,7 +166,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     allStatuses.any { it == CapabilityStatus.PERMISSION_REQUIRED } -> CapabilityStatus.PERMISSION_REQUIRED
                     else -> CapabilityStatus.AVAILABLE
                 }
-                AutomationUI(rule, aggregate)
+                AutomationUI(rule, aggregate, geofenceDiagnostics.value[rule.id])
             }
     }
 
@@ -270,6 +284,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         smsKeyword: String = "",
         smsRecipient: String = "",
         smsMessage: String = "",
+        geofenceName: String = "",
+        geofenceLatitude: Double = 0.0,
+        geofenceLongitude: Double = 0.0,
+        geofenceRadiusMeters: Int = 150,
         ruleId: String = UUID.randomUUID().toString(),
     ) {
         viewModelScope.launch {
@@ -330,6 +348,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 screenBrightnessPercent = screenBrightnessPercent,
                 forceStopPackage = forceStopPackage,
                 forceStopAppName = forceStopAppName,
+                geofenceName = geofenceName,
+                geofenceLatitude = geofenceLatitude,
+                geofenceLongitude = geofenceLongitude,
+                geofenceRadiusMeters = geofenceRadiusMeters,
                 id = ruleId,
             )
             startEngine()
