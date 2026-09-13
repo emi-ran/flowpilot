@@ -72,7 +72,7 @@
 
     body {
       background-color: var(--bg);
-      background-image: 
+      background-image:
         radial-gradient(ellipse 75% 45% at 50% -8%, rgba(16, 185, 129, 0.07), transparent 48%),
         radial-gradient(ellipse 55% 35% at 50% 18%, rgba(255, 255, 255, 0.018), transparent 55%);
       background-repeat: no-repeat;
@@ -1825,13 +1825,13 @@
 
     function selectRule(idx) {
       currentRuleIdx = idx;
-      
+
       // Update buttons
       for (let i = 0; i < 4; i++) {
         const btn = document.getElementById(`wb-rule-${i}`);
         if (btn) btn.classList.toggle('active', i === idx);
       }
-      
+
       // Update image with smooth crossfade & translateY
       const img = document.getElementById('wb-screen-img');
       if (img) {
@@ -1916,12 +1916,12 @@
       navigator.clipboard.writeText(cmd).then(() => {
         const feedback = document.getElementById('adb-copy-feedback');
         const box = el || document.querySelector('.command-box');
-        
+
         box.classList.add('copied-active');
         if (feedback) {
           feedback.textContent = translations[currentLang].copied || (currentLang === 'tr' ? "✓ KOPYALANDI" : "✓ COPIED");
         }
-        
+
         setTimeout(() => {
           box.classList.remove('copied-active');
           if (feedback) {
