@@ -2,6 +2,26 @@
 
 All notable FlowPilot changes are documented here.
 
+## [Unreleased]
+
+Changes completed after `1.0.2` and intended for the next release.
+
+### Added
+
+- Safe rule duplication from the Home list: creates a disabled, immediately editable copy with a new identity and reset runtime state. Webhook secrets are decrypted and re-encrypted with fresh Android Keystore ciphertext; TTS cache files are copied independently with failure-safe cleanup.
+- Non-blocking conflict warnings before saving or enabling automations: detects opposing state actions with likely/possible confidence, links to the conflicting rule for inspection, preserves the pending operation across inspection, and requires a deliberate override. Trigger overlap follows runtime wildcard semantics without exposing notification keywords or other sensitive arguments.
+
+### Security
+
+- Enabled Dependabot vulnerability alerts and security update pull requests.
+- Enabled secret scanning, push protection, and private vulnerability reporting for the public repository.
+- Protected `main`: pull requests, a current successful `Build & Test` check, and resolved review conversations are required; force-push and branch deletion are disabled.
+
+### Verification
+
+- GitHub `Build & Test` passed after both feature branches were reconciled on `main`.
+- Android instrumentation remains a manual emulator gate; physical-device validation for these two features is still pending.
+
 ## [1.0.2] - 2026-09-13
 
 ### Added
