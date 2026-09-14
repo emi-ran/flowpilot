@@ -49,7 +49,7 @@ class TtsExecutor(
             return ActionResult(false, "TTS audio cache missing or not generated")
         }
         val file = ttsManager.getCacheFile(fileName)
-            ?: return ActionResult(false, "TTS cache filename is invalid or unsafe: $fileName")
+            ?: return ActionResult(false, "TTS cache filename is invalid or unsafe")
         if (!file.exists() || file.length() == 0L) {
             return ActionResult(false, "TTS cached audio file is missing or empty")
         }
@@ -60,8 +60,8 @@ class TtsExecutor(
             } else {
                 ActionResult(false, "TTS audio playback failed")
             }
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+        } catch (_: Throwable) {
+            ActionResult(false, "TTS audio playback failed")
         }
     }
 

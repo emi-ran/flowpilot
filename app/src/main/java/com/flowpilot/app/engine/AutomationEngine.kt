@@ -566,12 +566,21 @@ class AutomationEngine(
                                 }
 
                                 currentCoroutineContext().ensureActive()
-                                val result = repository.dispatchIfAuthorized(reservation) {
-                                    eventAuthorization?.let { authorization ->
-                                        AutomationService.executeIfEventAuthorized(authorization) {
-                                            dispatcher.execute(action, actionParameters(rule, templateContext))
-                                        }
-                                    } ?: dispatcher.execute(action, actionParameters(rule, templateContext))
+                                val result = try {
+                                    repository.dispatchIfAuthorized(reservation) {
+                                        eventAuthorization?.let { authorization ->
+                                            AutomationService.executeIfEventAuthorized(authorization) {
+                                                dispatcher.execute(action, actionParameters(rule, templateContext))
+                                            }
+                                        } ?: dispatcher.execute(action, actionParameters(rule, templateContext))
+                                    }
+                                } catch (ce: CancellationException) {
+                                    throw ce
+                                } catch (_: Throwable) {
+                                    com.flowpilot.app.actions.ActionResult(
+                                        success = false,
+                                        message = "Execution failed",
+                                    )
                                 }
                                 if (result == null) {
                                     actionRecords.add(
