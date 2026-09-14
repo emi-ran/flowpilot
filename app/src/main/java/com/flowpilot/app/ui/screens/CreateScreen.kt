@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
+import com.flowpilot.app.ui.util.automaticAutomationName
 import com.flowpilot.app.ui.util.localizedLabel
 import android.content.Intent
 import android.provider.Settings
@@ -910,9 +911,29 @@ fun CreateScreen(
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.btn_cancel)) }
                 Button(
                     onClick = {
+                        val finalName = name.ifBlank {
+                            automaticAutomationName(
+                                context = context,
+                                trigger = event,
+                                actions = actions,
+                                appName = appName,
+                                appPackage = pkg,
+                                scheduledMinute = scheduledMinute,
+                                batteryLevel = batteryLevel,
+                                wifiSsid = wifiSsid,
+                                bluetoothDeviceName = bluetoothDeviceName,
+                                bluetoothDeviceAddress = bluetoothDeviceAddress,
+                                nfcTagId = nfcTagId.trim(),
+                                notificationAppName = notificationAppName,
+                                notificationAppPackage = notificationAppPackage,
+                                lightLux = lightLux,
+                                geofenceName = geofenceName,
+                                geofenceRadiusMeters = geofenceRadiusMeters,
+                            )
+                        }
                         val conflictCandidate = Automation(
                             id = newRuleId,
-                            name = name,
+                            name = finalName,
                             triggerEvent = event,
                             appPackage = pkg,
                             scheduledMinute = scheduledMinute,
@@ -937,7 +958,7 @@ fun CreateScreen(
                         )
                         val saveRule = {
                             vm.addRule(
-                                name = name,
+                                name = finalName,
                                 triggerEvent = event,
                                 appPackage = pkg,
                                 appName = appName,

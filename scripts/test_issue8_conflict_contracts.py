@@ -22,6 +22,14 @@ class ConflictContractsTest(unittest.TestCase):
         self.assertIn("candidateRuleName = candidate.name", source)
         self.assertIn("conflictingRuleName = other.name", source)
 
+    def test_blank_name_create_candidate_matches_saved_automatic_name(self):
+        source = (MAIN / "ui/screens/CreateScreen.kt").read_text()
+        kotlin_test = (ROOT / "app/src/test/java/com/flowpilot/app/ui/util/AutomationNameGeneratorTest.kt").read_text()
+        self.assertIn("fun blankName_createCandidateUsesSavedAutomaticName()", kotlin_test)
+        self.assertIn("val finalName = name.ifBlank", source)
+        self.assertIn("automaticAutomationName(", source)
+        self.assertGreaterEqual(source.count("name = finalName"), 2)
+
     def test_create_override_saves_without_second_button_click(self):
         source = (MAIN / "ui/screens/CreateScreen.kt").read_text()
         override = re.search(

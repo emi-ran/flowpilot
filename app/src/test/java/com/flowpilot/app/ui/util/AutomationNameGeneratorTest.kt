@@ -39,4 +39,33 @@ class AutomationNameGeneratorTest {
 
         assertThat(name).isEqualTo("Akbank · Bildirim göster")
     }
+
+    @Test
+    fun blankName_createCandidateUsesSavedAutomaticName() {
+        val context: android.content.Context = RuntimeEnvironment.getApplication()
+        val automaticName = automaticAutomationName(
+            context = context,
+            trigger = TriggerEvent.APP_OPENED,
+            actions = listOf(ActionType.SHOW_NOTIFICATION),
+            appName = "Akbank",
+            appPackage = "com.akbank",
+            scheduledMinute = 0,
+            batteryLevel = 50,
+            wifiSsid = "",
+            bluetoothDeviceName = "",
+            bluetoothDeviceAddress = "",
+            nfcTagId = "",
+            notificationAppName = "",
+            notificationAppPackage = "",
+            lightLux = 10,
+            geofenceName = "",
+            geofenceRadiusMeters = 150,
+        )
+
+        val candidateName = "".ifBlank { automaticName }
+        val savedName = "".ifBlank { automaticName }
+
+        assertThat(candidateName).isEqualTo(savedName)
+        assertThat(candidateName).isEqualTo("Akbank · Show notification")
+    }
 }
