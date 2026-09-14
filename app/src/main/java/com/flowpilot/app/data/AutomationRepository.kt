@@ -11,13 +11,16 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.security.SecretCipher
+import com.flowpilot.app.engine.AutomationService
 import com.flowpilot.app.engine.GeofenceTransition
 import com.flowpilot.app.engine.GeofenceDiagnostic
 import com.flowpilot.app.engine.GeofenceDiagnosticStatus
 import com.flowpilot.app.engine.GeofenceEvent
+import com.flowpilot.app.ui.util.applyAppLocale
 import com.flowpilot.app.ui.util.automaticAutomationName
 import com.flowpilot.app.ui.util.localizedForAppLanguage
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -70,10 +73,19 @@ class AutomationRepository(private val context: Context) {
             .associateBy { it.automationId }
     }
 
+    suspend fun syncPersistedLanguage(): String {
+        val lang = appLanguage.first()
+        persistLanguage(context, lang)
+        return lang
+    }
+
     suspend fun setAppLanguage(language: String) {
+        persistLanguage(context, language)
         context.dataStore.edit { prefs ->
             prefs[languageKey] = language
         }
+        applyAppLocale(context, language)
+        AutomationService.refreshNotificationLocale(context)
     }
 
     val appTheme: Flow<String> = context.dataStore.data.map { prefs ->
@@ -875,6 +887,31 @@ class AutomationRepository(private val context: Context) {
         private const val MAX_GEOFENCE_ERROR_LENGTH = 300
         private const val EXECUTION_LEASE_MS = 10 * 60_000L
         private val executionStateMutex = Mutex()
+        const val PREFS_LOCALE = "automation_locale_prefs"
+        const val KEY_APP_LANGUAGE = "app_language"
+
+        fun getPersistedLanguage(context: Context): String {
+            val prefs = context.getSharedPreferences(PREFS_LOCALE, Context.MODE_PRIVATE)
+            val cached = prefs.getString(KEY_APP_LANGUAGE, null)
+            if (cached != null) return cached
+
+            val fromDataStore = runCatching {
+                kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                    AutomationRepository(context).appLanguage.first()
+                }
+            }.getOrNull()
+
+            val language = fromDataStore ?: "system"
+            persistLanguage(context, language)
+            return language
+        }
+
+        fun persistLanguage(context: Context, language: String) {
+            context.getSharedPreferences(PREFS_LOCALE, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_APP_LANGUAGE, language)
+                .apply()
+        }
     }
 
     suspend fun migrateLegacySecretsIfNeeded() {
