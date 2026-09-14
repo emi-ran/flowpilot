@@ -48,6 +48,9 @@ data class ManualRunResult(
     val failureMessages: List<String>,
 )
 
+internal suspend fun duplicateRuleResult(duplicate: suspend () -> Automation?): Result<Automation> =
+    runCatching { duplicate() ?: error("Source rule no longer exists") }
+
 class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = AutomationRepository(app)
@@ -372,10 +375,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun duplicateRule(
         source: Automation,
         copyName: String,
-        onDuplicated: (Automation) -> Unit,
+        onResult: (Result<Automation>) -> Unit,
     ) {
         viewModelScope.launch {
-            repository.duplicate(source.id, copyName)?.let(onDuplicated)
+            onResult(duplicateRuleResult { repository.duplicate(source.id, copyName) })
         }
     }
 

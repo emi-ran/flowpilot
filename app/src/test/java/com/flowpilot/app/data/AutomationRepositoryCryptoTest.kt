@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.actions.TtsManager
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.security.SecretCipher
 import com.google.common.truth.Truth.assertThat
@@ -50,6 +51,7 @@ class AutomationRepositoryCryptoTest {
     @After
     fun tearDown() = runTest {
         repository.rawDataStore.edit { it.clear() }
+        context.filesDir.resolve("tts_cache").deleteRecursively()
         SecretCipher.secretKeyProvider = null
     }
 
@@ -223,6 +225,59 @@ class AutomationRepositoryCryptoTest {
         )
         assertThat(repository.geofenceDiagnostics.first()["clone-id"]).isNull()
         assertThat(repository.automations.first().first { it.id == source.id }).isEqualTo(persistedSource)
+    }
+
+    @Test
+    fun duplicate_ttsRule_copiesCacheToCloneOwnedFile() = runTest {
+        val manager = TtsManager(context)
+        val sourceId = "source-id"
+        val cloneId = "clone-id"
+        val text = "Independent speech"
+        val voice = "default"
+        val rate = 1.0f
+        val sourceFileName = manager.computeCacheFileName(sourceId, text, voice, rate)
+        val sourceFile = requireNotNull(manager.getCacheFile(sourceFileName))
+        sourceFile.writeBytes(byteArrayOf(1, 2, 3, 4))
+        val source = repository.add(
+            name = "Speak",
+            triggerEvent = TriggerEvent.CHARGER_CONNECTED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.SPEAK_TEXT),
+            ttsText = text,
+            ttsVoiceName = voice,
+            ttsSpeechRate = rate,
+            ttsAudioFileName = sourceFileName,
+            id = sourceId,
+        )
+
+        val clone = requireNotNull(repository.duplicate(source.id, "Speak (copy)", newId = cloneId))
+        val expectedFileName = manager.computeCacheFileName(cloneId, text, voice, rate)
+        val cloneFile = requireNotNull(manager.getCacheFile(expectedFileName))
+
+        assertThat(clone.ttsAudioFileName).isEqualTo(expectedFileName)
+        assertThat(cloneFile.readBytes()).isEqualTo(sourceFile.readBytes())
+        assertThat(cloneFile.canonicalPath).isNotEqualTo(sourceFile.canonicalPath)
+    }
+
+    @Test
+    fun duplicate_ttsRuleWithMissingCache_clearsCloneReference() = runTest {
+        val source = repository.add(
+            name = "Speak",
+            triggerEvent = TriggerEvent.CHARGER_CONNECTED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.SPEAK_TEXT),
+            ttsText = "Missing speech",
+            ttsVoiceName = "default",
+            ttsAudioFileName = "tts_source-id_0123456789abcdef.wav",
+            id = "source-id",
+        )
+
+        val clone = requireNotNull(repository.duplicate(source.id, "Speak (copy)", newId = "clone-id"))
+
+        assertThat(clone.ttsAudioFileName).isEmpty()
+        assertThat(repository.automations.first().first { it.id == "clone-id" }.ttsAudioFileName).isEmpty()
     }
 
     @Test

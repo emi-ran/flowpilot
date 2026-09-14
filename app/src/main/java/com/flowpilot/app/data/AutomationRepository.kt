@@ -424,21 +424,50 @@ class AutomationRepository(private val context: Context) {
         createdAt: Long = System.currentTimeMillis(),
     ): Automation? {
         var clone: Automation? = null
-        context.dataStore.edit { prefs ->
-            migrateHistory(prefs)
-            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
-            val source = current.firstOrNull { it.id == sourceId }?.withDecryptedSecrets() ?: return@edit
-            clone = source.copy(
-                id = newId,
-                name = copyName,
-                enabled = false,
-                createdAt = createdAt,
-                lastTriggeredAt = 0L,
-            )
-            prefs[key] = json.encodeToString(
-                listSerializer,
-                current.map { it.withEncryptedSecrets() } + clone!!.withEncryptedSecrets(),
-            )
+        var createdCloneTtsFile: java.io.File? = null
+        try {
+            context.dataStore.edit { prefs ->
+                migrateHistory(prefs)
+                val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+                val source = current.firstOrNull { it.id == sourceId }?.withDecryptedSecrets() ?: return@edit
+                val ttsManager = com.flowpilot.app.actions.TtsManager(context)
+                val cloneTtsFileName = source.ttsAudioFileName.takeIf { it.isNotBlank() }?.let { sourceFileName ->
+                    val sourceFile = ttsManager.getCacheFile(sourceFileName)
+                    val targetFileName = ttsManager.computeCacheFileName(
+                        newId,
+                        source.ttsText,
+                        source.ttsVoiceName,
+                        source.ttsSpeechRate,
+                    )
+                    val targetFile = ttsManager.getCacheFile(targetFileName)
+                    if (sourceFile?.isFile == true && sourceFile.length() > 0L && targetFile != null) {
+                        val targetExisted = targetFile.exists()
+                        try {
+                            sourceFile.copyTo(targetFile, overwrite = false)
+                            createdCloneTtsFile = targetFile
+                            targetFileName
+                        } catch (_: Throwable) {
+                            if (!targetExisted) targetFile.delete()
+                            null
+                        }
+                    } else null
+                }.orEmpty()
+                clone = source.copy(
+                    id = newId,
+                    name = copyName,
+                    enabled = false,
+                    ttsAudioFileName = cloneTtsFileName,
+                    createdAt = createdAt,
+                    lastTriggeredAt = 0L,
+                )
+                prefs[key] = json.encodeToString(
+                    listSerializer,
+                    current.map { it.withEncryptedSecrets() } + clone!!.withEncryptedSecrets(),
+                )
+            }
+        } catch (error: Throwable) {
+            createdCloneTtsFile?.delete()
+            throw error
         }
         if (clone != null) {
             cleanupOrphanTtsFiles()

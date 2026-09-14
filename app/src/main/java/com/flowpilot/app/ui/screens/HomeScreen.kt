@@ -33,7 +33,9 @@ import com.flowpilot.app.ui.components.PresetsBottomSheet
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
@@ -66,6 +68,9 @@ fun HomeScreen(
     val engineFailure by vm.engineFailure.collectAsState()
     val geofenceDiagnostics by vm.geofenceDiagnostics.collectAsState()
     val geofenceReceiverError = geofenceDiagnostics[AutomationRepository.GEOFENCE_RECEIVER_DIAGNOSTIC_ID]
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var selectedRuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPresetsSheet by remember { mutableStateOf(false) }
@@ -103,6 +108,7 @@ fun HomeScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -275,7 +281,17 @@ fun HomeScreen(
                                 selectedRuleIds = if (isSelected) selectedRuleIds - item.rule.id else selectedRuleIds + item.rule.id
                             },
                             enabled = { vm.setEnabled(item.rule.id, it) },
-                            onDuplicate = { vm.duplicateRule(item.rule, copyName, detail) },
+                            onDuplicate = {
+                                vm.duplicateRule(item.rule, copyName) { result ->
+                                    result.onSuccess(detail).onFailure {
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(R.string.duplicate_rule_failed),
+                                            )
+                                        }
+                                    }
+                                }
+                            },
                             onPermission = permissions,
                         )
                     }

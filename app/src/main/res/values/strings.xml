@@ -24,6 +24,7 @@
     <string name="btn_duplicate">Duplicate</string>
     <string name="rule_more_actions">More rule actions</string>
     <string name="rule_copy_name">%1$s (copy)</string>
+    <string name="duplicate_rule_failed">Couldn’t duplicate rule</string>
     <string name="btn_ok">OK</string>
     <string name="btn_close">Close</string>
     <string name="btn_test">Test</string>
