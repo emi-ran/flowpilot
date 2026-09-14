@@ -19,5 +19,5 @@ internal class EventExecutionAuthorization {
     fun <T> executeIfAuthorized(token: Token, execute: () -> T): T? =
         if (token.generation == generation) execute() else null
 
-    internal data class Token internal constructor(private val generation: Long)
+    internal data class Token internal constructor(val generation: Long)
 }
