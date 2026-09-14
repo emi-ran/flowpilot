@@ -506,90 +506,144 @@ class AutomationEngine(
         eventCoordinates: Pair<Double, Double>? = null,
         eventAuthorization: EventExecutionAuthorization.Token? = null,
     ) {
-        val coords = resolveExecutionCoordinates(
-            requiresLocation = rules.any { it.requiresLocation() },
-            eventCoordinates = eventCoordinates,
-            freshLocationProvider = {
-                LocationFetcher.getCoordinates(appContext, isBackgroundExecution = true)
-            },
-        )
-        val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
-            trigger = trigger?.name ?: "",
-            timestamp = System.currentTimeMillis(),
-            batteryPercent = liveState.batteryPercent,
-            isCharging = liveState.isChargerConnected,
-            wifiSsid = liveState.connectedWifiSsid,
-            smsSender = smsSender,
-            smsBody = smsBody,
-            locationLat = coords?.first,
-            locationLng = coords?.second,
-        )
-        for (rule in rules) {
-            withContext(Dispatchers.IO) {
+        for (candidate in rules.distinctBy { it.id }) {
+            if (!reservePendingExecution(candidate.id)) continue
+            try {
+                val reservation = repository.reserveExecution(
+                    id = candidate.id,
+                    expectedRevision = candidate.executionRevision,
+                ) ?: continue
+                val rule = reservation.rule
                 var anySuccess = false
-                val actionRecords = mutableListOf<ActionExecutionRecord>()
-                val actions = rule.effectiveActions
-                val delays = rule.effectiveActionDelays
-                var currentAction: com.flowpilot.app.data.model.ActionType? = null
-
+                var cancelled = false
+                var actionRecords = mutableListOf<ActionExecutionRecord>()
                 try {
-                    for (i in actions.indices) {
-                        currentCoroutineContext().ensureActive()
-                        val action = actions[i]
-                        currentAction = action
-                        val delaySec = delays.getOrElse(i) { 0 }
+                    val coords = resolveExecutionCoordinates(
+                        requiresLocation = rule.requiresLocation(),
+                        eventCoordinates = eventCoordinates,
+                        freshLocationProvider = {
+                            LocationFetcher.getCoordinates(appContext, isBackgroundExecution = true)
+                        },
+                    )
+                    val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
+                        trigger = trigger?.name ?: "",
+                        timestamp = System.currentTimeMillis(),
+                        batteryPercent = liveState.batteryPercent,
+                        isCharging = liveState.isChargerConnected,
+                        wifiSsid = liveState.connectedWifiSsid,
+                        smsSender = smsSender,
+                        smsBody = smsBody,
+                        locationLat = coords?.first,
+                        locationLng = coords?.second,
+                    )
+                    withContext(Dispatchers.IO) {
+                        actionRecords = mutableListOf()
+                        val actions = rule.effectiveActions
+                        val delays = rule.effectiveActionDelays
+                        var currentAction: com.flowpilot.app.data.model.ActionType? = null
 
-                        if (delaySec > 0) {
-                            delay(delaySec * 1000L)
-                        }
+                        try {
+                            for (i in actions.indices) {
+                                currentCoroutineContext().ensureActive()
+                                val action = actions[i]
+                                currentAction = action
+                                val delaySec = delays.getOrElse(i) { 0 }
 
-                        currentCoroutineContext().ensureActive()
-                        val result = eventAuthorization?.let { authorization ->
-                            AutomationService.executeIfEventAuthorized(authorization) {
-                                dispatcher.execute(action, actionParameters(rule, templateContext))
+                                if (delaySec > 0) {
+                                    if (!repository.renewExecutionReservation(reservation)) {
+                                        actionRecords.add(
+                                            ActionExecutionRecord.create(
+                                                actionType = action,
+                                                success = false,
+                                                message = "Execution revoked before dispatch",
+                                                resultCode = com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED,
+                                            )
+                                        )
+                                        currentAction = null
+                                        break
+                                    }
+                                    delay(delaySec * 1000L)
+                                }
+
+                                currentCoroutineContext().ensureActive()
+                                val result = repository.dispatchIfAuthorized(reservation) {
+                                    eventAuthorization?.let { authorization ->
+                                        AutomationService.executeIfEventAuthorized(authorization) {
+                                            dispatcher.execute(action, actionParameters(rule, templateContext))
+                                        }
+                                    } ?: dispatcher.execute(action, actionParameters(rule, templateContext))
+                                }
+                                if (result == null) {
+                                    actionRecords.add(
+                                        ActionExecutionRecord.create(
+                                            actionType = action,
+                                            success = false,
+                                            message = "Execution revoked before dispatch",
+                                            resultCode = com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED,
+                                        )
+                                    )
+                                    currentAction = null
+                                    break
+                                }
+                                Log.i(TAG, "Rule action result: action=${action.name}, success=${result.success}")
+                                anySuccess = anySuccess || result.success
+                                actionRecords.add(
+                                    ActionExecutionRecord.create(action, result)
+                                )
+                                currentAction = null
                             }
-                        } ?: if (eventAuthorization == null) {
-                            dispatcher.execute(action, actionParameters(rule, templateContext))
-                        } else {
-                            return@withContext
+                        } catch (ce: CancellationException) {
+                            currentAction?.let { action ->
+                                actionRecords.add(
+                                    ActionExecutionRecord.create(
+                                        actionType = action,
+                                        success = false,
+                                        message = "Execution cancelled",
+                                        resultCode = com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED,
+                                    )
+                                )
+                            }
+                            throw ce
                         }
-                        Log.i(TAG, "Rule action result: action=${action.name}, success=${result.success}")
-                        if (result.success) {
-                            anySuccess = true
-                        }
-                        actionRecords.add(
-                            ActionExecutionRecord.create(action, result)
-                        )
-                        currentAction = null
                     }
                 } catch (ce: CancellationException) {
-                    currentAction?.let { action ->
-                        actionRecords.add(
-                            ActionExecutionRecord.create(
-                                actionType = action,
-                                success = false,
-                                message = "Execution cancelled",
-                                resultCode = com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED,
+                    cancelled = true
+                    throw ce
+                } finally {
+                    withContext(NonCancellable) {
+                        repository.appendHistory(
+                            ExecutionHistoryEntry.create(
+                                ruleId = rule.id,
+                                ruleName = rule.normalizedName,
+                                trigger = trigger?.name ?: rule.triggerEvent.name,
+                                timestamp = System.currentTimeMillis(),
+                                actions = actionRecords.ifEmpty {
+                                    listOf(
+                                        ActionExecutionRecord.create(
+                                            actionType = rule.effectiveActions.first(),
+                                            success = false,
+                                            message = if (cancelled) "Execution cancelled" else "Execution failed before dispatch",
+                                            resultCode = if (cancelled) {
+                                                com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED
+                                            } else null,
+                                        )
+                                    )
+                                },
                             )
                         )
                     }
-                    throw ce
-                } finally {
-                    val historyEntry = ExecutionHistoryEntry.create(
-                        ruleId = rule.id,
-                        ruleName = rule.normalizedName,
-                        trigger = trigger?.name ?: rule.triggerEvent.name,
-                        timestamp = System.currentTimeMillis(),
-                        actions = actionRecords,
-                    )
-                    withContext(NonCancellable) {
-                        repository.appendHistory(historyEntry)
+                    if (!anySuccess) {
+                        withContext(NonCancellable) {
+                            repository.releaseExecutionReservation(reservation, successful = false)
+                        }
+                    } else {
+                        withContext(NonCancellable) {
+                            repository.releaseExecutionReservation(reservation, successful = true)
+                        }
                     }
                 }
-
-                if (anySuccess) {
-                    repository.patchLastTriggeredAt(rule.id, System.currentTimeMillis())
-                }
+            } finally {
+                releasePendingExecution(candidate.id)
             }
         }
     }
@@ -631,8 +685,18 @@ class AutomationEngine(
         smsMessage = rule.smsMessage,
     )
 
+    private suspend fun reservePendingExecution(id: String): Boolean = pendingExecutionMutex.withLock {
+        pendingRuleIds.add(id)
+    }
+
+    private suspend fun releasePendingExecution(id: String) {
+        pendingExecutionMutex.withLock { pendingRuleIds.remove(id) }
+    }
+
     private companion object {
         val engineLifetime = Mutex()
+        val pendingExecutionMutex = Mutex()
+        val pendingRuleIds = mutableSetOf<String>()
         const val TAG = "FlowPilotEngine"
         const val BLUETOOTH_TAG = "FlowPilotBluetooth"
         const val POLL_INTERVAL_MS = 500L

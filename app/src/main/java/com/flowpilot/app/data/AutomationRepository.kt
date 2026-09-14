@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
@@ -20,6 +21,8 @@ import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
@@ -27,6 +30,13 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 /** Persists automation rules as JSON in a single DataStore preferences key. */
 class AutomationRepository(private val context: Context) {
+
+    data class ExecutionReservation(
+        val rule: Automation,
+        val revision: Long,
+        val token: String,
+        val previousLastTriggeredAt: Long,
+    )
 
     internal val rawDataStore: DataStore<Preferences>
         get() = context.dataStore
@@ -41,6 +51,7 @@ class AutomationRepository(private val context: Context) {
     private val geofenceDiagnosticListSerializer = ListSerializer(GeofenceDiagnostic.serializer())
 
     private val key = stringPreferencesKey("rules")
+    private val executionRevisionKey = longPreferencesKey("execution_revision")
     private val historyKey = stringPreferencesKey("execution_history")
     private val geofenceQueueKey = stringPreferencesKey("geofence_event_queue")
     private val geofenceDiagnosticsKey = stringPreferencesKey("geofence_diagnostics")
@@ -339,7 +350,7 @@ class AutomationRepository(private val context: Context) {
             geofenceName = geofenceName,
             geofenceRadiusMeters = geofenceRadiusMeters,
         )
-        val rule = Automation(
+        var rule = Automation(
             id = id,
             name = name.ifBlank { automaticName },
             triggerEvent = triggerEvent,
@@ -404,12 +415,16 @@ class AutomationRepository(private val context: Context) {
             flipScreenOffDetection = flipScreenOffDetection,
             createdAt = System.currentTimeMillis(),
         )
+        executionStateMutex.withLock {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
+            rule = rule.copy(executionRevision = nextExecutionRevision(prefs))
             val encryptedRule = rule.withEncryptedSecrets()
+            check(current.none { it.id == rule.id }) { "Duplicate automation ID" }
             val updated = current.map { it.withEncryptedSecrets() } + encryptedRule
             prefs[key] = json.encodeToString(listSerializer, updated)
+        }
         }
         cleanupOrphanTtsFiles()
         notifyWidgets()
@@ -426,6 +441,7 @@ class AutomationRepository(private val context: Context) {
         var clone: Automation? = null
         var createdCloneTtsFile: java.io.File? = null
         try {
+            executionStateMutex.withLock {
             context.dataStore.edit { prefs ->
                 migrateHistory(prefs)
                 val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
@@ -454,17 +470,20 @@ class AutomationRepository(private val context: Context) {
                     }
                 }.orEmpty()
                 clone = source.copy(
-                    id = newId,
+                id = newId,
                     name = copyName,
                     enabled = false,
                     ttsAudioFileName = cloneTtsFileName,
                     createdAt = createdAt,
                     lastTriggeredAt = 0L,
-                )
+                executionRevision = nextExecutionRevision(prefs),
+            )
+                check(current.none { it.id == newId }) { "Duplicate automation ID" }
                 prefs[key] = json.encodeToString(
                     listSerializer,
                     current.map { it.withEncryptedSecrets() } + clone!!.withEncryptedSecrets(),
                 )
+            }
             }
         } catch (error: Throwable) {
             createdCloneTtsFile?.delete()
@@ -478,14 +497,21 @@ class AutomationRepository(private val context: Context) {
     }
 
     suspend fun update(rule: Automation) {
+        executionStateMutex.withLock {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
-            val encryptedRule = rule.copy(name = rule.normalizedName).withEncryptedSecrets()
+            val revision = nextExecutionRevision(prefs)
             val updated = current.map {
-                if (it.id == rule.id) encryptedRule else it.withEncryptedSecrets()
+                if (it.id == rule.id) {
+                    revokePendingExecution(rule.copy(
+                        name = rule.normalizedName,
+                        executionRevision = revision,
+                    )).withEncryptedSecrets()
+                } else it.withEncryptedSecrets()
             }
             prefs[key] = json.encodeToString(listSerializer, updated)
+        }
         }
         cleanupOrphanTtsFiles()
         notifyWidgets()
@@ -503,25 +529,132 @@ class AutomationRepository(private val context: Context) {
         }
     }
 
+    /** Atomically claims an automatic run before any action side effect. */
+    suspend fun reserveExecution(
+        id: String,
+        expectedRevision: Long,
+        at: Long = System.currentTimeMillis(),
+    ): ExecutionReservation? {
+        var reservation: ExecutionReservation? = null
+        executionStateMutex.withLock {
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val index = current.indexOfFirst { it.id == id }
+            if (index < 0) return@edit
+            val stored = current[index]
+            val rule = stored.withDecryptedSecrets()
+            if (!rule.enabled || rule.executionRevision != expectedRevision ||
+                rule.isCoolingDown(at) || rule.executionLeaseExpiresAt > at
+            ) {
+                return@edit
+            }
+            val token = UUID.randomUUID().toString()
+            val updated = current.toMutableList()
+            updated[index] = stored.copy(
+                lastTriggeredAt = at,
+                executionLeaseToken = token,
+                executionLeaseExpiresAt = at + EXECUTION_LEASE_MS,
+            )
+            prefs[key] = json.encodeToString(listSerializer, updated)
+            reservation = ExecutionReservation(
+                rule = rule.copy(
+                    lastTriggeredAt = at,
+                    executionLeaseToken = token,
+                    executionLeaseExpiresAt = at + EXECUTION_LEASE_MS,
+                ),
+                revision = rule.executionRevision,
+                token = token,
+                previousLastTriggeredAt = rule.lastTriggeredAt,
+            )
+        }
+        }
+        return reservation
+    }
+
+    /** Releases a reservation only when its exact durable lease token still owns the rule. */
+    suspend fun releaseExecutionReservation(reservation: ExecutionReservation, successful: Boolean) {
+        executionStateMutex.withLock {
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val updated = current.map { stored ->
+                if (stored.id == reservation.rule.id &&
+                    stored.executionRevision == reservation.revision &&
+                    stored.executionLeaseToken == reservation.token
+                ) {
+                    stored.copy(
+                        lastTriggeredAt = if (successful) stored.lastTriggeredAt else reservation.previousLastTriggeredAt,
+                        executionLeaseToken = "",
+                        executionLeaseExpiresAt = 0L,
+                    )
+                } else stored
+            }
+            prefs[key] = json.encodeToString(listSerializer, updated)
+        }
+        }
+    }
+
+    /** Extends a live lease before a bounded action delay; stale owners cannot renew. */
+    suspend fun renewExecutionReservation(
+        reservation: ExecutionReservation,
+        at: Long = System.currentTimeMillis(),
+    ): Boolean {
+        var renewed = false
+        executionStateMutex.withLock {
+        context.dataStore.edit { prefs ->
+            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val updated = current.map { stored ->
+                if (stored.id == reservation.rule.id &&
+                    stored.enabled &&
+                    stored.executionRevision == reservation.revision &&
+                    stored.executionLeaseToken == reservation.token
+                ) {
+                    renewed = true
+                    stored.copy(executionLeaseExpiresAt = at + EXECUTION_LEASE_MS)
+                } else stored
+            }
+            prefs[key] = json.encodeToString(listSerializer, updated)
+        }
+        }
+        return renewed
+    }
+
+    /** Valid only while rule still exists, is enabled, and has unchanged execution config. */
+    suspend fun isExecutionAuthorized(id: String, revision: Long): Boolean =
+        rawDataStore.data.first()[key]
+            ?.let { safeDecode(it) }
+            .orEmpty()
+            .firstOrNull { it.id == id }
+            ?.let { it.enabled && it.executionRevision == revision }
+            ?: false
+
     suspend fun setEnabled(id: String, enabled: Boolean) {
+        executionStateMutex.withLock {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val revision = if (current.any { it.id == id && it.enabled != enabled }) {
+                nextExecutionRevision(prefs)
+            } else null
             val updated = current.map {
-                val base = if (it.id == id) it.copy(enabled = enabled) else it
+                val base = if (it.id == id && it.enabled != enabled) {
+                    revokePendingExecution(it.copy(enabled = enabled, executionRevision = checkNotNull(revision)))
+                } else it
                 base.withEncryptedSecrets()
             }
             prefs[key] = json.encodeToString(listSerializer, updated)
+        }
         }
         notifyWidgets()
     }
 
     suspend fun delete(id: String) {
+        executionStateMutex.withLock {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
             val updated = current.filterNot { it.id == id }.map { it.withEncryptedSecrets() }
             prefs[key] = json.encodeToString(listSerializer, updated)
+        }
         }
         cleanupOrphanTtsFiles()
         notifyWidgets()
@@ -529,11 +662,13 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun deleteMany(ids: Set<String>) {
         if (ids.isEmpty()) return
+        executionStateMutex.withLock {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
             val updated = current.filterNot { it.id in ids }.map { it.withEncryptedSecrets() }
             prefs[key] = json.encodeToString(listSerializer, updated)
+        }
         }
         cleanupOrphanTtsFiles()
         notifyWidgets()
@@ -544,6 +679,7 @@ class AutomationRepository(private val context: Context) {
         strategy: com.flowpilot.app.data.backup.ImportStrategy,
     ): Int {
         if (imported.isEmpty()) return 0
+        executionStateMutex.withLock {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
@@ -554,15 +690,24 @@ class AutomationRepository(private val context: Context) {
                             id = UUID.randomUUID().toString(),
                             createdAt = System.currentTimeMillis(),
                             name = rule.normalizedName,
+                            executionRevision = nextExecutionRevision(prefs),
                         ).withEncryptedSecrets()
                     }
+                    requireUniqueIds(current + remapped)
                     current.map { it.withEncryptedSecrets() } + remapped
                 }
                 com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL -> {
-                    imported.map { it.copy(name = it.normalizedName).withEncryptedSecrets() }
+                    requireUniqueIds(imported)
+                    imported.map { rule ->
+                        revokePendingExecution(rule.copy(
+                            name = rule.normalizedName,
+                            executionRevision = nextExecutionRevision(prefs),
+                        )).withEncryptedSecrets()
+                    }
                 }
             }
             prefs[key] = json.encodeToString(listSerializer, finalRules)
+        }
         }
         cleanupOrphanTtsFiles()
         notifyWidgets()
@@ -570,10 +715,18 @@ class AutomationRepository(private val context: Context) {
     }
 
     suspend fun replaceAll(rules: List<Automation>) {
+        requireUniqueIds(rules)
+        executionStateMutex.withLock {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
-            val encrypted = rules.map { it.copy(name = it.normalizedName).withEncryptedSecrets() }
+            val encrypted = rules.map { rule ->
+                revokePendingExecution(rule.copy(
+                    name = rule.normalizedName,
+                    executionRevision = nextExecutionRevision(prefs),
+                )).withEncryptedSecrets()
+            }
             prefs[key] = json.encodeToString(listSerializer, encrypted)
+        }
         }
         cleanupOrphanTtsFiles()
         notifyWidgets()
@@ -586,9 +739,44 @@ class AutomationRepository(private val context: Context) {
     }
 
     private fun safeDecode(raw: String): List<Automation> = try {
-        json.decodeFromString(listSerializer, raw)
+        recoverDuplicateIds(json.decodeFromString(listSerializer, raw))
     } catch (_: Exception) {
         emptyList()
+    }
+
+    private fun nextExecutionRevision(prefs: MutablePreferences): Long {
+        val next = (prefs[executionRevisionKey] ?: 0L) + 1L
+        prefs[executionRevisionKey] = next
+        return next
+    }
+
+    private fun revokePendingExecution(rule: Automation): Automation = rule.copy(
+        executionLeaseToken = "",
+        executionLeaseExpiresAt = 0L,
+    )
+
+    private fun requireUniqueIds(rules: List<Automation>) {
+        require(rules.map { it.id }.toSet().size == rules.size) { "Duplicate automation ID" }
+    }
+
+    private fun recoverDuplicateIds(rules: List<Automation>): List<Automation> =
+        rules.distinctBy { it.id }
+
+    /** Serializes in-process rule mutation with final authorization and dispatch. */
+    suspend fun <T> dispatchIfAuthorized(
+        reservation: ExecutionReservation,
+        block: suspend () -> T,
+    ): T? = executionStateMutex.withLock {
+        val stored = rawDataStore.data.first()[key]
+            ?.let(::safeDecode)
+            ?.firstOrNull { it.id == reservation.rule.id }
+        if (stored?.enabled == true &&
+            stored.executionRevision == reservation.revision &&
+            stored.executionLeaseToken == reservation.token &&
+            stored.executionLeaseExpiresAt > System.currentTimeMillis()
+        ) {
+            block()
+        } else null
     }
 
     private fun migrateHistory(prefs: MutablePreferences) {
@@ -645,6 +833,8 @@ class AutomationRepository(private val context: Context) {
         const val MAX_HISTORY_ENTRIES = 100
         const val GEOFENCE_RECEIVER_DIAGNOSTIC_ID = "__geofence_receiver__"
         private const val MAX_GEOFENCE_ERROR_LENGTH = 300
+        private const val EXECUTION_LEASE_MS = 10 * 60_000L
+        private val executionStateMutex = Mutex()
     }
 
     suspend fun migrateLegacySecretsIfNeeded() {
