@@ -45,7 +45,7 @@ class DuplicateRuleResultTest {
 
     @Test
     fun duplicateRuleResult_createdClone_returnsSuccess() = runTest {
-        val clone = Automation(id = "clone-id", name = "Copy")
+        val clone = Automation(id = "clone-id", name = "Copy", createdAt = 1L)
 
         assertThat(duplicateRuleResult { clone }.getOrNull()).isEqualTo(clone)
     }

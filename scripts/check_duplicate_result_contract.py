@@ -10,6 +10,7 @@ assert "duplicateRuleResult_repositoryError_returnsFailure" in test
 assert "duplicateRuleResult_cancellation_rethrows" in test
 assert "duplicateRuleResult_seriousError_rethrows" in test
 assert "duplicateRuleResult_createdClone_returnsSuccess" in test
+assert 'Automation(id = "clone-id", name = "Copy", createdAt = 1L)' in test
 assert "suspend fun duplicateRuleResult" in source
 assert "catch (cancellation: kotlinx.coroutines.CancellationException)" in source
 assert "throw cancellation" in source
