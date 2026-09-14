@@ -4,6 +4,7 @@ Last updated: 2026-09-14
 
 ## Build state
 
+- Security advisory remediation passed local release gate on 2026-09-14: `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`. Debug APK device install remains blocked because wireless ADB target is offline.
 - Debug/release builds, unit tests, and lint passed: `.\gradlew.bat testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`.
 - Resource contract test passed: `python scripts/test_lint_resource_contracts.py`.
 - Latest debug APK was installed and launched on Xiaomi (2506BPN68G) / HyperOS (Android 16).
@@ -93,7 +94,7 @@ Last updated: 2026-09-14
 - Battery Saver needs `WRITE_SECURE_SETTINGS` or Shizuku.
 - Webhook secrets are Android Keystore AES-256-GCM encrypted at rest; Android backups are disabled.
 - Bluetooth triggers use selected bonded devices, public ACL broadcasts, and `BLUETOOTH_CONNECT` on Android 12+; no discovery, pairing, scan history, or startup replay. Bluetooth device/profile behavior can still differ on other OEMs.
-- NFC tag rules match a persisted tag UID, not tag payload. UID is identifier only, not authentication; cloned tags can match.
+- NFC tag rules match a persisted tag UID, not tag payload. UID is identifier only, not authentication; cloned tags can match. Foreground `NfcAdapter.ReaderCallback` scans remain automatic. Background Android discovery intents are untrusted and can only open a visible confirmation; their UID reaches the engine after the user confirms, never automatically. ReaderMode stays disabled for that NFC-intent activity session, preventing its scan from bypassing confirmation after resume.
 - Per-action delay is bounded to 300 seconds in UI. Engine cancellation during delay creates failed run-history record.
 - Rule cooldown begins only after successful automatic execution, applies to every automatic trigger, and is bypassed by manual test runs.
 - Xiaomi 15T Pro maps Sound profile Vibrate and Silent to the same observed ringer behavior; other devices can differ.

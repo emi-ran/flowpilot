@@ -115,7 +115,7 @@
             <intent-filter>
                 <action android:name="moe.shizuku.manager.intent.action.REQUEST_PERMISSION" />
             </intent-filter>
-            <!-- NFC Tag Discovery: default activity launch when tag is tapped while app is not foreground -->
+            <!-- Background NFC dispatch only opens an explicit user-confirmation gate. -->
             <intent-filter>
                 <action android:name="android.nfc.action.TAG_DISCOVERED" />
                 <category android:name="android.intent.category.DEFAULT" />

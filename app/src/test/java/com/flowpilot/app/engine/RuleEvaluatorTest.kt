@@ -322,10 +322,10 @@ class RuleEvaluatorTest {
         NfcTagHandoff.clear()
         assertThat(NfcTagHandoff.drainEvents()).isEmpty()
 
-        NfcTagHandoff.emitTagScanned(byteArrayOf(0x04, 0x12, 0x34))
-        NfcTagHandoff.emitTagId("04:ab:cd:ef")
-        NfcTagHandoff.emitTagId("")
-        NfcTagHandoff.emitTagScanned(null)
+        assertThat(NfcTagHandoff.emitTagScanned(byteArrayOf(0x04, 0x12, 0x34))).isTrue()
+        assertThat(NfcTagHandoff.emitTagScanned(byteArrayOf(0x04, 0xAB.toByte(), 0xCD.toByte(), 0xEF.toByte()))).isTrue()
+        assertThat(NfcTagHandoff.emitTagScanned(byteArrayOf())).isFalse()
+        assertThat(NfcTagHandoff.emitTagScanned(null)).isFalse()
 
         val events = NfcTagHandoff.drainEvents()
         assertThat(events).hasSize(2)

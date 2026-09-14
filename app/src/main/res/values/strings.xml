@@ -29,6 +29,9 @@
     <string name="btn_close">Close</string>
     <string name="btn_test">Test</string>
     <string name="btn_run_now">Run now</string>
+    <string name="nfc_background_confirm_title">Run NFC automations?</string>
+    <string name="nfc_background_confirm_desc">An NFC discovery request matched this app. Run matching NFC automations?</string>
+    <string name="nfc_background_confirm_action">Run automations</string>
     <string name="btn_use_preset">Use</string>
     <string name="btn_add_action">Add action</string>
     <string name="btn_add_condition">Add condition</string>

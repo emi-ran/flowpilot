@@ -29,6 +29,9 @@
     <string name="btn_close">Kapat</string>
     <string name="btn_test">Test</string>
     <string name="btn_run_now">Şimdi Çalıştır</string>
+    <string name="nfc_background_confirm_title">NFC otomasyonları çalıştırılsın mı?</string>
+    <string name="nfc_background_confirm_desc">Bir NFC keşif isteği bu uygulamayla eşleşti. Eşleşen NFC otomasyonları çalıştırılsın mı?</string>
+    <string name="nfc_background_confirm_action">Otomasyonları çalıştır</string>
     <string name="btn_use_preset">Kullan</string>
     <string name="btn_add_action">Eylem ekle</string>
     <string name="btn_add_condition">Koşul ekle</string>

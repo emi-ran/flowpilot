@@ -166,7 +166,7 @@ FlowPilot listens to a rich spectrum of hardware, radio, and system events:
   - **Shake:** Firm shake detection with configurable sensitivity slider.
   - **Ambient Light:** Lux drops below or rises above target threshold.
 - 📍 **Hardware Geofencing:** Enter or exit defined geographical zones using Google Play Services `GeofencingClient`. Zero idle battery drain, up to 50 persistent queued events across engine restarts, and coordinate reuse for template variables.
-- 🏷️ **NFC Tags:** Instant hex UID matching on physical tag scan.
+- 🏷️ **NFC Tags:** Instant hex UID matching on physical scans. Foreground ReaderMode scans run matching rules automatically; background Android discovery opens FlowPilot and requires explicit confirmation before any matching NFC automation runs.
 - 📞 **Phone & SMS:** Call ringing, answered, outgoing dialed, call ended; SMS received with keyword, prefix, regex, or exact sender matching.
 - 🔔 **Notifications:** Incoming notifications from selected apps with keyword filtering.
 

@@ -8,7 +8,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
 import java.io.IOException
-import java.net.HttpURLConnection
 import java.net.InetAddress
 
 @RunWith(RobolectricTestRunner::class)
@@ -18,11 +17,9 @@ class WebhookPrivacyRegressionTest {
     fun dispatchAndResultLogsContainOnlyMethodAndStatus() {
         ShadowLog.clear()
         val executor = WebhookExecutor(
-            connectionFactory = { url, _ -> object : HttpURLConnection(url) {
-                override fun connect() = Unit
-                override fun disconnect() = Unit
-                override fun usingProxy() = false
-                override fun getResponseCode() = 204
+            transportFactory = { _, _ -> object : WebhookTransport {
+                override fun execute(method: String, headers: Map<String, String>, body: ByteArray, timeoutMs: Int) = 204
+                override fun close() = Unit
             } },
             addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
         )
@@ -43,7 +40,7 @@ class WebhookPrivacyRegressionTest {
         ShadowLog.clear()
         val secret = "https://private-host.example/path-secret?bare-secret X-Custom: header-secret"
         val executor = WebhookExecutor(
-            connectionFactory = { _, _ -> throw IOException(secret) },
+            transportFactory = { _, _ -> throw IOException(secret) },
             addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
         )
         val result = executor.execute(ActionType.HTTP_WEBHOOK, ActionParameters(

@@ -207,12 +207,12 @@ class AutomationRepositoryCryptoTest {
         repository.recordGeofenceRegistration(listOf(source.id), at = 8_888L)
         val persistedSource = repository.automations.first().single()
 
-        val clone = repository.duplicate(
+        val clone = requireNotNull(repository.duplicate(
             sourceId = source.id,
             copyName = "Morning (copy)",
             newId = "clone-id",
             createdAt = 12_345L,
-        )
+        ))
 
         assertThat(clone).isEqualTo(
             persistedSource.copy(
@@ -221,8 +221,10 @@ class AutomationRepositoryCryptoTest {
                 enabled = false,
                 createdAt = 12_345L,
                 lastTriggeredAt = 0L,
+                executionRevision = clone.executionRevision,
             ),
         )
+        assertThat(clone.executionRevision).isGreaterThan(persistedSource.executionRevision)
         assertThat(repository.geofenceDiagnostics.first()["clone-id"]).isNull()
         assertThat(repository.automations.first().first { it.id == source.id }).isEqualTo(persistedSource)
     }

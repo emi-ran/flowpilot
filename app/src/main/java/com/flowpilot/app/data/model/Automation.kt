@@ -301,6 +301,11 @@ data class Automation(
     val actionDelays: List<Int> = emptyList(),
     /** Cooldown duration in minutes (0 means disabled, stored values clamp to 1440). Blocks automatic trigger evaluation when (now - lastTriggeredAt) < cooldown. */
     val cooldownMinutes: Int = 0,
+    /** Increments for each saved rule change, invalidating pending executions from older snapshots. */
+    val executionRevision: Long = 0L,
+    /** Durable automatic-execution lease; never contains action or webhook data. */
+    val executionLeaseToken: String = "",
+    val executionLeaseExpiresAt: Long = 0L,
     /** Whether motion/flip triggers should listen and evaluate even when the device screen is off. */
     val flipScreenOffDetection: Boolean = false,
     /** Threshold in lux for LIGHT_BELOW / LIGHT_ABOVE triggers. */

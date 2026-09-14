@@ -183,6 +183,7 @@ class AutomationService : Service() {
 
     companion object {
         private val controlMutex = Mutex()
+        private val eventExecutionAuthorization = EventExecutionAuthorization()
         private var activeService: AutomationService? = null
         private val mutableRunning = MutableStateFlow(false)
         val running = mutableRunning.asStateFlow()
@@ -211,6 +212,50 @@ class AutomationService : Service() {
 
         suspend fun reconcileEnabled(context: Context) = control(context) { isEngineEnabled.first() }
 
+        /** Authorizes a just-drained transient event batch against current persisted engine state. */
+        internal suspend fun authorizeEventExecution(context: Context): EventExecutionAuthorization.Token? = controlMutex.withLock {
+            eventExecutionAuthorization.authorize(
+                AutomationRepository(context.applicationContext).isEngineEnabled.first(),
+            )
+        }
+
+        /**
+         * Serializes each sensitive event action with disabling. The action begins while this lock is held,
+         * so disable cannot complete between authorization and dispatch.
+         */
+        internal suspend fun <T> executeIfEventAuthorized(
+            authorization: EventExecutionAuthorization.Token,
+            execute: () -> T,
+        ): T? = controlMutex.withLock {
+            eventExecutionAuthorization.executeIfAuthorized(authorization, execute)
+        }
+
+        /** Serializes event intake with enabled-state changes, preventing disabled-state queue replay. */
+        suspend fun enqueueSmsIfEngineEnabled(
+            context: Context,
+            sender: String,
+            body: String,
+            timestamp: Long,
+        ): Boolean = enqueueIfEngineEnabled(context) {
+            SmsEventTracker.enqueueIfEnabled(true, sender, body, timestamp)
+        }
+
+        /** Serializes event intake with enabled-state changes, preventing disabled-state queue replay. */
+        suspend fun enqueueNotificationIfEngineEnabled(
+            context: Context,
+            event: TransientNotificationEvent,
+        ): Boolean = enqueueIfEngineEnabled(context) {
+            FlowPilotNotificationListener.enqueueIfEnabled(true, event)
+        }
+
+        private suspend fun enqueueIfEngineEnabled(
+            context: Context,
+            enqueue: () -> Boolean,
+        ): Boolean = controlMutex.withLock {
+            if (!AutomationRepository(context.applicationContext).isEngineEnabled.first()) return@withLock false
+            enqueue()
+        }
+
         // Never acquire this lock from engineLifetime: controls only enqueue Android commands.
         private suspend fun control(
             context: Context,
@@ -220,6 +265,8 @@ class AutomationService : Service() {
                 try {
                     val enabled = AutomationRepository(context.applicationContext).preference()
                     if (enabled) start(context) else {
+                        eventExecutionAuthorization.invalidate()
+                        clearTransientEventState()
                         stop(context)
                         clearFailure(context)
                         com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(context)
@@ -313,6 +360,11 @@ class AutomationService : Service() {
 
         private fun stop(context: Context) {
             context.stopService(Intent(context, AutomationService::class.java))
+        }
+
+        private fun clearTransientEventState() {
+            SmsEventTracker.clear()
+            FlowPilotNotificationListener.clearTransientState()
         }
     }
 }

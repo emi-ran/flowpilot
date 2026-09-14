@@ -5,10 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
 import android.util.Log
-import com.flowpilot.app.data.AutomationRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -39,23 +37,29 @@ class SmsReceiver : BroadcastReceiver() {
             val timestamp = if (firstMessage.timestampMillis > 0L) firstMessage.timestampMillis else System.currentTimeMillis()
 
             if (sender.isNotBlank() || fullBody.isNotBlank()) {
-                val enqueued = SmsEventTracker.enqueue(sender = sender, body = fullBody, timestamp = timestamp)
-                if (enqueued) {
-                    val masked = PhoneNumberUtils.mask(sender)
-                    Log.i(TAG, "Incoming SMS queued from $masked (len=${fullBody.length})")
-                    ensureEngineRunning(context.applicationContext)
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val enqueued = AutomationService.enqueueSmsIfEngineEnabled(
+                            context = context.applicationContext,
+                            sender = sender,
+                            body = fullBody,
+                            timestamp = timestamp,
+                        )
+                        if (enqueued) {
+                            val masked = PhoneNumberUtils.mask(sender)
+                            Log.i(TAG, "Incoming SMS queued from $masked (len=${fullBody.length})")
+                            AutomationService.reconcileEnabled(context.applicationContext)
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Error queuing incoming SMS: ${e.javaClass.simpleName}")
+                    } finally {
+                        pendingResult.finish()
+                    }
                 }
             }
         } catch (e: Exception) {
             Log.w(TAG, "Error handling incoming SMS intent: ${e.message}")
-        }
-    }
-
-    private fun ensureEngineRunning(appContext: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                AutomationService.reconcileEnabled(appContext)
-            } catch (_: Throwable) {}
         }
     }
 

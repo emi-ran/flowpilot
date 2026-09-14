@@ -97,7 +97,7 @@ app/src/main/java/com/flowpilot/app/
     BluetoothDeviceTracker.kt        bonded-device ACL broadcasts + per-device transition reducer
     DeviceFlipState.kt               pure flip orientation models and debounce state reducer
     DeviceFlipTracker.kt             motion sensor listener with dynamic lifecycle and battery-saving unregistering
-    NfcTagHandoff.kt                 transient tag UID intent-to-engine queue and UI capture state
+    NfcTagHandoff.kt                 transient platform-reader tag UID queue and UI capture state
     NfcTagUtils.kt                   pure tag UID normalization and validation
     FlowPilotNotificationListener.kt transient notification listener, dedupe, and engine watchdog
     GeofenceState.kt                 pure geofence models, config validation, registration diff, and prerequisites evaluator
@@ -169,7 +169,7 @@ BluetoothDeviceTracker dynamically receives public ACL connection broadcasts onl
 
 BluetoothExecutor runs only exact allowlisted `svc bluetooth enable` or `svc bluetooth disable` through Shizuku. It returns failure when adapter, `BLUETOOTH_CONNECT`, Shizuku, command, or state readback is unavailable/mismatched, polling adapter state for up to 5 seconds after command completion. Xiaomi 15T Pro / HyperOS 3 smoke testing confirmed Bluetooth turns on and off successfully.
 
-MainActivity receives NFC tag/tech discovery intents, extracts only tag UID, and hands normalized UID to the running engine through in-memory NfcTagHandoff. Rule matching uses selected UID only. No NDEF payload or technology data is retained. Create/Edit screens can capture a tag UID while open. Unit/build and configured-tag Xiaomi 15T Pro / HyperOS 3 smoke testing passed.
+MainActivity enables `NfcAdapter.ReaderMode` while resumed. Its Android NFC-stack `ReaderCallback` extracts only a physical tag UID and hands its normalized value to in-memory `NfcTagHandoff`, preserving foreground automatic NFC rules. Manifest `TAG_DISCOVERED` and `TECH_DISCOVERED` filters keep Android background tag discovery available, but their intent data is untrusted: `NfcBackgroundConfirmationGate` holds only the UID until the visible Compose confirmation is accepted. Dismissal drops it; no intent-derived UID reaches the engine before confirmation. `NfcIntentSession` blocks ReaderMode registration and callback emission for that NFC-intent activity session, so confirmation, dismissal, or a queued callback cannot bypass the gate after resume. Rule matching uses selected UID only. No NDEF payload or technology data is retained. Create/Edit screens can capture a tag UID while open.
 
 Phone call triggers (`CALL_RINGING`, `CALL_ANSWERED`, `CALL_OUTGOING`, `CALL_ENDED`) evaluate state transitions without phone-number filtering. Android 12+ / HyperOS does not expose outgoing numbers to apps without the default-dialer role; call triggers match every call of that state. Legacy filter-configured rules operate as state-only / any-number rules. Device validation for this removal has not been run on device. Direct call and dial actions (`CALL_NUMBER`, `DIAL_NUMBER`) preserve phone number inputs and normalization/masking safeguards.
 
