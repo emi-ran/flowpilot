@@ -62,7 +62,7 @@ jobs:
           else
             base="${{ github.event.before }}"
           fi
-          if git diff --name-only "$base" "${{ github.sha }}" | grep -Eq '^(app/|gradle/|scripts/|gradlew$|gradlew\.bat$|build\.gradle\.kts$|settings\.gradle\.kts$|gradle\.properties$|\.github/workflows/ci\.yml$)'; then
+          if git diff --name-only "$base" "${{ github.sha }}" | grep -Eq '^(app/|gradle/|scripts/|gradlew$|gradlew\.bat$|build\.gradle\.kts$|settings\.gradle\.kts$|gradle\.properties$)'; then
             echo "android=true" >> "$GITHUB_OUTPUT"
           else
             echo "android=false" >> "$GITHUB_OUTPUT"
