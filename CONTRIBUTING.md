@@ -44,6 +44,8 @@ cd flowpilot
 4. **Conventional Commits:** Use clear commit messages (e.g., `feat: add screen brightness action`, `fix: prevent duplicate bluetooth broadcast`).
 5. **Open a PR:** Describe the change, the problem it solves, and how you tested it on device.
 
+For suspected security vulnerabilities, follow [SECURITY.md](SECURITY.md) and use private vulnerability reporting instead of a public issue.
+
 ---
 
 ## Localization / Translations

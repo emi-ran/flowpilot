@@ -11,7 +11,7 @@ Last updated: 2026-09-14
 - Action reordering, live location fetcher, Automation Presets, and Geofencing unit tests (`AutomationRepositoryGeofenceQueueTest`, `GeofenceConfigValidationTest`, `GeofenceDiffTest`, `GeofencePrerequisitesTest`, `LocationDependencyTest`, `RuleEvaluatorGeofenceTest`) implemented and verified.
 - Encrypted backup unit coverage verifies full-secret round trips, enabled-state preservation, plaintext non-leakage, wrong-password/tamper rejection, format/version/KDF bounds, single-rule backup, normal-export regression, and cross-device Android Keystore re-encryption.
 - History localization unit coverage verifies locale-neutral outcome records, masked SMS result arguments, legacy successful outcome mapping, technical failure fallback, and Turkish automatic rule-name generation.
-- Conflict analyzer and pre-save/pre-enable warning implemented: exact trigger-target matching, opposing state-action matrix, likely/possible confidence, conflict rule inspection, and deliberate non-blocking override. Kotlin unit/UI tests added; Gradle execution pending parent verification.
+- Conflict analyzer and pre-save/pre-enable warning implemented: runtime-aligned trigger overlap, opposing state-action matrix, likely/possible confidence, conflict rule inspection with pending-state restoration, and deliberate non-blocking override. GitHub `Build & Test` passed; physical-device validation remains pending.
 - GitHub Pages site modularized: split single monolithic `docs/index.html` into external stylesheet (`docs/assets/css/style.css`) and script (`docs/assets/js/app.js`), unified brand favicon (`docs/assets/favicon.svg`), converted brand into accessible home link, compacted desktop footer, and added mobile-first responsive pass (#2, #3).
 
 ## Background stability & engine keepalive
@@ -41,7 +41,7 @@ Last updated: 2026-09-14
 
 ## Implemented; device validation pending
 
-- Safe rule duplication from the Home list overflow menu: creates a disabled copy with a new UUID/creation time, resets `lastTriggeredAt` and transient registration state, preserves complete configuration, re-encrypts webhook secrets with fresh Android Keystore ciphertext, and opens the copy in Edit immediately. Kotlin unit/build/device verification pending; SDK-free static/resource contracts passed.
+- Safe rule duplication from the Home list overflow menu: creates a disabled copy with a new UUID/creation time, resets `lastTriggeredAt` and transient registration state, preserves complete configuration, re-encrypts webhook secrets with fresh Android Keystore ciphertext, and opens the copy in Edit immediately. GitHub unit/build verification and SDK-free static/resource contracts passed; physical-device validation remains pending.
 - Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions (unit tests passed; device smoke tests pending):
   - Time interval filtering with overnight span support (e.g. 23:00 - 07:00 crossing midnight).
   - Day of week filtering with Daily, Weekdays, Weekends, and custom day toggles.
