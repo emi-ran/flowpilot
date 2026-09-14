@@ -306,12 +306,18 @@ class AutomationEngine(
     private suspend fun pollNotificationEvents(liveState: LiveSystemState) {
         val events = FlowPilotNotificationListener.drainEvents()
         if (events.isEmpty()) return
+        val authorization = AutomationService.authorizeEventExecution(appContext) ?: return
         val rules = repository.automations.first()
         for (event in events) {
             val matches = RuleEvaluator.evaluateNotification(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing notification rules for ${event.packageName} (${matches.size} rule(s))")
-                executeAll(matches, trigger = TriggerEvent.NOTIFICATION_RECEIVED, liveState = liveState)
+                executeAll(
+                    matches,
+                    trigger = TriggerEvent.NOTIFICATION_RECEIVED,
+                    liveState = liveState,
+                    eventAuthorization = authorization,
+                )
             }
         }
     }
@@ -450,6 +456,7 @@ class AutomationEngine(
     private suspend fun pollSmsEvents(liveState: LiveSystemState) {
         val events = SmsEventTracker.drainEvents()
         if (events.isEmpty()) return
+        val authorization = AutomationService.authorizeEventExecution(appContext) ?: return
         val rules = repository.automations.first()
         for (event in events) {
             val matches = RuleEvaluator.evaluateSms(rules, event, liveState)
@@ -462,6 +469,7 @@ class AutomationEngine(
                     liveState = liveState,
                     smsSender = event.sender,
                     smsBody = event.body,
+                    eventAuthorization = authorization,
                 )
             }
         }
@@ -496,6 +504,7 @@ class AutomationEngine(
         smsSender: String? = null,
         smsBody: String? = null,
         eventCoordinates: Pair<Double, Double>? = null,
+        eventAuthorization: EventExecutionAuthorization.Token? = null,
     ) {
         val coords = resolveExecutionCoordinates(
             requiresLocation = rules.any { it.requiresLocation() },
@@ -535,42 +544,15 @@ class AutomationEngine(
                         }
 
                         currentCoroutineContext().ensureActive()
-                        val result = dispatcher.execute(
-                            action,
-                            com.flowpilot.app.actions.ActionParameters(
-                                notificationTitle = rule.notificationTitle,
-                                notificationBody = rule.notificationBody,
-                                vibrationPattern = rule.vibrationPattern,
-                                vibrationDurationMs = rule.vibrationDurationMs,
-                                vibrationAmplitude = rule.vibrationAmplitude,
-                                mediaVolumePercent = rule.mediaVolumePercent,
-                                soundPreset = rule.soundPreset,
-                                soundUri = rule.soundUri,
-                                soundDurationMs = rule.soundDurationMs,
-                                launchPackage = rule.launchPackage,
-                                url = rule.url,
-                                ttsText = rule.ttsText,
-                                ttsVoiceName = rule.ttsVoiceName,
-                                ttsSpeechRate = rule.ttsSpeechRate,
-                                ttsAudioFileName = rule.ttsAudioFileName,
-                                alarmHour = rule.alarmHour,
-                                alarmMinute = rule.alarmMinute,
-                                alarmMessage = rule.alarmMessage,
-                                timerDurationSeconds = rule.timerDurationSeconds,
-                                timerMessage = rule.timerMessage,
-                                webhookMethod = rule.webhookMethod,
-                                webhookUrl = rule.webhookUrl,
-                                webhookHeaders = rule.webhookHeaders,
-                                webhookBody = rule.webhookBody,
-                                webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
-                                webhookTemplateContext = templateContext,
-                                phoneNumber = rule.phoneNumber,
-                                screenBrightnessPercent = rule.screenBrightnessPercent,
-                                forceStopPackage = rule.forceStopPackage,
-                                smsRecipient = rule.smsRecipient,
-                                smsMessage = rule.smsMessage,
-                            ),
-                        )
+                        val result = eventAuthorization?.let { authorization ->
+                            AutomationService.executeIfEventAuthorized(authorization) {
+                                dispatcher.execute(action, actionParameters(rule, templateContext))
+                            }
+                        } ?: if (eventAuthorization == null) {
+                            dispatcher.execute(action, actionParameters(rule, templateContext))
+                        } else {
+                            return@withContext
+                        }
                         Log.i(TAG, "Rule action result: action=${action.name}, success=${result.success}")
                         if (result.success) {
                             anySuccess = true
@@ -611,6 +593,43 @@ class AutomationEngine(
             }
         }
     }
+
+    private fun actionParameters(
+        rule: com.flowpilot.app.data.model.Automation,
+        templateContext: com.flowpilot.app.actions.WebhookTemplateContext,
+    ) = com.flowpilot.app.actions.ActionParameters(
+        notificationTitle = rule.notificationTitle,
+        notificationBody = rule.notificationBody,
+        vibrationPattern = rule.vibrationPattern,
+        vibrationDurationMs = rule.vibrationDurationMs,
+        vibrationAmplitude = rule.vibrationAmplitude,
+        mediaVolumePercent = rule.mediaVolumePercent,
+        soundPreset = rule.soundPreset,
+        soundUri = rule.soundUri,
+        soundDurationMs = rule.soundDurationMs,
+        launchPackage = rule.launchPackage,
+        url = rule.url,
+        ttsText = rule.ttsText,
+        ttsVoiceName = rule.ttsVoiceName,
+        ttsSpeechRate = rule.ttsSpeechRate,
+        ttsAudioFileName = rule.ttsAudioFileName,
+        alarmHour = rule.alarmHour,
+        alarmMinute = rule.alarmMinute,
+        alarmMessage = rule.alarmMessage,
+        timerDurationSeconds = rule.timerDurationSeconds,
+        timerMessage = rule.timerMessage,
+        webhookMethod = rule.webhookMethod,
+        webhookUrl = rule.webhookUrl,
+        webhookHeaders = rule.webhookHeaders,
+        webhookBody = rule.webhookBody,
+        webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
+        webhookTemplateContext = templateContext,
+        phoneNumber = rule.phoneNumber,
+        screenBrightnessPercent = rule.screenBrightnessPercent,
+        forceStopPackage = rule.forceStopPackage,
+        smsRecipient = rule.smsRecipient,
+        smsMessage = rule.smsMessage,
+    )
 
     private companion object {
         val engineLifetime = Mutex()
