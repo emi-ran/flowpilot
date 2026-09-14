@@ -18,7 +18,6 @@ import com.flowpilot.app.ui.util.localizedLabel
 @Composable
 fun ConflictWarningDialog(
     conflicts: List<AutomationConflict>,
-    ruleNames: Map<String, String>,
     onInspect: (String) -> Unit,
     onOverride: () -> Unit,
     onDismiss: () -> Unit,
@@ -45,7 +44,7 @@ fun ConflictWarningDialog(
                         ),
                     )
                     TextButton(onClick = { onInspect(conflict.conflictingRuleId) }) {
-                        Text(stringResource(R.string.conflict_inspect_rule, ruleNames[conflict.conflictingRuleId].orEmpty()))
+                        Text(stringResource(R.string.conflict_inspect_rule, conflict.conflictingRuleName))
                     }
                 }
             }

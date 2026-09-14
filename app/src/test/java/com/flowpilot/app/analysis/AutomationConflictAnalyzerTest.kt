@@ -51,12 +51,33 @@ class AutomationConflictAnalyzerTest {
             val candidate = rule("candidate-$index", actions = listOf(on))
             val finding = AutomationConflictAnalyzer.analyze(candidate, listOf(rule("other-$index", actions = listOf(off)))).single()
             assertEquals("opposing-state-actions", finding.ruleId)
+            assertEquals("candidate-$index", finding.candidateRuleId)
+            assertEquals("Rule candidate-$index", finding.candidateRuleName)
             assertEquals(ConflictConfidence.CERTAIN, finding.confidence)
             assertEquals("other-$index", finding.conflictingRuleId)
+            assertEquals("Rule other-$index", finding.conflictingRuleName)
             assertEquals(on, finding.candidateAction)
             assertEquals(off, finding.conflictingAction)
             assertTrue(finding.overlapReason.isNotBlank())
         }
+    }
+
+    @Test
+    fun multipleActionsReturnOnlyCorrectOpposingPairs() {
+        val candidate = rule(
+            "candidate",
+            actions = listOf(ActionType.WIFI_ON, ActionType.BLUETOOTH_ON, ActionType.DND_ON),
+        )
+        val other = rule(
+            "other",
+            actions = listOf(ActionType.WIFI_ON, ActionType.BLUETOOTH_OFF, ActionType.DND_ON),
+        )
+
+        val findings = AutomationConflictAnalyzer.analyze(candidate, listOf(other))
+
+        assertEquals(1, findings.size)
+        assertEquals(ActionType.BLUETOOTH_ON, findings.single().candidateAction)
+        assertEquals(ActionType.BLUETOOTH_OFF, findings.single().conflictingAction)
     }
 
     @Test

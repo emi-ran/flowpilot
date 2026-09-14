@@ -10,7 +10,10 @@ enum class ConflictConfidence { CERTAIN, POSSIBLE }
 
 data class AutomationConflict(
     val ruleId: String,
+    val candidateRuleId: String,
+    val candidateRuleName: String,
     val conflictingRuleId: String,
+    val conflictingRuleName: String,
     val overlapReason: String,
     val candidateAction: ActionType,
     val conflictingAction: ActionType,
@@ -29,7 +32,10 @@ object AutomationConflictAnalyzer {
                 val exactConditions = candidate.conditions.toSet() == other.conditions.toSet()
                 AutomationConflict(
                     ruleId = OPPOSING_STATE_ACTIONS,
+                    candidateRuleId = candidate.id,
+                    candidateRuleName = candidate.name,
                     conflictingRuleId = other.id,
+                    conflictingRuleName = other.name,
                     overlapReason = if (exactConditions) "Exact trigger target and conditions overlap" else "Exact trigger target; condition overlap cannot be proven disjoint",
                     candidateAction = candidateAction,
                     conflictingAction = otherAction,

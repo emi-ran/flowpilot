@@ -276,7 +276,6 @@ fun DetailScreen(
     if (pendingConflicts.isNotEmpty()) {
         ConflictWarningDialog(
             conflicts = pendingConflicts,
-            ruleNames = existingRules.associate { it.rule.id to it.rule.name },
             onInspect = { id -> existingRules.firstOrNull { it.rule.id == id }?.rule?.let(inspectRule) },
             onOverride = {
                 pendingSave?.let { candidate ->

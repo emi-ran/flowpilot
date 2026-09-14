@@ -82,7 +82,6 @@ fun HomeScreen(
     if (pendingEnableConflicts.isNotEmpty()) {
         ConflictWarningDialog(
             conflicts = pendingEnableConflicts,
-            ruleNames = rules.associate { it.rule.id to it.rule.name },
             onInspect = { id -> rules.firstOrNull { it.rule.id == id }?.rule?.let(detail) },
             onOverride = {
                 pendingEnable?.let { candidate ->
