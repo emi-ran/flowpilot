@@ -50,7 +50,16 @@ class ConflictContractsTest(unittest.TestCase):
         self.assertIn('onNodeWithText("Rule detail: other").assertIsDisplayed()', test)
         self.assertIn("onInspect = { inspectedRuleId = it }", test)
         app = (MAIN / "ui/App.kt").read_text()
-        self.assertIn("inspectRule = { rule -> selectedRule = rule; page = Page.DETAIL }", app)
+        self.assertIn(
+            """inspectRule = { rule ->
+                        inspectedRule = rule
+                        inspectReturnPage = Page.CREATE
+                        page = Page.DETAIL""",
+            app,
+        )
+        self.assertIn("targetState = if (inspectedRule != null) inspectReturnPage else page", app)
+        self.assertIn("""inspectedRule = null
+                page = inspectReturnPage""", app)
 
     def test_english_and_turkish_warning_copy_and_actions_exist(self):
         required = {
