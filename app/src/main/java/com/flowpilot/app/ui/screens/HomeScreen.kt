@@ -21,8 +21,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,8 +33,10 @@ import com.flowpilot.app.ui.components.PresetsBottomSheet
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
@@ -70,6 +74,9 @@ fun HomeScreen(
     val engineFailure by vm.engineFailure.collectAsState()
     val geofenceDiagnostics by vm.geofenceDiagnostics.collectAsState()
     val geofenceReceiverError = geofenceDiagnostics[AutomationRepository.GEOFENCE_RECEIVER_DIAGNOSTIC_ID]
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var selectedRuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPresetsSheet by remember { mutableStateOf(false) }
@@ -133,6 +140,7 @@ fun HomeScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -289,6 +297,7 @@ fun HomeScreen(
                 ) {
                     items(rules, key = { it.rule.id }) { item ->
                         val isSelected = item.rule.id in selectedRuleIds
+                        val copyName = stringResource(R.string.rule_copy_name, item.rule.name)
                         RuleCard(
                             item = item,
                             isSelected = isSelected,
@@ -313,6 +322,17 @@ fun HomeScreen(
                                     else {
                                         pendingEnable = candidate
                                         pendingEnableConflicts = conflicts
+                                    }
+                                }
+                            },
+                            onDuplicate = {
+                                vm.duplicateRule(item.rule, copyName) { result ->
+                                    result.onSuccess(detail).onFailure {
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(R.string.duplicate_rule_failed),
+                                            )
+                                        }
                                     }
                                 }
                             },
@@ -403,9 +423,11 @@ private fun RuleCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     enabled: (Boolean) -> Unit,
+    onDuplicate: () -> Unit,
     onPermission: () -> Unit,
 ) {
     val isRuleEnabled = item.rule.enabled
+    var showOverflow by remember { mutableStateOf(false) }
     val containerColor by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
@@ -593,7 +615,25 @@ private fun RuleCard(
             }
 
             if (!isSelectionMode) {
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(6.dp))
+                Box {
+                    IconButton(onClick = { showOverflow = true }) {
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.rule_more_actions))
+                    }
+                    DropdownMenu(
+                        expanded = showOverflow,
+                        onDismissRequest = { showOverflow = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.btn_duplicate)) },
+                            leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                            onClick = {
+                                showOverflow = false
+                                onDuplicate()
+                            },
+                        )
+                    }
+                }
                 FollowSwitch(
                     checked = isRuleEnabled,
                     onCheckedChange = enabled,

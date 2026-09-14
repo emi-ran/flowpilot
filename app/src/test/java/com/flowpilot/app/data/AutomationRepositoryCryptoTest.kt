@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.actions.TtsManager
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.security.SecretCipher
 import com.google.common.truth.Truth.assertThat
@@ -50,6 +51,7 @@ class AutomationRepositoryCryptoTest {
     @After
     fun tearDown() = runTest {
         repository.rawDataStore.edit { it.clear() }
+        context.filesDir.resolve("tts_cache").deleteRecursively()
         SecretCipher.secretKeyProvider = null
     }
 
@@ -174,6 +176,194 @@ class AutomationRepositoryCryptoTest {
         assertThat(stored.webhookUrl).doesNotContain("secret")
         assertThat(stored.webhookHeaders).doesNotContain("secret_token_xyz")
         assertThat(stored.webhookBody).doesNotContain("payload")
+    }
+
+    @Test
+    fun duplicate_copiesCompleteConfiguration_butResetsIdentityAndRuntimeState() = runTest {
+        val source = repository.add(
+            name = "Morning",
+            triggerEvent = TriggerEvent.BATTERY_BELOW,
+            appPackage = "com.example.app",
+            appName = "Example",
+            actions = listOf(ActionType.HTTP_WEBHOOK, ActionType.NFC_ON),
+            actionDelays = listOf(4, 8),
+            cooldownMinutes = 30,
+            scheduledDays = setOf(1, 3, 5),
+            batteryLevel = 25,
+            conditions = listOf(com.flowpilot.app.data.model.RuleCondition(
+                type = com.flowpilot.app.data.model.ConditionType.SCREEN_ON,
+            )),
+            webhookMethod = "PATCH",
+            webhookUrl = "https://example.com/hook?token=secret",
+            webhookHeaders = "Authorization: Bearer secret",
+            webhookBody = "{\"secret\":true}",
+            webhookTimeoutSeconds = 20,
+            geofenceName = "Home",
+            geofenceLatitude = 41.0,
+            geofenceLongitude = 29.0,
+            geofenceRadiusMeters = 250,
+        )
+        repository.patchLastTriggeredAt(source.id, 9_999L)
+        repository.recordGeofenceRegistration(listOf(source.id), at = 8_888L)
+        val persistedSource = repository.automations.first().single()
+
+        val clone = repository.duplicate(
+            sourceId = source.id,
+            copyName = "Morning (copy)",
+            newId = "clone-id",
+            createdAt = 12_345L,
+        )
+
+        assertThat(clone).isEqualTo(
+            persistedSource.copy(
+                id = "clone-id",
+                name = "Morning (copy)",
+                enabled = false,
+                createdAt = 12_345L,
+                lastTriggeredAt = 0L,
+            ),
+        )
+        assertThat(repository.geofenceDiagnostics.first()["clone-id"]).isNull()
+        assertThat(repository.automations.first().first { it.id == source.id }).isEqualTo(persistedSource)
+    }
+
+    @Test
+    fun duplicate_ttsRule_copiesCacheToCloneOwnedFile() = runTest {
+        val manager = TtsManager(context)
+        val sourceId = "source-id"
+        val cloneId = "clone-id"
+        val text = "Independent speech"
+        val voice = "default"
+        val rate = 1.0f
+        val sourceFileName = manager.computeCacheFileName(sourceId, text, voice, rate)
+        val sourceFile = requireNotNull(manager.getCacheFile(sourceFileName))
+        sourceFile.writeBytes(byteArrayOf(1, 2, 3, 4))
+        val source = repository.add(
+            name = "Speak",
+            triggerEvent = TriggerEvent.CHARGER_CONNECTED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.SPEAK_TEXT),
+            ttsText = text,
+            ttsVoiceName = voice,
+            ttsSpeechRate = rate,
+            ttsAudioFileName = sourceFileName,
+            id = sourceId,
+        )
+
+        val clone = requireNotNull(repository.duplicate(source.id, "Speak (copy)", newId = cloneId))
+        val expectedFileName = manager.computeCacheFileName(cloneId, text, voice, rate)
+        val cloneFile = requireNotNull(manager.getCacheFile(expectedFileName))
+
+        assertThat(clone.ttsAudioFileName).isEqualTo(expectedFileName)
+        assertThat(cloneFile.readBytes()).isEqualTo(sourceFile.readBytes())
+        assertThat(cloneFile.canonicalPath).isNotEqualTo(sourceFile.canonicalPath)
+    }
+
+    @Test
+    fun duplicate_ttsRuleWithMissingCache_failsWithoutMutatingSource() = runTest {
+        val source = repository.add(
+            name = "Speak",
+            triggerEvent = TriggerEvent.CHARGER_CONNECTED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.SPEAK_TEXT),
+            ttsText = "Missing speech",
+            ttsVoiceName = "default",
+            ttsAudioFileName = "tts_source-id_0123456789abcdef.wav",
+            id = "source-id",
+        )
+
+        val error = runCatching {
+            repository.duplicate(source.id, "Speak (copy)", newId = "clone-id")
+        }.exceptionOrNull()
+
+        assertThat(error).isInstanceOf(java.io.IOException::class.java)
+        assertThat(repository.automations.first()).containsExactly(source)
+    }
+
+    @Test
+    fun duplicate_ttsRuleWhenTargetExists_failsWithoutDeletingFilesOrPersistingClone() = runTest {
+        val manager = TtsManager(context)
+        val sourceId = "source-id"
+        val cloneId = "clone-id"
+        val text = "Independent speech"
+        val voice = "default"
+        val rate = 1.0f
+        val sourceFileName = manager.computeCacheFileName(sourceId, text, voice, rate)
+        val sourceFile = requireNotNull(manager.getCacheFile(sourceFileName))
+        sourceFile.writeBytes(byteArrayOf(1, 2, 3, 4))
+        val targetFileName = manager.computeCacheFileName(cloneId, text, voice, rate)
+        val targetFile = requireNotNull(manager.getCacheFile(targetFileName))
+        val source = repository.add(
+            name = "Speak",
+            triggerEvent = TriggerEvent.CHARGER_CONNECTED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.SPEAK_TEXT),
+            ttsText = text,
+            ttsVoiceName = voice,
+            ttsSpeechRate = rate,
+            ttsAudioFileName = sourceFileName,
+            id = sourceId,
+        )
+        targetFile.writeBytes(byteArrayOf(9, 8, 7))
+
+        val error = runCatching {
+            repository.duplicate(source.id, "Speak (copy)", newId = cloneId)
+        }.exceptionOrNull()
+
+        assertThat(error).isInstanceOf(java.io.IOException::class.java)
+        assertThat(sourceFile.readBytes()).isEqualTo(byteArrayOf(1, 2, 3, 4))
+        assertThat(targetFile.readBytes()).isEqualTo(byteArrayOf(9, 8, 7))
+        assertThat(repository.automations.first()).containsExactly(source)
+    }
+
+    @Test
+    fun duplicate_reencryptsWebhookSecretsWithFreshCiphertext() = runTest {
+        val source = repository.add(
+            name = "Webhook",
+            triggerEvent = TriggerEvent.CHARGER_CONNECTED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.HTTP_WEBHOOK),
+            webhookUrl = "https://example.com/hook?token=secret",
+            webhookHeaders = "Authorization: Bearer secret",
+            webhookBody = "{\"secret\":true}",
+        )
+
+        repository.duplicate(source.id, "Webhook (copy)", newId = "clone-id", createdAt = 12_345L)
+
+        val stored = json.decodeFromString(
+            listSerializer,
+            repository.rawDataStore.data.first()[key]!!,
+        )
+        val storedSource = stored.first { it.id == source.id }
+        val storedClone = stored.first { it.id == "clone-id" }
+        assertThat(storedClone.webhookUrl).startsWith("enc:v1:")
+        assertThat(storedClone.webhookHeaders).startsWith("enc:v1:")
+        assertThat(storedClone.webhookBody).startsWith("enc:v1:")
+        assertThat(storedClone.webhookUrl).isNotEqualTo(storedSource.webhookUrl)
+        assertThat(storedClone.webhookHeaders).isNotEqualTo(storedSource.webhookHeaders)
+        assertThat(storedClone.webhookBody).isNotEqualTo(storedSource.webhookBody)
+        assertThat(repository.automations.first().first { it.id == "clone-id" }.webhookUrl)
+            .isEqualTo("https://example.com/hook?token=secret")
+    }
+
+    @Test
+    fun duplicate_unknownRule_doesNotMutateRepository() = runTest {
+        val source = repository.add(
+            name = "Only rule",
+            triggerEvent = TriggerEvent.CHARGER_CONNECTED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.NFC_ON),
+        )
+
+        val clone = repository.duplicate("missing", "Missing (copy)")
+
+        assertThat(clone).isNull()
+        assertThat(repository.automations.first()).containsExactly(source)
     }
 
     @Test

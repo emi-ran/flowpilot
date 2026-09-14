@@ -41,6 +41,7 @@ Last updated: 2026-09-14
 
 ## Implemented; device validation pending
 
+- Safe rule duplication from the Home list overflow menu: creates a disabled copy with a new UUID/creation time, resets `lastTriggeredAt` and transient registration state, preserves complete configuration, re-encrypts webhook secrets with fresh Android Keystore ciphertext, and opens the copy in Edit immediately. Kotlin unit/build/device verification pending; SDK-free static/resource contracts passed.
 - Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions (unit tests passed; device smoke tests pending):
   - Time interval filtering with overnight span support (e.g. 23:00 - 07:00 crossing midnight).
   - Day of week filtering with Daily, Weekdays, Weekends, and custom day toggles.
