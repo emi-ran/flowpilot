@@ -2,168 +2,296 @@
 
 # ⚡ FlowPilot
 
-**Gizlilik odaklı, çevrimdışı ve hafif Android otomasyon motoru.**
+### Gizlilik odaklı, pil dostu ve hafif Android otomasyon motoru — rootsuz.
 
-[![Lisans: GPL-3.0](https://img.shields.io/badge/Lisans-GPL--3.0-blue.svg)](LICENSE)
-[![Android Min SDK](https://img.shields.io/badge/Android-8.0%2B%20(API%2026--36)-brightgreen.svg)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-purple.svg)](https://kotlinlang.org)
-[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4.svg)](https://developer.android.com/jetpack/compose)
-[![Shizuku](https://img.shields.io/badge/Shizuku-Destekli-orange.svg)](https://shizuku.rikka.app)
-[![Test Edilen Cihaz](https://img.shields.io/badge/Geliştirilen%20%26%20Test%20Edilen-Xiaomi%20HyperOS-FF6900.svg)](https://mi.com)
-[![Derleme Durumu](https://img.shields.io/badge/Derleme-Başarılı-brightgreen.svg)](#kaynak-koddan-derleme)
+Olay odaklı tetikleyiciler, Shizuku ile ayrıcalıklı sistem yetkileri ve akıcı Material 3 arayüzüyle cihazınızı zahmetsizce otomatikleştirin. Telemetri yok, bulut hesabı zorunluluğu yok ve arka planda gereksiz pil tüketimi yok.
 
 <br/>
 
-[🇹🇷 Türkçe](README.tr.md) &nbsp;•&nbsp; [🇺🇸 English](README.md)
+[![GitHub Sürümü](https://img.shields.io/github/v/release/emi-ran/flowpilot?color=4285F4&label=S%C3%BCr%C3%BCm&logo=github)](https://github.com/emi-ran/flowpilot/releases)
+[![Android Uyumluluğu](https://img.shields.io/badge/Android-8.0%2B%20(API%2026--36)-34A853?logo=android&logoColor=white)](https://developer.android.com)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/Aray%C3%BCz-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Shizuku Desteği](https://img.shields.io/badge/Shizuku-Destekli-FB8C00)](https://shizuku.rikka.app)
+[![Gizlilik](https://img.shields.io/badge/Telemetri-S%C4%B1f%C4%B1r%20%2F%20%25100%20%C3%87evrimd%C4%B1%C5%9F%C4%B1-00C853)](#-gizlilik-ve-s%C4%B1f%C4%B1r-g%C3%BCven-ilkesi)
+[![Lisans: GPL-3.0](https://img.shields.io/badge/Lisans-GPL--3.0-blue.svg)](LICENSE)
+
+<br/>
+
+[**🇹🇷 Türkçe**](README.tr.md) &nbsp;•&nbsp; [**🇺🇸 English**](README.md)
+
+<br/>
+
+<p align="center">
+  <a href="https://github.com/emi-ran/flowpilot/releases/latest">
+    <img src="https://img.shields.io/badge/📥%20APK%20İndir-Son%20Sürüm-4285F4?style=for-the-badge" alt="APK İndir" />
+  </a>
+  &nbsp;
+  <a href="#-nasıl-çalışır">
+    <img src="https://img.shields.io/badge/💡%20Nasıl%20Çalışır-Rehber-34A853?style=for-the-badge" alt="Nasıl Çalışır" />
+  </a>
+  &nbsp;
+  <a href="#-1-tıkla-hazır-reçeteler">
+    <img src="https://img.shields.io/badge/⚡%20Reçeteler-Hazır%20Şablonlar-FB8C00?style=for-the-badge" alt="Reçeteler" />
+  </a>
+  &nbsp;
+  <a href="#-shizuku-kurulum-kılavuzu">
+    <img src="https://img.shields.io/badge/🛡️%20Shizuku-Kurulum%20Rehberi-7F52FF?style=for-the-badge" alt="Shizuku Rehberi" />
+  </a>
+</p>
 
 </div>
 
 ---
 
 > [!NOTE]
-> **📱 Cihaz Uyumluluğu & Topluluk Testi Bilgilendirmesi:**  
-> FlowPilot bağımsız bir geliştirici tarafından geliştirilmekte olup, geliştiricinin şahsi cihazı olduğu için şu an **öncelikli olarak Xiaomi HyperOS (Xiaomi 15T Pro)** üzerinde geliştirilmiş ve bizzat test edilmiştir. Proje genelinde standart Android API'lerine ve en iyi pratiklere sadık kalınmıştır; ancak diğer üretici arayüzlerinde (Google Pixel, Samsung One UI, OxygenOS, Motorola vb.) henüz test imkanı olmamıştır. Farklı cihazlardaki test raporlarınız, hata bildirimleriniz ve geliştirmeleriniz (Pull Request) memnuniyetle karşılanır!
-
-## 🌟 Neden FlowPilot?
-
-Android ekosistemindeki popüler otomasyon araçlarının büyük kısmı zorunlu bulut hesapları, agresif telemetri/izleyiciler, pili tüketen sürekli yoklama (polling) servisleri ve karmaşık arayüzlerle doludur.
-
-**FlowPilot** bu durumu kökten değiştirir:
-
-- 🔒 **Varsayılan Olarak Gizli:** Telemetri veya bulut eşitlemesi yoktur. Yapılandırılmış Webhook, SMS ve dışa aktarma işlemleri yalnızca seçtiğiniz verileri gönderebilir.
-- ⚡ **Pil Dostu & Olay Odaklı:** İşlemciyi sürekli uyanık tutan gereksiz döngüler yoktur. Sensörler (ivmeölçer, yakınlık, ortam ışığı) ve yayın alıcıları yalnızca aktif bir kural ihtiyaç duyduğunda dinamik olarak devreye girer.
-- 🛡️ **Shizuku Entegrasyonu:** Mobil Veri, Uçak Modu, GPS ve Koyu Tema gibi sistem düzeyindeki ayarları root erişimine gerek kalmadan güvenli ADB yetkileriyle kontrol edin.
-- 🎨 **Modern Material 3 Tasarımı:** Dinamik Aydınlık ve Koyu tema, akıcı animasyonlar ve yüksek erişilebilirlik standartlarına sahip saf Jetpack Compose mimarisi.
-- 🔊 **Çevrimdışı Metin Okuma (TTS):** İnternet bağlantısı gerektirmeyen, cihaz üzerinde önbelleklenen yüksek kaliteli sesli duyuru altyapısı.
-- 🔄 **Açık Ekosistem:** Otomasyon kurallarını güvenli JSON olarak dışa aktarın/paylaşın veya parola şifreli tam yedeklerle Birleştirme / Üzerine Yazma seçeneklerini kullanın.
+> **📱 Cihaz Uyumluluğu & Topluluk Testi Bilgilendirmesi**
+> FlowPilot bağımsız bir açık kaynak projesidir ve bizzat geliştiricinin kişisel cihazı olan **Xiaomi HyperOS (Xiaomi 15T Pro)** üzerinde günlük olarak geliştirilip test edilmektedir. Proje genelinde standart Android Jetpack ve sistem API'lerine titizlikle uyulmuş, CI doğrulamasında ise **API 35 Android Emulator** ile çalışma zamanı sözleşmeleri denetlenmektedir.
+>
+> Farklı üretici arayüzleri (Samsung One UI, Google Pixel, Motorola, OxygenOS vb.) arka plan kısıtlamalarını farklı uygulayabildiğinden, test geri bildirimleriniz, cihaz deneyimleriniz ve katkılarınız (Pull Request) memnuniyetle karşılanır!
 
 ---
 
-## 📸 Uygulama İçi Ekran Görüntüleri
+## 🌟 Neden FlowPilot?
+
+Geleneksel Android otomasyon uygulamaları genelde karmaşık arayüzler, sürekli arka plan döngüleriyle pili bitiren servisler veya zorunlu bulut üyelikleriyle gelir. **FlowPilot bu anlayışı değiştirmek için geliştirildi.**
+
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🔋 Pil Dostu &amp; Olay Odaklı</h3>
+      <p>İşlemciyi uyanık tutan (wake-lock) gereksiz döngüler yoktur. Donanım sensörleri (ivmeölçer, yakınlık, ışık) ve yayın alıcıları <b>yalnızca aktif bir kural ihtiyaç duyduğunda</b> devreye girer, işi bitince anında kapanır.</p>
+    </td>
+    <td width="50%">
+      <h3>🔒 %100 Çevrimdışı &amp; Gizli</h3>
+      <p>Analitik, telemetri, uzaktaki sunucular veya hesap kayıtları yoktur. Her şey yalnızca cihazınızda gerçekleşir. Yapılandırılmış Webhook ve SMS eylemleri sadece sizin seçtiğiniz verileri iletir.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🛡️ Root Gerektirmeyen Süper Güçler</h3>
+      <p><b>Shizuku</b> desteği sayesinde Mobil Veri, Uçak Modu, GPS, Koyu Tema ve Uygulama Durdurma gibi yetkili işlemleri cihazınızı rootlamadan, güvenli ADB izinleriyle yönetin.</p>
+    </td>
+    <td width="50%">
+      <h3>🎨 Modern Material 3 &amp; Compose</h3>
+      <p>Tamamen yerel <b>Jetpack Compose</b> ile inşa edilmiştir. Akıcı animasyonlar, dinamik Material You renk temaları, dokunsal titreşim geri bildirimleri ve şık Glance ana ekran widget'ı sunar.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🔊 Çevrimdışı Metin Okuma (TTS)</h3>
+      <p>Cihaz içi ses sentezleme motoru sayesinde internete ihtiyaç duymadan telefonunuzun sizinle konuşmasını sağlayın. Şarj uyarısı veya gece rutini için özel sesli anonslar oluşturun.</p>
+    </td>
+    <td width="50%">
+      <h3>🔐 Güvenli Paylaşım &amp; Şifreli Yedek</h3>
+      <p>Kurallarınızı temizlenmiş JSON olarak paylaşın veya tüm otomasyon arşivinizi <b>AES-256-GCM parola korumalı</b> (100.000 iterasyon PBKDF2) güvenli yedeklerle koruma altına alın.</p>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 📸 Ekran Görüntüleri
 
 <div align="center">
   <table>
     <tr>
-      <td align="center" width="25%"><b>Ana Ekran</b></td>
-      <td align="center" width="25%"><b>Hazır Şablonlar</b></td>
-      <td align="center" width="25%"><b>Kural Oluşturma</b></td>
-      <td align="center" width="25%"><b>Ayarlar &amp; Hakkında</b></td>
+      <td align="center" width="20%"><b>Ana Ekran</b></td>
+      <td align="center" width="20%"><b>Hazır Şablonlar</b></td>
+      <td align="center" width="20%"><b>Kural Oluşturucu</b></td>
+      <td align="center" width="20%"><b>Ayarlar &amp; Yedek</b></td>
+      <td align="center" width="20%"><b>Hakkında</b></td>
     </tr>
     <tr>
       <td><img src="assets/screenshots/tr/home_screen.png" alt="Ana Ekran" width="100%"/></td>
       <td><img src="assets/screenshots/tr/presets_screen.png" alt="Hazır Şablonlar" width="100%"/></td>
-      <td><img src="assets/screenshots/tr/create_screen.png" alt="Kural Oluşturma" width="100%"/></td>
-      <td><img src="assets/screenshots/tr/about_dialog.png" alt="Hakkında Diyaloğu" width="100%"/></td>
+      <td><img src="assets/screenshots/tr/create_screen.png" alt="Kural Oluşturucu" width="100%"/></td>
+      <td><img src="assets/screenshots/tr/settings_screen.png" alt="Ayarlar ve Yedek" width="100%"/></td>
+      <td><img src="assets/screenshots/tr/about_dialog.png" alt="Hakkında Penceresi" width="100%"/></td>
     </tr>
   </table>
 </div>
 
 ---
 
-## 🚀 Öne Çıkan Özellikler
+## 💡 Nasıl Çalışır?
+
+FlowPilot son derece sezgisel, 3 adımlı bir zihinsel model izler:
+
+```
+┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
+│      1. TETİKLEYİCİ       │      │        2. KOŞULLAR        │      │        3. EYLEMLER        │
+│      "Şu olduğunda"       │ ───► │   "Yalnızca hepsi uyuyorsa"│ ───► │     "Sırayla şunları yap" │
+│   (Örn: İşe vardığımda)   │      │    (Örn: Yalnızca Hafta İçi)│     │(Sessize al + Wi-Fi'ı aç)  │
+└───────────────────────────┘      └───────────────────────────┘      └───────────────────────────┘
+```
+
+### Günlük Hayattan Senaryolar:
+- 🌙 **Gece Rutini:** Saat 23:30 olduğunda ➔ *Eğer cihaz şarjdaysa* ➔ Sessiz profile geç, Rahatsız Etmeyin'i aç ve parlaklığı %10'a düşür.
+- 🔋 **Tam Şarj Uyarısı:** Pil %100 dolduğunda ➔ *Çevrimdışı sesle* "Pil tamamen doldu, lütfen şarjdan çıkarın" anonsu yap ve bildirim göster.
+- 🔕 **Ters Çevir ve Sustur:** Telefon masaya yüzüstü konulduğunda ➔ *Hafif bir titreşim onayıyla* Rahatsız Etmeyin modunu aktif et.
+
+---
+
+## ⚡ 1 Tıkla Hazır Reçeteler
+
+Günlük yaşamınızı anında kolaylaştıracak yerleşik şablonlarla hemen başlayın:
+
+| Reçete | Tetikleyici | Başlıca Eylemler |
+| :--- | :--- | :--- |
+| 🌙 **Gece Rutini** | Saat 23:30 olduğunda | Koyu Temayı açar, Sessiz profile geçer, DND modunu açar, parlaklığı %10 yapar |
+| 🔋 **Tam Pil Koruması** | Pil %100'e ulaştığında | Çevrimdışı sesli şarjdan çıkarma uyarısı seslendirir ve bildirim gönderir |
+| ⚡ **Acil Pil Tasarrufu** | Pil %15 altına düştüğünde | Pil Tasarrufunu açar, Bluetooth'u kapatır, parlaklığı %15 yapar, Koyu Temaya geçer |
+| 🔕 **Ters Çevir ve Sustur** | Telefon yüzüstü konulduğunda | Çift sensör doğrulamasıyla (Yakınlık + Yerçekimi Z-ekseni) DND modunu titreşimle açar |
+| 🔦 **Sallayarak Fener Aç** | Cihaz sağlam sallandığında | Kamera flaşını dokunsal geri bildirimle açar veya kapatır |
+| 🎬 **Sinema / Gece Okuma** | Ortam ışığı < 5 lüks olduğunda | Parlaklığı minimuma indirir ve sistemi Koyu Temaya geçirir |
+| 🚗 **Evden Çıkış Modu** | Ev Wi-Fi bağlantısı koptuğunda | Mobil Veriyi açar (Shizuku), Normal zil sesine geçer, medya sesini %80 yapar |
+| 🏠 **Eve Giriş Modu** | Ev Wi-Fi ağına bağlanıldığında | Pil tasarrufu için Mobil Veriyi kapatır (Shizuku) ve dengeli ses ayarlarını geri yükler |
+| 📍 **SMS Acil Konum Yanıtlayıcı**| Gizli kelimeli SMS geldiğinde | GPS koordinatlarını alıp harita bağlantısını SMS ile otomatik yanıtlar |
+
+---
+
+## 🎛️ Kabiliyetler Matrisi
 
 ### 1. Tetikleyiciler (Olaylar)
-FlowPilot, donanım, sistem ve kullanıcı kaynaklı geniş bir olay yelpazesini dinler:
-- **Uygulama:** Seçili uygulamanın açılması veya kapanması (`UsageStatsManager` olay geçişleri).
-- **Güç & Pil:** Şarj cihazına takılma / çıkarılma, pil yüzdesinin belirlenen eşiğin altına düşmesi veya üstüne çıkması.
-- **Ekran & Kilit:** Ekranın açılması / kapanması, kilit ekranının açılması.
-- **Zaman & Takvim:** Günlük, hafta içi, hafta sonu veya seçili gün/saatlerde zamanlanmış tetikleme.
-- **Bağlantı & Radyo:** Belirli bir Wi-Fi ağına bağlanma veya ayrılma (SSID bazlı), eşleşmiş Bluetooth cihazına bağlanma veya ayrılma.
-- **Sensörler & Hareket:**
-  - **Cihazı Çevirme (Flip):** Telefonun yüzüstü masaya konması veya tekrar kaldırılması (Yakınlık sensörü + Yerçekimi/İvmeölçer Z-ekseni ve 500ms kararlılık filtreleme doğrulaması).
-  - **Sallama (Shake):** Hassasiyet ayarlı telefon sallama algılaması.
-  - **Ortam Işığı:** Gerçek zamanlı ışık sensörü ölçümüyle belirlenen lüks (lx) değerinin altına düşmesi veya üstüne çıkması.
-- **Konum & Coğrafi Çit (Geofence):** Belirlenen coğrafi alana giriş veya alandan çıkış (`GEOFENCE_ENTER`, `GEOFENCE_EXIT`). Google Play Services `GeofencingClient` donanım geofence altyapısı ile boşta sıfır pil tüketimi ve olay odaklı mimari. DataStore kalıcı olay kuyruğu (50 olaya kadar) sayesinde servis yeniden başlatılsa dahi sınır geçişleri kaybolmaz. Hassas (`ACCESS_FINE_LOCATION`) ve arka plan (`ACCESS_BACKGROUND_LOCATION`) konum izinleri ile sistem konum servisi doğrulaması. Ana ekranda canlı kayıt tanılamaları ve durum gösterimi (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, hata). Gelen geçiş koordinatları doğrudan konum şablon değişkenlerinde (`${location.lat}`, `${location.lng}`) yeniden kullanılır; yalnızca bildirim içeren geofence kuralları için fazladan GPS sorgusu yapılmaz.
-- **Donanım & Etiketler:** NFC etiketi okutulması (hex UID eşleme).
-- **İletişim:**
-  - **Aramalar:** Gelen arama çalıyor, arama yanıtlandı, giden arama başlatıldı ve arama bitti durumları.
-  - **SMS Mesajları:** Gönderen numaraya ve mesaj içeriğine göre filtreleme (kelime içeriyor, tam eşleşme, ile başlıyor veya Regex).
-- **Bildirimler:** Seçili uygulamalardan gelen bildirimler ve isteğe bağlı anahtar kelime filtreleme.
+FlowPilot zengin bir donanım, radyo ve sistem olayı yelpazesini dinler:
+
+- 📱 **Uygulama Döngüsü:** Seçilen uygulamanın açılması veya kapanması (düşük maliyetli `UsageStatsManager` geçişleri).
+- 🔌 **Güç & Pil:** Şarja takılma / çıkarılma, pil seviyesinin belirlenen yüzdenin üstüne çıkması veya altına inmesi.
+- 💡 **Ekran & Durum:** Ekranın açılması / kapanması, kilit ekranının açılması.
+- ⏰ **Zaman & Takvim:** Günlük, hafta içi, hafta sonu veya özel seçili gün ve saatlerde zamanlanmış tetikleme.
+- 📶 **Bağlantılar:** Wi-Fi ağına bağlanma / ayrılma (tüm ağlar veya belirli SSID), Bluetooth cihazına bağlanma / ayrılma.
+- 🔄 **Sensörler & Hareket:**
+  - **Cihazı Çevirme:** Yüzüstü masaya konma veya tekrar çevrilme (Yakınlık + Yerçekimi Z-ekseni, 500ms kararlılık filtresi).
+  - **Sallama:** Hassasiyet ayarlı telefon sallama algılaması.
+  - **Ortam Işığı:** Lüks değerinin belirlenen sınırın altına düşmesi veya üstüne çıkması.
+- 📍 **Donanım Coğrafi Çit (Geofence):** Google Play Services `GeofencingClient` ile belirlenen alana giriş/çıkış. Boşta sıfır pil tüketimi, yeniden başlatmada kaybolmayan 50 olaylık kalıcı kuyruk ve şablon değişkenlerinde doğrudan koordinat kullanımı.
+- 🏷️ **NFC Etiketleri:** Fiziksel etiket okutulduğunda anında hex UID eşleşmesi.
+- 📞 **Arama & SMS:** Gelen arama çalıyor, yanıtlandı, giden arama başladı, arama bitti; SMS gönderen numaraya ve kelime, önek veya regex kalıbına göre tetikleme.
+- 🔔 **Bildirimler:** Seçili uygulamalardan gelen bildirimler ve anahtar kelime filtreleme.
 
 ---
 
 ### 2. Koşullar (Mantıksal Filtreler)
 Kurallar yalnızca tüm koşullar aynı anda sağlandığında (VE mantığı) çalıştırılır:
-- **Zaman Aralığı (`TIME_BETWEEN`):** Örn: Yalnızca 23:00 - 07:00 saatleri arasında çalış (gece yarısını geçen zaman aralıkları tam desteklenir).
-- **Haftanın Günleri (`DAYS_OF_WEEK`):** Hafta içi, hafta sonu veya özel seçili günler.
-- **Pil Seviyesi:** Pil seviyesinin belirlenen yüzdenin altında veya üstünde olması koşulu.
-- **Şarj Durumu:** Yalnızca şarja takılıyken veya pilde çalışırken.
-- **Ekran Durumu:** Yalnızca ekran açıkken veya kilitliyken.
-- **Wi-Fi Durumu:** Yalnızca belirli bir Wi-Fi ağına bağlıyken.
+
+- ⏳ **Zaman Aralığı:** Yalnızca belirlenen saatler arasında çalış (örn: 23:00 - 07:00, gece yarısını geçen aralıklar tam desteklenir).
+- 📅 **Haftanın Günleri:** Hafta içi, hafta sonu veya özel seçili günler.
+- 🔋 **Pil Seviyesi:** Pilin belirli bir yüzdenin $\ge$ veya $\le$ olması.
+- ⚡ **Şarj Durumu:** Cihazın şarjda veya pilde olması koşulu.
+- 📲 **Ekran Durumu:** Ekranın açık veya kilitli olması koşulu.
+- 📶 **Wi-Fi Ağı:** Yalnızca belirli bir Wi-Fi ağına (SSID) bağlıyken çalış.
 
 ---
 
 ### 3. Eylemler (İşlemler)
-Tek bir kural içerisinde birden fazla eylemi sıralayabilir, sürükleyip bırakarak sırasını değiştirebilir ve her eylem öncesine 0–300 saniye gecikme ekleyebilirsiniz:
-- **Bağlantı (Shizuku ile):** Wi-Fi, Mobil Veri, Uçak Modu, Bluetooth ve Konum (GPS) açma/kapatma.
-- **Ekran & Araçlar:** El feneri açma/kapatma, Koyu Tema (Shizuku), Ekranı Otomatik Döndürme, Ekran Parlaklığı ayarlama, Ekranı Kilitleme (Shizuku), Uygulamayı Zorla Durdurma (Shizuku).
-- **Ses & Uyarılar:** Rahatsız Etmeyin (DND) açma/kapatma, Ses Profilleri (Normal / Titreşim / Sessiz), Medya Sesini Ayarlama (%0–100), Ses Çalma (1–60 sn süre sınırlı sistem sesi veya özel MP3/WAV), Titreşim (Tek darbe, Çift dokunuş, Uyarı, Kalp atışı, Üçlü dokunuş, SOS), Bildirim Gösterme.
-- **Metin Okuma (TTS):** Cihazın çevrimdışı motoruyla yazılan metni konuşarak seslendirme (konuşma hızı ayarı ve çevrimdışı ses filtreleme).
-- **Saat & Sayaç:** Sistem alarmı kurma, arka planda sessiz sayaç/zamanlayıcı başlatma (1 sn – 24 saat).
-- **Uygulama & Web:** Cihazdaki bir uygulamayı açma, web bağlantısı (URL) açma.
-- **Telefon & SMS:** Arama ekranını açma, numara çevirme, doğrudan telefon araması başlatma, doğrudan arka planda SMS gönderme, SMS taslağı hazırlama.
-- **HTTPS Webhook:** Dinamik şablon değişkenleriyle (`${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.maps_url}`) dış sunuculara HTTPS isteği gönderme (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`). Hassas başlık ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir.
+Tek bir kuralda birden çok eylemi sürükle-bırak yöntemiyle dilediğiniz sırada çalıştırın ve eylemler arasına gecikme (0–300 sn) ekleyin:
+
+- 🌐 **Bağlantı Kontrolü (Shizuku ile):** Wi-Fi, Mobil Veri, Uçak Modu, Bluetooth ve GPS Konum açma/kapatma.
+- 🖥️ **Ekran & Sistem:** El Feneri açma/kapatma, Koyu Tema (Shizuku), Ekranı Otomatik Döndürme, Parlaklık seviyesi, Ekranı Kilitleme (Shizuku), Uygulamayı Zorla Durdurma (Shizuku).
+- 🔊 **Ses & Uyarılar:** Rahatsız Etmeyin (DND) açma/kapatma, Ses Profilleri (Normal / Titreşim / Sessiz), Medya Sesi (%0–100), Özel Ses Çalma (1–60 sn), Titreşim Şablonları (Tek darbe, Çift dokunuş, Uyarı, Kalp atışı, Üçlü dokunuş, SOS) ve Bildirim Gösterme.
+- 🗣️ **Çevrimdışı Seslendirme (TTS):** Cihazın yerleşik TTS motoruyla metinleri sesli olarak okuma (konuşma hızı ayarlı).
+- ⏱️ **Saat & Sayaç:** Sistem alarmı kurma veya arka planda sessiz zamanlayıcı başlatma (1 sn – 24 saat).
+- 🚀 **Uygulama & Web:** Cihazdaki bir uygulamayı açma veya web bağlantısına yönlendirme.
+- 💬 **Telefon & SMS:** Arama ekranını açma, doğrudan telefon araması başlatma, doğrudan arka planda SMS gönderme veya SMS taslağı hazırlama.
+- 🔗 **HTTPS Webhook:** Canlı şablon değişkenleriyle dış sunuculara güvenli HTTP istekleri (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) gönderme; başlıklar ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir:
+  - `${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`
 
 ---
 
-### 4. Hazır Şablonlar (Reçeteler)
-Tek tıkla kullanıma hazır popüler senaryolar:
-- 🌙 **Gece Rutini:** 23:30'da Koyu Temayı açar, sessiz profile geçer, Rahatsız Etmeyin modunu açar ve parlaklığı %10'a düşürür.
-- 🔋 **Tam Pil Koruması (%100):** Şarj tamamlandığında çevrimdışı sesli uyarı verir ve bildirim gösterir.
-- ⚡ **Acil Pil Tasarrufu:** Pil %15'in altına indiğinde Pil Tasarrufunu açar, Bluetooth'u kapatır, parlaklığı %15 yapar ve koyu temaya geçer.
-- 🔕 **Ters Çevir ve Sustur:** Telefon masaya yüzüstü konulduğunda hafif bir titreşimle Rahatsız Etmeyin moduna geçer.
-- 🔦 **Sallayarak Fener Aç:** Telefon sağlam şekilde sallandığında kamera fenerini açar veya kapatır.
-- 🎬 **Sinema / Gece Okuma Modu:** Ortam ışığı 5 lüksün altına indiğinde parlaklığı %5 yapar ve koyu temayı açar.
-- 🚗 **Evden Çıkış Modu:** Ev Wi-Fi bağlantısı koptuğunda mobil veriyi açar, zil sesini normale alır ve sesi %80 yapar.
-- 🏠 **Eve Giriş Modu:** Ev Wi-Fi ağına bağlanıldığında tasarruf için mobil veriyi kapatır ve dengeli ayarlara döner.
-- 📍 **SMS Acil Konum Yanıtlayıcı:** Belirlenen gizli kelimeyle SMS geldiğinde GPS uydularına kilitlenir ve canlı Google Haritalar konumunu SMS ile otomatik yanıtlar.
+### 4. Akıllı Verimlilik & Kolaylıklar
+- **Hızlı Ayarlar Kutusu (Quick Settings Tile):** Otomasyon motorunu bildirim çubuğundan tek dokunuşla açıp kapatabilme veya canlı durumunu görme.
+- **Material 3 Ana Ekran Widget'ı:** Aktif kural sayısını gösteren ve tek dokunuşla motoru duraklatıp sürdüren Glance widget'ı.
+- **Canlı Eylem Testi:** Bir kuralı kaydetmeden önce oluşturduğunuz eylemleri doğrudan cihazınızda test edebilme.
+- **Güvenli Kural Çoğaltma:** Mevcut bir kuralı tek tıkla çoğaltma; webhook şifreleri hedef kopya için Keystore ile yeniden şifrelenir.
+- **Çalışma Geçmişi:** Son 100 kural tetiklenmesini, eylem bazında sonuçları ve maskelenmiş güvenli detaylarıyla yerel günlükte saklama.
+- **Çakışma Uyarıları:** Birbirine zıt durum eylemleri içeren kurallarda otomatik, engelleyici olmayan akıllı uyarı sistemi.
 
 ---
 
-### 5. Hızlı Kontroller & Widget
-- **Hızlı Ayarlar Kutusu (Quick Settings Tile):** Bildirim panelinden tek tıkla otomasyon motorunu açıp kapatabilme veya durum izleme.
-- **Ana Ekran Widget'ı (Jetpack Glance):** Aktif kural sayısını gösteren ve tek dokunuşla motoru duraklatıp devam ettiren şık Material 3 widget'ı.
-- **Canlı Eylem Testi:** Bir kuralı kaydetmeden önce, üzerindeki tüm düzenlemeleri doğrudan cihazda anında test edebilme.
-- **Güvenli Kural Çoğaltma:** Liste menüsünden bir kuralı, hemen düzenlenmek üzere devre dışı bir kopyaya çoğaltabilme. Yapılandırma korunur, çalışma durumu sıfırlanır ve webhook sırları yeni Android Keystore şifreli metinleriyle saklanır.
-- **Çalışma Geçmişi:** Son 100 kural tetiklenmesini, seçili uygulama dilinde gösterilen eylem sonuçlarıyla kaydeden yerel denetim günlüğü. Kimlik bilgileri ve telefon numaraları gizlenir/maskelenir.
-- **Çakışma uyarıları:** Kaydetme veya etkinleştirme öncesinde aynı tetikleyici hedefi ile zıt durum eylemleri muhtemel ya da olası çakışma olarak açıklanır. Uyarı engelleyici değildir, çakışan kurala bağlantı verir ve bilinçli geçersiz kılma ister. Analiz, keyfi koşul/zaman aralığı örtüşmeleri için tam kanıt iddia etmez.
+## 🛡️ Shizuku Kurulum Kılavuzu
+
+FlowPilot, yetkili işlemleri (Mobil Veri, Uçak Modu, GPS, Koyu Tema, Uygulama Kapatma) root gerektirmeden güvenle yürütebilmek için **Shizuku** köprüsünü kullanır.
+
+1. **Shizuku'yu Yükleyin:** [Google Play](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api) veya [GitHub](https://shizuku.rikka.app/) üzerinden indirin.
+2. **Shizuku Servisini Başlatın:**
+   - **Android 11 ve üzeri (Kablosuz Hata Ayıklama):** Bilgisayara gerek kalmadan Geliştirici Seçenekleri > Kablosuz Hata Ayıklama üzerinden doğrudan telefonda başlatın.
+   - **Bilgisayardan (ADB ile):** Şu komutu çalıştırın:
+     ```bash
+     adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
+     ```
+3. **FlowPilot'a İzin Verin:** FlowPilot'ı açın ve ekranda beliren Shizuku yetkilendirmesini onaylayın.
+4. Tüm yetkili işlemler hemen aktif hale gelecek ve sorunsuz çalışacaktır!
 
 ---
 
-## 🛠️ Mimari ve Kullanılan Teknolojiler
+## 🔒 Gizlilik ve Sıfır-Güven İlkesi
+
+FlowPilot kullanıcı gizliliğine tavizsiz bir bağlılıkla tasarlanmıştır:
+
+- 🚫 **Sıfır Telemetri:** Firebase Analytics, Sentry, uzaktan çökme raporlayıcıları veya takip SDK'ları yer almaz.
+- 📵 **Bulut Eşitlemesi Yok:** Kurallarınız, günlükleriniz ve anahtarlarınız asla üçüncü taraf bir buluta gönderilmez.
+- 🛡️ **Donanım Destekli Keystore:** Webhook şifreleri ve özel başlıklar Android Keystore donanım anahtarlarıyla AES-256-GCM ile korunur.
+- 🙈 **Kişisel Veri Maskeleme:** Telefon numaraları, webhook anahtarları ve gizli başlıklar arayüzde ve loglarda maskelenmiş olarak tutulur.
+
+### Şeffaf İzin Açıklamaları
+FlowPilot hassas izinleri yalnızca açık otomasyon özelliklerini yerine getirebilmek için talep eder:
+- `QUERY_ALL_PACKAGES`: Android 11+ sürümlerinde Uygulama Tetikleyici ve Uygulama Açıcı listelerini gösterebilmek için gereklidir.
+- `RECEIVE_SMS` & `SEND_SMS`: Yalnızca SMS tetikleyicisi ve doğrudan SMS gönderme eylemlerinde kullanılır.
+- `ACCESS_BACKGROUND_LOCATION`: Sıfır pil tüketimli donanım geofence takibi (`GeofencingClient`) ve kullanıcının kurguladığı konum şablonları için kullanılır.
+- `FOREGROUND_SERVICE_LOCATION`: Android 14+ sürümlerinde geofence ve aktif konum görevlerinin arka planda sorunsuz sürmesi için gereklidir.
+
+*Not: FlowPilot, bu temel otomasyon izinlerinden feragat etmemek adına Google Play Store dağıtımı hedeflemez. Doğrulanmış APK'ları doğrudan GitHub Releases üzerinden edinebilirsiniz.*
+
+---
+
+## 📦 Yedekleme ve Kurtarma
+
+| Mod | Biçim | Güvenlik | Ne Zaman Kullanılır? |
+| :--- | :--- | :--- | :--- |
+| **Temizlenmiş JSON** | Düz Metin JSON | Webhook URL ve hassas kimlik bilgileri çıkarılır | Kuralları arkadaşlarınızla veya toplulukla güvenle paylaşırken |
+| **Şifreli Tam Yedek** | Şifreli Paket | **AES-256-GCM + PBKDF2** (100.000 iterasyon, salt + IV) | Tüm webhook sırları, telefon numaraları ve aktiflik durumlarıyla eksiksiz yedek |
+
+Geri yükleme çok kolaydır: Dosyanızı seçin, parolanızı girin ve **Birleştir** veya **Üzerine Yaz** tercihinizi yapın. İçe aktarılan sırlar hedef cihazın yerel Android Keystore'u ile anında yeniden şifrelenir.
+
+---
+
+## 🛠️ Mimari ve Teknolojiler
+
+FlowPilot modern Android mimari prensiplerine sadık kalır:
 
 ```
 FlowPilot
 ├── app/src/main/java/com/flowpilot/app/
-│   ├── actions/          # Eylem yürütücüleri (Shizuku, TTS, Webhook, Ses, Sistem, Telefon)
-│   ├── data/             # Veri modelleri, JSON serileştirme, DataStore deposu, Yedekleme
-│   ├── engine/           # Ön plan AutomationService, BroadcastReceiver'lar, Sensör takipçileri
-│   ├── glance/           # Jetpack Glance Ana Ekran Widget uygulaması
+│   ├── actions/          # Eylem yürütücüleri: Shizuku, Ses, TTS, Webhook, SMS, Sistem
+│   ├── analysis/         # Çakışma analizi (AutomationConflictAnalyzer) ve kontroller
+│   ├── data/             # Veri modelleri, JSON serileştirme, DataStore depoları, Yedekleme
+│   ├── engine/           # Ön plan AutomationService, Alıcılar, Sensör takipçileri
+│   ├── glance/           # Jetpack Glance Ana Ekran Widget'ı
 │   ├── quicksettings/    # Hızlı Ayarlar Servisi (TileService)
 │   ├── shizuku/          # Shizuku AIDL IPC köprüsü
-│   └── ui/               # Jetpack Compose arayüzü (Tema, Ekranlar, Bileşenler, Seçiciler)
+│   └── ui/               # Jetpack Compose Arayüzü (Material 3 Tema, Ekranlar, Bileşenler)
 └── app/src/test/         # Deterministik JUnit birim testleri
 ```
 
 - **Dil:** Kotlin 2.2.10
 - **Arayüz:** Jetpack Compose & Material 3
 - **Eşzamanlılık:** Kotlin Coroutines & StateFlow
-- **Kalıcılık:** Android Jetpack DataStore (Preferences & JSON)
-- **Güvenlik:** Android Keystore (AES-256-GCM şifreleme)
-- **Sistem Erişimi:** Shizuku AIDL IPC Köprüsü
-- **Widget:** Android Jetpack Glance
-- **Uyumluluk:** Minimum Android 8.0 (API 26) — Hedef Android 16 (API 36)
+- **Depolama:** Jetpack DataStore (Preferences & JSON)
+- **Şifreleme:** Android Keystore (AES-256-GCM)
+- **Sistem Köprüsü:** Shizuku AIDL IPC
+- **Widget:** Jetpack Glance
+- **Hedef SDK:** Android 16 (API 36) &bull; **Minimum SDK:** Android 8.0 (API 26)
 
 ---
 
 ## 📥 Kaynak Koddan Derleme
 
 ### Gereksinimler
-- JDK 17 (Eclipse Temurin veya OpenJDK)
-- Android SDK (Platform 36 ve Build-Tools 36.0.0+)
+- JDK 17 (OpenJDK veya Eclipse Temurin)
+- Android SDK (Platform 36, Build-Tools 36.0.0+)
 - Git
 
-### Derleme Adımları
 ```bash
 # Depoyu klonlayın
 git clone https://github.com/emi-ran/flowpilot.git
@@ -176,60 +304,22 @@ cd flowpilot
 ./gradlew assembleDebug
 ```
 
-Derlenen APK şu yolda yer alır:
+Derlenen APK çıktısı:
 ```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-### Yedekleme ve Geri Yükleme
-
-- **Normal JSON dışa aktarma/paylaşma:** Taşınabilir ve güvenli kural verisi üretir. Webhook URL'si, başlıkları ve gövdesi çıkarılır; normal içe aktarma kuralları Birleştir veya Üzerine Yaz öncesinde devre dışı bırakır.
-- **Şifreli tam yedek:** Ayarlar ekranından **Şifreli tam yedek** seçin veya tek kural paylaşırken bu seçeneği kullanın. En az altı karakterlik parola; webhook yapılandırması, telefon/SMS alanları ve etkinlik durumu dahil tüm kural verisini şifreler.
-- **Taşınabilir format:** Rastgele salt ve IV ile PBKDF2-HMAC-SHA256 (100.000 iterasyon) anahtar türetme kullanan AES-256-GCM doğrulanmış şifreleme. Yanlış parola veya değiştirilmiş yedek, kurallar değiştirilmeden önce reddedilir.
-- **Geri yükleme:** Şifreli yedeği seçin, parolasını girin, sonra Birleştir veya Üzerine Yaz seçin. İçe aktarılan sırlar hedef cihazın Android Keystore'u ile yeniden şifrelenir.
-- **Kapsam dışı:** Çalışma geçmişi, geçici geofence tanılama/kuyruk verisi, motor durumu, Android izinleri, Shizuku durumu ve TTS ses önbelleği yedeğe dahil edilmez.
-
-### Cihaza ADB ile Yükleme
+Cihazınıza doğrudan ADB ile yükleyin:
 ```bash
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ---
 
-## 🛡️ Shizuku Kurulum Kılavuzu
-
-Mobil Veri, Uçak Modu, GPS ve Koyu Tema kontrolü gibi yetkili eylemler root erişimi olmadan **Shizuku** üzerinden yürütülür:
-
-1. [Shizuku](https://shizuku.rikka.app/) uygulamasını Google Play veya GitHub üzerinden yükleyin.
-2. Shizuku'yu **Kablosuz Hata Ayıklama** (Android 11+) veya bilgisayardan ADB komutuyla başlatın:
-   ```bash
-   adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
-   ```
-3. **FlowPilot** uygulamasını açın -> İstendiğinde FlowPilot'a Shizuku iznini onaylayın.
-4. Tüm yetkili eylemler artık **Kullanılabilir** duruma gelecek ve sorunsuz çalışacaktır.
-
----
-
-## 🔒 Gizlilik Politikası
-
-FlowPilot **sıfır-güven (zero-trust)** gizlilik prensibiyle geliştirilmiştir:
-- **Telemetri veya Bulut Eşitlemesi Yoktur:** Uygulama içinde çökme raporlayıcıları, analitik kodları, reklam kütüphaneleri veya bulut eşitlemesi bulunmaz.
-- **Yapılandırılmış Veri Paylaşımı:** Kullanıcı tarafından yapılandırılan Webhook, SMS eylemleri ve dışa aktarma işlemleri yalnızca seçtiğiniz verileri gönderebilir.
-- **Konum Verisi:** Yalnızca yerel olarak bağlı olunan Wi-Fi adını tespit etmek, Google Play Services `GeofencingClient` ile donanım düzeyinde coğrafi çit sınırlarını izlemek ve kullanıcının özel olarak kurguladığı SMS/Webhook şablonlarına koordinat sağlamak için kullanılır.
-- **Telefon & SMS:** Yalnızca kuralları tetiklemek için kullanılır; numara ve içerikler geçmişte veya loglarda asla ham halde tutulmaz.
-
-### Dağıtım ve kısıtlı izinler
-
-FlowPilot, kullanıcıya gösterilen Uygulama Seçici içinde `PackageManager.getInstalledApplications()` çağırıp başlatılabilir paketleri filtrelediği için `QUERY_ALL_PACKAGES` bildirir. Bu izin kaldırılırsa, paket görünürlüğünün sınırlandığı Android sürümlerinde temel uygulama seçici bozulur. `RECEIVE_SMS`, gelen SMS tetikleyicileri için `SmsReceiver` tarafından; `SEND_SMS`, kullanıcının yapılandırdığı doğrudan SMS eylemleri için `SmsExecutor` tarafından kullanılır. `ACCESS_BACKGROUND_LOCATION`, Google Play Services donanım geofence altyapısının (`GeofencingClient`) sıfır pil tüketimli arka plan sınır takibi yapabilmesi ve etkin kurallar etkinlik görünür değilken koordinat istediğinde `LocationFetcher` tarafından; `FOREGROUND_SERVICE_LOCATION` ise konum ön plan hizmeti alt türünü yetkilendirmek için kullanılır. Kural istemediğinde konum sürekli yoklama ile toplanmaz.
-
-Bu izinler Google Play'de kısıtlı veya politika açısından hassastır. Bu depo Play uyumluluğu ya da onay garantisi iddia etmez. Kısıtlı izinleri kaldıran Play'e özel bir flavor yoktur; kaldırmak temel özellikleri devre dışı bırakır. Play sürümü için güncel politika incelemesi, gerekli beyanlar, doğru Veri güvenliği açıklamaları ve Google onayı gerekir. Bunlar tamamlanana kadar derlemeleri GitHub sürümleri, F-Droid veya sideloading üzerinden dağıtın. Yalnızca güvendiğiniz kaynaklardan yükleyin.
-
----
-
 ## 🤝 Katkıda Bulunma
 
 Hata bildirimleri, öneriler ve kod katkıları memnuniyetle karşılanır!
-- Lütfen katkı öncesinde [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını inceleyin.
+- Başlamadan önce [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını inceleyebilirsiniz.
 - Bir sorunla karşılaştıysanız [Hata Bildirimi](https://github.com/emi-ran/flowpilot/issues/new?template=bug_report.md) oluşturabilirsiniz.
 - Yeni bir tetikleyici veya eylem öneriniz varsa [Özellik İsteği](https://github.com/emi-ran/flowpilot/issues/new?template=feature_request.md) şablonunu kullanabilirsiniz.
 
@@ -237,11 +327,9 @@ Hata bildirimleri, öneriler ve kod katkıları memnuniyetle karşılanır!
 
 ## 📄 Lisans
 
-FlowPilot, **GNU General Public License v3.0 (GPL-3.0)** kapsamında lisanslanmış özgür ve açık kaynaklı bir yazılımdır.  
-Ayrıntılar için [LICENSE](LICENSE) dosyasına göz atabilirsiniz.
-
----
+FlowPilot, **[GNU General Public License v3.0 (GPL-3.0)](LICENSE)** kapsamında lisanslanmış özgür ve açık kaynaklı bir yazılımdır.
 
 <div align="center">
-Android Güç Kullanıcıları için ❤️ ile Geliştirildi
+  <br/>
+  <b>Android Güç Kullanıcıları için ❤️ ile Geliştirildi</b>
 </div>
