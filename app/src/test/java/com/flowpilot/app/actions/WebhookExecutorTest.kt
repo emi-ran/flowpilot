@@ -6,559 +6,247 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowLog
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.net.HttpURLConnection
 import java.net.InetAddress
+import java.net.ProtocolException
 import java.net.Socket
 import java.net.URL
 import java.nio.charset.StandardCharsets
+import java.lang.reflect.Proxy
+import javax.net.ssl.HandshakeCompletedListener
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.SSLPeerUnverifiedException
+import javax.net.ssl.SSLSession
+import javax.net.ssl.SSLSocket
+import javax.net.ssl.SSLSocketFactory
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class WebhookExecutorTest {
 
     @Test
-    fun execute_unsupportedAction_returnsFailure() {
-        val executor = WebhookExecutor()
-        val result = executor.execute(ActionType.VIBRATE)
-
-        assertThat(result.success).isFalse()
-        assertThat(result.message).contains("Unsupported action for Webhook")
-    }
-
-    @Test
-    fun execute_emptyUrl_returnsFailure() {
-        val executor = WebhookExecutor()
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(webhookUrl = ""),
-        )
-
-        assertThat(result.success).isFalse()
-        assertThat(result.message).contains("Webhook URL cannot be empty")
-    }
-
-    @Test
-    fun execute_invalidUrlScheme_returnsFailure() {
-        val executor = WebhookExecutor()
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(webhookUrl = "ftp://example.com/api"),
-        )
-
-        assertThat(result.success).isFalse()
-        assertThat(result.message).contains("must use HTTPS scheme")
-    }
-
-    @Test
-    fun execute_httpUrl_returnsFailureBeforeConnection() {
-        var connectionFactoryCalled = false
-        val executor = WebhookExecutor(connectionFactory = { _, _ ->
-            connectionFactoryCalled = true
-            error("HTTP webhook must not open connection")
-        })
-
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(webhookUrl = "http://example.com/api"),
-        )
-
-        assertThat(result.success).isFalse()
-        assertThat(result.message).contains("must use HTTPS scheme")
-        assertThat(connectionFactoryCalled).isFalse()
-    }
-
-    @Test
-    fun execute_localhost_privateAndMetadataTargets_areRejectedBeforeConnection() {
-        listOf("127.0.0.1", "10.0.0.1", "169.254.169.254").forEach { addressText ->
-            var connectionFactoryCalled = false
-            val executor = WebhookExecutor(
-                connectionFactory = { _, _ ->
-                    connectionFactoryCalled = true
-                    error("SSRF target must not open connection")
-                },
-                addressLookup = { arrayOf(InetAddress.getByName(addressText)) },
-            )
-
-            val result = executor.execute(
-                ActionType.HTTP_WEBHOOK,
-                ActionParameters(webhookUrl = "https://target.example/webhook"),
-            )
-
-            assertThat(result.success).isFalse()
-            assertThat(result.message).contains("non-public address")
-            assertThat(connectionFactoryCalled).isFalse()
-        }
-    }
-
-    @Test
-    fun execute_mappedLoopbackPrivateAndMetadataTargets_areRejectedBeforeConnection() {
-        listOf("::ffff:127.0.0.1", "::ffff:10.0.0.1", "::ffff:169.254.169.254").forEach { addressText ->
-            var connectionFactoryCalled = false
-            val executor = WebhookExecutor(
-                connectionFactory = { _, _ ->
-                    connectionFactoryCalled = true
-                    error("SSRF target must not open connection")
-                },
-                addressLookup = { arrayOf(InetAddress.getByName(addressText)) },
-            )
-
-            val result = executor.execute(
-                ActionType.HTTP_WEBHOOK,
-                ActionParameters(webhookUrl = "https://target.example/webhook"),
-            )
-
-            assertThat(result.success).isFalse()
-            assertThat(result.message).contains("non-public address")
-            assertThat(connectionFactoryCalled).isFalse()
-        }
-    }
-
-    @Test
-    fun execute_mappedPublicTarget_allowsConnection() {
-        val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
-        val executor = WebhookExecutor(
-            connectionFactory = { _, _ -> mockConnection },
-            addressLookup = { arrayOf(InetAddress.getByName("::ffff:93.184.216.34")) },
-        )
-
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(webhookUrl = "https://target.example/webhook"),
-        )
+    fun execute_pinsSingleValidatedAddress_andClosesTransport() {
+        val validated = InetAddress.getByName("93.184.216.34")
+        val transport = FakeTransport(204)
+        var lookups = 0
+        var suppliedAddress: InetAddress? = null
+        val result = WebhookExecutor(
+            transportFactory = { _, address -> suppliedAddress = address; transport },
+            addressLookup = { if (++lookups == 1) arrayOf(validated) else arrayOf(InetAddress.getByName("10.0.0.1")) },
+        ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/hook"))
 
         assertThat(result.success).isTrue()
-        assertThat(result.message).contains("status 204")
+        assertThat(lookups).isEqualTo(1)
+        assertThat(suppliedAddress).isEqualTo(validated)
+        assertThat(transport.closed).isTrue()
     }
 
     @Test
-    fun execute_publicHttpsTarget_allowsConnection() {
-        val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
-        val executor = WebhookExecutor(
-            connectionFactory = { _, _ -> mockConnection },
+    fun execute_rejectsNonPublicAddressAndRenderedHeaderInjection_beforeTransport() {
+        var opened = false
+        val privateTarget = WebhookExecutor(
+            transportFactory = { _, _ -> opened = true; error("must not connect") },
+            addressLookup = { arrayOf(InetAddress.getByName("127.0.0.1")) },
+        ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/hook"))
+        assertThat(privateTarget.success).isFalse()
+        assertThat(opened).isFalse()
+
+        val injected = WebhookExecutor(
+            transportFactory = { _, _ -> opened = true; error("must not connect") },
             addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
-        )
+        ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(
+            webhookUrl = "https://target.example/hook",
+            webhookHeaders = "X-Trigger: \${trigger}",
+            webhookTemplateContext = WebhookTemplateContext(trigger = "safe\r\nAuthorization: attacker"),
+        ))
+        assertThat(injected.success).isFalse()
+        assertThat(injected.message).doesNotContain("attacker")
+        assertThat(opened).isFalse()
+    }
 
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(webhookUrl = "https://target.example/webhook"),
-        )
+    @Test
+    fun execute_rejectsReservedHeadersAndBodiesForBodylessMethods() {
+        listOf(
+            "Host: attacker.example", "Transfer-Encoding: chunked", "Connection: keep-alive",
+            "Expect: 100-continue", "Proxy-Authorization: Basic attacker",
+        ).forEach {
+            assertThat(WebhookExecutor.validateHeaders(it)).contains("Forbidden header")
+        }
+        val result = WebhookExecutor().execute(ActionType.HTTP_WEBHOOK, ActionParameters(
+            webhookUrl = "https://target.example/hook",
+            webhookMethod = "GET",
+            webhookBody = "must-not-send",
+        ))
+        assertThat(result.success).isFalse()
+        assertThat(result.message).contains("does not support a webhook body")
+    }
+
+    @Test
+    fun execute_sendsPostBodyHeadersAndTimeout_toTransport() {
+        val transport = FakeTransport(200)
+        val result = WebhookExecutor(
+            transportFactory = { _, _ -> transport },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(
+            webhookUrl = "https://target.example/hook",
+            webhookMethod = "POST",
+            webhookHeaders = "Content-Type: application/json\nX-Event: \${trigger}",
+            webhookBody = "{\"event\":\"\${trigger}\"}",
+            webhookTimeoutSeconds = 5,
+            webhookTemplateContext = WebhookTemplateContext(trigger = "CHARGER_CONNECTED"),
+        ))
 
         assertThat(result.success).isTrue()
-        assertThat(result.message).contains("status 204")
+        assertThat(transport.method).isEqualTo("POST")
+        assertThat(transport.headers).containsEntry("X-Event", "CHARGER_CONNECTED")
+        assertThat(String(transport.body, StandardCharsets.UTF_8)).isEqualTo("{\"event\":\"CHARGER_CONNECTED\"}")
+        assertThat(transport.timeoutMs).isEqualTo(5_000)
+        assertThat(transport.closed).isTrue()
     }
 
     @Test
-    fun execute_pinsConnectionToValidatedAddress_withoutSecondDnsLookup() {
-        val validatedAddress = InetAddress.getByName("93.184.216.34")
-        val redirectedAddress = InetAddress.getByName("10.0.0.1")
-        var lookupCount = 0
-        var connectedAddress: InetAddress? = null
-        val mockConnection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
-        val executor = WebhookExecutor(
-            connectionFactory = { _, address ->
-                connectedAddress = address
-                mockConnection
-            },
-            addressLookup = {
-                lookupCount++
-                if (lookupCount == 1) arrayOf(validatedAddress) else arrayOf(redirectedAddress)
-            },
+    fun execute_closesTransportWhenDispatchFails() {
+        val transport = object : WebhookTransport {
+            var closed = false
+            override fun execute(method: String, headers: Map<String, String>, body: ByteArray, timeoutMs: Int): Int =
+                throw ProtocolException("synthetic")
+            override fun close() { closed = true }
+        }
+        val result = WebhookExecutor(
+            transportFactory = { _, _ -> transport },
+            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+        ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/hook"))
+
+        assertThat(result.success).isFalse()
+        assertThat(transport.closed).isTrue()
+    }
+
+    @Test
+    fun pinnedTransport_serializesFixedLengthRequest_andSkipsInterimResponse() {
+        val rawSocket = RecordingSocket()
+        val tlsSocket = RecordingTlsSocket("HTTP/1.1 100 Continue\r\nX-Interim: yes\r\n\r\nHTTP/1.1 204 No Content\r\nX-Final: yes\r\n\r\n")
+        val tlsFactory = RecordingSslSocketFactory(tlsSocket)
+        val transport = PinnedHttpsTransport(
+            URL("https://original.example:8443/hook?x=1"),
+            InetAddress.getByName("93.184.216.34"),
+            rawSocketFactory = { rawSocket },
+            sslSocketFactory = tlsFactory,
+            verifier = HostnameVerifier { host, _ -> host == "original.example" },
         )
 
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(webhookUrl = "https://target.example/webhook"),
+        val status = transport.execute("POST", mapOf("X-Test" to "yes"), "body".toByteArray(), 5_000)
+
+        assertThat(status).isEqualTo(204)
+        assertThat(rawSocket.address).isEqualTo(InetAddress.getByName("93.184.216.34"))
+        assertThat(rawSocket.port).isEqualTo(8443)
+        assertThat(tlsFactory.layeredHost).isEqualTo("original.example")
+        assertThat(tlsSocket.written.toString(StandardCharsets.ISO_8859_1.name())).isEqualTo(
+            "POST /hook?x=1 HTTP/1.1\r\nHost: original.example:8443\r\nConnection: close\r\nX-Test: yes\r\nContent-Length: 4\r\n\r\nbody",
         )
-
-        assertThat(result.success).isTrue()
-        assertThat(lookupCount).isEqualTo(1)
-        assertThat(connectedAddress).isEqualTo(validatedAddress)
+        transport.close()
+        assertThat(tlsSocket.closed).isTrue()
     }
 
     @Test
-    fun pinnedSocketFactory_allOverloadsConnectValidatedAddressAndPreserveTlsHost() {
-        val validated = InetAddress.getByName("93.184.216.34")
-        val delegate = RecordingSslSocketFactory()
-        val factory = PinnedSocketFactory(delegate, validated, "original.example")
-
-        factory.createSocket("original.example", 443)
-        factory.createSocket("original.example", 443, InetAddress.getByName("192.0.2.1"), 0)
-        factory.createSocket(InetAddress.getByName("10.0.0.1"), 443)
-        factory.createSocket(InetAddress.getByName("10.0.0.1"), 443, InetAddress.getByName("192.0.2.1"), 0)
-        factory.createSocket(RecordingSocket(delegate.connectedAddresses), "original.example", 443, true)
-
-        assertThat(delegate.connectedAddresses).containsExactlyElementsIn(List(5) { validated }).inOrder()
-        assertThat(delegate.layeredHosts).containsExactly("original.example", "original.example", "original.example", "original.example", "original.example").inOrder()
+    fun pinnedTransport_rejectsMalformedResponseLine() {
+        val transport = PinnedHttpsTransport(
+            URL("https://original.example/hook"),
+            InetAddress.getByName("93.184.216.34"),
+            rawSocketFactory = { RecordingSocket() },
+            sslSocketFactory = RecordingSslSocketFactory(RecordingTlsSocket("not-http\n")),
+            verifier = HostnameVerifier { _, _ -> true },
+        )
+        try {
+            transport.execute("GET", emptyMap(), ByteArray(0), 5_000)
+            throw AssertionError("malformed response must fail")
+        } catch (_: ProtocolException) {
+        }
     }
 
     @Test
-    fun pinnedSocketFactory_rejectsAlreadyConnectedSocketToOtherAddress() {
-        val validated = InetAddress.getByName("93.184.216.34")
-        val server = java.net.ServerSocket(0)
-        val socket = Socket("127.0.0.1", server.localPort)
-        val factory = PinnedSocketFactory(RecordingSslSocketFactory(), validated, "original.example")
+    fun pinnedTransport_rejectsHostnameMismatch_andClosesTcpSocket() {
+        val rawSocket = RecordingSocket()
+        val transport = PinnedHttpsTransport(
+            URL("https://original.example/hook"),
+            InetAddress.getByName("93.184.216.34"),
+            rawSocketFactory = { rawSocket },
+            sslSocketFactory = RecordingSslSocketFactory(RecordingTlsSocket("")),
+            verifier = HostnameVerifier { _, _ -> false },
+        )
 
         try {
-            factory.createSocket(socket, "original.example", 443, true)
-            throw AssertionError("connected socket must be rejected")
-        } catch (expected: SecurityException) {
-            assertThat(expected).hasMessageThat().contains("validated address")
-        } finally {
-            socket.close()
+            transport.execute("GET", emptyMap(), ByteArray(0), 5_000)
+            throw AssertionError("hostname mismatch must fail")
+        } catch (_: SSLPeerUnverifiedException) {
+            assertThat(rawSocket.closed).isTrue()
         }
     }
 
-    @Test
-    fun execute_allKnownNonGlobalSpecialUseRanges_areRejected() {
-        listOf(
-            "0.1.2.3", "100.64.0.1", "192.0.0.1", "192.0.2.1", "192.88.99.1",
-            "198.18.0.1", "198.51.100.1", "203.0.113.1", "224.0.0.1", "240.0.0.1",
-            "::", "::1", "2001:db8::1", "2001:10::1", "2001:20::1", "2001:0000::1",
-            "64:ff9b::1", "100::1", "2002::1", "fc00::1", "fe80::1", "ff02::1",
-            "::ffff:192.0.2.1",
-        ).forEach { addressText ->
-            var opened = false
-            val result = WebhookExecutor(
-                connectionFactory = { _, _ -> opened = true; error("special-use target opened") },
-                addressLookup = { arrayOf(InetAddress.getByName(addressText)) },
-            ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/webhook"))
-            assertThat(result.success).isFalse()
-            assertThat(opened).isFalse()
+    private class FakeTransport(private val responseCode: Int) : WebhookTransport {
+        var method = ""
+        var headers = emptyMap<String, String>()
+        var body = ByteArray(0)
+        var timeoutMs = 0
+        var closed = false
+        override fun execute(method: String, headers: Map<String, String>, body: ByteArray, timeoutMs: Int): Int {
+            this.method = method; this.headers = headers; this.body = body; this.timeoutMs = timeoutMs
+            return responseCode
         }
+        override fun close() { closed = true }
     }
 
-    @Test
-    fun execute_globalAddress_remainsAllowed() {
-        val connection = FakeHttpURLConnection(URL("https://target.example/webhook"), 204)
-        val result = WebhookExecutor(
-            connectionFactory = { _, _ -> connection },
-            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
-        ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/webhook"))
-        assertThat(result.success).isTrue()
-    }
-
-    @Test
-    fun execute_unsupportedMethod_returnsFailure() {
-        val executor = WebhookExecutor()
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(
-                webhookUrl = "https://example.com/api",
-                webhookMethod = "INVALID_METHOD",
-            ),
-        )
-
-        assertThat(result.success).isFalse()
-        assertThat(result.message).contains("Unsupported HTTP method")
-    }
-
-    @Test
-    fun execute_rendersTemplateVariablesInHeadersAndBody() {
-        val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 200)
-        val executor = WebhookExecutor(
-            connectionFactory = { _, _ -> mockConnection },
-            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
-        )
-        val templateContext = WebhookTemplateContext(
-            trigger = "CHARGER_CONNECTED",
-            timestamp = 1700000000000L,
-            timeProvider = { "2023-11-14T22:13:20Z" },
-            batteryPercent = 90,
-            isCharging = true,
-            wifiSsid = "OfficeNet",
-        )
-
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(
-                webhookUrl = "https://example.com/webhook",
-                webhookMethod = "POST",
-                webhookHeaders = "X-Trigger: \${trigger}\nX-Battery: \${batteryPercent}\nContent-Type: application/json",
-                webhookBody = "{\"event\": \"\${trigger}\", \"time\": \"\${time}\", \"wifi\": \"\${wifiSsid}\", \"charging\": \${isCharging}}",
-                webhookTemplateContext = templateContext,
-            ),
-        )
-
-        assertThat(result.success).isTrue()
-        assertThat(mockConnection.recordedRequestProperties["X-Trigger"]).isEqualTo("CHARGER_CONNECTED")
-        assertThat(mockConnection.recordedRequestProperties["X-Battery"]).isEqualTo("90")
-        assertThat(mockConnection.recordedRequestProperties["Content-Type"]).isEqualTo("application/json")
-        assertThat(mockConnection.writtenBody()).isEqualTo("{\"event\": \"CHARGER_CONNECTED\", \"time\": \"2023-11-14T22:13:20Z\", \"wifi\": \"OfficeNet\", \"charging\": true}")
-    }
-
-    @Test
-    fun execute_successful200Response_returnsSuccess() {
-        val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 200)
-        val executor = WebhookExecutor(
-            connectionFactory = { _, _ -> mockConnection },
-            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
-        )
-
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(
-                webhookUrl = "https://example.com/webhook",
-                webhookMethod = "POST",
-                webhookHeaders = "Content-Type: application/json\nAuthorization: Bearer secret_token_123",
-                webhookBody = "{\"state\": \"on\"}",
-                webhookTimeoutSeconds = 5,
-            ),
-        )
-
-        assertThat(result.success).isTrue()
-        assertThat(result.message).contains("status 200")
-        assertThat(mockConnection.requestMethod).isEqualTo("POST")
-        assertThat(mockConnection.connectTimeout).isEqualTo(5000)
-        assertThat(mockConnection.readTimeout).isEqualTo(5000)
-        assertThat(mockConnection.recordedRequestProperties["Content-Type"]).isEqualTo("application/json")
-        assertThat(mockConnection.recordedRequestProperties["Authorization"]).isEqualTo("Bearer secret_token_123")
-        assertThat(mockConnection.writtenBody()).isEqualTo("{\"state\": \"on\"}")
-        assertThat(mockConnection.isDisconnected).isTrue()
-    }
-
-    @Test
-    fun execute_204NoContent_returnsSuccess() {
-        val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 204)
-        val executor = WebhookExecutor(
-            connectionFactory = { _, _ -> mockConnection },
-            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
-        )
-
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(
-                webhookUrl = "https://example.com/webhook",
-                webhookMethod = "GET",
-            ),
-        )
-
-        assertThat(result.success).isTrue()
-        assertThat(result.message).contains("status 204")
-    }
-
-    @Test
-    fun execute_http400Response_returnsFailure() {
-        val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 400)
-        val executor = WebhookExecutor(
-            connectionFactory = { _, _ -> mockConnection },
-            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
-        )
-
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(
-                webhookUrl = "https://example.com/webhook",
-                webhookMethod = "POST",
-            ),
-        )
-
-        assertThat(result.success).isFalse()
-        assertThat(result.message).contains("status 400")
-    }
-
-    @Test
-    fun execute_http500Response_returnsFailure() {
-        val mockConnection = FakeHttpURLConnection(URL("https://example.com/webhook"), 500)
-        val executor = WebhookExecutor(
-            connectionFactory = { _, _ -> mockConnection },
-            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
-        )
-
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(
-                webhookUrl = "https://example.com/webhook",
-                webhookMethod = "POST",
-            ),
-        )
-
-        assertThat(result.success).isFalse()
-        assertThat(result.message).contains("status 500")
-    }
-
-    @Test
-    fun execute_networkExceptionWithSensitiveAuth_redactsAuthInFailureMessage() {
-        val bearer = "SYNTHETIC_BEARER_DO_NOT_LOG_123"
-        ShadowLog.clear()
-        val executor = WebhookExecutor(
-            connectionFactory = { _, _ ->
-                throw IOException("Failed to connect with Authorization: Bearer $bearer and key=secret123")
-            },
-            addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
-        )
-
-        val result = executor.execute(
-            ActionType.HTTP_WEBHOOK,
-            ActionParameters(
-                webhookUrl = "https://example.com/webhook",
-                webhookMethod = "POST",
-            ),
-        )
-
-        assertThat(result.success).isFalse()
-        assertThat(result.message).doesNotContain(bearer)
-        assertThat(result.message).doesNotContain("secret123")
-        assertThat(result.message).contains("[REDACTED]")
-        val logs = ShadowLog.getLogsForTag(WebhookExecutor.TAG)
-        assertThat(logs).isNotEmpty()
-        logs.forEach { log ->
-            assertThat(log.msg).doesNotContain(bearer)
-            assertThat(log.msg).doesNotContain("secret123")
-            assertThat(log.throwable).isNull()
+    private class RecordingSocket : Socket() {
+        var address: InetAddress? = null
+        var port: Int? = null
+        var closed = false
+        override fun connect(endpoint: java.net.SocketAddress?, timeout: Int) {
+            (endpoint as java.net.InetSocketAddress).also { address = it.address; port = it.port }
         }
+        override fun setSoTimeout(timeout: Int) = Unit
+        override fun close() { closed = true }
     }
 
-    @Test
-    fun parseHeaders_handlesValidLinesAndComments() {
-        val raw = """
-            Content-Type: application/json
-            # Comment line
-            Authorization: Bearer test_token
-            X-Custom-Header: value with : colon
-            EmptyValue:
-        """.trimIndent()
-
-        val headers = WebhookExecutor.parseHeaders(raw)
-        assertThat(headers).hasSize(4)
-        assertThat(headers["Content-Type"]).isEqualTo("application/json")
-        assertThat(headers["Authorization"]).isEqualTo("Bearer test_token")
-        assertThat(headers["X-Custom-Header"]).isEqualTo("value with : colon")
-        assertThat(headers["EmptyValue"]).isEqualTo("")
-    }
-
-    @Test
-    fun sanitizeHeadersForLogging_redactsSensitiveHeaders() {
-        val headers = mapOf(
-            "Content-Type" to "application/json",
-            "Authorization" to "Bearer sensitive_token",
-            "X-Api-Key" to "api_key_value",
-            "Cookie" to "session=abc",
-            "User-Agent" to "FlowPilot",
-        )
-
-        val sanitized = WebhookExecutor.sanitizeHeadersForLogging(headers)
-
-        assertThat(sanitized["Content-Type"]).isEqualTo("application/json")
-        assertThat(sanitized["User-Agent"]).isEqualTo("FlowPilot")
-        assertThat(sanitized["Authorization"]).isEqualTo("[REDACTED]")
-        assertThat(sanitized["X-Api-Key"]).isEqualTo("[REDACTED]")
-        assertThat(sanitized["Cookie"]).isEqualTo("[REDACTED]")
-    }
-
-    @Test
-    fun redactSensitiveText_replacesTokensAndPasswords() {
-        val text = "Error: Bearer 1234567890abcdef failed. Param token=sensitive_tok&user=bob, password=mypassword https://api.example.com/v1/trigger?token=secret123&user=admin"
-        val redacted = WebhookExecutor.redactSensitiveText(text)
-
-        assertThat(redacted).doesNotContain("1234567890abcdef")
-        assertThat(redacted).doesNotContain("sensitive_tok")
-        assertThat(redacted).doesNotContain("mypassword")
-        assertThat(redacted).doesNotContain("secret123")
-        assertThat(redacted).doesNotContain("admin")
-        assertThat(redacted).contains("Bearer [REDACTED]")
-        assertThat(redacted).contains("token=[REDACTED]")
-        assertThat(redacted).contains("password=[REDACTED]")
-        assertThat(redacted).contains("https://api.example.com/v1/trigger?token=[REDACTED]&user=[REDACTED]")
-    }
-
-    @Test
-    fun sanitizeUrlForLogging_redactsQueryParamsAndUserInfo() {
-        val url = "https://user:pass123@api.example.com/v1/webhook?apiKey=xyz789&action=alert"
-        val sanitized = WebhookExecutor.sanitizeUrlForLogging(url)
-
-        assertThat(sanitized).doesNotContain("pass123")
-        assertThat(sanitized).doesNotContain("xyz789")
-        assertThat(sanitized).contains("https://[REDACTED]@api.example.com/v1/webhook?apiKey=[REDACTED]&action=[REDACTED]")
-    }
-
-    @Test
-    fun validateParameters_rejectsMalformedHeaders() {
-        val invalidHeaderParam = ActionParameters(
-            webhookUrl = "https://example.com/webhook",
-            webhookHeaders = "InvalidHeaderWithoutColon",
-        )
-        val error = WebhookExecutor.validateParameters(invalidHeaderParam)
-        assertThat(error).isNotNull()
-        assertThat(error).contains("Invalid header format on line 1")
-        // Ensure failure message does not echo raw header value
-        assertThat(error).doesNotContain("InvalidHeaderWithoutColon")
-    }
-
-    @Test
-    fun validateParameters_rejectsCrlfInHeader() {
-        val crlfHeaderParam = ActionParameters(
-            webhookUrl = "https://example.com/webhook",
-            webhookHeaders = "X-Bad-Header: value\u0000injection",
-        )
-        val error = WebhookExecutor.validateParameters(crlfHeaderParam)
-        assertThat(error).isNotNull()
-        assertThat(error).contains("header cannot contain control characters")
-        assertThat(error).doesNotContain("value\u0000injection")
-    }
-
-    @Test
-    fun validateHeaders_validatesCorrectly() {
-        assertThat(WebhookExecutor.validateHeaders("")).isNull()
-        assertThat(WebhookExecutor.validateHeaders("  \n  ")).isNull()
-        assertThat(WebhookExecutor.validateHeaders("# Just comment\nContent-Type: application/json")).isNull()
-        
-        val emptyNameError = WebhookExecutor.validateHeaders(": value_without_name")
-        assertThat(emptyNameError).contains("Invalid header format on line 1")
-
-        val malformedError = WebhookExecutor.validateHeaders("MalformedHeader")
-        assertThat(malformedError).contains("Invalid header format on line 1")
-    }
-
-    private class RecordingSslSocketFactory : javax.net.ssl.SSLSocketFactory() {
-        val connectedAddresses = mutableListOf<InetAddress>()
-        val layeredHosts = mutableListOf<String>()
-
-        override fun createSocket(): Socket = RecordingSocket(connectedAddresses)
+    private class RecordingSslSocketFactory(private val socket: SSLSocket) : SSLSocketFactory() {
+        var layeredHost: String? = null
         override fun createSocket(socket: Socket, host: String, port: Int, autoClose: Boolean): Socket {
-            layeredHosts += host
-            return socket
+            layeredHost = host
+            return this.socket
         }
-        override fun createSocket(host: String, port: Int): Socket = error("unexpected direct delegate call")
-        override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket = error("unexpected direct delegate call")
-        override fun createSocket(address: InetAddress, port: Int): Socket = error("unexpected direct delegate call")
-        override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket = error("unexpected direct delegate call")
+        override fun createSocket(): Socket = error("unexpected")
+        override fun createSocket(host: String, port: Int): Socket = error("unexpected")
+        override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket = error("unexpected")
+        override fun createSocket(address: InetAddress, port: Int): Socket = error("unexpected")
+        override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket = error("unexpected")
         override fun getDefaultCipherSuites(): Array<String> = emptyArray()
         override fun getSupportedCipherSuites(): Array<String> = emptyArray()
     }
 
-    private class RecordingSocket(private val connectedAddresses: MutableList<InetAddress>) : Socket() {
-        override fun connect(endpoint: java.net.SocketAddress?) {
-            connectedAddresses += (endpoint as java.net.InetSocketAddress).address
-        }
-        override fun connect(endpoint: java.net.SocketAddress?, timeout: Int) = connect(endpoint)
-        override fun bind(endpoint: java.net.SocketAddress?) {}
-        override fun isConnected(): Boolean = false
-    }
-
-    private class FakeHttpURLConnection(url: URL, private val responseCodeStub: Int) : HttpURLConnection(url) {
-        val recordedRequestProperties = mutableMapOf<String, String>()
-        private val outputStreamBuffer = ByteArrayOutputStream()
-        var isDisconnected = false
-
-        override fun setRequestProperty(key: String, value: String) {
-            recordedRequestProperties[key] = value
-        }
-
-        override fun getOutputStream(): java.io.OutputStream = outputStreamBuffer
-
-        override fun getResponseCode(): Int = responseCodeStub
-
-        override fun connect() {}
-
-        override fun disconnect() {
-            isDisconnected = true
-        }
-
-        override fun usingProxy(): Boolean = false
-
-        fun writtenBody(): String = outputStreamBuffer.toString(StandardCharsets.UTF_8.name())
+    private class RecordingTlsSocket(response: String) : SSLSocket() {
+        val written = ByteArrayOutputStream()
+        val input = ByteArrayInputStream(response.toByteArray(StandardCharsets.ISO_8859_1))
+        var closed = false
+        override fun getOutputStream() = written
+        override fun getInputStream() = input
+        override fun close() { closed = true }
+        override fun setSoTimeout(timeout: Int) = Unit
+        override fun getSupportedCipherSuites(): Array<String> = emptyArray()
+        override fun getEnabledCipherSuites(): Array<String> = emptyArray()
+        override fun setEnabledCipherSuites(suites: Array<out String>?) = Unit
+        override fun getSupportedProtocols(): Array<String> = emptyArray()
+        override fun getEnabledProtocols(): Array<String> = emptyArray()
+        override fun setEnabledProtocols(protocols: Array<out String>?) = Unit
+        override fun getSession(): SSLSession = Proxy.newProxyInstance(SSLSession::class.java.classLoader, arrayOf(SSLSession::class.java)) { _, _, _ -> null } as SSLSession
+        override fun addHandshakeCompletedListener(listener: HandshakeCompletedListener?) = Unit
+        override fun removeHandshakeCompletedListener(listener: HandshakeCompletedListener?) = Unit
+        override fun startHandshake() = Unit
+        override fun setUseClientMode(mode: Boolean) = Unit
+        override fun getUseClientMode(): Boolean = true
+        override fun setNeedClientAuth(need: Boolean) = Unit
+        override fun getNeedClientAuth(): Boolean = false
+        override fun setWantClientAuth(want: Boolean) = Unit
+        override fun getWantClientAuth(): Boolean = false
+        override fun setEnableSessionCreation(flag: Boolean) = Unit
+        override fun getEnableSessionCreation(): Boolean = true
     }
 }

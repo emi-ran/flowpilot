@@ -2,67 +2,148 @@ package com.flowpilot.app.actions
 
 import android.util.Log
 import com.flowpilot.app.data.model.ActionType
-import java.nio.charset.StandardCharsets
-import java.net.HttpURLConnection
+import java.io.EOFException
+import java.io.InputStream
 import java.net.Inet6Address
 import java.net.InetAddress
-import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLSocketFactory
 import java.net.InetSocketAddress
+import java.net.ProtocolException
 import java.net.Socket
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLSocket
+import javax.net.ssl.SSLSocketFactory
 import java.net.URI
 import java.net.URL
+import java.nio.charset.StandardCharsets
 
-// This checks the TLS peer, not the initial TCP destination: Android's HTTP stack
-// connects its raw socket before calling the layered SSLSocketFactory overload.
-// Do not treat this factory as verified transport-level DNS-rebinding protection.
-internal class PinnedSocketFactory(
-    private val delegate: SSLSocketFactory,
+/** HTTPS transport whose first TCP connection targets only prevalidated [address]. */
+internal class PinnedHttpsTransport(
+    private val url: URL,
     private val address: InetAddress,
-    private val hostname: String,
-) : SSLSocketFactory() {
-    private fun connect(port: Int, localAddress: InetAddress? = null, localPort: Int = 0): Socket =
-        delegate.createSocket().apply {
-            if (localAddress != null) bind(InetSocketAddress(localAddress, localPort))
-            connect(InetSocketAddress(address, port))
+    private val rawSocketFactory: () -> Socket = ::Socket,
+    private val sslSocketFactory: SSLSocketFactory = HttpsURLConnection.getDefaultSSLSocketFactory(),
+    private val verifier: HostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier(),
+) : WebhookTransport {
+    private var socket: SSLSocket? = null
+
+    override fun execute(method: String, headers: Map<String, String>, body: ByteArray, timeoutMs: Int): Int {
+        val tlsSocket = connect(timeoutMs)
+        val requestTarget = url.file.takeIf { it.isNotEmpty() } ?: "/"
+        val host = hostHeader(url)
+        val request = buildString {
+            append("$method $requestTarget HTTP/1.1\r\n")
+            append("Host: $host\r\n")
+            append("Connection: close\r\n")
+            headers.forEach { (name, value) -> append("$name: $value\r\n") }
+            if (method in WebhookExecutor.METHODS_WITH_BODY) append("Content-Length: ${body.size}\r\n")
+            append("\r\n")
         }
-
-    private fun layer(socket: Socket, port: Int, autoClose: Boolean = true): Socket =
-        delegate.createSocket(socket, hostname, port, autoClose)
-
-    override fun createSocket(host: String, port: Int): Socket = layer(connect(port), port)
-
-    override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket =
-        layer(connect(port, localHost, localPort), port)
-
-    override fun createSocket(address: InetAddress, port: Int): Socket = layer(connect(port), port)
-
-    override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket =
-        layer(connect(port, localAddress, localPort), port)
-
-    override fun createSocket(socket: Socket, host: String, port: Int, autoClose: Boolean): Socket {
-        if (socket.isConnected && socket.inetAddress != address) {
-            throw SecurityException("Socket is not connected to validated address")
-        }
-        if (!socket.isConnected) socket.connect(InetSocketAddress(address, port))
-        return layer(socket, port, autoClose)
+        tlsSocket.outputStream.write(request.toByteArray(StandardCharsets.ISO_8859_1))
+        if (body.isNotEmpty()) tlsSocket.outputStream.write(body)
+        tlsSocket.outputStream.flush()
+        return readResponseCode(tlsSocket.inputStream)
     }
 
-    override fun getDefaultCipherSuites(): Array<String> = delegate.defaultCipherSuites
-    override fun getSupportedCipherSuites(): Array<String> = delegate.supportedCipherSuites
+    override fun close() {
+        try {
+            socket?.close()
+        } finally {
+            socket = null
+        }
+    }
+
+    private fun connect(timeoutMs: Int): SSLSocket {
+        socket?.let { return it }
+        val port = if (url.port == -1) DEFAULT_HTTPS_PORT else url.port
+        val tcpSocket = rawSocketFactory()
+        try {
+            tcpSocket.connect(InetSocketAddress(address, port), timeoutMs)
+            tcpSocket.soTimeout = timeoutMs
+            val tlsSocket = sslSocketFactory.createSocket(tcpSocket, url.host, port, true) as SSLSocket
+            tlsSocket.soTimeout = timeoutMs
+            tlsSocket.startHandshake()
+            if (!verifier.verify(url.host, tlsSocket.session)) {
+                throw javax.net.ssl.SSLPeerUnverifiedException("HTTPS hostname verification failed")
+            }
+            socket = tlsSocket
+            return tlsSocket
+        } catch (e: Exception) {
+            try {
+                tcpSocket.close()
+            } catch (_: Exception) {
+            }
+            throw e
+        }
+    }
+
+    private fun readResponseCode(input: InputStream): Int {
+        repeat(MAX_INTERIM_RESPONSES) {
+            val statusLine = readLine(input)
+            val parts = statusLine.split(' ', limit = 3)
+            val status = parts.getOrNull(1)?.toIntOrNull()
+            if (parts.size < 2 || !parts[0].startsWith("HTTP/") || status == null || status !in 100..599) {
+                throw ProtocolException("Invalid HTTPS response status")
+            }
+            consumeHeaders(input)
+            if (status !in 100..199) return status
+            if (status == SWITCHING_PROTOCOLS) throw ProtocolException("HTTPS protocol upgrade is not supported")
+        }
+        throw ProtocolException("Too many interim HTTPS responses")
+    }
+
+    private fun consumeHeaders(input: InputStream) {
+        var consumed = 0
+        while (true) {
+            val line = readLine(input)
+            consumed += line.length + CRLF_BYTES
+            if (consumed > MAX_RESPONSE_HEADER_BYTES) throw ProtocolException("HTTPS response headers are too large")
+            if (line.isEmpty()) return
+        }
+    }
+
+    private fun readLine(input: InputStream): String {
+        val bytes = ArrayList<Byte>(MAX_RESPONSE_LINE_BYTES)
+        while (true) {
+            val value = input.read()
+            if (value == -1) throw EOFException("HTTPS response ended before headers completed")
+            if (value == '\n'.code) {
+                if (bytes.lastOrNull()?.toInt() != '\r'.code) throw ProtocolException("Invalid HTTPS response line ending")
+                bytes.removeAt(bytes.lastIndex)
+                return String(bytes.toByteArray(), StandardCharsets.ISO_8859_1)
+            }
+            if (bytes.size >= MAX_RESPONSE_LINE_BYTES) throw ProtocolException("HTTPS response line is too large")
+            bytes += value.toByte()
+        }
+    }
+
+    private companion object {
+        const val DEFAULT_HTTPS_PORT = 443
+        const val CRLF_BYTES = 2
+        const val MAX_RESPONSE_LINE_BYTES = 8 * 1024
+        const val MAX_RESPONSE_HEADER_BYTES = 32 * 1024
+        const val MAX_INTERIM_RESPONSES = 8
+        const val SWITCHING_PROTOCOLS = 101
+
+        fun hostHeader(url: URL): String {
+            val host = url.host.let { if (':' in it && !it.startsWith("[")) "[$it]" else it }
+            return host + if (url.port != -1 && url.port != DEFAULT_HTTPS_PORT) ":${url.port}" else ""
+        }
+    }
+}
+
+internal interface WebhookTransport {
+    fun execute(method: String, headers: Map<String, String>, body: ByteArray, timeoutMs: Int): Int
+    fun close()
 }
 
 /**
- * Executes outbound HTTP/HTTPS requests (webhooks) using standard HttpURLConnection.
+ * Executes outbound HTTPS webhook requests through a validated-address transport.
  * Validates URLs, bounds timeouts, handles headers/bodies, redacts secrets in logs and failure messages.
  */
-class WebhookExecutor(
-    private val connectionFactory: (URL, InetAddress) -> HttpURLConnection = { url, address ->
-        (url.openConnection() as HttpURLConnection).apply {
-            if (this is HttpsURLConnection) {
-                sslSocketFactory = PinnedSocketFactory(sslSocketFactory, address, url.host)
-            }
-        }
+class WebhookExecutor internal constructor(
+    private val transportFactory: (URL, InetAddress) -> WebhookTransport = { url, address ->
+        PinnedHttpsTransport(url, address)
     },
     private val addressLookup: (String) -> Array<InetAddress> = InetAddress::getAllByName,
 ) : ActionExecutor {
@@ -82,43 +163,26 @@ class WebhookExecutor(
         val rawUrl = parameters.webhookUrl.trim()
         val method = parameters.webhookMethod.trim().uppercase()
         val timeoutMs = parameters.webhookTimeoutSeconds.coerceIn(MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS) * 1000
-        val renderedHeaders = WebhookTemplateRenderer.render(parameters.webhookHeaders, parameters.webhookTemplateContext)
-        val headers = parseHeaders(renderedHeaders)
+        val headers = try {
+            renderHeaders(parameters.webhookHeaders, parameters.webhookTemplateContext)
+        } catch (e: IllegalArgumentException) {
+            return ActionResult(false, e.message ?: "Invalid rendered webhook headers")
+        }
         val body = WebhookTemplateRenderer.render(parameters.webhookBody, parameters.webhookTemplateContext)
 
         Log.i(TAG, "Dispatching HTTP Webhook: method=$method")
 
-        var connection: HttpURLConnection? = null
+        var transport: WebhookTransport? = null
         return try {
             val url = URI(rawUrl).toURL()
             val address = validateResolvedAddresses(url.host)
-            connection = connectionFactory(url, address).apply {
-                requestMethod = method
-                connectTimeout = timeoutMs
-                readTimeout = timeoutMs
-                instanceFollowRedirects = false
-                useCaches = false
-                doInput = true
-
-                headers.forEach { (name, value) ->
-                    setRequestProperty(name, value)
-                }
-
-                if (method in METHODS_WITH_BODY && body.isNotEmpty()) {
-                    doOutput = true
-                    val bytes = body.toByteArray(StandardCharsets.UTF_8)
-                    setFixedLengthStreamingMode(bytes.size)
-                    outputStream.use { os ->
-                        os.write(bytes)
-                        os.flush()
-                    }
-                } else if (method in METHODS_WITH_BODY && body.isEmpty()) {
-                    // For POST/PUT/PATCH with empty body, ensure Content-Length is 0 if no output stream written
-                    setFixedLengthStreamingMode(0)
-                }
-            }
-
-            val statusCode = connection.responseCode
+            transport = transportFactory(url, address)
+            val statusCode = transport.execute(
+                method = method,
+                headers = headers,
+                body = if (method in METHODS_WITH_BODY) body.toByteArray(StandardCharsets.UTF_8) else ByteArray(0),
+                timeoutMs = timeoutMs,
+            )
             val isSuccess = statusCode in 200..299
             val message = if (isSuccess) {
                 "HTTP Webhook delivered: status $statusCode"
@@ -138,7 +202,7 @@ class WebhookExecutor(
             ActionResult(false, "HTTP request failed: $safeMessage")
         } finally {
             try {
-                connection?.disconnect()
+                transport?.close()
             } catch (_: Throwable) {}
         }
     }
@@ -234,7 +298,12 @@ class WebhookExecutor(
 
             val method = parameters.webhookMethod.trim().uppercase()
             if (method !in ALLOWED_METHODS) {
-                return "Unsupported HTTP method: $method. Allowed: ${ALLOWED_METHODS.joinToString(", ")}"
+                val allowedMethods = ALLOWED_METHODS.joinToString(separator = ", ")
+                return "Unsupported HTTP method: $method. Allowed: $allowedMethods"
+            }
+
+            if (method !in METHODS_WITH_BODY && parameters.webhookBody.isNotEmpty()) {
+                return "HTTP method $method does not support a webhook body"
             }
 
             val headerError = validateHeaders(parameters.webhookHeaders)
@@ -265,6 +334,12 @@ class WebhookExecutor(
                 if (name.isEmpty()) {
                     return "Invalid header name on line ${index + 1}: name cannot be empty"
                 }
+                if (!name.all { it in HEADER_NAME_CHARS }) {
+                    return "Invalid header name on line ${index + 1}"
+                }
+                if (name.lowercase() in FORBIDDEN_REQUEST_HEADERS) {
+                    return "Forbidden header name on line ${index + 1}"
+                }
                 if (name.any { it.isISOControl() } || value.any { it.isISOControl() }) {
                     return "Invalid header on line ${index + 1}: header cannot contain control characters"
                 }
@@ -290,6 +365,41 @@ class WebhookExecutor(
             }
             return result
         }
+
+        /** Renders configured header lines independently; replacements may not add header lines. */
+        fun renderHeaders(rawHeaders: String, context: WebhookTemplateContext?): Map<String, String> {
+            val validationError = validateHeaders(rawHeaders)
+            require(validationError == null) { validationError ?: "Invalid webhook headers" }
+            if (rawHeaders.isBlank()) return emptyMap()
+
+            return buildMap {
+                rawHeaders.split("\r\n", "\n", "\r").forEachIndexed { index, line ->
+                    val configuredLine = line.trim()
+                    if (configuredLine.isEmpty() || configuredLine.startsWith("#")) return@forEachIndexed
+                    val renderedLine = WebhookTemplateRenderer.render(configuredLine, context)
+                    if (renderedLine.any { it == '\r' || it == '\n' || it.isISOControl() }) {
+                        throw IllegalArgumentException("Invalid rendered header on line ${index + 1}: header cannot contain control characters")
+                    }
+                    val colonIndex = renderedLine.indexOf(':')
+                    val name = renderedLine.substring(0, colonIndex).trim()
+                    val value = renderedLine.substring(colonIndex + 1).trim()
+                    if (!name.all { it in HEADER_NAME_CHARS }) {
+                        throw IllegalArgumentException("Invalid rendered header name on line ${index + 1}")
+                    }
+                    if (name.lowercase() in FORBIDDEN_REQUEST_HEADERS) {
+                        throw IllegalArgumentException("Forbidden rendered header name on line ${index + 1}")
+                    }
+                    put(name, value)
+                }
+            }
+        }
+
+        private const val HEADER_NAME_CHARS = "!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        private val FORBIDDEN_REQUEST_HEADERS = setOf(
+            "connection", "content-length", "host", "keep-alive", "proxy-connection",
+            "expect", "proxy-authenticate", "proxy-authorization", "te", "trailer",
+            "transfer-encoding", "upgrade",
+        )
 
         fun sanitizeUrlForLogging(rawUrl: String): String {
             if (rawUrl.isBlank()) return rawUrl
