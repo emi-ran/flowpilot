@@ -31,6 +31,7 @@ import com.flowpilot.app.ui.components.PresetsBottomSheet
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,7 @@ import com.flowpilot.app.ui.components.ConflictWarningDialog
 fun HomeScreen(
     vm: AppViewModel,
     detail: (Automation) -> Unit,
+    inspectRule: (Automation) -> Unit,
     create: () -> Unit,
     createWithPreset: (AutomationPreset) -> Unit = {},
     permissions: () -> Unit,
@@ -82,7 +84,7 @@ fun HomeScreen(
     if (pendingEnableConflicts.isNotEmpty()) {
         ConflictWarningDialog(
             conflicts = pendingEnableConflicts,
-            onInspect = { id -> rules.firstOrNull { it.rule.id == id }?.rule?.let(detail) },
+            onInspect = { id -> rules.firstOrNull { it.rule.id == id }?.rule?.let(inspectRule) },
             onOverride = {
                 pendingEnable?.let { candidate ->
                     val current = AutomationConflictAnalyzer.analyze(candidate, rules.map { it.rule })
@@ -591,7 +593,11 @@ private fun RuleCard(
 
             if (!isSelectionMode) {
                 Spacer(Modifier.width(10.dp))
-                FollowSwitch(isRuleEnabled, enabled)
+                FollowSwitch(
+                    checked = isRuleEnabled,
+                    onCheckedChange = enabled,
+                    modifier = Modifier.testTag("rule-enabled-${item.rule.id}"),
+                )
             }
         }
     }

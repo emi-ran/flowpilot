@@ -61,6 +61,22 @@ class ConflictContractsTest(unittest.TestCase):
         self.assertIn("""inspectedRule = null
                 page = inspectReturnPage""", app)
 
+    def test_home_inspect_preserves_pending_enable_warning_in_root(self):
+        app = (MAIN / "ui/App.kt").read_text()
+        home = (MAIN / "ui/screens/HomeScreen.kt").read_text()
+        navigation_test = (ROOT / "app/src/androidTest/java/com/flowpilot/app/FlowPilotRootConflictNavigationTest.kt").read_text()
+        self.assertIn("fun homeEnableInspectBackReturnsToPendingWarningAndAllowsOverride()", navigation_test)
+        self.assertIn('testTag("rule-enabled-${item.rule.id}")', home)
+        self.assertIn("inspectRule: (Automation) -> Unit", home)
+        self.assertIn("?.rule?.let(inspectRule)", home)
+        self.assertIn(
+            """inspectRule = { rule ->
+                        inspectedRule = rule
+                        inspectReturnPage = Page.HOME
+                        page = Page.DETAIL""",
+            app,
+        )
+
     def test_english_and_turkish_warning_copy_and_actions_exist(self):
         required = {
             "values": {

@@ -60,6 +60,11 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                 Page.HOME -> HomeScreen(
                     vm = vm,
                     detail = { selectedRule = it; page = Page.DETAIL },
+                    inspectRule = { rule ->
+                        inspectedRule = rule
+                        inspectReturnPage = Page.HOME
+                        page = Page.DETAIL
+                    },
                     create = { initialPreset = null; page = Page.CREATE },
                     createWithPreset = { preset ->
                         initialPreset = preset

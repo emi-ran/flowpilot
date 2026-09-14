@@ -1,7 +1,9 @@
 package com.flowpilot.app
 
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.flowpilot.app.data.model.ActionType
@@ -17,6 +19,28 @@ import org.junit.Test
 class FlowPilotRootConflictNavigationTest {
     @get:Rule
     val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun homeEnableInspectBackReturnsToPendingWarningAndAllowsOverride() {
+        val candidate = rule("candidate", "Candidate", ActionType.WIFI_ON).copy(enabled = false)
+        val other = rule("other", "Other", ActionType.WIFI_OFF)
+        val vm = AppViewModel(compose.activity.application)
+        vm.automations.value = listOf(
+            AutomationUI(candidate, CapabilityStatus.AVAILABLE),
+            AutomationUI(other, CapabilityStatus.AVAILABLE),
+        )
+        compose.setContent { FlowPilotRoot(vm) }
+
+        compose.onNodeWithTag("rule-enabled-candidate").performClick()
+        compose.onNodeWithText("Likely automation conflict").assertIsDisplayed()
+        compose.onNodeWithText("Inspect Other").performClick()
+        compose.onNodeWithText("Other").assertIsDisplayed()
+
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithText("Likely automation conflict").assertIsDisplayed()
+        compose.onNodeWithText("Enable anyway").performClick()
+        compose.onNodeWithText("Likely automation conflict").assertDoesNotExist()
+    }
 
     @Test
     fun editInspectBackReturnsToPendingWarningAndAllowsOverride() {
