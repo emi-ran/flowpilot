@@ -459,7 +459,7 @@ class WebhookExecutor internal constructor(
             redacted = redacted.replace(Regex("(?i)(Basic\\s+)[A-Za-z0-9+/=]+", RegexOption.IGNORE_CASE), "$1[REDACTED]")
 
             // Specific synthetic secret marker and token patterns
-            redacted = redacted.replace(Regex("(?i)\\bSYNTHETIC_SECRET_DO_NOT_PERSIST\\b"), "[REDACTED]")
+            redacted = redacted.replace(Regex("(?i)SYNTHETIC_SECRET_DO_NOT_PERSIST"), "[REDACTED]")
             redacted = redacted.replace(Regex("(?i)\\b(?:sec|secret|token|apikey|api_key)_[a-zA-Z0-9_]{4,}\\b"), "[REDACTED]")
 
             // Key/secret/token/password/credential assignments
