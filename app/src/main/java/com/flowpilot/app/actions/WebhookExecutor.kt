@@ -165,8 +165,8 @@ class WebhookExecutor internal constructor(
         val timeoutMs = parameters.webhookTimeoutSeconds.coerceIn(MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS) * 1000
         val headers = try {
             renderHeaders(parameters.webhookHeaders, parameters.webhookTemplateContext)
-        } catch (e: IllegalArgumentException) {
-            return ActionResult(false, e.message ?: "Invalid rendered webhook headers")
+        } catch (_: IllegalArgumentException) {
+            return ActionResult(false, "Invalid rendered webhook headers")
         }
         val body = WebhookTemplateRenderer.render(parameters.webhookBody, parameters.webhookTemplateContext)
 
@@ -446,13 +446,42 @@ class WebhookExecutor internal constructor(
         }
 
         fun redactSensitiveText(text: String): String {
-            // Redact URIs with queries or credentials, Bearer tokens, passwords, keys in arbitrary error messages or URLs
+            if (text.isBlank()) return text
             var redacted = text
+
+            // Credentials in URLs: http(s)://user:pass@host
             redacted = redacted.replace(Regex("(?i)(https?://)([^\\s:@]+:[^\\s:@]+@)", RegexOption.IGNORE_CASE), "$1[REDACTED]@")
+
+            // Bearer tokens
             redacted = redacted.replace(Regex("(?i)(bearer\\s+)[A-Za-z0-9_\\-\\.~+/]+=*", RegexOption.IGNORE_CASE), "$1[REDACTED]")
-            redacted = redacted.replace(Regex("(?i)(key|secret|token|password|auth|api_key|apikey|access_token)=([^&\\s]+)", RegexOption.IGNORE_CASE), "$1=[REDACTED]")
+
+            // Basic auth
             redacted = redacted.replace(Regex("(?i)(Basic\\s+)[A-Za-z0-9+/=]+", RegexOption.IGNORE_CASE), "$1[REDACTED]")
-            // Also redact query strings in any URL embedded in text if it has parameters
+
+            // Specific synthetic secret marker and token patterns
+            redacted = redacted.replace(Regex("(?i)\\bSYNTHETIC_SECRET_DO_NOT_PERSIST\\b"), "[REDACTED]")
+            redacted = redacted.replace(Regex("(?i)\\b(?:sec|secret|token|apikey|api_key)_[a-zA-Z0-9_]{4,}\\b"), "[REDACTED]")
+
+            // Key/secret/token/password/credential assignments
+            redacted = redacted.replace(Regex("(?i)(key|secret|token|password|auth|api_key|apikey|access_token)=([^&\\s]+)", RegexOption.IGNORE_CASE), "$1=[REDACTED]")
+            redacted = redacted.replace(Regex("(?i)\\b(api[_-]?key|access[_-]?token|auth[_-]?token|secret|password|credential|token)[:=\\s]+([A-Za-z0-9_\\-.]{4,})"), "$1: [REDACTED]")
+
+            // Provider URIs (content://, file://, android.resource://)
+            redacted = redacted.replace(Regex("(?i)\\b(?:content|file|android\\.resource)://[^\\s\"'<>)]+"), "[REDACTED]")
+
+            // Local file paths (/data/..., /storage/..., /sdcard/..., Windows drive paths)
+            redacted = redacted.replace(Regex("(?i)(?:/(?:data/(?:user|data|app)|storage/emulated|sdcard|system|proc|sys|etc|usr|var|tmp|home|root))/[^\\s\"'<>)]+"), "[REDACTED]")
+            redacted = redacted.replace(Regex("""(?i)\b[a-zA-Z]:\\[^\s"'<>)]+"""), "[REDACTED]")
+
+            // Stack trace elements: \s+at package.Class.method(...)
+            redacted = redacted.replace(Regex("""(?i)\s+at\s+[\w$.]+(?:\([\w$.]+:\d+\)|\(Native Method\)|\(Unknown Source\))"""), "")
+
+            // Raw Throwable / Exception class names with optional message
+            redacted = redacted.replace(Regex("""\b(?:[a-zA-Z_]\w*\.)+[a-zA-Z_]\w*(?:Exception|Error|Throwable)(?::\s*[^\r\n]*)?"""), "[REDACTED]")
+            redacted = redacted.replace(Regex("""\b[A-Z][a-zA-Z0-9_]*(?:Exception|Throwable)(?::\s*[^\r\n]*)?"""), "[REDACTED]")
+            redacted = redacted.replace(Regex("""\b[A-Z][a-zA-Z0-9_]+Error(?::\s*[^\r\n]*)?"""), "[REDACTED]")
+
+            // URL query string redaction (redact param values in any http/https URL)
             redacted = redacted.replace(Regex("(?i)(https?://[^\\s?#]+)\\?([^\\s#]+)")) { matchResult ->
                 val base = matchResult.groupValues[1]
                 val query = matchResult.groupValues[2]

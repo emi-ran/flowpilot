@@ -36,4 +36,18 @@ class SoundExecutorTest {
     @Test fun stopPreview_isSafe_whenNothingIsPlaying() {
         SoundExecutor(RuntimeEnvironment.getApplication(), playUri = { _, _ -> true }).stopPreview()
     }
+
+    @Test fun execute_whenPlayThrowsSyntheticSecretAndPrivateUri_returnsSafeGenericFailure() {
+        val secret = "SYNTHETIC_SECRET_DO_NOT_PERSIST"
+        val privateUri = "content://com.flowpilot.test.provider/synthetic/private/uri"
+        val result = SoundExecutor(
+            RuntimeEnvironment.getApplication(),
+            playUri = { _, _ -> throw RuntimeException("Failed to access $privateUri: $secret") },
+        ).execute(ActionType.PLAY_SOUND, ActionParameters(soundPreset = SoundPreset.CUSTOM, soundUri = privateUri))
+
+        assertThat(result.success).isFalse()
+        assertThat(result.message).doesNotContain(secret)
+        assertThat(result.message).doesNotContain(privateUri)
+        assertThat(result.message).isEqualTo("Sound could not be played")
+    }
 }

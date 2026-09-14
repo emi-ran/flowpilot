@@ -44,7 +44,13 @@ class ActionDispatcher private constructor(
 
     fun execute(action: ActionType, parameters: ActionParameters = ActionParameters()): ActionResult {
         val executor = map[action] ?: return ActionResult(false, "No executor for ${action.label}")
-        return executor.execute(action, parameters)
+        return try {
+            executor.execute(action, parameters)
+        } catch (ce: java.util.concurrent.CancellationException) {
+            throw ce
+        } catch (_: Throwable) {
+            ActionResult(false, "Execution failed")
+        }
     }
 
     companion object {

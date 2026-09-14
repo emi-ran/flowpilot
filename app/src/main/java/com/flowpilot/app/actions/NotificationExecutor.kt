@@ -44,8 +44,8 @@ class NotificationExecutor(
                 .build()
             poster(nextId.incrementAndGet(), notification)
             ActionResult(true, "Notification posted", ActionResultCode.NOTIFICATION_POSTED)
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+        } catch (_: Throwable) {
+            ActionResult(false, "Failed to post notification")
         }
     }
 

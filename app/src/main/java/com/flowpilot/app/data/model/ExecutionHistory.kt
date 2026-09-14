@@ -46,9 +46,9 @@ data class ActionExecutionRecord(
             resultCode: ActionResultCode? = null,
             resultArgs: List<String> = emptyList(),
         ): ActionExecutionRecord {
-            val safeMessage = WebhookExecutor.redactSensitiveText(message)
-            val safeArgs = resultArgs.map(WebhookExecutor::redactSensitiveText).let { args ->
-                if (resultCode == ActionResultCode.SMS_SENT) args.map(PhoneNumberUtils::mask) else args
+            val safeMessage = sanitizeMessage(message, success, actionType)
+            val safeArgs = resultArgs.map(WebhookExecutor::redactSensitiveText).map { arg ->
+                maskPhoneNumber(arg)
             }
             return ActionExecutionRecord(
                 actionType = actionType,
@@ -58,6 +58,26 @@ data class ActionExecutionRecord(
                 resultCode = resultCode ?: successCodeFor(actionType, success),
                 resultArgs = safeArgs,
             )
+        }
+
+        private fun sanitizeMessage(message: String, success: Boolean, actionType: ActionType): String {
+            val redacted = WebhookExecutor.redactSensitiveText(message)
+            val masked = maskPhoneNumber(redacted)
+            return when {
+                masked.isBlank() || masked == "[REDACTED]" -> if (!success) "Execution failed" else actionType.label
+                else -> masked
+            }
+        }
+
+        private fun maskPhoneNumber(text: String): String {
+            var result = text
+            result = result.replace(Regex("""(?<!\w)(?:\+\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}(?!\w)""")) { match ->
+                PhoneNumberUtils.mask(match.value)
+            }
+            result = result.replace(Regex("""(?<!\w)\+\d{7,15}(?!\w)""")) { match ->
+                PhoneNumberUtils.mask(match.value)
+            }
+            return result
         }
 
         internal fun successCodeFor(actionType: ActionType, success: Boolean): ActionResultCode? {
@@ -130,14 +150,25 @@ data class ExecutionHistoryEntry(
             val successCount = actions.count { it.success }
             val failureCount = actions.count { !it.success }
             val status = ExecutionStatus.fromCounts(successCount, failureCount)
+            val safeRuleName = WebhookExecutor.redactSensitiveText(ruleName)
+            val safeTrigger = WebhookExecutor.redactSensitiveText(trigger)
+            val sanitizedActions = actions.map { action ->
+                ActionExecutionRecord.create(
+                    actionType = action.actionType,
+                    success = action.success,
+                    message = action.message,
+                    resultCode = action.resultCode,
+                    resultArgs = action.resultArgs,
+                )
+            }
             return ExecutionHistoryEntry(
                 id = id,
                 ruleId = ruleId,
-                ruleName = ruleName,
-                trigger = trigger,
+                ruleName = safeRuleName,
+                trigger = safeTrigger,
                 timestamp = timestamp,
                 status = status,
-                actions = actions,
+                actions = sanitizedActions,
             )
         }
     }
