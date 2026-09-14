@@ -76,6 +76,8 @@ class AutomationRepository(private val context: Context) {
     suspend fun syncPersistedLanguage(): String {
         val lang = appLanguage.first()
         persistLanguage(context, lang)
+        applyAppLocale(context, lang)
+        AutomationService.refreshNotificationLocale(context)
         return lang
     }
 
@@ -128,23 +130,10 @@ class AutomationRepository(private val context: Context) {
 
     val executionHistory: Flow<List<ExecutionHistoryEntry>> = context.dataStore.data.map { prefs ->
         val history = prefs[historyKey]?.let { safeDecodeHistory(it) }.orEmpty()
-        val migratedHistory = history.map { entry ->
-            entry.copy(
-                ruleName = entry.normalizedRuleName,
-                actions = entry.actions.map { action ->
-                    ActionExecutionRecord.create(
-                        actionType = action.actionType,
-                        success = action.success,
-                        message = action.message,
-                        resultCode = action.resultCode,
-                        resultArgs = action.resultArgs,
-                    )
-                },
-            )
-        }
+        val migratedHistory = history.map { it.sanitized() }
         if (migratedHistory != history) {
             val migrated = context.dataStore.edit { migrateHistory(it) }
-            migrated[historyKey]?.let { safeDecodeHistory(it) }.orEmpty()
+            migrated[historyKey]?.let { safeDecodeHistory(it) }?.map { it.sanitized() } ?: migratedHistory
         } else {
             history
         }
@@ -154,19 +143,7 @@ class AutomationRepository(private val context: Context) {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
             val current = prefs[historyKey]?.let { safeDecodeHistory(it) } ?: emptyList()
-            val sanitizedActions = entry.actions.map { action ->
-                ActionExecutionRecord.create(
-                    actionType = action.actionType,
-                    success = action.success,
-                    message = action.message,
-                    resultCode = action.resultCode,
-                    resultArgs = action.resultArgs,
-                )
-            }
-            val sanitizedEntry = entry.copy(
-                ruleName = entry.normalizedRuleName,
-                actions = sanitizedActions,
-            )
+            val sanitizedEntry = entry.sanitized()
             val updated = (listOf(sanitizedEntry) + current).take(MAX_HISTORY_ENTRIES)
             prefs[historyKey] = json.encodeToString(historySerializer, updated)
         }
@@ -821,20 +798,7 @@ class AutomationRepository(private val context: Context) {
     private fun migrateHistory(prefs: MutablePreferences) {
         val raw = prefs[historyKey] ?: return
         val history = safeDecodeHistory(raw)
-        val migrated = history.map { entry ->
-            entry.copy(
-                ruleName = entry.normalizedRuleName,
-                actions = entry.actions.map { action ->
-                    ActionExecutionRecord.create(
-                        actionType = action.actionType,
-                        success = action.success,
-                        message = action.message,
-                        resultCode = action.resultCode,
-                        resultArgs = action.resultArgs,
-                    )
-                },
-            )
-        }
+        val migrated = history.map { it.sanitized() }
         if (migrated != history) {
             prefs[historyKey] = json.encodeToString(historySerializer, migrated)
         }
@@ -892,18 +856,7 @@ class AutomationRepository(private val context: Context) {
 
         fun getPersistedLanguage(context: Context): String {
             val prefs = context.getSharedPreferences(PREFS_LOCALE, Context.MODE_PRIVATE)
-            val cached = prefs.getString(KEY_APP_LANGUAGE, null)
-            if (cached != null) return cached
-
-            val fromDataStore = runCatching {
-                kotlinx.coroutines.runBlocking(Dispatchers.IO) {
-                    AutomationRepository(context).appLanguage.first()
-                }
-            }.getOrNull()
-
-            val language = fromDataStore ?: "system"
-            persistLanguage(context, language)
-            return language
+            return prefs.getString(KEY_APP_LANGUAGE, null) ?: "system"
         }
 
         fun persistLanguage(context: Context, language: String) {

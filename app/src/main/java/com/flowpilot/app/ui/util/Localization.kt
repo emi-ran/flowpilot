@@ -378,9 +378,14 @@ fun resolveLocaleLanguage(language: String?): String = when (language?.lowercase
     else -> "system"
 }
 
+fun systemResourcesLocale(): java.util.Locale = runCatching {
+    val locales = android.content.res.Resources.getSystem().configuration.locales
+    if (!locales.isEmpty) locales.get(0) else null
+}.getOrNull() ?: java.util.Locale.getDefault()
+
 fun targetLocaleForLanguage(
     language: String,
-    defaultLocale: java.util.Locale = java.util.Locale.getDefault(),
+    defaultLocale: java.util.Locale = systemResourcesLocale(),
 ): java.util.Locale = when (resolveLocaleLanguage(language)) {
     "tr" -> java.util.Locale.forLanguageTag("tr")
     "en" -> java.util.Locale.forLanguageTag("en")
@@ -405,6 +410,7 @@ fun applyAppLocale(context: android.content.Context, language: String) {
     when (targetTag) {
         "tr" -> java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr"))
         "en" -> java.util.Locale.setDefault(java.util.Locale.forLanguageTag("en"))
+        else -> java.util.Locale.setDefault(systemResourcesLocale())
     }
 }
 

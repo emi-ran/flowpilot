@@ -138,6 +138,25 @@ data class ExecutionHistoryEntry(
             ruleName
         }
 
+    fun sanitized(): ExecutionHistoryEntry {
+        val safeRuleName = WebhookExecutor.redactSensitiveText(normalizedRuleName)
+        val safeTrigger = WebhookExecutor.redactSensitiveText(trigger)
+        val sanitizedActions = actions.map { action ->
+            ActionExecutionRecord.create(
+                actionType = action.actionType,
+                success = action.success,
+                message = action.message,
+                resultCode = action.resultCode,
+                resultArgs = action.resultArgs,
+            )
+        }
+        return copy(
+            ruleName = safeRuleName,
+            trigger = safeTrigger,
+            actions = sanitizedActions,
+        )
+    }
+
     companion object {
         fun create(
             id: String = java.util.UUID.randomUUID().toString(),
@@ -150,26 +169,16 @@ data class ExecutionHistoryEntry(
             val successCount = actions.count { it.success }
             val failureCount = actions.count { !it.success }
             val status = ExecutionStatus.fromCounts(successCount, failureCount)
-            val safeRuleName = WebhookExecutor.redactSensitiveText(ruleName)
-            val safeTrigger = WebhookExecutor.redactSensitiveText(trigger)
-            val sanitizedActions = actions.map { action ->
-                ActionExecutionRecord.create(
-                    actionType = action.actionType,
-                    success = action.success,
-                    message = action.message,
-                    resultCode = action.resultCode,
-                    resultArgs = action.resultArgs,
-                )
-            }
-            return ExecutionHistoryEntry(
+            val entry = ExecutionHistoryEntry(
                 id = id,
                 ruleId = ruleId,
-                ruleName = safeRuleName,
-                trigger = safeTrigger,
+                ruleName = ruleName,
+                trigger = trigger,
                 timestamp = timestamp,
                 status = status,
-                actions = sanitizedActions,
+                actions = actions,
             )
+            return entry.sanitized()
         }
     }
 }

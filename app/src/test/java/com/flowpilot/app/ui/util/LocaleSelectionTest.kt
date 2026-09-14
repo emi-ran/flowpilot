@@ -36,4 +36,31 @@ class LocaleSelectionTest {
         val unknownLocale = targetLocaleForLanguage("unknown", fallback)
         assertEquals(fallback, unknownLocale)
     }
+
+    @Test
+    fun `targetLocaleForLanguage with system uses supplied system locale regardless of mutated Locale default`() {
+        val previousDefault = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("tr"))
+            val systemLocale = Locale("de", "DE")
+            val resolved = targetLocaleForLanguage("system", systemLocale)
+            assertEquals("de", resolved.language)
+            assertEquals(systemLocale, resolved)
+        } finally {
+            Locale.setDefault(previousDefault)
+        }
+    }
+
+    @Test
+    fun `systemResourcesLocale safely returns non-null fallback in test environment`() {
+        val locale = systemResourcesLocale()
+        org.junit.Assert.assertNotNull(locale)
+    }
+
+    @Test
+    fun `targetLocaleForLanguage with system defaults to systemResourcesLocale`() {
+        val expected = systemResourcesLocale()
+        val actual = targetLocaleForLanguage("system")
+        assertEquals(expected, actual)
+    }
 }

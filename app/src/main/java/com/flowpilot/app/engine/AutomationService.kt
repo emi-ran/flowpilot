@@ -195,6 +195,7 @@ class AutomationService : Service() {
     companion object {
         private val controlMutex = Mutex()
         private val eventExecutionAuthorization = EventExecutionAuthorization()
+        @Volatile
         private var activeService: AutomationService? = null
         private val mutableRunning = MutableStateFlow(false)
         val running = mutableRunning.asStateFlow()

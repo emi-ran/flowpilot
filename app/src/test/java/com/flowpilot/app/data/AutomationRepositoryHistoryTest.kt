@@ -443,8 +443,8 @@ class AutomationRepositoryHistoryTest {
         val legacyEntry = ExecutionHistoryEntry(
             id = "legacy-leak",
             ruleId = "legacy-rule",
-            ruleName = "Rule with $syntheticSecret",
-            trigger = "MANUAL",
+            ruleName = "Rule with $syntheticSecret ($syntheticUri)",
+            trigger = "TRIGGER_$syntheticSecret",
             timestamp = 100L,
             status = ExecutionStatus.FAILURE,
             actions = listOf(
@@ -467,6 +467,11 @@ class AutomationRepositoryHistoryTest {
         val loadedEntry = loadedHistory.single()
         val loadedAction = loadedEntry.actions.single()
 
+        assertThat(loadedEntry.ruleName).doesNotContain(syntheticSecret)
+        assertThat(loadedEntry.ruleName).doesNotContain(syntheticUri)
+        assertThat(loadedEntry.trigger).doesNotContain(syntheticSecret)
+        assertThat(loadedEntry.trigger).doesNotContain(syntheticUri)
+
         assertThat(loadedAction.message).doesNotContain(syntheticSecret)
         assertThat(loadedAction.message).doesNotContain(syntheticUri)
         assertThat(loadedAction.message).doesNotContain("/data/user/0")
@@ -481,5 +486,21 @@ class AutomationRepositoryHistoryTest {
         assertThat(migratedRaw).doesNotContain(syntheticUri)
         assertThat(migratedRaw).doesNotContain("/data/user/0")
         assertThat(migratedRaw).doesNotContain("FileNotFoundException")
+    }
+
+    @Test
+    fun getPersistedLanguage_onCacheMiss_returnsSystem_andSyncPopulatesCache() = runTest {
+        val prefs = context.getSharedPreferences(AutomationRepository.PREFS_LOCALE, Context.MODE_PRIVATE)
+        prefs.edit().clear().commit()
+
+        val initial = AutomationRepository.getPersistedLanguage(context)
+        assertThat(initial).isEqualTo("system")
+
+        repository.rawDataStore.edit { it[stringPreferencesKey("app_language")] = "tr" }
+        assertThat(prefs.contains(AutomationRepository.KEY_APP_LANGUAGE)).isFalse()
+
+        val synced = repository.syncPersistedLanguage()
+        assertThat(synced).isEqualTo("tr")
+        assertThat(prefs.getString(AutomationRepository.KEY_APP_LANGUAGE, null)).isEqualTo("tr")
     }
 }
