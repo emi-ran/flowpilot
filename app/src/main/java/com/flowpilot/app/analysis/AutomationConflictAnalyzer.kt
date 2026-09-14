@@ -30,17 +30,17 @@ object AutomationConflictAnalyzer {
         .filterNot { conditionsAreDisjoint(candidate.conditions, it.conditions) }
         .flatMap { other ->
             opposingActions(candidate.effectiveActions, other.effectiveActions).map { (candidateAction, otherAction) ->
-                val exactConditions = candidate.conditions.toSet() == other.conditions.toSet()
+                val certain = triggerOverlapIsCertain(candidate, other) && candidate.conditions.toSet() == other.conditions.toSet()
                 AutomationConflict(
                     ruleId = OPPOSING_STATE_ACTIONS,
                     candidateRuleId = candidate.id,
                     candidateRuleName = candidate.name,
                     conflictingRuleId = other.id,
                     conflictingRuleName = other.name,
-                    overlapReason = if (exactConditions) "Exact trigger target and conditions overlap" else "Exact trigger target; condition overlap cannot be proven disjoint",
+                    overlapReason = if (certain) "Trigger target and conditions overlap" else "Trigger and condition overlap cannot be proven disjoint",
                     candidateAction = candidateAction,
                     conflictingAction = otherAction,
-                    confidence = if (exactConditions) ConflictConfidence.CERTAIN else ConflictConfidence.POSSIBLE,
+                    confidence = if (certain) ConflictConfidence.CERTAIN else ConflictConfidence.POSSIBLE,
                 )
             }
         }
@@ -92,15 +92,25 @@ object AutomationConflictAnalyzer {
             TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED ->
                 TriggerTargetMatcher.bluetoothTargetsMatch(a.bluetoothDeviceAddress, b.bluetoothDeviceAddress)
             TriggerEvent.NFC_TAG_SCANNED -> TriggerTargetMatcher.nfcTargetsMatch(a.nfcTagId, b.nfcTagId)
+            TriggerEvent.TIME_SCHEDULE -> TriggerTargetMatcher.scheduleTargetsOverlap(
+                a.scheduledMinute, a.scheduledDays, b.scheduledMinute, b.scheduledDays,
+            )
+            TriggerEvent.NOTIFICATION_RECEIVED ->
+                TriggerTargetMatcher.notificationPackageTargetsOverlap(a.notificationAppPackage, b.notificationAppPackage) &&
+                    TriggerTargetMatcher.notificationKeywordsOverlap(a.notificationKeyword, b.notificationKeyword)
             else -> triggerTarget(a) == triggerTarget(b)
         }
     }
 
+    private fun triggerOverlapIsCertain(a: Automation, b: Automation): Boolean = when (a.triggerEvent) {
+        TriggerEvent.NOTIFICATION_RECEIVED ->
+            TriggerTargetMatcher.notificationKeywordsCertainlyOverlap(a.notificationKeyword, b.notificationKeyword)
+        else -> true
+    }
+
     private fun triggerTarget(rule: Automation): Any = when (rule.triggerEvent) {
         TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED -> rule.appPackage
-        TriggerEvent.TIME_SCHEDULE -> rule.scheduledMinute to rule.scheduledDays
         TriggerEvent.BATTERY_BELOW, TriggerEvent.BATTERY_ABOVE -> rule.batteryLevel
-        TriggerEvent.NOTIFICATION_RECEIVED -> rule.notificationAppPackage to rule.notificationKeyword
         TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> rule.lightLux
         TriggerEvent.SMS_RECEIVED -> listOf(rule.smsSenderFilter, rule.smsMatchMode.name, rule.smsKeyword)
         TriggerEvent.GEOFENCE_ENTER, TriggerEvent.GEOFENCE_EXIT -> listOf(rule.geofenceLatitude, rule.geofenceLongitude, rule.geofenceRadiusMeters)

@@ -230,16 +230,11 @@ object RuleEvaluator {
     ): List<Automation> {
         return rules.filter { rule ->
             if (!rule.enabled || rule.triggerEvent != TriggerEvent.NOTIFICATION_RECEIVED || rule.isCoolingDown(nowMs)) return@filter false
-            // Package match: must match selected package if configured
-            if (rule.notificationAppPackage.isNotBlank() && rule.notificationAppPackage != event.packageName) {
+            if (!TriggerTargetMatcher.notificationPackageTargetMatches(rule.notificationAppPackage, event.packageName)) {
                 return@filter false
             }
-            // Keyword match: case-insensitive check in title or text
-            if (rule.notificationKeyword.isNotBlank()) {
-                val kw = rule.notificationKeyword.trim().lowercase()
-                val inTitle = event.title.lowercase().contains(kw)
-                val inText = event.text.lowercase().contains(kw)
-                if (!inTitle && !inText) return@filter false
+            if (!TriggerTargetMatcher.notificationKeywordMatches(rule.notificationKeyword, event.title, event.text)) {
+                return@filter false
             }
             matchesConditions(rule.conditions, liveState, nowMs)
         }

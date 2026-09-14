@@ -19,6 +19,10 @@ class AutomationConflictAnalyzerTest {
         wifiSsid: String = "",
         bluetoothAddress: String = "",
         nfcTagId: String = "",
+        scheduledMinute: Int = 0,
+        scheduledDays: Set<Int> = emptySet(),
+        notificationAppPackage: String = "",
+        notificationKeyword: String = "",
         conditions: List<RuleCondition> = emptyList(),
     ) = Automation(
         id = id,
@@ -29,6 +33,10 @@ class AutomationConflictAnalyzerTest {
         wifiSsid = wifiSsid,
         bluetoothDeviceAddress = bluetoothAddress,
         nfcTagId = nfcTagId,
+        scheduledMinute = scheduledMinute,
+        scheduledDays = scheduledDays,
+        notificationAppPackage = notificationAppPackage,
+        notificationKeyword = notificationKeyword,
         action = actions.first(),
         actions = actions,
         conditions = conditions,
@@ -144,6 +152,60 @@ class AutomationConflictAnalyzerTest {
             listOf("normalized", "wildcard"),
             AutomationConflictAnalyzer.analyze(candidate, listOf(normalized, wildcard, other)).map { it.conflictingRuleId },
         )
+    }
+
+    @Test
+    fun timeScheduleOverlapsAtSameMinuteWhenDaysIntersectOrEitherIsDaily() {
+        val candidate = rule(
+            "candidate",
+            TriggerEvent.TIME_SCHEDULE,
+            listOf(ActionType.WIFI_ON),
+            scheduledMinute = 600,
+            scheduledDays = setOf(1, 3),
+        )
+        val rules = listOf(
+            rule("intersecting", TriggerEvent.TIME_SCHEDULE, listOf(ActionType.WIFI_OFF), scheduledMinute = 600, scheduledDays = setOf(3, 5)),
+            rule("daily", TriggerEvent.TIME_SCHEDULE, listOf(ActionType.WIFI_OFF), scheduledMinute = 600),
+            rule("disjoint", TriggerEvent.TIME_SCHEDULE, listOf(ActionType.WIFI_OFF), scheduledMinute = 600, scheduledDays = setOf(2, 4)),
+            rule("other-minute", TriggerEvent.TIME_SCHEDULE, listOf(ActionType.WIFI_OFF), scheduledMinute = 601, scheduledDays = setOf(1, 3)),
+        )
+
+        assertEquals(
+            listOf("intersecting", "daily"),
+            AutomationConflictAnalyzer.analyze(candidate, rules).map { it.conflictingRuleId },
+        )
+        assertEquals(
+            listOf("intersecting", "daily", "disjoint"),
+            AutomationConflictAnalyzer.analyze(candidate.copy(scheduledDays = emptySet()), rules).map { it.conflictingRuleId },
+        )
+    }
+
+    @Test
+    fun notificationOverlapUsesRuntimePackageWildcardAndConservativeKeywordSemantics() {
+        val candidate = rule(
+            "candidate",
+            TriggerEvent.NOTIFICATION_RECEIVED,
+            listOf(ActionType.WIFI_ON),
+            notificationAppPackage = "com.chat",
+            notificationKeyword = "secret-one",
+        )
+        val rules = listOf(
+            rule("same", TriggerEvent.NOTIFICATION_RECEIVED, listOf(ActionType.WIFI_OFF), notificationAppPackage = "com.chat", notificationKeyword = " SECRET-ONE "),
+            rule("keyword-wildcard", TriggerEvent.NOTIFICATION_RECEIVED, listOf(ActionType.WIFI_OFF), notificationAppPackage = "com.chat"),
+            rule("package-wildcard", TriggerEvent.NOTIFICATION_RECEIVED, listOf(ActionType.WIFI_OFF), notificationKeyword = "secret-one"),
+            rule("coexistent-keywords", TriggerEvent.NOTIFICATION_RECEIVED, listOf(ActionType.WIFI_OFF), notificationAppPackage = "com.chat", notificationKeyword = "secret-two"),
+            rule("other-package", TriggerEvent.NOTIFICATION_RECEIVED, listOf(ActionType.WIFI_OFF), notificationAppPackage = "com.mail", notificationKeyword = "secret-one"),
+        )
+
+        val findings = AutomationConflictAnalyzer.analyze(candidate, rules)
+        assertEquals(listOf("same", "keyword-wildcard", "package-wildcard", "coexistent-keywords"), findings.map { it.conflictingRuleId })
+        assertEquals(ConflictConfidence.CERTAIN, findings.first { it.conflictingRuleId == "same" }.confidence)
+        assertEquals(ConflictConfidence.CERTAIN, findings.first { it.conflictingRuleId == "keyword-wildcard" }.confidence)
+        assertEquals(ConflictConfidence.POSSIBLE, findings.first { it.conflictingRuleId == "coexistent-keywords" }.confidence)
+        findings.forEach {
+            assertTrue(!it.overlapReason.contains("secret-one", ignoreCase = true))
+            assertTrue(!it.overlapReason.contains("secret-two", ignoreCase = true))
+        }
     }
 
     @Test

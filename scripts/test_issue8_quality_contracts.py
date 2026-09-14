@@ -8,12 +8,18 @@ def read(path: str) -> str:
 
 analyzer = read("app/src/main/java/com/flowpilot/app/analysis/AutomationConflictAnalyzer.kt")
 evaluator = read("app/src/main/java/com/flowpilot/app/engine/RuleEvaluator.kt")
+schedule_evaluator = read("app/src/main/java/com/flowpilot/app/engine/ScheduleEvaluator.kt")
 app = read("app/src/main/java/com/flowpilot/app/ui/App.kt")
 dialog = read("app/src/main/java/com/flowpilot/app/ui/components/ConflictWarningDialog.kt")
 
 assert "TriggerTargetMatcher.wifiTargetsOverlap" in analyzer
 assert "TriggerTargetMatcher.bluetoothTargetsMatch" in analyzer
 assert "TriggerTargetMatcher.nfcTargetsMatch" in analyzer
+assert "TriggerTargetMatcher.scheduleTargetsOverlap" in analyzer
+assert "TriggerTargetMatcher.notificationPackageTargetsOverlap" in analyzer
+assert "TriggerTargetMatcher.notificationKeywordsOverlap" in analyzer
+assert "TriggerTargetMatcher.notificationKeywordMatches" in evaluator
+assert "TriggerTargetMatcher.scheduleTargetMatches" in schedule_evaluator
 assert "TriggerTargetMatcher.wifiTargetMatches" in evaluator
 assert "TriggerTargetMatcher.bluetoothTargetsMatch" in evaluator
 assert "TriggerTargetMatcher.nfcTargetsMatch" in evaluator
