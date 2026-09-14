@@ -304,6 +304,14 @@
     <string name="msg_add_action_to_test">Add at least one action to test</string>
     <string name="btn_save_changes">Save</string>
     <string name="btn_create_rule">Create rule</string>
+    <string name="conflict_warning_title">Likely automation conflict</string>
+    <string name="conflict_warning_description">Another enabled rule may run for the same trigger and set the same system state differently. Review before continuing.</string>
+    <string name="conflict_warning_item">%1$s conflict: %2$s versus %3$s</string>
+    <string name="conflict_likely">Likely</string>
+    <string name="conflict_possible">Possible</string>
+    <string name="conflict_inspect_rule">Inspect %1$s</string>
+    <string name="conflict_save_anyway">Save anyway</string>
+    <string name="conflict_enable_anyway">Enable anyway</string>
     <string name="search_triggers_hint">Search triggers (e.g. battery, call, sms, screen, time)...</string>
     <string name="search_actions_hint">Search actions (e.g. bluetooth, wifi, volume, notification)...</string>
     <string name="search_conditions_hint">Search conditions...</string>

@@ -37,15 +37,22 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     var page by remember { mutableStateOf(Page.HOME) }
     var permissionsReturnPage by remember { mutableStateOf(Page.HOME) }
     var selectedRule by remember { mutableStateOf<Automation?>(null) }
+    var inspectedRule by remember { mutableStateOf<Automation?>(null) }
+    var inspectReturnPage by remember { mutableStateOf(Page.HOME) }
     var initialPreset by remember { mutableStateOf<com.flowpilot.app.data.model.AutomationPreset?>(null) }
 
     BackHandler(enabled = page != Page.HOME) {
-        page = Page.HOME
+        if (page == Page.DETAIL && inspectedRule != null) {
+            inspectedRule = null
+            page = inspectReturnPage
+        } else {
+            page = Page.HOME
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
         Crossfade(
-            targetState = page,
+            targetState = if (inspectedRule != null) inspectReturnPage else page,
             animationSpec = tween(180),
             label = "pageCrossfade",
         ) { targetPage ->
@@ -53,6 +60,12 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                 Page.HOME -> HomeScreen(
                     vm = vm,
                     detail = { selectedRule = it; page = Page.DETAIL },
+                    inspectRule = { rule ->
+                        inspectedRule = rule
+                        inspectReturnPage = Page.HOME
+                        page = Page.DETAIL
+                    },
+                    showConflictWarning = inspectedRule == null,
                     create = { initialPreset = null; page = Page.CREATE },
                     createWithPreset = { preset ->
                         initialPreset = preset
@@ -71,7 +84,16 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                     history = { page = Page.HISTORY },
                     bottomBar = { BottomBar(Page.SETTINGS) { page = it } },
                 )
-                Page.CREATE -> CreateScreen(vm, initialPreset = initialPreset) {
+                Page.CREATE -> CreateScreen(
+                    vm = vm,
+                    initialPreset = initialPreset,
+                    inspectRule = { rule ->
+                        inspectedRule = rule
+                        inspectReturnPage = Page.CREATE
+                        page = Page.DETAIL
+                    },
+                    showConflictWarning = inspectedRule == null,
+                ) {
                     initialPreset = null
                     page = Page.HOME
                 }
@@ -79,11 +101,29 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                 Page.HISTORY -> HistoryScreen(vm) { page = Page.SETTINGS }
                 Page.DETAIL -> {
                     selectedRule?.let { rule ->
-                        DetailScreen(vm, rule) { page = Page.HOME }
+                        DetailScreen(
+                            vm = vm,
+                            initialRule = rule,
+                            inspectRule = {
+                                inspectedRule = it
+                                inspectReturnPage = Page.DETAIL
+                            },
+                            showConflictWarning = inspectedRule == null,
+                        ) { page = Page.HOME }
                     } ?: run {
                         page = Page.HOME
                     }
                 }
+            }
+        }
+        if (page == Page.DETAIL && inspectedRule != null) {
+            DetailScreen(
+                vm = vm,
+                initialRule = inspectedRule!!,
+                inspectRule = { inspectedRule = it },
+            ) {
+                inspectedRule = null
+                page = inspectReturnPage
             }
         }
     }

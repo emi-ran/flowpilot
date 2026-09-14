@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
+import com.flowpilot.app.ui.util.automaticAutomationName
 import com.flowpilot.app.ui.util.localizedLabel
 import android.content.Intent
 import android.provider.Settings
@@ -84,17 +85,26 @@ import com.flowpilot.app.ui.components.actionDragHandle
 import androidx.compose.material.icons.filled.DragHandle
 import com.flowpilot.app.engine.NfcTagHandoff
 import com.flowpilot.app.engine.NfcTagUtils
+import com.flowpilot.app.analysis.AutomationConflict
+import com.flowpilot.app.analysis.AutomationConflictAnalyzer
+import com.flowpilot.app.ui.components.ConflictWarningDialog
 
 @Composable
 fun CreateScreen(
     vm: AppViewModel,
     initialPreset: com.flowpilot.app.data.model.AutomationPreset? = null,
+    inspectRule: (Automation) -> Unit = {},
+    showConflictWarning: Boolean = true,
     done: () -> Unit,
 ) {
     BackHandler(onBack = done)
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val existingRules by vm.automations.collectAsState()
+    var pendingConflicts by remember { mutableStateOf<List<AutomationConflict>>(emptyList()) }
+    var pendingCandidate by remember { mutableStateOf<Automation?>(null) }
+    var pendingSave by remember { mutableStateOf<(() -> Unit)?>(null) }
     var showRunConfirm by remember { mutableStateOf(false) }
     var event by remember { mutableStateOf(TriggerEvent.APP_OPENED) }
     val now = java.time.LocalTime.now()
@@ -330,6 +340,26 @@ fun CreateScreen(
                 showActions = false
                 editingActionIndex = null
             }
+        )
+    }
+    if (showConflictWarning && pendingConflicts.isNotEmpty()) {
+        ConflictWarningDialog(
+            conflicts = pendingConflicts,
+            onInspect = { id -> existingRules.firstOrNull { it.rule.id == id }?.rule?.let(inspectRule) },
+            onOverride = {
+                pendingCandidate?.let { candidate ->
+                    val current = AutomationConflictAnalyzer.analyze(candidate, existingRules.map { it.rule })
+                    if (current != pendingConflicts && current.isNotEmpty()) {
+                        pendingConflicts = current
+                    } else {
+                        pendingSave?.invoke()
+                        pendingCandidate = null
+                        pendingSave = null
+                        pendingConflicts = emptyList()
+                    }
+                }
+            },
+            onDismiss = { pendingCandidate = null; pendingSave = null; pendingConflicts = emptyList() },
         )
     }
     if (showTimePicker) {
@@ -882,70 +912,124 @@ fun CreateScreen(
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.btn_cancel)) }
                 Button(
                     onClick = {
-                        vm.addRule(
-                            name = name,
+                        val finalName = name.ifBlank {
+                            automaticAutomationName(
+                                context = context,
+                                trigger = event,
+                                actions = actions,
+                                appName = appName,
+                                appPackage = pkg,
+                                scheduledMinute = scheduledMinute,
+                                batteryLevel = batteryLevel,
+                                wifiSsid = wifiSsid,
+                                bluetoothDeviceName = bluetoothDeviceName,
+                                bluetoothDeviceAddress = bluetoothDeviceAddress,
+                                nfcTagId = nfcTagId.trim(),
+                                notificationAppName = notificationAppName,
+                                notificationAppPackage = notificationAppPackage,
+                                lightLux = lightLux,
+                                geofenceName = geofenceName,
+                                geofenceRadiusMeters = geofenceRadiusMeters,
+                            )
+                        }
+                        val conflictCandidate = Automation(
+                            id = newRuleId,
+                            name = finalName,
                             triggerEvent = event,
                             appPackage = pkg,
-                            appName = appName,
-                            actions = actions,
-                            actionDelays = actionDelays,
-                            cooldownMinutes = cooldownMinutes,
-                            flipScreenOffDetection = flipScreenOffDetection,
                             scheduledMinute = scheduledMinute,
                             scheduledDays = scheduledDays,
                             batteryLevel = batteryLevel,
                             wifiSsid = wifiSsid,
                             bluetoothDeviceAddress = bluetoothDeviceAddress,
-                            bluetoothDeviceName = bluetoothDeviceName,
                             nfcTagId = nfcTagId.trim(),
                             notificationAppPackage = notificationAppPackage,
-                            notificationAppName = notificationAppName,
                             notificationKeyword = notificationKeyword,
                             conditions = conditions,
-                            notificationTitle = notificationTitle,
-                            notificationBody = notificationBody,
-                            vibrationPattern = vibrationPattern,
-                            vibrationDurationMs = vibrationDurationMs,
-                            vibrationAmplitude = vibrationAmplitude,
-                            mediaVolumePercent = mediaVolumePercent,
-                            soundPreset = soundPreset,
-                            soundUri = soundUri,
-                            soundName = soundName,
-                            soundDurationMs = soundDurationMs,
-                            launchPackage = launchPackage,
-                            launchAppName = launchAppName,
-                            url = url,
-                            ttsText = ttsText,
-                            ttsVoiceName = ttsVoiceName,
-                            ttsSpeechRate = ttsSpeechRate,
-                            ttsAudioFileName = ttsAudioFileName,
-                            alarmHour = alarmHour,
-                            alarmMinute = alarmMinute,
-                            alarmMessage = alarmMessage,
-                            timerDurationSeconds = timerDurationSeconds,
-                            timerMessage = timerMessage,
-                            webhookMethod = webhookMethod,
-                            webhookUrl = webhookUrl,
-                            webhookHeaders = webhookHeaders,
-                            webhookBody = webhookBody,
-                            webhookTimeoutSeconds = webhookTimeoutSeconds,
-                            phoneNumber = phoneNumber.trim(),
+                            lightLux = lightLux,
                             smsSenderFilter = smsSenderFilter.trim(),
                             smsMatchMode = smsMatchMode,
                             smsKeyword = smsKeyword.trim(),
-                            smsRecipient = smsRecipient.trim(),
-                            smsMessage = smsMessage,
-                            lightLux = lightLux,
-                            screenBrightnessPercent = screenBrightnessPercent,
-                            forceStopPackage = forceStopPackage,
-                            forceStopAppName = forceStopAppName,
-                            geofenceName = geofenceName,
                             geofenceLatitude = geofenceLatitude,
                             geofenceLongitude = geofenceLongitude,
                             geofenceRadiusMeters = geofenceRadiusMeters,
-                            ruleId = newRuleId,
+                            action = actions.firstOrNull() ?: ActionType.NFC_ON,
+                            actions = actions,
+                            createdAt = System.currentTimeMillis(),
                         )
-                        done()
+                        val saveRule = {
+                            vm.addRule(
+                                name = finalName,
+                                triggerEvent = event,
+                                appPackage = pkg,
+                                appName = appName,
+                                actions = actions,
+                                actionDelays = actionDelays,
+                                cooldownMinutes = cooldownMinutes,
+                                flipScreenOffDetection = flipScreenOffDetection,
+                                scheduledMinute = scheduledMinute,
+                                scheduledDays = scheduledDays,
+                                batteryLevel = batteryLevel,
+                                wifiSsid = wifiSsid,
+                                bluetoothDeviceAddress = bluetoothDeviceAddress,
+                                bluetoothDeviceName = bluetoothDeviceName,
+                                nfcTagId = nfcTagId.trim(),
+                                notificationAppPackage = notificationAppPackage,
+                                notificationAppName = notificationAppName,
+                                notificationKeyword = notificationKeyword,
+                                conditions = conditions,
+                                notificationTitle = notificationTitle,
+                                notificationBody = notificationBody,
+                                vibrationPattern = vibrationPattern,
+                                vibrationDurationMs = vibrationDurationMs,
+                                vibrationAmplitude = vibrationAmplitude,
+                                mediaVolumePercent = mediaVolumePercent,
+                                soundPreset = soundPreset,
+                                soundUri = soundUri,
+                                soundName = soundName,
+                                soundDurationMs = soundDurationMs,
+                                launchPackage = launchPackage,
+                                launchAppName = launchAppName,
+                                url = url,
+                                ttsText = ttsText,
+                                ttsVoiceName = ttsVoiceName,
+                                ttsSpeechRate = ttsSpeechRate,
+                                ttsAudioFileName = ttsAudioFileName,
+                                alarmHour = alarmHour,
+                                alarmMinute = alarmMinute,
+                                alarmMessage = alarmMessage,
+                                timerDurationSeconds = timerDurationSeconds,
+                                timerMessage = timerMessage,
+                                webhookMethod = webhookMethod,
+                                webhookUrl = webhookUrl,
+                                webhookHeaders = webhookHeaders,
+                                webhookBody = webhookBody,
+                                webhookTimeoutSeconds = webhookTimeoutSeconds,
+                                phoneNumber = phoneNumber.trim(),
+                                smsSenderFilter = smsSenderFilter.trim(),
+                                smsMatchMode = smsMatchMode,
+                                smsKeyword = smsKeyword.trim(),
+                                smsRecipient = smsRecipient.trim(),
+                                smsMessage = smsMessage,
+                                lightLux = lightLux,
+                                screenBrightnessPercent = screenBrightnessPercent,
+                                forceStopPackage = forceStopPackage,
+                                forceStopAppName = forceStopAppName,
+                                geofenceName = geofenceName,
+                                geofenceLatitude = geofenceLatitude,
+                                geofenceLongitude = geofenceLongitude,
+                                geofenceRadiusMeters = geofenceRadiusMeters,
+                                ruleId = newRuleId,
+                            )
+                            done()
+                        }
+                        val conflicts = AutomationConflictAnalyzer.analyze(conflictCandidate, existingRules.map { it.rule })
+                        if (conflicts.isEmpty()) saveRule()
+                        else {
+                            pendingCandidate = conflictCandidate
+                            pendingSave = saveRule
+                            pendingConflicts = conflicts
+                        }
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),

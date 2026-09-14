@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontWeight
@@ -51,11 +52,16 @@ import com.flowpilot.app.ui.util.localizedActionSummary
 import com.flowpilot.app.ui.util.localizedLabel
 import com.flowpilot.app.engine.GeofenceDiagnosticStatus
 import com.flowpilot.app.data.AutomationRepository
+import com.flowpilot.app.analysis.AutomationConflict
+import com.flowpilot.app.analysis.AutomationConflictAnalyzer
+import com.flowpilot.app.ui.components.ConflictWarningDialog
 
 @Composable
 fun HomeScreen(
     vm: AppViewModel,
     detail: (Automation) -> Unit,
+    inspectRule: (Automation) -> Unit,
+    showConflictWarning: Boolean = true,
     create: () -> Unit,
     createWithPreset: (AutomationPreset) -> Unit = {},
     permissions: () -> Unit,
@@ -75,10 +81,36 @@ fun HomeScreen(
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPresetsSheet by remember { mutableStateOf(false) }
     var pendingShare by remember { mutableStateOf<List<Automation>?>(null) }
+    var pendingEnable by remember { mutableStateOf<Automation?>(null) }
+    var pendingEnableConflicts by remember { mutableStateOf<List<AutomationConflict>>(emptyList()) }
     pendingShare?.let { selected ->
         BackupDisclosureDialog(
             onConfirm = { pendingShare = null; vm.shareBackup(selected) },
             onDismiss = { pendingShare = null },
+        )
+    }
+    if (showConflictWarning && pendingEnableConflicts.isNotEmpty()) {
+        ConflictWarningDialog(
+            conflicts = pendingEnableConflicts,
+            onInspect = { id -> rules.firstOrNull { it.rule.id == id }?.rule?.let(inspectRule) },
+            onOverride = {
+                pendingEnable?.let { candidate ->
+                    val current = AutomationConflictAnalyzer.analyze(candidate, rules.map { it.rule })
+                    if (current != pendingEnableConflicts) {
+                        pendingEnableConflicts = current
+                        if (current.isEmpty()) {
+                            vm.setEnabled(candidate.id, true)
+                            pendingEnable = null
+                        }
+                    } else {
+                        vm.setEnabled(candidate.id, true)
+                        pendingEnable = null
+                        pendingEnableConflicts = emptyList()
+                    }
+                }
+            },
+            onDismiss = { pendingEnable = null; pendingEnableConflicts = emptyList() },
+            overrideLabel = R.string.conflict_enable_anyway,
         )
     }
     val isSelectionMode = selectedRuleIds.isNotEmpty()
@@ -280,7 +312,19 @@ fun HomeScreen(
                             onLongClick = {
                                 selectedRuleIds = if (isSelected) selectedRuleIds - item.rule.id else selectedRuleIds + item.rule.id
                             },
-                            enabled = { vm.setEnabled(item.rule.id, it) },
+                            enabled = { enable ->
+                                if (!enable) {
+                                    vm.setEnabled(item.rule.id, false)
+                                } else {
+                                    val candidate = item.rule.copy(enabled = true)
+                                    val conflicts = AutomationConflictAnalyzer.analyze(candidate, rules.map { it.rule })
+                                    if (conflicts.isEmpty()) vm.setEnabled(item.rule.id, true)
+                                    else {
+                                        pendingEnable = candidate
+                                        pendingEnableConflicts = conflicts
+                                    }
+                                }
+                            },
                             onDuplicate = {
                                 vm.duplicateRule(item.rule, copyName) { result ->
                                     result.onSuccess(detail).onFailure {
@@ -590,7 +634,11 @@ private fun RuleCard(
                         )
                     }
                 }
-                FollowSwitch(isRuleEnabled, enabled)
+                FollowSwitch(
+                    checked = isRuleEnabled,
+                    onCheckedChange = enabled,
+                    modifier = Modifier.testTag("rule-enabled-${item.rule.id}"),
+                )
             }
         }
     }

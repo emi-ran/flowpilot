@@ -40,6 +40,25 @@ class LintResourceContractsTest(unittest.TestCase):
                     for node in manifest.findall("uses-feature")}
         self.assertEqual(features.get("android.hardware.telephony"), "false")
 
+    def test_conflict_warning_contract(self):
+        java = MAIN / "java/com/flowpilot/app"
+        analyzer = (java / "analysis/AutomationConflictAnalyzer.kt").read_text()
+        expected_actions = {
+            "WIFI_ON", "WIFI_OFF", "BLUETOOTH_ON", "BLUETOOTH_OFF",
+            "MOBILE_DATA_ON", "MOBILE_DATA_OFF", "AIRPLANE_MODE_ON", "AIRPLANE_MODE_OFF",
+            "NFC_ON", "NFC_OFF", "BATTERY_SAVER_ON", "BATTERY_SAVER_OFF",
+            "DARK_THEME_ON", "DARK_THEME_OFF", "AUTO_ROTATE_ON", "AUTO_ROTATE_OFF",
+            "DND_ON", "DND_OFF", "SOUND_PROFILE_NORMAL", "SOUND_PROFILE_VIBRATE",
+            "SOUND_PROFILE_SILENT", "TORCH_ON", "TORCH_OFF", "LOCATION_ON", "LOCATION_OFF",
+        }
+        self.assertEqual({name for name in expected_actions if f"ActionType.{name}" not in analyzer}, set())
+        self.assertNotIn("notificationTitle", analyzer)
+        self.assertNotIn("notificationBody", analyzer)
+        self.assertNotIn("phoneNumber", analyzer)
+        self.assertNotIn("webhook", analyzer.lower())
+        for relative in ["ui/screens/CreateScreen.kt", "ui/screens/DetailScreen.kt", "ui/screens/HomeScreen.kt"]:
+            self.assertIn("AutomationConflictAnalyzer.analyze", (java / relative).read_text())
+
 
 if __name__ == "__main__":
     unittest.main()

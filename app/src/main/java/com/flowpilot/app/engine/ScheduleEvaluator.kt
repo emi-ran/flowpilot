@@ -17,8 +17,7 @@ object ScheduleEvaluator {
         return rules.filter { rule ->
             rule.enabled && rule.triggerEvent == TriggerEvent.TIME_SCHEDULE &&
                 !rule.isCoolingDown(nowMs) &&
-                rule.scheduledMinute == minute &&
-                (rule.scheduledDays.isEmpty() || day in rule.scheduledDays) &&
+                TriggerTargetMatcher.scheduleTargetMatches(rule.scheduledMinute, rule.scheduledDays, minute, day) &&
                 RuleEvaluator.matchesConditions(rule.conditions, liveState, nowMs)
         }
     }

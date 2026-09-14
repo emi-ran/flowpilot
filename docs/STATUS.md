@@ -11,6 +11,7 @@ Last updated: 2026-09-14
 - Action reordering, live location fetcher, Automation Presets, and Geofencing unit tests (`AutomationRepositoryGeofenceQueueTest`, `GeofenceConfigValidationTest`, `GeofenceDiffTest`, `GeofencePrerequisitesTest`, `LocationDependencyTest`, `RuleEvaluatorGeofenceTest`) implemented and verified.
 - Encrypted backup unit coverage verifies full-secret round trips, enabled-state preservation, plaintext non-leakage, wrong-password/tamper rejection, format/version/KDF bounds, single-rule backup, normal-export regression, and cross-device Android Keystore re-encryption.
 - History localization unit coverage verifies locale-neutral outcome records, masked SMS result arguments, legacy successful outcome mapping, technical failure fallback, and Turkish automatic rule-name generation.
+- Conflict analyzer and pre-save/pre-enable warning implemented: exact trigger-target matching, opposing state-action matrix, likely/possible confidence, conflict rule inspection, and deliberate non-blocking override. Kotlin unit/UI tests added; Gradle execution pending parent verification.
 - GitHub Pages site modularized: split single monolithic `docs/index.html` into external stylesheet (`docs/assets/css/style.css`) and script (`docs/assets/js/app.js`), unified brand favicon (`docs/assets/favicon.svg`), converted brand into accessible home link, compacted desktop footer, and added mobile-first responsive pass (#2, #3).
 
 ## Background stability & engine keepalive

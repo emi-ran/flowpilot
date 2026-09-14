@@ -126,6 +126,7 @@ Tek tıkla kullanıma hazır popüler senaryolar:
 - **Canlı Eylem Testi:** Bir kuralı kaydetmeden önce, üzerindeki tüm düzenlemeleri doğrudan cihazda anında test edebilme.
 - **Güvenli Kural Çoğaltma:** Liste menüsünden bir kuralı, hemen düzenlenmek üzere devre dışı bir kopyaya çoğaltabilme. Yapılandırma korunur, çalışma durumu sıfırlanır ve webhook sırları yeni Android Keystore şifreli metinleriyle saklanır.
 - **Çalışma Geçmişi:** Son 100 kural tetiklenmesini, seçili uygulama dilinde gösterilen eylem sonuçlarıyla kaydeden yerel denetim günlüğü. Kimlik bilgileri ve telefon numaraları gizlenir/maskelenir.
+- **Çakışma uyarıları:** Kaydetme veya etkinleştirme öncesinde aynı tetikleyici hedefi ile zıt durum eylemleri muhtemel ya da olası çakışma olarak açıklanır. Uyarı engelleyici değildir, çakışan kurala bağlantı verir ve bilinçli geçersiz kılma ister. Analiz, keyfi koşul/zaman aralığı örtüşmeleri için tam kanıt iddia etmez.
 
 ---
 
