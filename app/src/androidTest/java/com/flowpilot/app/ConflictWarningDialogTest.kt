@@ -1,6 +1,5 @@
 package com.flowpilot.app
 
-import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -10,7 +9,7 @@ import org.junit.Test
 
 class ConflictWarningDialogTest {
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = createAndroidComposeRule<MainActivity>()
 
     @Test
     fun warningRequiresDeliberateOverrideAndOffersRuleInspection() {
