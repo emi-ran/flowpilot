@@ -7,6 +7,11 @@ tests = (root / "app/src/test/java/com/flowpilot/app/data/AutomationRepositoryCr
 
 assert "duplicate_ttsRule_copiesCacheToCloneOwnedFile" in tests
 assert "duplicate_ttsRuleWithMissingCache_failsWithoutMutatingSource" in tests
+target_exists_test = tests[
+    tests.index("fun duplicate_ttsRuleWhenTargetExists_failsWithoutDeletingFilesOrPersistingClone"):
+    tests.index("fun duplicate_reencryptsWebhookSecretsWithFreshCiphertext")
+]
+assert target_exists_test.index("val source = repository.add(") < target_exists_test.index("targetFile.writeBytes(")
 assert "computeCacheFileName(\n                        newId," in repo
 assert "createdCloneTtsFile" in repo
 assert "createdCloneTtsFile?.delete()" in repo

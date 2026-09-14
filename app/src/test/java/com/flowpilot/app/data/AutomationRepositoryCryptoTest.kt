@@ -295,7 +295,6 @@ class AutomationRepositoryCryptoTest {
         sourceFile.writeBytes(byteArrayOf(1, 2, 3, 4))
         val targetFileName = manager.computeCacheFileName(cloneId, text, voice, rate)
         val targetFile = requireNotNull(manager.getCacheFile(targetFileName))
-        targetFile.writeBytes(byteArrayOf(9, 8, 7))
         val source = repository.add(
             name = "Speak",
             triggerEvent = TriggerEvent.CHARGER_CONNECTED,
@@ -308,6 +307,7 @@ class AutomationRepositoryCryptoTest {
             ttsAudioFileName = sourceFileName,
             id = sourceId,
         )
+        targetFile.writeBytes(byteArrayOf(9, 8, 7))
 
         val error = runCatching {
             repository.duplicate(source.id, "Speak (copy)", newId = cloneId)
