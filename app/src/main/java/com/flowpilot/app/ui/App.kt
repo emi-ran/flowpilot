@@ -37,15 +37,22 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     var page by remember { mutableStateOf(Page.HOME) }
     var permissionsReturnPage by remember { mutableStateOf(Page.HOME) }
     var selectedRule by remember { mutableStateOf<Automation?>(null) }
+    var inspectedRule by remember { mutableStateOf<Automation?>(null) }
+    var inspectReturnPage by remember { mutableStateOf(Page.HOME) }
     var initialPreset by remember { mutableStateOf<com.flowpilot.app.data.model.AutomationPreset?>(null) }
 
     BackHandler(enabled = page != Page.HOME) {
-        page = Page.HOME
+        if (page == Page.DETAIL && inspectedRule != null) {
+            inspectedRule = null
+            page = inspectReturnPage
+        } else {
+            page = Page.HOME
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
         Crossfade(
-            targetState = page,
+            targetState = if (inspectedRule != null) inspectReturnPage else page,
             animationSpec = tween(180),
             label = "pageCrossfade",
         ) { targetPage ->
@@ -74,7 +81,11 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                 Page.CREATE -> CreateScreen(
                     vm = vm,
                     initialPreset = initialPreset,
-                    inspectRule = { rule -> selectedRule = rule; page = Page.DETAIL },
+                    inspectRule = { rule ->
+                        inspectedRule = rule
+                        inspectReturnPage = Page.CREATE
+                        page = Page.DETAIL
+                    },
                 ) {
                     initialPreset = null
                     page = Page.HOME
@@ -86,12 +97,25 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                         DetailScreen(
                             vm = vm,
                             initialRule = rule,
-                            inspectRule = { selectedRule = it },
+                            inspectRule = {
+                                inspectedRule = it
+                                inspectReturnPage = Page.DETAIL
+                            },
                         ) { page = Page.HOME }
                     } ?: run {
                         page = Page.HOME
                     }
                 }
+            }
+        }
+        if (page == Page.DETAIL && inspectedRule != null) {
+            DetailScreen(
+                vm = vm,
+                initialRule = inspectedRule!!,
+                inspectRule = { inspectedRule = it },
+            ) {
+                inspectedRule = null
+                page = inspectReturnPage
             }
         }
     }

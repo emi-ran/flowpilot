@@ -5,6 +5,7 @@ import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.engine.TriggerTargetMatcher
 
 enum class ConflictConfidence { CERTAIN, POSSIBLE }
 
@@ -83,16 +84,22 @@ object AutomationConflictAnalyzer {
         else -> null
     }
 
-    private fun sameTriggerTarget(a: Automation, b: Automation): Boolean =
-        a.triggerEvent == b.triggerEvent && triggerTarget(a) == triggerTarget(b)
+    private fun sameTriggerTarget(a: Automation, b: Automation): Boolean {
+        if (a.triggerEvent != b.triggerEvent) return false
+        return when (a.triggerEvent) {
+            TriggerEvent.WIFI_CONNECTED, TriggerEvent.WIFI_DISCONNECTED ->
+                TriggerTargetMatcher.wifiTargetsOverlap(a.wifiSsid, b.wifiSsid)
+            TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED ->
+                TriggerTargetMatcher.bluetoothTargetsMatch(a.bluetoothDeviceAddress, b.bluetoothDeviceAddress)
+            TriggerEvent.NFC_TAG_SCANNED -> TriggerTargetMatcher.nfcTargetsMatch(a.nfcTagId, b.nfcTagId)
+            else -> triggerTarget(a) == triggerTarget(b)
+        }
+    }
 
     private fun triggerTarget(rule: Automation): Any = when (rule.triggerEvent) {
         TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED -> rule.appPackage
         TriggerEvent.TIME_SCHEDULE -> rule.scheduledMinute to rule.scheduledDays
         TriggerEvent.BATTERY_BELOW, TriggerEvent.BATTERY_ABOVE -> rule.batteryLevel
-        TriggerEvent.WIFI_CONNECTED, TriggerEvent.WIFI_DISCONNECTED -> rule.wifiSsid.trim()
-        TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED -> rule.bluetoothDeviceAddress.uppercase()
-        TriggerEvent.NFC_TAG_SCANNED -> rule.nfcTagId.uppercase()
         TriggerEvent.NOTIFICATION_RECEIVED -> rule.notificationAppPackage to rule.notificationKeyword
         TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> rule.lightLux
         TriggerEvent.SMS_RECEIVED -> listOf(rule.smsSenderFilter, rule.smsMatchMode.name, rule.smsKeyword)

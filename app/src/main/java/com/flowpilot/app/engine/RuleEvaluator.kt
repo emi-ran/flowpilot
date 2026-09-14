@@ -198,8 +198,7 @@ object RuleEvaluator {
         )
         return rules.filter { rule ->
             if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@filter false
-            val ssidMatches = if (rule.wifiSsid.isBlank()) true
-            else rule.wifiSsid.trim().equals(transition.ssid.trim(), ignoreCase = true)
+            val ssidMatches = TriggerTargetMatcher.wifiTargetMatches(rule.wifiSsid, transition.ssid)
             ssidMatches && matchesConditions(rule.conditions, effectiveState, nowMs)
         }
     }
@@ -218,7 +217,7 @@ object RuleEvaluator {
             rule.enabled &&
                 rule.triggerEvent == trigger &&
                 !rule.isCoolingDown(nowMs) &&
-                rule.bluetoothDeviceAddress.trim().equals(transition.address.trim(), ignoreCase = true) &&
+                TriggerTargetMatcher.bluetoothTargetsMatch(rule.bluetoothDeviceAddress, transition.address) &&
                 matchesConditions(rule.conditions, liveState, nowMs)
         }
     }
@@ -258,7 +257,7 @@ object RuleEvaluator {
             rule.enabled &&
                 rule.triggerEvent == TriggerEvent.NFC_TAG_SCANNED &&
                 !rule.isCoolingDown(nowMs) &&
-                NfcTagUtils.normalizeTagId(rule.nfcTagId).equals(normalizedEventId, ignoreCase = true) &&
+                TriggerTargetMatcher.nfcTargetsMatch(rule.nfcTagId, normalizedEventId) &&
                 matchesConditions(rule.conditions, liveState, nowMs)
         }
     }

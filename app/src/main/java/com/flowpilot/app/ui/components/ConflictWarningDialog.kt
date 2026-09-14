@@ -30,21 +30,24 @@ fun ConflictWarningDialog(
             Column {
                 Text(stringResource(R.string.conflict_warning_description))
                 Spacer(Modifier.height(12.dp))
-                conflicts.distinctBy { it.conflictingRuleId }.forEach { conflict ->
-                    val confidence = stringResource(
-                        if (conflict.confidence == ConflictConfidence.CERTAIN) R.string.conflict_likely
-                        else R.string.conflict_possible,
-                    )
-                    Text(
-                        stringResource(
-                            R.string.conflict_warning_item,
-                            confidence,
-                            conflict.candidateAction.localizedLabel(),
-                            conflict.conflictingAction.localizedLabel(),
-                        ),
-                    )
-                    TextButton(onClick = { onInspect(conflict.conflictingRuleId) }) {
-                        Text(stringResource(R.string.conflict_inspect_rule, conflict.conflictingRuleName))
+                conflicts.groupBy { it.conflictingRuleId }.values.forEach { ruleConflicts ->
+                    ruleConflicts.distinctBy { it.candidateAction to it.conflictingAction }.forEach { conflict ->
+                        val confidence = stringResource(
+                            if (conflict.confidence == ConflictConfidence.CERTAIN) R.string.conflict_likely
+                            else R.string.conflict_possible,
+                        )
+                        Text(
+                            stringResource(
+                                R.string.conflict_warning_item,
+                                confidence,
+                                conflict.candidateAction.localizedLabel(),
+                                conflict.conflictingAction.localizedLabel(),
+                            ),
+                        )
+                    }
+                    val rule = ruleConflicts.first()
+                    TextButton(onClick = { onInspect(rule.conflictingRuleId) }) {
+                        Text(stringResource(R.string.conflict_inspect_rule, rule.conflictingRuleName))
                     }
                 }
             }

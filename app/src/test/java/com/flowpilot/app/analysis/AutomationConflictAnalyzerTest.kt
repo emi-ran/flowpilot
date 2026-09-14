@@ -17,6 +17,8 @@ class AutomationConflictAnalyzerTest {
         enabled: Boolean = true,
         appPackage: String = "",
         wifiSsid: String = "",
+        bluetoothAddress: String = "",
+        nfcTagId: String = "",
         conditions: List<RuleCondition> = emptyList(),
     ) = Automation(
         id = id,
@@ -25,6 +27,8 @@ class AutomationConflictAnalyzerTest {
         triggerEvent = trigger,
         appPackage = appPackage,
         wifiSsid = wifiSsid,
+        bluetoothDeviceAddress = bluetoothAddress,
+        nfcTagId = nfcTagId,
         action = actions.first(),
         actions = actions,
         conditions = conditions,
@@ -130,11 +134,36 @@ class AutomationConflictAnalyzerTest {
     }
 
     @Test
-    fun exactWifiTriggerRequiresSameSsidTarget() {
-        val candidate = rule("candidate", TriggerEvent.WIFI_CONNECTED, listOf(ActionType.WIFI_ON), wifiSsid = "Home")
-        val exact = rule("exact", TriggerEvent.WIFI_CONNECTED, listOf(ActionType.WIFI_OFF), wifiSsid = "Home")
+    fun wifiTriggerUsesRuntimeCaseWhitespaceAndWildcardMatching() {
+        val candidate = rule("candidate", TriggerEvent.WIFI_CONNECTED, listOf(ActionType.WIFI_ON), wifiSsid = " Home ")
+        val normalized = rule("normalized", TriggerEvent.WIFI_CONNECTED, listOf(ActionType.WIFI_OFF), wifiSsid = "home")
+        val wildcard = rule("wildcard", TriggerEvent.WIFI_CONNECTED, listOf(ActionType.WIFI_OFF), wifiSsid = "  ")
         val other = rule("other", TriggerEvent.WIFI_CONNECTED, listOf(ActionType.WIFI_OFF), wifiSsid = "Work")
 
-        assertEquals(listOf("exact"), AutomationConflictAnalyzer.analyze(candidate, listOf(exact, other)).map { it.conflictingRuleId })
+        assertEquals(
+            listOf("normalized", "wildcard"),
+            AutomationConflictAnalyzer.analyze(candidate, listOf(normalized, wildcard, other)).map { it.conflictingRuleId },
+        )
+    }
+
+    @Test
+    fun bluetoothAndNfcTriggersUseRuntimeNormalization() {
+        val bluetooth = rule(
+            "bluetooth",
+            TriggerEvent.BLUETOOTH_CONNECTED,
+            listOf(ActionType.BLUETOOTH_ON),
+            bluetoothAddress = " aa:bb ",
+        )
+        val bluetoothOther = rule(
+            "bluetooth-other",
+            TriggerEvent.BLUETOOTH_CONNECTED,
+            listOf(ActionType.BLUETOOTH_OFF),
+            bluetoothAddress = "AA:BB",
+        )
+        val nfc = rule("nfc", TriggerEvent.NFC_TAG_SCANNED, listOf(ActionType.NFC_ON), nfcTagId = "04:a1-b2")
+        val nfcOther = rule("nfc-other", TriggerEvent.NFC_TAG_SCANNED, listOf(ActionType.NFC_OFF), nfcTagId = "04A1B2")
+
+        assertEquals(1, AutomationConflictAnalyzer.analyze(bluetooth, listOf(bluetoothOther)).size)
+        assertEquals(1, AutomationConflictAnalyzer.analyze(nfc, listOf(nfcOther)).size)
     }
 }
