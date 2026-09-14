@@ -360,6 +360,7 @@ class AutomationService : Service() {
             val service = activeService
             if (service != null) {
                 service.createChannel()
+                ensureFailureChannel(context)
                 try {
                     val nm = service.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
                     nm?.notify(NOTIF_ID, service.buildNotification())

@@ -34,6 +34,12 @@ class LocaleContractsTest(unittest.TestCase):
         self.assertIn("notif_engine_failure_title", service)
         self.assertIn("appLanguage", service)
 
+        refresh_fn = service.split("fun refreshNotificationLocale(", 1)[1].split("private fun start(", 1)[0]
+        service_branch = refresh_fn.split("if (service != null)", 1)[1].split("} else {", 1)[0]
+        else_branch = refresh_fn.split("} else {", 1)[1].split("val hasFailure =", 1)[0]
+        self.assertIn("ensureFailureChannel(context)", service_branch)
+        self.assertIn("ensureFailureChannel(context)", else_branch)
+
     def test_automation_repository_locale_contracts(self):
         repo = (MAIN / "java/com/flowpilot/app/data/AutomationRepository.kt").read_text(encoding="utf-8")
         self.assertIn("fun getPersistedLanguage(", repo)
