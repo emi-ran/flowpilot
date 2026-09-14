@@ -4,6 +4,7 @@ Last updated: 2026-09-14
 
 ## Build state
 
+- Security advisory remediation passed local release gate on 2026-09-14: `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`. Debug APK device install remains blocked because wireless ADB target is offline.
 - Debug/release builds, unit tests, and lint passed: `.\gradlew.bat testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`.
 - Resource contract test passed: `python scripts/test_lint_resource_contracts.py`.
 - Latest debug APK was installed and launched on Xiaomi (2506BPN68G) / HyperOS (Android 16).

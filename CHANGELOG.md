@@ -13,6 +13,11 @@ Changes completed after `1.0.2` and intended for the next release.
 
 ### Security
 
+- Background NFC discovery now opens a confirmation gate before it can run matching automations; only foreground Android ReaderMode scans execute automatically.
+- Webhooks pin initial TCP connections to prevalidated public IP addresses, preserve TLS hostname verification, reject unsafe rendered headers, and use bounded HTTP/1.1 parsing.
+- Sensitive SMS and notification events are accepted only while the engine is enabled, bounded and freshness-limited, and reauthorized immediately before execution.
+- Automatic rule runs now use durable execution leases and revision checks, preventing cooldown bypasses and revoking queued work after rule changes.
+- Release workflow now requires a current `main` commit, exact successful CI, matching version tag, and protected signing environment before signing.
 - Enabled Dependabot vulnerability alerts and security update pull requests.
 - Enabled secret scanning, push protection, and private vulnerability reporting for the public repository.
 - Protected `main`: pull requests, a current successful `Build & Test` check, and resolved review conversations are required; force-push and branch deletion are disabled.
