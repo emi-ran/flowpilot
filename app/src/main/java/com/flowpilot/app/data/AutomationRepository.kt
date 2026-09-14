@@ -440,17 +440,18 @@ class AutomationRepository(private val context: Context) {
                         source.ttsSpeechRate,
                     )
                     val targetFile = ttsManager.getCacheFile(targetFileName)
-                    if (sourceFile?.isFile == true && sourceFile.length() > 0L && targetFile != null) {
-                        val targetExisted = targetFile.exists()
-                        try {
-                            sourceFile.copyTo(targetFile, overwrite = false)
-                            createdCloneTtsFile = targetFile
-                            targetFileName
-                        } catch (_: Throwable) {
-                            if (!targetExisted) targetFile.delete()
-                            null
-                        }
-                    } else null
+                    if (sourceFile?.isFile != true || sourceFile.length() <= 0L || targetFile == null) {
+                        throw java.io.IOException("Source TTS cache file is missing")
+                    }
+                    val targetExisted = targetFile.exists()
+                    try {
+                        sourceFile.copyTo(targetFile, overwrite = false)
+                        createdCloneTtsFile = targetFile
+                        targetFileName
+                    } catch (error: java.io.IOException) {
+                        if (!targetExisted) targetFile.delete()
+                        throw error
+                    }
                 }.orEmpty()
                 clone = source.copy(
                     id = newId,

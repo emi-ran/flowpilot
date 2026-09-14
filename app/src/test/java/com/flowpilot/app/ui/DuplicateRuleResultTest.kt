@@ -22,6 +22,28 @@ class DuplicateRuleResultTest {
     }
 
     @Test
+    fun duplicateRuleResult_cancellation_rethrows() = runTest {
+        val cancellation = kotlinx.coroutines.CancellationException("cancelled")
+
+        val thrown = runCatching {
+            duplicateRuleResult { throw cancellation }
+        }.exceptionOrNull()
+
+        assertThat(thrown).isSameInstanceAs(cancellation)
+    }
+
+    @Test
+    fun duplicateRuleResult_seriousError_rethrows() = runTest {
+        val seriousError = AssertionError("serious")
+
+        val thrown = runCatching {
+            duplicateRuleResult { throw seriousError }
+        }.exceptionOrNull()
+
+        assertThat(thrown).isSameInstanceAs(seriousError)
+    }
+
+    @Test
     fun duplicateRuleResult_createdClone_returnsSuccess() = runTest {
         val clone = Automation(id = "clone-id", name = "Copy")
 

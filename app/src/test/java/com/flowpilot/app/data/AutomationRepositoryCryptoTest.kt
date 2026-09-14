@@ -261,7 +261,7 @@ class AutomationRepositoryCryptoTest {
     }
 
     @Test
-    fun duplicate_ttsRuleWithMissingCache_clearsCloneReference() = runTest {
+    fun duplicate_ttsRuleWithMissingCache_failsWithoutMutatingSource() = runTest {
         val source = repository.add(
             name = "Speak",
             triggerEvent = TriggerEvent.CHARGER_CONNECTED,
@@ -274,10 +274,49 @@ class AutomationRepositoryCryptoTest {
             id = "source-id",
         )
 
-        val clone = requireNotNull(repository.duplicate(source.id, "Speak (copy)", newId = "clone-id"))
+        val error = runCatching {
+            repository.duplicate(source.id, "Speak (copy)", newId = "clone-id")
+        }.exceptionOrNull()
 
-        assertThat(clone.ttsAudioFileName).isEmpty()
-        assertThat(repository.automations.first().first { it.id == "clone-id" }.ttsAudioFileName).isEmpty()
+        assertThat(error).isInstanceOf(java.io.IOException::class.java)
+        assertThat(repository.automations.first()).containsExactly(source)
+    }
+
+    @Test
+    fun duplicate_ttsRuleWhenTargetExists_failsWithoutDeletingFilesOrPersistingClone() = runTest {
+        val manager = TtsManager(context)
+        val sourceId = "source-id"
+        val cloneId = "clone-id"
+        val text = "Independent speech"
+        val voice = "default"
+        val rate = 1.0f
+        val sourceFileName = manager.computeCacheFileName(sourceId, text, voice, rate)
+        val sourceFile = requireNotNull(manager.getCacheFile(sourceFileName))
+        sourceFile.writeBytes(byteArrayOf(1, 2, 3, 4))
+        val targetFileName = manager.computeCacheFileName(cloneId, text, voice, rate)
+        val targetFile = requireNotNull(manager.getCacheFile(targetFileName))
+        targetFile.writeBytes(byteArrayOf(9, 8, 7))
+        val source = repository.add(
+            name = "Speak",
+            triggerEvent = TriggerEvent.CHARGER_CONNECTED,
+            appPackage = "",
+            appName = "",
+            actions = listOf(ActionType.SPEAK_TEXT),
+            ttsText = text,
+            ttsVoiceName = voice,
+            ttsSpeechRate = rate,
+            ttsAudioFileName = sourceFileName,
+            id = sourceId,
+        )
+
+        val error = runCatching {
+            repository.duplicate(source.id, "Speak (copy)", newId = cloneId)
+        }.exceptionOrNull()
+
+        assertThat(error).isInstanceOf(java.io.IOException::class.java)
+        assertThat(sourceFile.readBytes()).isEqualTo(byteArrayOf(1, 2, 3, 4))
+        assertThat(targetFile.readBytes()).isEqualTo(byteArrayOf(9, 8, 7))
+        assertThat(repository.automations.first()).containsExactly(source)
     }
 
     @Test

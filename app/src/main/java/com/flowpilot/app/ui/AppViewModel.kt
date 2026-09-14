@@ -49,7 +49,13 @@ data class ManualRunResult(
 )
 
 internal suspend fun duplicateRuleResult(duplicate: suspend () -> Automation?): Result<Automation> =
-    runCatching { duplicate() ?: error("Source rule no longer exists") }
+    try {
+        Result.success(duplicate() ?: error("Source rule no longer exists"))
+    } catch (cancellation: kotlinx.coroutines.CancellationException) {
+        throw cancellation
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
 

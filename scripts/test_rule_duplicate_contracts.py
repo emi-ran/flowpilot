@@ -23,9 +23,27 @@ for reset in (
     require(REPOSITORY, reset)
 require(REPOSITORY, "firstOrNull { it.id == sourceId }?.withDecryptedSecrets()")
 require(REPOSITORY, "clone!!.withEncryptedSecrets()")
-for view_model_contract in ("fun duplicateRule(", "source: Automation", "copyName: String", "onDuplicated: (Automation) -> Unit"):
+for repository_contract in (
+    "throw java.io.IOException(\"Source TTS cache file is missing\")",
+    "catch (error: java.io.IOException)",
+    "throw error",
+    "catch (error: Throwable)",
+):
+    require(REPOSITORY, repository_contract)
+duplicate_body = REPOSITORY[REPOSITORY.index("suspend fun duplicate("):REPOSITORY.index("suspend fun update(")]
+assert duplicate_body.count("throw error") == 2, "duplicate must rethrow copy I/O and outer cancellation/serious failures"
+assert "catch (_: Throwable)" not in REPOSITORY[REPOSITORY.index("suspend fun duplicate("):REPOSITORY.index("suspend fun update(")]
+for view_model_contract in (
+    "fun duplicateRule(",
+    "source: Automation",
+    "copyName: String",
+    "onResult: (Result<Automation>) -> Unit",
+    "onResult(duplicateRuleResult { repository.duplicate(source.id, copyName) })",
+):
     require(VIEW_MODEL, view_model_contract)
-require(HOME, "onDuplicate = { vm.duplicateRule(item.rule, copyName, detail) }")
+require(HOME, "vm.duplicateRule(item.rule, copyName) { result ->")
+require(HOME, "result.onSuccess(detail).onFailure")
+require(HOME, "duplicate_rule_failed")
 require(HOME, "R.string.btn_duplicate")
 require(APP, "detail = { selectedRule = it; page = Page.DETAIL }")
 print("rule duplicate static contracts: OK")
