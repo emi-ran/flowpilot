@@ -126,6 +126,7 @@ FlowPilot includes pre-built one-tap templates to get started quickly:
 - **Quick Settings Tile:** Toggle the automation engine or view live status directly from Android notification shade.
 - **Home Screen Widget (Jetpack Glance):** Modern widget displaying active rule counts with one-tap pause/resume button.
 - **In-App Manual Test Run:** Test rule actions directly while editing with real parameters without needing to save first.
+- **Safe Rule Duplication:** Duplicate any rule from its list menu into an immediately editable, disabled copy. Configuration is preserved, runtime state is reset, and webhook secrets receive fresh Android Keystore ciphertext.
 - **Execution Run History:** Local persistent audit log of the last 100 executions with per-action outcomes rendered in the selected app language; credentials and phone numbers remain redacted/masked.
 
 ---

@@ -124,6 +124,7 @@ Tek tıkla kullanıma hazır popüler senaryolar:
 - **Hızlı Ayarlar Kutusu (Quick Settings Tile):** Bildirim panelinden tek tıkla otomasyon motorunu açıp kapatabilme veya durum izleme.
 - **Ana Ekran Widget'ı (Jetpack Glance):** Aktif kural sayısını gösteren ve tek dokunuşla motoru duraklatıp devam ettiren şık Material 3 widget'ı.
 - **Canlı Eylem Testi:** Bir kuralı kaydetmeden önce, üzerindeki tüm düzenlemeleri doğrudan cihazda anında test edebilme.
+- **Güvenli Kural Çoğaltma:** Liste menüsünden bir kuralı, hemen düzenlenmek üzere devre dışı bir kopyaya çoğaltabilme. Yapılandırma korunur, çalışma durumu sıfırlanır ve webhook sırları yeni Android Keystore şifreli metinleriyle saklanır.
 - **Çalışma Geçmişi:** Son 100 kural tetiklenmesini, seçili uygulama dilinde gösterilen eylem sonuçlarıyla kaydeden yerel denetim günlüğü. Kimlik bilgileri ve telefon numaraları gizlenir/maskelenir.
 
 ---
