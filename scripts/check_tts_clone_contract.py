@@ -6,7 +6,7 @@ repo = (root / "app/src/main/java/com/flowpilot/app/data/AutomationRepository.kt
 tests = (root / "app/src/test/java/com/flowpilot/app/data/AutomationRepositoryCryptoTest.kt").read_text()
 
 assert "duplicate_ttsRule_copiesCacheToCloneOwnedFile" in tests
-assert "duplicate_ttsRuleWithMissingCache_clearsCloneReference" in tests
+assert "duplicate_ttsRuleWithMissingCache_failsWithoutMutatingSource" in tests
 assert "computeCacheFileName(\n                        newId," in repo
 assert "createdCloneTtsFile" in repo
 assert "createdCloneTtsFile?.delete()" in repo
