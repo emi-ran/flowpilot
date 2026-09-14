@@ -21,8 +21,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -257,6 +259,7 @@ fun HomeScreen(
                 ) {
                     items(rules, key = { it.rule.id }) { item ->
                         val isSelected = item.rule.id in selectedRuleIds
+                        val copyName = stringResource(R.string.rule_copy_name, item.rule.name)
                         RuleCard(
                             item = item,
                             isSelected = isSelected,
@@ -272,6 +275,7 @@ fun HomeScreen(
                                 selectedRuleIds = if (isSelected) selectedRuleIds - item.rule.id else selectedRuleIds + item.rule.id
                             },
                             enabled = { vm.setEnabled(item.rule.id, it) },
+                            onDuplicate = { vm.duplicateRule(item.rule, copyName, detail) },
                             onPermission = permissions,
                         )
                     }
@@ -359,9 +363,11 @@ private fun RuleCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     enabled: (Boolean) -> Unit,
+    onDuplicate: () -> Unit,
     onPermission: () -> Unit,
 ) {
     val isRuleEnabled = item.rule.enabled
+    var showOverflow by remember { mutableStateOf(false) }
     val containerColor by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
@@ -549,7 +555,25 @@ private fun RuleCard(
             }
 
             if (!isSelectionMode) {
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(6.dp))
+                Box {
+                    IconButton(onClick = { showOverflow = true }) {
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.rule_more_actions))
+                    }
+                    DropdownMenu(
+                        expanded = showOverflow,
+                        onDismissRequest = { showOverflow = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.btn_duplicate)) },
+                            leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                            onClick = {
+                                showOverflow = false
+                                onDuplicate()
+                            },
+                        )
+                    }
+                }
                 FollowSwitch(isRuleEnabled, enabled)
             }
         }

@@ -369,6 +369,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun duplicateRule(
+        source: Automation,
+        copyName: String,
+        onDuplicated: (Automation) -> Unit,
+    ) {
+        viewModelScope.launch {
+            repository.duplicate(source.id, copyName)?.let(onDuplicated)
+        }
+    }
+
     fun updateRule(rule: Automation) {
         viewModelScope.launch {
             repository.update(rule)

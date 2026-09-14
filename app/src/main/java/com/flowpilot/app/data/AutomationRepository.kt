@@ -416,6 +416,37 @@ class AutomationRepository(private val context: Context) {
         return rule
     }
 
+    /** Clones a rule through decrypted domain data so encrypted fields get fresh IVs. */
+    suspend fun duplicate(
+        sourceId: String,
+        copyName: String,
+        newId: String = UUID.randomUUID().toString(),
+        createdAt: Long = System.currentTimeMillis(),
+    ): Automation? {
+        var clone: Automation? = null
+        context.dataStore.edit { prefs ->
+            migrateHistory(prefs)
+            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val source = current.firstOrNull { it.id == sourceId }?.withDecryptedSecrets() ?: return@edit
+            clone = source.copy(
+                id = newId,
+                name = copyName,
+                enabled = false,
+                createdAt = createdAt,
+                lastTriggeredAt = 0L,
+            )
+            prefs[key] = json.encodeToString(
+                listSerializer,
+                current.map { it.withEncryptedSecrets() } + clone!!.withEncryptedSecrets(),
+            )
+        }
+        if (clone != null) {
+            cleanupOrphanTtsFiles()
+            notifyWidgets()
+        }
+        return clone
+    }
+
     suspend fun update(rule: Automation) {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
