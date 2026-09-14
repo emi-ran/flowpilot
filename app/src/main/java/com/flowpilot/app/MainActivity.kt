@@ -1,10 +1,8 @@
 package com.flowpilot.app
 
-import android.app.PendingIntent
-import android.content.Intent
 import android.nfc.NfcAdapter
 import android.nfc.Tag
-import android.os.Build
+import android.content.Intent
 import android.os.Bundle
 import android.content.pm.PackageManager
 import android.util.Log
@@ -15,27 +13,34 @@ import androidx.activity.enableEdgeToEdge
 import com.flowpilot.app.actions.ShizukuPermissionBridge
 import com.flowpilot.app.actions.ShizukuShell
 import com.flowpilot.app.engine.NfcTagHandoff
+import com.flowpilot.app.engine.NfcBackgroundConfirmationGate
+import com.flowpilot.app.engine.NfcIntentSession
 import com.flowpilot.app.ui.FlowPilotRoot
 import com.flowpilot.app.ui.theme.FlowPilotTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.stringResource
 import rikka.shizuku.Shizuku
 
 class MainActivity : ComponentActivity() {
 
     private var nfcAdapter: NfcAdapter? = null
-    private var pendingIntent: PendingIntent? = null
+    private val nfcIntentSession = NfcIntentSession()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         Shizuku.addRequestPermissionResultListener(requestListener)
-        initNfcForegroundDispatch()
-        handleNfcIntent(intent)
+        initNfcReaderMode()
+        handleNfcDiscoveryIntent(intent)
         setContent {
             val vm: com.flowpilot.app.ui.AppViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
             val appLanguage by vm.appLanguage.collectAsState()
             val appTheme by vm.appTheme.collectAsState()
+            val hasPendingNfcConfirmation by NfcBackgroundConfirmationGate.hasPendingConfirmation.collectAsState()
 
             val isDark = when (appTheme.lowercase()) {
                 "light" -> false
@@ -46,6 +51,23 @@ class MainActivity : ComponentActivity() {
             com.flowpilot.app.ui.util.AppLocaleProvider(appLanguage) {
                 FlowPilotTheme(darkTheme = isDark) {
                     FlowPilotRoot(vm)
+                    if (hasPendingNfcConfirmation) {
+                        AlertDialog(
+                            onDismissRequest = NfcBackgroundConfirmationGate::dismiss,
+                            title = { Text(stringResource(R.string.nfc_background_confirm_title)) },
+                            text = { Text(stringResource(R.string.nfc_background_confirm_desc)) },
+                            confirmButton = {
+                                TextButton(onClick = { NfcBackgroundConfirmationGate.confirm() }) {
+                                    Text(stringResource(R.string.nfc_background_confirm_action))
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = NfcBackgroundConfirmationGate::dismiss) {
+                                    Text(stringResource(R.string.btn_cancel))
+                                }
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -53,70 +75,57 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        enableNfcForegroundDispatch()
+        if (nfcIntentSession.readerModeAllowed) enableNfcReaderMode()
     }
 
     override fun onPause() {
-        disableNfcForegroundDispatch()
+        disableNfcReaderMode()
         super.onPause()
     }
 
-    private fun initNfcForegroundDispatch() {
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleNfcDiscoveryIntent(intent)
+    }
+
+    private fun handleNfcDiscoveryIntent(intent: Intent?) {
+        // Manifest NFC intents are caller-spoofable. They only open this user-confirmed gate.
+        if (NfcBackgroundConfirmationGate.requestConfirmation(intent)) {
+            nfcIntentSession.markIntentOriginated()
+            disableNfcReaderMode()
+        }
+    }
+
+    private fun initNfcReaderMode() {
         val manager = getSystemService(android.nfc.NfcManager::class.java)
         nfcAdapter = manager?.defaultAdapter ?: NfcAdapter.getDefaultAdapter(this)
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-        } else {
-            PendingIntent.FLAG_UPDATE_CURRENT
-        }
-        val explicitIntent = Intent(this, javaClass).apply {
-            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            setPackage(packageName)
-        }
-        pendingIntent = PendingIntent.getActivity(this, 0, explicitIntent, flags)
-
     }
 
-    private fun enableNfcForegroundDispatch() {
+    private fun enableNfcReaderMode() {
         val adapter = nfcAdapter ?: return
-        val pi = pendingIntent ?: return
         if (adapter.isEnabled) {
             try {
-                // Null filters/tech lists capture every supported tag while this activity is foreground.
-                // Background delivery stays limited to manifest TAG/TECH filters.
-                adapter.enableForegroundDispatch(this, pi, null, null)
+                adapter.enableReaderMode(this, nfcReaderCallback, NFC_READER_FLAGS, null)
             } catch (e: IllegalStateException) {
-                Log.w(TAG, "NFC foreground dispatch unavailable while activity is not resumed", e)
+                Log.w(TAG, "NFC reader mode unavailable while activity is not resumed", e)
             }
         }
     }
 
-    private fun disableNfcForegroundDispatch() {
+    private fun disableNfcReaderMode() {
         val adapter = nfcAdapter ?: return
         try {
-            adapter.disableForegroundDispatch(this)
+            adapter.disableReaderMode(this)
         } catch (e: IllegalStateException) {
-            Log.w(TAG, "NFC foreground dispatch already disabled", e)
+            Log.w(TAG, "NFC reader mode already disabled", e)
         }
     }
 
-    private fun handleNfcIntent(intent: Intent?) {
-        intent ?: return
-        val action = intent.action ?: return
-        if (action == NfcAdapter.ACTION_NDEF_DISCOVERED ||
-            action == NfcAdapter.ACTION_TECH_DISCOVERED ||
-            action == NfcAdapter.ACTION_TAG_DISCOVERED
-        ) {
-            val rawId: ByteArray? = intent.getByteArrayExtra(NfcAdapter.EXTRA_ID)
-                ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)?.id
-                } else {
-                    @Suppress("DEPRECATION")
-                    (intent.getParcelableExtra(NfcAdapter.EXTRA_TAG) as? Tag)?.id
-            }
-
-            if (rawId != null && rawId.isNotEmpty()) {
-                NfcTagHandoff.emitTagScanned(rawId)
+    private val nfcReaderCallback = NfcAdapter.ReaderCallback { tag: Tag ->
+        // ReaderMode invokes this only for a tag discovered by Android's NFC stack. Intent extras are forgeable.
+        if (nfcIntentSession.emitReaderModeTag(tag.id, NfcTagHandoff::emitTagScanned)) {
+            runOnUiThread {
                 Toast.makeText(this, "NFC tag scanned", Toast.LENGTH_SHORT).show()
             }
         }
@@ -142,5 +151,12 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val TAG = "FlowPilotMainActivity"
+        const val NFC_READER_FLAGS =
+            NfcAdapter.FLAG_READER_NFC_A or
+                NfcAdapter.FLAG_READER_NFC_B or
+                NfcAdapter.FLAG_READER_NFC_F or
+                NfcAdapter.FLAG_READER_NFC_V or
+                NfcAdapter.FLAG_READER_NFC_BARCODE or
+                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
     }
 }

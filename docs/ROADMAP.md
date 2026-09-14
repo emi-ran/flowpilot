@@ -64,9 +64,9 @@ Do not bundle unrelated features. One feature family at a time.
     - Android public ACL broadcasts only while engine runs; no discovery, pairing, scan history, or startup replay
     - Android 12+ `BLUETOOTH_CONNECT` runtime permission required
 9. **NFC tag scanned** (complete; Xiaomi configured-tag smoke test passed)
-    - Selected normalized tag UID matching, with no NDEF payload or tag-tech persistence
-    - Tag UID capture in Create/Edit while FlowPilot is open
-    - Tag/tech discovery intent handoff evaluates only while engine runs
+     - Selected normalized tag UID matching, with no NDEF payload or tag-tech persistence
+     - Tag UID capture in Create/Edit while FlowPilot is open
+     - Foreground `NfcAdapter.ReaderCallback` handoff evaluates automatically; background discovery opens explicit confirmation before any matching rule runs
 
 10. **Phone call triggers** (implementation complete; Xiaomi device smoke test pending)
     - Incoming call ringing (`CALL_RINGING`), answered (`CALL_ANSWERED`), outgoing call placed (`CALL_OUTGOING`), and call ended (`CALL_ENDED`).
@@ -212,9 +212,9 @@ Each must expose its required permission or Shizuku state. Do not show success u
      - Unpair selected device; verify no crash and no false match.
      - Stop/deny Shizuku and verify Bluetooth on/off failures remain explicit.
 6. **NFC tag and action delay**
-     - Scan different tag UID with engine running; verify it does not fire.
-     - Scan with engine stopped and NFC disabled; verify no action or false success.
-     - Add a visible action after 5 seconds; verify timing, order, stop cancellation, and history.
+      - Scan different tag UID with engine running; verify it does not fire.
+       - Send forged `TAG_DISCOVERED` and `TECH_DISCOVERED` intents with configured UIDs; verify no action before confirmation and no action after dismissal. Confirm a configured background scan; verify matching rule fires. Scan configured physical tag while FlowPilot is foreground; verify it fires automatically.
+      - Add a visible action after 5 seconds; verify timing, order, stop cancellation, and history.
 7. **Action reordering and delay sequence validation**
      - Add multiple actions with distinct delays (e.g. Action A with 3s delay, Action B with 2s delay).
      - Use Move Up / Move Down controls to swap orders; verify execution timing proceeds strictly sequentially in configured order (A runs at 3s, then B runs at 5s total elapsed).

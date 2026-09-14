@@ -19,20 +19,16 @@ object NfcTagHandoff {
     private val _latestScannedTagId = MutableStateFlow<String?>(null)
     val latestScannedTagId: StateFlow<String?> = _latestScannedTagId.asStateFlow()
 
-    fun emitTagScanned(rawId: ByteArray?) {
+    /**
+     * Accepts IDs only from Android's [android.nfc.NfcAdapter.ReaderCallback].
+     * NFC discovery intents are not a trusted source because another app can send matching intent data.
+     */
+    fun emitTagScanned(rawId: ByteArray?): Boolean {
         val tagId = NfcTagUtils.formatTagId(rawId)
-        if (tagId.isNotEmpty()) {
-            queue.add(NfcTagScannedEvent(tagId = tagId))
-            _latestScannedTagId.value = tagId
-        }
-    }
-
-    fun emitTagId(tagId: String) {
-        val normalized = NfcTagUtils.normalizeTagId(tagId)
-        if (normalized.isNotEmpty()) {
-            queue.add(NfcTagScannedEvent(tagId = normalized))
-            _latestScannedTagId.value = normalized
-        }
+        if (tagId.isEmpty()) return false
+        queue.add(NfcTagScannedEvent(tagId = tagId))
+        _latestScannedTagId.value = tagId
+        return true
     }
 
     fun drainEvents(): List<NfcTagScannedEvent> = buildList {

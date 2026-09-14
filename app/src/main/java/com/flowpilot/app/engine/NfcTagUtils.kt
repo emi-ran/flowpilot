@@ -9,7 +9,7 @@ import java.util.Locale
 object NfcTagUtils {
 
     /**
-     * Converts a raw byte array from tag discovery intent (NfcAdapter.EXTRA_ID) into normalized hex.
+     * Converts a raw byte array from Android's NFC reader callback into normalized hex.
      */
     fun formatTagId(rawId: ByteArray?): String {
         if (rawId == null || rawId.isEmpty()) return ""
