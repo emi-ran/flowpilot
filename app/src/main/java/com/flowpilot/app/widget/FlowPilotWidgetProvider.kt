@@ -11,6 +11,7 @@ import com.flowpilot.app.MainActivity
 import com.flowpilot.app.R
 import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.engine.AutomationService
+import com.flowpilot.app.ui.util.selectedLocaleContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,24 +65,26 @@ class FlowPilotWidgetProvider : AppWidgetProvider() {
                     )
                     views.setOnClickPendingIntent(R.id.widget_btn_toggle, togglePendingIntent)
 
+                    val localeContext = context.selectedLocaleContext()
+
                     // Update UI state
                     if (running) {
                         views.setImageViewResource(R.id.widget_status_dot, R.drawable.bg_widget_circle_active)
                         val statusText = if (totalCount > 0) {
-                            context.getString(R.string.widget_active_count, activeCount, totalCount)
+                            localeContext.getString(R.string.widget_active_count, activeCount, totalCount)
                         } else {
-                            context.getString(R.string.widget_engine_active)
+                            localeContext.getString(R.string.widget_engine_active)
                         }
                         views.setTextViewText(R.id.widget_status_text, statusText)
                         views.setImageViewResource(R.id.widget_btn_toggle, R.drawable.ic_widget_pause)
                     } else {
                         views.setImageViewResource(R.id.widget_status_dot, R.drawable.bg_widget_circle_paused)
-                        views.setTextViewText(R.id.widget_status_text, context.getString(R.string.widget_engine_paused))
+                        views.setTextViewText(R.id.widget_status_text, localeContext.getString(R.string.widget_engine_paused))
                         views.setImageViewResource(R.id.widget_btn_toggle, R.drawable.ic_widget_play)
                     }
 
                     if (failed || (isEngineEnabled && !running)) {
-                        views.setTextViewText(R.id.widget_status_text, context.getString(
+                        views.setTextViewText(R.id.widget_status_text, localeContext.getString(
                             if (failed) R.string.notif_engine_failure_title else R.string.engine_not_running,
                         ))
                     }
