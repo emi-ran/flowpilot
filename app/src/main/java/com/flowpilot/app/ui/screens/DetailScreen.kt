@@ -37,6 +37,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +85,7 @@ fun DetailScreen(
     vm: AppViewModel,
     initialRule: Automation,
     inspectRule: (Automation) -> Unit = {},
+    showConflictWarning: Boolean = true,
     back: () -> Unit,
 ) {
     var pendingShare by remember { mutableStateOf<Automation?>(null) }
@@ -273,7 +275,7 @@ fun DetailScreen(
         )
     }
 
-    if (pendingConflicts.isNotEmpty()) {
+    if (showConflictWarning && pendingConflicts.isNotEmpty()) {
         ConflictWarningDialog(
             conflicts = pendingConflicts,
             onInspect = { id -> existingRules.firstOrNull { it.rule.id == id }?.rule?.let(inspectRule) },
@@ -528,6 +530,7 @@ fun DetailScreen(
             Column(
                 Modifier
                     .fillMaxSize()
+                    .testTag("rule-detail-${initialRule.id}")
                     .imePadding()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp),

@@ -94,6 +94,7 @@ fun CreateScreen(
     vm: AppViewModel,
     initialPreset: com.flowpilot.app.data.model.AutomationPreset? = null,
     inspectRule: (Automation) -> Unit = {},
+    showConflictWarning: Boolean = true,
     done: () -> Unit,
 ) {
     BackHandler(onBack = done)
@@ -341,7 +342,7 @@ fun CreateScreen(
             }
         )
     }
-    if (pendingConflicts.isNotEmpty()) {
+    if (showConflictWarning && pendingConflicts.isNotEmpty()) {
         ConflictWarningDialog(
             conflicts = pendingConflicts,
             onInspect = { id -> existingRules.firstOrNull { it.rule.id == id }?.rule?.let(inspectRule) },

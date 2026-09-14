@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
@@ -34,11 +35,36 @@ class FlowPilotRootConflictNavigationTest {
         compose.onNodeWithTag("rule-enabled-candidate").performClick()
         compose.onNodeWithText("Likely automation conflict").assertIsDisplayed()
         compose.onNodeWithText("Inspect Other").performClick()
-        compose.onNodeWithText("Other").assertIsDisplayed()
+        compose.onNodeWithText("Likely automation conflict").assertDoesNotExist()
+        compose.onNodeWithTag("rule-detail-other").assertIsDisplayed()
 
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithText("Likely automation conflict").assertIsDisplayed()
         compose.onNodeWithText("Enable anyway").performClick()
+        compose.onNodeWithText("Likely automation conflict").assertDoesNotExist()
+    }
+
+    @Test
+    fun createInspectBackReturnsToPendingWarningAndAllowsOverride() {
+        val other = rule("other", "Other", ActionType.WIFI_OFF)
+        val vm = AppViewModel(compose.activity.application)
+        vm.automations.value = listOf(AutomationUI(other, CapabilityStatus.AVAILABLE))
+        compose.setContent { FlowPilotRoot(vm) }
+
+        compose.onNodeWithText("New automation").performClick()
+        compose.onNodeWithText("App opened").performClick()
+        compose.onNodeWithText("Screen turned on").performClick()
+        compose.onNodeWithText("Add action").performScrollTo().performClick()
+        compose.onNodeWithText("Turn Wi-Fi on").performClick()
+        compose.onNodeWithText("Save").performScrollTo().performClick()
+        compose.onNodeWithText("Likely automation conflict").assertIsDisplayed()
+        compose.onNodeWithText("Inspect Other").performClick()
+        compose.onNodeWithText("Likely automation conflict").assertDoesNotExist()
+        compose.onNodeWithTag("rule-detail-other").assertIsDisplayed()
+
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithText("Likely automation conflict").assertIsDisplayed()
+        compose.onNodeWithText("Save anyway").performClick()
         compose.onNodeWithText("Likely automation conflict").assertDoesNotExist()
     }
 
@@ -57,7 +83,8 @@ class FlowPilotRootConflictNavigationTest {
         compose.onNodeWithText("Save").performClick()
         compose.onNodeWithText("Likely automation conflict").assertIsDisplayed()
         compose.onNodeWithText("Inspect Other").performClick()
-        compose.onNodeWithText("Other").assertIsDisplayed()
+        compose.onNodeWithText("Likely automation conflict").assertDoesNotExist()
+        compose.onNodeWithTag("rule-detail-other").assertIsDisplayed()
 
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithText("Likely automation conflict").assertIsDisplayed()

@@ -65,6 +65,7 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                         inspectReturnPage = Page.HOME
                         page = Page.DETAIL
                     },
+                    showConflictWarning = inspectedRule == null,
                     create = { initialPreset = null; page = Page.CREATE },
                     createWithPreset = { preset ->
                         initialPreset = preset
@@ -91,6 +92,7 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                         inspectReturnPage = Page.CREATE
                         page = Page.DETAIL
                     },
+                    showConflictWarning = inspectedRule == null,
                 ) {
                     initialPreset = null
                     page = Page.HOME
@@ -106,6 +108,7 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                                 inspectedRule = it
                                 inspectReturnPage = Page.DETAIL
                             },
+                            showConflictWarning = inspectedRule == null,
                         ) { page = Page.HOME }
                     } ?: run {
                         page = Page.HOME

@@ -77,6 +77,21 @@ class ConflictContractsTest(unittest.TestCase):
             app,
         )
 
+    def test_inspect_hides_warning_without_clearing_pending_state(self):
+        app = (MAIN / "ui/App.kt").read_text()
+        navigation_test = (ROOT / "app/src/androidTest/java/com/flowpilot/app/FlowPilotRootConflictNavigationTest.kt").read_text()
+        self.assertEqual(app.count("showConflictWarning = inspectedRule == null"), 3)
+        self.assertIn('testTag("rule-detail-${initialRule.id}")', (MAIN / "ui/screens/DetailScreen.kt").read_text())
+        self.assertGreaterEqual(
+            navigation_test.count('onNodeWithText("Likely automation conflict").assertDoesNotExist()'),
+            3,
+        )
+        self.assertGreaterEqual(
+            navigation_test.count('onNodeWithTag("rule-detail-other").assertIsDisplayed()'),
+            3,
+        )
+        self.assertIn("fun createInspectBackReturnsToPendingWarningAndAllowsOverride()", navigation_test)
+
     def test_english_and_turkish_warning_copy_and_actions_exist(self):
         required = {
             "values": {

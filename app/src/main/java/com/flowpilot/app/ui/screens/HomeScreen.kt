@@ -57,6 +57,7 @@ fun HomeScreen(
     vm: AppViewModel,
     detail: (Automation) -> Unit,
     inspectRule: (Automation) -> Unit,
+    showConflictWarning: Boolean = true,
     create: () -> Unit,
     createWithPreset: (AutomationPreset) -> Unit = {},
     permissions: () -> Unit,
@@ -81,7 +82,7 @@ fun HomeScreen(
             onDismiss = { pendingShare = null },
         )
     }
-    if (pendingEnableConflicts.isNotEmpty()) {
+    if (showConflictWarning && pendingEnableConflicts.isNotEmpty()) {
         ConflictWarningDialog(
             conflicts = pendingEnableConflicts,
             onInspect = { id -> rules.firstOrNull { it.rule.id == id }?.rule?.let(inspectRule) },
