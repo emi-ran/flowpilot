@@ -47,6 +47,9 @@ import com.flowpilot.app.ui.util.localizedActionSummary
 import com.flowpilot.app.ui.util.localizedLabel
 import com.flowpilot.app.engine.GeofenceDiagnosticStatus
 import com.flowpilot.app.data.AutomationRepository
+import com.flowpilot.app.analysis.AutomationConflict
+import com.flowpilot.app.analysis.AutomationConflictAnalyzer
+import com.flowpilot.app.ui.components.ConflictWarningDialog
 
 @Composable
 fun HomeScreen(
@@ -68,10 +71,37 @@ fun HomeScreen(
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPresetsSheet by remember { mutableStateOf(false) }
     var pendingShare by remember { mutableStateOf<List<Automation>?>(null) }
+    var pendingEnable by remember { mutableStateOf<Automation?>(null) }
+    var pendingEnableConflicts by remember { mutableStateOf<List<AutomationConflict>>(emptyList()) }
     pendingShare?.let { selected ->
         BackupDisclosureDialog(
             onConfirm = { pendingShare = null; vm.shareBackup(selected) },
             onDismiss = { pendingShare = null },
+        )
+    }
+    if (pendingEnableConflicts.isNotEmpty()) {
+        ConflictWarningDialog(
+            conflicts = pendingEnableConflicts,
+            ruleNames = rules.associate { it.rule.id to it.rule.name },
+            onInspect = { id -> rules.firstOrNull { it.rule.id == id }?.rule?.let(detail) },
+            onOverride = {
+                pendingEnable?.let { candidate ->
+                    val current = AutomationConflictAnalyzer.analyze(candidate, rules.map { it.rule })
+                    if (current != pendingEnableConflicts) {
+                        pendingEnableConflicts = current
+                        if (current.isEmpty()) {
+                            vm.setEnabled(candidate.id, true)
+                            pendingEnable = null
+                        }
+                    } else {
+                        vm.setEnabled(candidate.id, true)
+                        pendingEnable = null
+                        pendingEnableConflicts = emptyList()
+                    }
+                }
+            },
+            onDismiss = { pendingEnable = null; pendingEnableConflicts = emptyList() },
+            overrideLabel = R.string.conflict_enable_anyway,
         )
     }
     val isSelectionMode = selectedRuleIds.isNotEmpty()
@@ -271,7 +301,19 @@ fun HomeScreen(
                             onLongClick = {
                                 selectedRuleIds = if (isSelected) selectedRuleIds - item.rule.id else selectedRuleIds + item.rule.id
                             },
-                            enabled = { vm.setEnabled(item.rule.id, it) },
+                            enabled = { enable ->
+                                if (!enable) {
+                                    vm.setEnabled(item.rule.id, false)
+                                } else {
+                                    val candidate = item.rule.copy(enabled = true)
+                                    val conflicts = AutomationConflictAnalyzer.analyze(candidate, rules.map { it.rule })
+                                    if (conflicts.isEmpty()) vm.setEnabled(item.rule.id, true)
+                                    else {
+                                        pendingEnable = candidate
+                                        pendingEnableConflicts = conflicts
+                                    }
+                                }
+                            },
                             onPermission = permissions,
                         )
                     }

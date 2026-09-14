@@ -125,6 +125,7 @@ Tek tıkla kullanıma hazır popüler senaryolar:
 - **Ana Ekran Widget'ı (Jetpack Glance):** Aktif kural sayısını gösteren ve tek dokunuşla motoru duraklatıp devam ettiren şık Material 3 widget'ı.
 - **Canlı Eylem Testi:** Bir kuralı kaydetmeden önce, üzerindeki tüm düzenlemeleri doğrudan cihazda anında test edebilme.
 - **Çalışma Geçmişi:** Son 100 kural tetiklenmesini, seçili uygulama dilinde gösterilen eylem sonuçlarıyla kaydeden yerel denetim günlüğü. Kimlik bilgileri ve telefon numaraları gizlenir/maskelenir.
+- **Çakışma uyarıları:** Kaydetme veya etkinleştirme öncesinde aynı tetikleyici hedefi ile zıt durum eylemleri muhtemel ya da olası çakışma olarak açıklanır. Uyarı engelleyici değildir, çakışan kurala bağlantı verir ve bilinçli geçersiz kılma ister. Analiz, keyfi koşul/zaman aralığı örtüşmeleri için tam kanıt iddia etmez.
 
 ---
 

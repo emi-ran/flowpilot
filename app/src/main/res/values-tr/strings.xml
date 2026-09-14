@@ -300,6 +300,14 @@
     <string name="msg_add_action_to_test">Test etmek için en az bir eylem ekleyin</string>
     <string name="btn_save_changes">Kaydet</string>
     <string name="btn_create_rule">Kuralı oluştur</string>
+    <string name="conflict_warning_title">Olası otomasyon çakışması</string>
+    <string name="conflict_warning_description">Başka bir etkin kural aynı tetikleyicide çalışıp aynı sistem durumunu farklı ayarlayabilir. Devam etmeden önce inceleyin.</string>
+    <string name="conflict_warning_item">%1$s çakışma: %2$s ile %3$s</string>
+    <string name="conflict_likely">Muhtemel</string>
+    <string name="conflict_possible">Olası</string>
+    <string name="conflict_inspect_rule">%1$s kuralını incele</string>
+    <string name="conflict_save_anyway">Yine de kaydet</string>
+    <string name="conflict_enable_anyway">Yine de etkinleştir</string>
     <string name="search_triggers_hint">Tetikleyici ara (örn. pil, arama, sms, ekran, zaman)...</string>
     <string name="search_actions_hint">Eylem ara (örn. bluetooth, wifi, ses, bildirim)...</string>
     <string name="search_conditions_hint">Koşul ara...</string>

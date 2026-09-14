@@ -71,7 +71,11 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                     history = { page = Page.HISTORY },
                     bottomBar = { BottomBar(Page.SETTINGS) { page = it } },
                 )
-                Page.CREATE -> CreateScreen(vm, initialPreset = initialPreset) {
+                Page.CREATE -> CreateScreen(
+                    vm = vm,
+                    initialPreset = initialPreset,
+                    inspectRule = { rule -> selectedRule = rule; page = Page.DETAIL },
+                ) {
                     initialPreset = null
                     page = Page.HOME
                 }
@@ -79,7 +83,11 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                 Page.HISTORY -> HistoryScreen(vm) { page = Page.SETTINGS }
                 Page.DETAIL -> {
                     selectedRule?.let { rule ->
-                        DetailScreen(vm, rule) { page = Page.HOME }
+                        DetailScreen(
+                            vm = vm,
+                            initialRule = rule,
+                            inspectRule = { selectedRule = it },
+                        ) { page = Page.HOME }
                     } ?: run {
                         page = Page.HOME
                     }

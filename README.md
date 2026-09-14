@@ -127,6 +127,7 @@ FlowPilot includes pre-built one-tap templates to get started quickly:
 - **Home Screen Widget (Jetpack Glance):** Modern widget displaying active rule counts with one-tap pause/resume button.
 - **In-App Manual Test Run:** Test rule actions directly while editing with real parameters without needing to save first.
 - **Execution Run History:** Local persistent audit log of the last 100 executions with per-action outcomes rendered in the selected app language; credentials and phone numbers remain redacted/masked.
+- **Conflict warnings:** Before save or enable, exact matching trigger targets with opposing state actions are explained as likely or possible conflicts. Warning is non-blocking, links to conflicting rules, and requires a deliberate override. Analyzer does not claim full proof for arbitrary condition/time-window overlap.
 
 ---
 

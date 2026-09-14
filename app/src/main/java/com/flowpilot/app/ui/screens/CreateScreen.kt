@@ -84,17 +84,24 @@ import com.flowpilot.app.ui.components.actionDragHandle
 import androidx.compose.material.icons.filled.DragHandle
 import com.flowpilot.app.engine.NfcTagHandoff
 import com.flowpilot.app.engine.NfcTagUtils
+import com.flowpilot.app.analysis.AutomationConflict
+import com.flowpilot.app.analysis.AutomationConflictAnalyzer
+import com.flowpilot.app.ui.components.ConflictWarningDialog
 
 @Composable
 fun CreateScreen(
     vm: AppViewModel,
     initialPreset: com.flowpilot.app.data.model.AutomationPreset? = null,
+    inspectRule: (Automation) -> Unit = {},
     done: () -> Unit,
 ) {
     BackHandler(onBack = done)
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val existingRules by vm.automations.collectAsState()
+    var pendingConflicts by remember { mutableStateOf<List<AutomationConflict>>(emptyList()) }
+    var acknowledgedConflicts by remember { mutableStateOf<List<AutomationConflict>>(emptyList()) }
     var showRunConfirm by remember { mutableStateOf(false) }
     var event by remember { mutableStateOf(TriggerEvent.APP_OPENED) }
     val now = java.time.LocalTime.now()
@@ -330,6 +337,18 @@ fun CreateScreen(
                 showActions = false
                 editingActionIndex = null
             }
+        )
+    }
+    if (pendingConflicts.isNotEmpty()) {
+        ConflictWarningDialog(
+            conflicts = pendingConflicts,
+            ruleNames = existingRules.associate { it.rule.id to it.rule.name },
+            onInspect = { id -> existingRules.firstOrNull { it.rule.id == id }?.rule?.let(inspectRule) },
+            onOverride = {
+                acknowledgedConflicts = pendingConflicts
+                pendingConflicts = emptyList()
+            },
+            onDismiss = { pendingConflicts = emptyList() },
         )
     }
     if (showTimePicker) {
@@ -882,6 +901,36 @@ fun CreateScreen(
                 OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.btn_cancel)) }
                 Button(
                     onClick = {
+                        val conflictCandidate = Automation(
+                            id = newRuleId,
+                            name = name,
+                            triggerEvent = event,
+                            appPackage = pkg,
+                            scheduledMinute = scheduledMinute,
+                            scheduledDays = scheduledDays,
+                            batteryLevel = batteryLevel,
+                            wifiSsid = wifiSsid,
+                            bluetoothDeviceAddress = bluetoothDeviceAddress,
+                            nfcTagId = nfcTagId.trim(),
+                            notificationAppPackage = notificationAppPackage,
+                            notificationKeyword = notificationKeyword,
+                            conditions = conditions,
+                            lightLux = lightLux,
+                            smsSenderFilter = smsSenderFilter.trim(),
+                            smsMatchMode = smsMatchMode,
+                            smsKeyword = smsKeyword.trim(),
+                            geofenceLatitude = geofenceLatitude,
+                            geofenceLongitude = geofenceLongitude,
+                            geofenceRadiusMeters = geofenceRadiusMeters,
+                            action = actions.firstOrNull() ?: ActionType.NFC_ON,
+                            actions = actions,
+                            createdAt = System.currentTimeMillis(),
+                        )
+                        val conflicts = AutomationConflictAnalyzer.analyze(conflictCandidate, existingRules.map { it.rule })
+                        if (conflicts.isNotEmpty() && conflicts != acknowledgedConflicts) {
+                            pendingConflicts = conflicts
+                            return@Button
+                        }
                         vm.addRule(
                             name = name,
                             triggerEvent = event,

@@ -16,6 +16,8 @@ Actions can have a per-action pre-execution delay of 0-300 seconds. Configured a
 
 Rules can have a 0, 1, 5, 15, or 60-minute cooldown. Cooldown applies to all automatic trigger evaluators after a successful run updates `lastTriggeredAt`; manual test runs bypass it. A future `lastTriggeredAt` blocks safely until wall clock catches up.
 
+Before save or enable, `AutomationConflictAnalyzer` compares the candidate once against enabled rules outside Compose list rendering. It reports explainable opposing state actions for exact trigger targets with certain/possible confidence. Known disjoint screen/charger conditions suppress warnings; other arbitrary condition/time-window relationships remain honestly "possible" rather than claiming proof. Warning is non-blocking, exposes conflicting rule inspection, and needs an explicit override. Conflict output contains IDs, enum actions, reason, and confidence only; no notification, phone, webhook, or raw argument data.
+
 Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request a one-shot nearby-network scan; scan results are transient, deduplicated, and never persisted. Android throttles scan frequency and may return cached results. The tracker reads SSID from Wi-Fi-specific `NetworkCallback` capabilities instead of `activeNetwork`, so Xiaomi can detect Wi-Fi transitions even when cellular remains the default data network.
 
 ## Capability matrix (verified against Android 16 / HyperOS constraints)

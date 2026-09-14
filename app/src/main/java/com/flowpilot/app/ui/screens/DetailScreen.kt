@@ -74,10 +74,18 @@ import com.flowpilot.app.ui.screens.AlarmSettings
 import com.flowpilot.app.ui.screens.TimerSettings
 import com.flowpilot.app.engine.NfcTagHandoff
 import com.flowpilot.app.engine.NfcTagUtils
+import com.flowpilot.app.analysis.AutomationConflict
+import com.flowpilot.app.analysis.AutomationConflictAnalyzer
+import com.flowpilot.app.ui.components.ConflictWarningDialog
 import kotlinx.coroutines.launch
 
 @Composable
-fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
+fun DetailScreen(
+    vm: AppViewModel,
+    initialRule: Automation,
+    inspectRule: (Automation) -> Unit = {},
+    back: () -> Unit,
+) {
     var pendingShare by remember { mutableStateOf<Automation?>(null) }
     pendingShare?.let { rule ->
         BackupDisclosureDialog(
@@ -90,6 +98,9 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
     }
     BackHandler(onBack = back)
     val context = LocalContext.current
+    val existingRules by vm.automations.collectAsState()
+    var pendingSave by remember(initialRule.id) { mutableStateOf<Automation?>(null) }
+    var pendingConflicts by remember(initialRule.id) { mutableStateOf<List<AutomationConflict>>(emptyList()) }
     var event by remember(initialRule.id) { mutableStateOf(initialRule.triggerEvent) }
     var scheduledMinute by remember(initialRule.id) { mutableIntStateOf(initialRule.scheduledMinute) }
     var scheduledDays by remember(initialRule.id) { mutableStateOf(initialRule.scheduledDays) }
@@ -259,6 +270,33 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
             confirmButton = { TextButton({ alarmHour = alarmPickerState.hour; alarmMinute = alarmPickerState.minute; showAlarmTimePicker = false }) { Text(stringResource(R.string.btn_ok)) } },
             dismissButton = { TextButton({ showAlarmTimePicker = false }) { Text(stringResource(R.string.btn_cancel)) } },
             text = { TimePicker(alarmPickerState) },
+        )
+    }
+
+    if (pendingConflicts.isNotEmpty()) {
+        ConflictWarningDialog(
+            conflicts = pendingConflicts,
+            ruleNames = existingRules.associate { it.rule.id to it.rule.name },
+            onInspect = { id -> existingRules.firstOrNull { it.rule.id == id }?.rule?.let(inspectRule) },
+            onOverride = {
+                pendingSave?.let { candidate ->
+                    val current = AutomationConflictAnalyzer.analyze(candidate, existingRules.map { it.rule })
+                    if (current != pendingConflicts) {
+                        pendingConflicts = current
+                        if (current.isEmpty()) {
+                            vm.updateRule(candidate)
+                            pendingSave = null
+                            back()
+                        }
+                    } else {
+                        vm.updateRule(candidate)
+                        pendingSave = null
+                        pendingConflicts = emptyList()
+                        back()
+                    }
+                }
+            },
+            onDismiss = { pendingSave = null; pendingConflicts = emptyList() },
         )
     }
 
@@ -866,8 +904,7 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 geofenceRadiusMeters = geofenceRadiusMeters,
                             )
                         }
-                        vm.updateRule(
-                            initialRule.copy(
+                        val updatedRule = initialRule.copy(
                                 name = finalName,
                                 triggerEvent = event,
                                 appPackage = pkg,
@@ -930,8 +967,14 @@ fun DetailScreen(vm: AppViewModel, initialRule: Automation, back: () -> Unit) {
                                 actionDelays = actionDelays,
                                 cooldownMinutes = cooldownMinutes,
                             )
-                        )
-                        back()
+                        val conflicts = AutomationConflictAnalyzer.analyze(updatedRule, existingRules.map { it.rule })
+                        if (conflicts.isNotEmpty()) {
+                            pendingSave = updatedRule
+                            pendingConflicts = conflicts
+                        } else {
+                            vm.updateRule(updatedRule)
+                            back()
+                        }
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
