@@ -63,7 +63,7 @@ Do not bundle unrelated features. One feature family at a time.
     - Selected bonded device MAC address matching; cached name for UI
     - Android public ACL broadcasts only while engine runs; no discovery, pairing, scan history, or startup replay
     - Android 12+ `BLUETOOTH_CONNECT` runtime permission required
-9. **NFC tag scanned** (complete; Xiaomi configured-tag smoke test passed)
+9. **NFC tag scanned** (complete; Xiaomi foreground and background-confirmation smoke tests passed)
      - Selected normalized tag UID matching, with no NDEF payload or tag-tech persistence
      - Tag UID capture in Create/Edit while FlowPilot is open
      - Foreground `NfcAdapter.ReaderCallback` handoff evaluates automatically; background discovery opens explicit confirmation before any matching rule runs
@@ -211,9 +211,10 @@ Each must expose its required permission or Shizuku state. Do not show success u
      - Restart engine while device remains connected; verify no replay.
      - Unpair selected device; verify no crash and no false match.
      - Stop/deny Shizuku and verify Bluetooth on/off failures remain explicit.
-6. **NFC tag and action delay**
-      - Scan different tag UID with engine running; verify it does not fire.
-       - Send forged `TAG_DISCOVERED` and `TECH_DISCOVERED` intents with configured UIDs; verify no action before confirmation and no action after dismissal. Confirm a configured background scan; verify matching rule fires. Scan configured physical tag while FlowPilot is foreground; verify it fires automatically.
+6. **NFC negative paths and action delay**
+      - Background confirmation and foreground ReaderMode execution passed Xiaomi physical-device validation.
+      - Scan a different tag UID with engine running; verify it does not fire.
+      - Send forged `TAG_DISCOVERED` and `TECH_DISCOVERED` intents with configured UIDs; verify no action before confirmation and no action after dismissal.
       - Add a visible action after 5 seconds; verify timing, order, stop cancellation, and history.
 7. **Action reordering and delay sequence validation**
      - Add multiple actions with distinct delays (e.g. Action A with 3s delay, Action B with 2s delay).
@@ -230,11 +231,12 @@ Each must expose its required permission or Shizuku state. Do not show success u
    - Verify rule evaluation correctly filters `ENTER` vs `EXIT` triggers.
    - Verify transition coordinates populate `${location.lat}` and `${location.lng}` without performing redundant fresh GPS lookups for notification-only actions.
    - Disable rule or stop engine: verify geofences are unregistered from Google Play Services and status reflects `Unregistered`.
-10. **Encrypted backup and localization device smoke test**
+10. **Encrypted backup and localized-history device smoke test**
+    - App language switching passed Xiaomi physical-device validation.
     - Export a normal JSON backup; verify webhook URL/headers/body are absent and imported rules are disabled.
     - Export an encrypted full backup with a six-character-or-longer password; verify plaintext secrets are absent from file, wrong password leaves rules unchanged, and correct password restores secrets plus enabled state.
     - Share/import one encrypted rule and verify its full configuration is restored.
-    - Switch app language to Turkish; execute notification, SMS, and location actions, then verify History results and newly generated automatic rule names are Turkish. Verify custom rule names are unchanged.
+    - Execute notification, SMS, and location actions in Turkish, then verify History results and newly generated automatic rule names are Turkish. Verify custom rule names are unchanged.
 
 ## Acceptance Gate
 

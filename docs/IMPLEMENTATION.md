@@ -78,7 +78,9 @@ app/src/main/java/com/flowpilot/app/
       DetailScreen.kt                rule detail, manual run test action, delete, and IME-safe form scrolling
       PermissionsScreen.kt           setup wizard and background location guide
       SettingsScreen.kt
-    components/                      toggle, cards, picker controls, action reordering (ReorderableActionList), focus-gated bring-into-view modifier
+    components/                      toggle, cards, picker controls, action reordering, conflict warning dialog, focus-gated bring-into-view modifier
+  analysis/
+    AutomationConflictAnalyzer.kt    opposing-action analysis aligned with runtime trigger matching
   data/
     model/Automation.kt              kotlinx.serialization data model with encrypted secret mapping
     security/SecretCipher.kt         Android Keystore AES-256-GCM authenticated encryption at rest
@@ -99,6 +101,10 @@ app/src/main/java/com/flowpilot/app/
     DeviceFlipTracker.kt             motion sensor listener with dynamic lifecycle and battery-saving unregistering
     NfcTagHandoff.kt                 transient platform-reader tag UID queue and UI capture state
     NfcTagUtils.kt                   pure tag UID normalization and validation
+    NfcBackgroundConfirmationGate.kt holds untrusted background UID until explicit confirmation
+    NfcIntentSession.kt              blocks ReaderMode bypass during NFC-intent handling
+    EventExecutionAuthorization.kt   freshness and engine-state authorization for sensitive events
+    TriggerTargetMatcher.kt          shared runtime/conflict trigger-target matching
     FlowPilotNotificationListener.kt transient notification listener, dedupe, and engine watchdog
     GeofenceState.kt                 pure geofence models, config validation, registration diff, and prerequisites evaluator
     GeofenceTracker.kt               Google Play Services GeofencingClient hardware geofence synchronizer with process-local registration state
@@ -136,13 +142,12 @@ tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foregrou
 
 ## Engine loop
 
-1. AutomationEngine polls foreground events, queued charger/battery broadcasts, NFC tags, notifications, SMS, geofence transitions, and schedules every 500 ms.
-2. On foreground package change -> report `AppOpened(pkg)` / `AppClosed(pkg)` event.
-3. RuleEvaluator matches enabled rules whose trigger app == pkg, event matches, conditions match live state, and cooldown period has expired (`now - lastTriggeredAt >= cooldown`).
-4. For each match, check `lastTriggeredAt`/active-lock dedupe (a rule for "app opened" fires once
-   per open, not while app stays foreground).
-5. Execute actions via capability-aware executors. Battery Saver uses direct access when available or Shizuku fallback.
-6. If at least one action succeeds, update `lastTriggeredAt` to current epoch time and persist. Cooldown begins counting down from this timestamp. Suppressed runs during cooldown produce no history records.
+1. AutomationEngine polls foreground events, queued charger/battery broadcasts, confirmed NFC tags, authorized notifications/SMS, geofence transitions, and schedules every 500 ms.
+2. Sensitive notification and SMS events are accepted only while the engine is enabled, kept in bounded freshness-limited queues, and reauthorized immediately before evaluation.
+3. On foreground package change, report `AppOpened(pkg)` / `AppClosed(pkg)` event.
+4. RuleEvaluator matches enabled rules whose event, target, live conditions, and cooldown all match.
+5. Before execution, repository-backed leases atomically reserve the current rule revision; rule edits, disablement, deletion, and engine stop revoke queued work.
+6. Execute actions through capability-aware executors. If at least one action succeeds, persist `lastTriggeredAt`; always release the execution lease. Suppressed or revoked runs do not create misleading history.
 
 ChargerStateTracker registers only while the engine runs. It queues `ACTION_POWER_CONNECTED` and
 `ACTION_POWER_DISCONNECTED`, dedupes consecutive identical states, and does not query current charger state
@@ -199,7 +204,7 @@ URL. Both intents carry `FLAG_ACTIVITY_NEW_TASK` because the automation engine r
 Launch failure is logged and returned to the engine; target app removal, missing URL resolver, and OEM
 background-activity restrictions remain explicit failure cases.
 
-WebhookExecutor dispatches HTTP/HTTPS requests via standard `HttpURLConnection`. Validates strict `http` or `https` schemes with host, enforces bounded timeouts (1-60s), renders known variables in headers/body only (`${time}`, `${timestamp}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${trigger}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`), sets headers and request body, and considers strictly HTTP 2xx status codes as success. Location coordinates are obtained live via `LocationFetcher` which checks for fresh cache (<60s, <50m accuracy), triggers an active GPS/network fix with 5-second timeout, and falls back to best cached coordinates. URL templates are excluded because URL encoding context differs; unknown and malformed variables are preserved and rendering is non-recursive. Sensitive headers (`Authorization`, `Cookie`, tokens, secrets) and sensitive parameter values are redacted from log entries and execution failure messages to prevent credential leakage.
+WebhookExecutor dispatches HTTPS requests through `PinnedHttpsTransport`, pinning the initial connection to a prevalidated public IP while preserving TLS hostname verification. It validates strict `https` URLs with a host, enforces bounded timeouts (1-60s), renders known variables in headers/body only (`${time}`, `${timestamp}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${trigger}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`), sets headers and request body, and considers strictly HTTP 2xx status codes as success. Location coordinates are obtained live via `LocationFetcher` which checks for fresh cache (<60s, <50m accuracy), triggers an active GPS/network fix with 5-second timeout, and falls back to best cached coordinates. URL templates are excluded because URL encoding context differs; unknown and malformed variables are preserved and rendering is non-recursive. Sensitive headers (`Authorization`, `Cookie`, tokens, secrets) and sensitive parameter values are redacted from log entries and execution failure messages to prevent credential leakage.
 
 Manual test runs execute a saved rule's effective actions on `Dispatchers.IO`, bypassing its trigger and conditions without altering `enabled` or `lastTriggeredAt`. The manual webhook context uses `MANUAL` as its trigger and reads current battery, charger, Wi-Fi state, and live GPS coordinates via `LocationFetcher`; result summaries redact sensitive error values before reaching UI.
 
