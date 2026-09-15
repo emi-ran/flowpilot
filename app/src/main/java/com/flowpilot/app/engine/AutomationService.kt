@@ -15,6 +15,7 @@ import android.util.Log
 import com.flowpilot.app.MainActivity
 import com.flowpilot.app.R
 import com.flowpilot.app.data.AutomationRepository
+import com.flowpilot.app.ui.util.selectedLocaleContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -48,6 +50,13 @@ class AutomationService : Service() {
         if (!startForegroundCompat()) {
             stopSelf()
             return
+        }
+        lifecycleScope.launch {
+            AutomationRepository(applicationContext).appLanguage
+                .drop(1)
+                .collect {
+                    refreshNotificationLocale(this@AutomationService)
+                }
         }
     }
 
@@ -120,13 +129,14 @@ class AutomationService : Service() {
     }
 
     private fun createChannel() {
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val localeContext = selectedLocaleContext()
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            getString(R.string.notif_channel_engine),
+            localeContext.getString(R.string.notif_channel_engine),
             NotificationManager.IMPORTANCE_MIN,
         ).apply {
-            description = getString(R.string.notif_channel_engine_desc)
+            description = localeContext.getString(R.string.notif_channel_engine_desc)
             setShowBadge(false)
             setSound(null, AudioAttributes.Builder().build())
             enableVibration(false)
@@ -159,6 +169,7 @@ class AutomationService : Service() {
     }
 
     private fun buildNotification(): Notification {
+        val localeContext = selectedLocaleContext()
         val openIntent = Intent(this, MainActivity::class.java)
         val pi = PendingIntent.getActivity(
             this, 0, openIntent,
@@ -171,8 +182,8 @@ class AutomationService : Service() {
             Notification.Builder(this)
         }
         return builder
-            .setContentTitle(getString(R.string.notif_engine_title))
-            .setContentText(getString(R.string.notif_engine_text))
+            .setContentTitle(localeContext.getString(R.string.notif_engine_title))
+            .setContentText(localeContext.getString(R.string.notif_engine_text))
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pi)
             .setOngoing(true)
@@ -184,6 +195,7 @@ class AutomationService : Service() {
     companion object {
         private val controlMutex = Mutex()
         private val eventExecutionAuthorization = EventExecutionAuthorization()
+        @Volatile
         private var activeService: AutomationService? = null
         private val mutableRunning = MutableStateFlow(false)
         val running = mutableRunning.asStateFlow()
@@ -291,14 +303,15 @@ class AutomationService : Service() {
 
         private fun ensureFailureChannel(context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val localeContext = context.selectedLocaleContext()
+                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
                 manager.createNotificationChannel(
                     NotificationChannel(
                         FAILURE_CHANNEL_ID,
-                        context.getString(R.string.notif_channel_engine_failure),
+                        localeContext.getString(R.string.notif_channel_engine_failure),
                         NotificationManager.IMPORTANCE_DEFAULT,
                     ).apply {
-                        description = context.getString(R.string.notif_channel_engine_failure_desc)
+                        description = localeContext.getString(R.string.notif_channel_engine_failure_desc)
                     },
                 )
             }
@@ -316,6 +329,7 @@ class AutomationService : Service() {
             com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(context)
             try {
                 ensureFailureChannel(context)
+                val localeContext = context.selectedLocaleContext()
                 val openIntent = Intent(context, MainActivity::class.java)
                 val pendingIntent = PendingIntent.getActivity(
                     context, 1, openIntent,
@@ -328,18 +342,58 @@ class AutomationService : Service() {
                     Notification.Builder(context)
                 }
                 val notification = builder
-                    .setContentTitle(context.getString(R.string.notif_engine_failure_title))
-                    .setContentText(context.getString(R.string.notif_engine_failure_text))
+                    .setContentTitle(localeContext.getString(R.string.notif_engine_failure_title))
+                    .setContentText(localeContext.getString(R.string.notif_engine_failure_text))
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true)
                     .setCategory(Notification.CATEGORY_ERROR)
                     .build()
-                (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-                    .notify(FAILURE_NOTIF_ID, notification)
+                (context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)
+                    ?.notify(FAILURE_NOTIF_ID, notification)
             } catch (_: Exception) {
                 Log.w("AutomationService", "Failure notification unavailable")
             }
+        }
+
+        fun refreshNotificationLocale(context: Context) {
+            val service = activeService
+            if (service != null) {
+                service.createChannel()
+                ensureFailureChannel(context)
+                try {
+                    val nm = service.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                    nm?.notify(NOTIF_ID, service.buildNotification())
+                } catch (e: Exception) {
+                    Log.w("AutomationService", "Failed to update foreground notification on locale switch", e)
+                }
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val localeContext = context.selectedLocaleContext()
+                    val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                    val channel = NotificationChannel(
+                        CHANNEL_ID,
+                        localeContext.getString(R.string.notif_channel_engine),
+                        NotificationManager.IMPORTANCE_MIN,
+                    ).apply {
+                        description = localeContext.getString(R.string.notif_channel_engine_desc)
+                        setShowBadge(false)
+                        setSound(null, AudioAttributes.Builder().build())
+                        enableVibration(false)
+                        lockscreenVisibility = Notification.VISIBILITY_SECRET
+                    }
+                    nm?.createNotificationChannel(channel)
+                }
+                ensureFailureChannel(context)
+            }
+
+            val hasFailure = mutableFailure.value ||
+                context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE).contains(STARTUP_FAILURE_KEY)
+            if (hasFailure) {
+                reportStartupFailure(context)
+            }
+
+            com.flowpilot.app.widget.FlowPilotWidgetProvider.updateAllWidgets(context)
         }
 
         private fun start(context: Context): Boolean {

@@ -9,7 +9,7 @@ ANDROID = "{http://schemas.android.com/apk/res/android}"
 
 class LintResourceContractsTest(unittest.TestCase):
     def test_location_reader_uses_backported_api(self):
-        source = (MAIN / "java/com/flowpilot/app/actions/LocationExecutor.kt").read_text()
+        source = (MAIN / "java/com/flowpilot/app/actions/LocationExecutor.kt").read_text(encoding="utf-8")
         self.assertIn("LocationManagerCompat.isLocationEnabled(it)", source)
 
     def test_permission_revocation_is_explicitly_handled(self):
@@ -19,7 +19,7 @@ class LintResourceContractsTest(unittest.TestCase):
             ("ui/components/WifiPicker.kt", "wm.scanResults"),
         ]:
             with self.subTest(source=relative):
-                source = (MAIN / "java/com/flowpilot/app" / relative).read_text()
+                source = (MAIN / "java/com/flowpilot/app" / relative).read_text(encoding="utf-8")
                 next_catch = source[source.index(call):].split("catch (", 1)[1].split(")", 1)[0]
                 self.assertIn("SecurityException", next_catch)
 
@@ -42,7 +42,7 @@ class LintResourceContractsTest(unittest.TestCase):
 
     def test_conflict_warning_contract(self):
         java = MAIN / "java/com/flowpilot/app"
-        analyzer = (java / "analysis/AutomationConflictAnalyzer.kt").read_text()
+        analyzer = (java / "analysis/AutomationConflictAnalyzer.kt").read_text(encoding="utf-8")
         expected_actions = {
             "WIFI_ON", "WIFI_OFF", "BLUETOOTH_ON", "BLUETOOTH_OFF",
             "MOBILE_DATA_ON", "MOBILE_DATA_OFF", "AIRPLANE_MODE_ON", "AIRPLANE_MODE_OFF",
@@ -57,7 +57,7 @@ class LintResourceContractsTest(unittest.TestCase):
         self.assertNotIn("phoneNumber", analyzer)
         self.assertNotIn("webhook", analyzer.lower())
         for relative in ["ui/screens/CreateScreen.kt", "ui/screens/DetailScreen.kt", "ui/screens/HomeScreen.kt"]:
-            self.assertIn("AutomationConflictAnalyzer.analyze", (java / relative).read_text())
+            self.assertIn("AutomationConflictAnalyzer.analyze", (java / relative).read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

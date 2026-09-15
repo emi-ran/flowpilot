@@ -52,8 +52,8 @@ class SoundExecutor(
         return try {
             val durationMs = parameters.soundDurationMs.coerceIn(1_000, 60_000)
             if ((playUri ?: ::play)(uri, durationMs)) ActionResult(true, "Sound played") else ActionResult(false, "Sound could not be played")
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+        } catch (_: Throwable) {
+            ActionResult(false, "Sound could not be played")
         }
     }
 

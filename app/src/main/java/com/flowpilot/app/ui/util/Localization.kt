@@ -372,6 +372,62 @@ class LocalizedContextWrapper(
             ?: error("No SavedStateRegistry found in base context")
 }
 
+fun resolveLocaleLanguage(language: String?): String = when (language?.lowercase()) {
+    "tr" -> "tr"
+    "en" -> "en"
+    else -> "system"
+}
+
+fun systemResourcesLocale(): java.util.Locale = runCatching {
+    val locales = android.content.res.Resources.getSystem().configuration.locales
+    if (!locales.isEmpty) locales.get(0) else null
+}.getOrNull() ?: java.util.Locale.getDefault()
+
+fun targetLocaleForLanguage(
+    language: String,
+    defaultLocale: java.util.Locale = systemResourcesLocale(),
+): java.util.Locale = when (resolveLocaleLanguage(language)) {
+    "tr" -> java.util.Locale.forLanguageTag("tr")
+    "en" -> java.util.Locale.forLanguageTag("en")
+    else -> defaultLocale
+}
+
+fun applyAppLocale(context: android.content.Context, language: String) {
+    val targetTag = resolveLocaleLanguage(language)
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
+        val desiredList = when (targetTag) {
+            "tr" -> android.os.LocaleList.forLanguageTags("tr")
+            "en" -> android.os.LocaleList.forLanguageTags("en")
+            else -> android.os.LocaleList.getEmptyLocaleList()
+        }
+        try {
+            if (localeManager != null && localeManager.applicationLocales != desiredList) {
+                localeManager.applicationLocales = desiredList
+            }
+        } catch (_: Throwable) {}
+    }
+    when (targetTag) {
+        "tr" -> java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr"))
+        "en" -> java.util.Locale.setDefault(java.util.Locale.forLanguageTag("en"))
+        else -> java.util.Locale.setDefault(systemResourcesLocale())
+    }
+}
+
+fun android.content.Context.localizedForAppLanguage(language: String): android.content.Context {
+    val targetTag = resolveLocaleLanguage(language)
+    if (targetTag == "system") return this
+    val locale = targetLocaleForLanguage(targetTag)
+    return createConfigurationContext(android.content.res.Configuration(resources.configuration).apply {
+        setLocale(locale)
+    })
+}
+
+fun android.content.Context.selectedLocaleContext(): android.content.Context {
+    val language = com.flowpilot.app.data.AutomationRepository.getPersistedLanguage(this)
+    return localizedForAppLanguage(language)
+}
+
 @Composable
 fun AppLocaleProvider(
     language: String,
@@ -383,11 +439,7 @@ fun AppLocaleProvider(
         ?: (context as? androidx.activity.result.ActivityResultRegistryOwner)
 
     val targetLocale = androidx.compose.runtime.remember(language) {
-        when (language.lowercase()) {
-            "tr" -> java.util.Locale.forLanguageTag("tr")
-            "en" -> java.util.Locale.forLanguageTag("en")
-            else -> java.util.Locale.getDefault()
-        }
+        targetLocaleForLanguage(language)
     }
 
     val localizedConfiguration = androidx.compose.runtime.remember(configuration, targetLocale) {
@@ -401,19 +453,7 @@ fun AppLocaleProvider(
     }
 
     androidx.compose.runtime.LaunchedEffect(language) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
-            val desiredList = when (language.lowercase()) {
-                "tr" -> android.os.LocaleList.forLanguageTags("tr")
-                "en" -> android.os.LocaleList.forLanguageTags("en")
-                else -> android.os.LocaleList.getEmptyLocaleList()
-            }
-            try {
-                if (localeManager != null && localeManager.applicationLocales != desiredList) {
-                    localeManager.applicationLocales = desiredList
-                }
-            } catch (_: Throwable) {}
-        }
+        applyAppLocale(context, language)
     }
 
     if (activityResultRegistryOwner != null) {

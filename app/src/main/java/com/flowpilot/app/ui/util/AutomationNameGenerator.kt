@@ -1,19 +1,9 @@
 package com.flowpilot.app.ui.util
 
 import android.content.Context
-import android.content.res.Configuration
 import com.flowpilot.app.R
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.TriggerEvent
-
-fun Context.localizedForAppLanguage(language: String): Context {
-    val locale = when (language.lowercase()) {
-        "tr" -> java.util.Locale.forLanguageTag("tr")
-        "en" -> java.util.Locale.forLanguageTag("en")
-        else -> return this
-    }
-    return createConfigurationContext(Configuration(resources.configuration).apply { setLocale(locale) })
-}
 
 fun automaticAutomationName(
     context: Context,

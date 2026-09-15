@@ -387,4 +387,120 @@ class AutomationRepositoryHistoryTest {
         assertThat(technicalError.resolvedResultCode()).isNull()
         assertThat(technicalError.message).isEqualTo("HTTP 503 from upstream")
     }
+
+    @Test
+    fun appendHistory_withInjectedSyntheticSecretAndPrivateUri_isAbsentFromSerializedAndPersistedHistory() = runTest {
+        val syntheticSecret = "SYNTHETIC_SECRET_DO_NOT_PERSIST"
+        val syntheticUri = "content://com.flowpilot.test.provider/synthetic/private/uri"
+        val syntheticLocalPath = "/data/user/0/com.flowpilot.app/files/secret.key"
+        val rawErrorMessage = "java.lang.IllegalStateException: Failed accessing $syntheticUri with $syntheticSecret at $syntheticLocalPath"
+
+        val entry = ExecutionHistoryEntry.create(
+            ruleId = "leak-test-rule",
+            ruleName = "Rule $syntheticSecret",
+            trigger = "MANUAL",
+            actions = listOf(
+                ActionExecutionRecord.create(
+                    actionType = ActionType.PLAY_SOUND,
+                    result = ActionResult(
+                        success = false,
+                        message = rawErrorMessage,
+                        resultCode = null,
+                        resultArgs = listOf(syntheticUri, syntheticSecret, syntheticLocalPath),
+                    ),
+                ),
+            ),
+        )
+
+        repository.appendHistory(entry)
+
+        val rawSerialized = repository.rawDataStore.data.first()[historyKey]!!
+        assertThat(rawSerialized).doesNotContain(syntheticSecret)
+        assertThat(rawSerialized).doesNotContain(syntheticUri)
+        assertThat(rawSerialized).doesNotContain("/data/user/0")
+        assertThat(rawSerialized).doesNotContain("IllegalStateException")
+
+        val persisted = repository.executionHistory.first().first { it.ruleId == "leak-test-rule" }
+        val action = persisted.actions.single()
+
+        assertThat(action.message).doesNotContain(syntheticSecret)
+        assertThat(action.message).doesNotContain(syntheticUri)
+        assertThat(action.message).doesNotContain("/data/user/0")
+        assertThat(action.message).doesNotContain("IllegalStateException")
+        for (arg in action.resultArgs) {
+            assertThat(arg).doesNotContain(syntheticSecret)
+            assertThat(arg).doesNotContain(syntheticUri)
+            assertThat(arg).doesNotContain("/data/user/0")
+        }
+    }
+
+    @Test
+    fun legacyPersistedHistory_withInjectedSyntheticSecretAndPrivateUri_isSanitizedOnMigration() = runTest {
+        val syntheticSecret = "SYNTHETIC_SECRET_DO_NOT_PERSIST"
+        val syntheticUri = "content://com.flowpilot.test.provider/synthetic/private/uri"
+        val rawThrowableMessage = "java.io.FileNotFoundException: /data/user/0/com.flowpilot/databases/test.db: $syntheticSecret ($syntheticUri)"
+
+        val legacyEntry = ExecutionHistoryEntry(
+            id = "legacy-leak",
+            ruleId = "legacy-rule",
+            ruleName = "Rule with $syntheticSecret ($syntheticUri)",
+            trigger = "TRIGGER_$syntheticSecret",
+            timestamp = 100L,
+            status = ExecutionStatus.FAILURE,
+            actions = listOf(
+                ActionExecutionRecord(
+                    actionType = ActionType.PLAY_SOUND,
+                    actionLabel = ActionType.PLAY_SOUND.label,
+                    success = false,
+                    message = rawThrowableMessage,
+                    resultCode = null,
+                    resultArgs = listOf(syntheticUri, syntheticSecret),
+                ),
+            ),
+        )
+
+        repository.rawDataStore.edit { prefs ->
+            prefs[historyKey] = json.encodeToString(historySerializer, listOf(legacyEntry))
+        }
+
+        val loadedHistory = repository.executionHistory.first()
+        val loadedEntry = loadedHistory.single()
+        val loadedAction = loadedEntry.actions.single()
+
+        assertThat(loadedEntry.ruleName).doesNotContain(syntheticSecret)
+        assertThat(loadedEntry.ruleName).doesNotContain(syntheticUri)
+        assertThat(loadedEntry.trigger).doesNotContain(syntheticSecret)
+        assertThat(loadedEntry.trigger).doesNotContain(syntheticUri)
+
+        assertThat(loadedAction.message).doesNotContain(syntheticSecret)
+        assertThat(loadedAction.message).doesNotContain(syntheticUri)
+        assertThat(loadedAction.message).doesNotContain("/data/user/0")
+        assertThat(loadedAction.message).doesNotContain("FileNotFoundException")
+        for (arg in loadedAction.resultArgs) {
+            assertThat(arg).doesNotContain(syntheticSecret)
+            assertThat(arg).doesNotContain(syntheticUri)
+        }
+
+        val migratedRaw = repository.rawDataStore.data.first()[historyKey]!!
+        assertThat(migratedRaw).doesNotContain(syntheticSecret)
+        assertThat(migratedRaw).doesNotContain(syntheticUri)
+        assertThat(migratedRaw).doesNotContain("/data/user/0")
+        assertThat(migratedRaw).doesNotContain("FileNotFoundException")
+    }
+
+    @Test
+    fun getPersistedLanguage_onCacheMiss_returnsSystem_andSyncPopulatesCache() = runTest {
+        val prefs = context.getSharedPreferences(AutomationRepository.PREFS_LOCALE, Context.MODE_PRIVATE)
+        prefs.edit().clear().commit()
+
+        val initial = AutomationRepository.getPersistedLanguage(context)
+        assertThat(initial).isEqualTo("system")
+
+        repository.rawDataStore.edit { it[stringPreferencesKey("app_language")] = "tr" }
+        assertThat(prefs.contains(AutomationRepository.KEY_APP_LANGUAGE)).isFalse()
+
+        val synced = repository.syncPersistedLanguage()
+        assertThat(synced).isEqualTo("tr")
+        assertThat(prefs.getString(AutomationRepository.KEY_APP_LANGUAGE, null)).isEqualTo("tr")
+    }
 }

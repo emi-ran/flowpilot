@@ -11,13 +11,16 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.security.SecretCipher
+import com.flowpilot.app.engine.AutomationService
 import com.flowpilot.app.engine.GeofenceTransition
 import com.flowpilot.app.engine.GeofenceDiagnostic
 import com.flowpilot.app.engine.GeofenceDiagnosticStatus
 import com.flowpilot.app.engine.GeofenceEvent
+import com.flowpilot.app.ui.util.applyAppLocale
 import com.flowpilot.app.ui.util.automaticAutomationName
 import com.flowpilot.app.ui.util.localizedForAppLanguage
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -70,10 +73,21 @@ class AutomationRepository(private val context: Context) {
             .associateBy { it.automationId }
     }
 
+    suspend fun syncPersistedLanguage(): String {
+        val lang = appLanguage.first()
+        persistLanguage(context, lang)
+        applyAppLocale(context, lang)
+        AutomationService.refreshNotificationLocale(context)
+        return lang
+    }
+
     suspend fun setAppLanguage(language: String) {
+        persistLanguage(context, language)
         context.dataStore.edit { prefs ->
             prefs[languageKey] = language
         }
+        applyAppLocale(context, language)
+        AutomationService.refreshNotificationLocale(context)
     }
 
     val appTheme: Flow<String> = context.dataStore.data.map { prefs ->
@@ -116,9 +130,10 @@ class AutomationRepository(private val context: Context) {
 
     val executionHistory: Flow<List<ExecutionHistoryEntry>> = context.dataStore.data.map { prefs ->
         val history = prefs[historyKey]?.let { safeDecodeHistory(it) }.orEmpty()
-        if (history.any { it.ruleName != it.normalizedRuleName }) {
+        val migratedHistory = history.map { it.sanitized() }
+        if (migratedHistory != history) {
             val migrated = context.dataStore.edit { migrateHistory(it) }
-            migrated[historyKey]?.let { safeDecodeHistory(it) }.orEmpty()
+            migrated[historyKey]?.let { safeDecodeHistory(it) }?.map { it.sanitized() } ?: migratedHistory
         } else {
             history
         }
@@ -128,7 +143,8 @@ class AutomationRepository(private val context: Context) {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
             val current = prefs[historyKey]?.let { safeDecodeHistory(it) } ?: emptyList()
-            val updated = (listOf(entry.copy(ruleName = entry.normalizedRuleName)) + current).take(MAX_HISTORY_ENTRIES)
+            val sanitizedEntry = entry.sanitized()
+            val updated = (listOf(sanitizedEntry) + current).take(MAX_HISTORY_ENTRIES)
             prefs[historyKey] = json.encodeToString(historySerializer, updated)
         }
     }
@@ -782,7 +798,7 @@ class AutomationRepository(private val context: Context) {
     private fun migrateHistory(prefs: MutablePreferences) {
         val raw = prefs[historyKey] ?: return
         val history = safeDecodeHistory(raw)
-        val migrated = history.map { it.copy(ruleName = it.normalizedRuleName) }
+        val migrated = history.map { it.sanitized() }
         if (migrated != history) {
             prefs[historyKey] = json.encodeToString(historySerializer, migrated)
         }
@@ -835,6 +851,20 @@ class AutomationRepository(private val context: Context) {
         private const val MAX_GEOFENCE_ERROR_LENGTH = 300
         private const val EXECUTION_LEASE_MS = 10 * 60_000L
         private val executionStateMutex = Mutex()
+        const val PREFS_LOCALE = "automation_locale_prefs"
+        const val KEY_APP_LANGUAGE = "app_language"
+
+        fun getPersistedLanguage(context: Context): String {
+            val prefs = context.getSharedPreferences(PREFS_LOCALE, Context.MODE_PRIVATE)
+            return prefs.getString(KEY_APP_LANGUAGE, null) ?: "system"
+        }
+
+        fun persistLanguage(context: Context, language: String) {
+            context.getSharedPreferences(PREFS_LOCALE, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_APP_LANGUAGE, language)
+                .apply()
+        }
     }
 
     suspend fun migrateLegacySecretsIfNeeded() {

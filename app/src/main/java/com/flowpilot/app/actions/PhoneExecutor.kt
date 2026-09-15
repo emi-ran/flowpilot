@@ -87,7 +87,7 @@ class PhoneExecutor(
         val hasCallPermission = context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
         if (!hasCallPermission) {
             Log.w(TAG, "Direct call blocked: CALL_PHONE permission not granted")
-            return ActionResult(false, "Phone call permission required")
+            return ActionResult(false, "Phone call permission required", ActionResultCode.PERMISSION_REQUIRED)
         }
 
         val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$normalized")).apply {
