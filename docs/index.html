@@ -26,7 +26,7 @@
           </svg>
         </div>
         <span class="brand-name">FlowPilot</span>
-        <span class="brand-tag">v1.0.2</span>
+        <span class="brand-tag">v1.1.0</span>
       </a>
 
       <div class="header-actions-mobile">
@@ -82,21 +82,21 @@
       </h1>
 
       <p class="hero-desc" data-i18n="hero_desc">
-        Gereksiz pil tüketen sürekli arka plan servisleri ve hantal yapılar yerine; Shizuku IPC, Kotlin Coroutines ve modern Android olay yayınlarıyla çalışan hafif, gizlilik odaklı otomasyon.
+        Olay tabanlı Android yayınları ve yalnız etkin kurallar gerektiğinde çalışan dinleyicilerle; Shizuku IPC ve Kotlin Coroutines kullanan gizlilik odaklı otomasyon.
       </p>
 
       <div class="hero-actions">
-        <a href="https://github.com/emi-ran/flowpilot/releases/download/v1.0.2/FlowPilot-v1.0.2.apk" class="btn btn-primary">
+        <a href="https://github.com/emi-ran/flowpilot/releases/latest" class="btn btn-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          <span data-i18n="btn_download">APK İndir (v1.0.2)</span>
+          <span data-i18n="btn_download">APK İndir (v1.1.0)</span>
         </a>
 
         <div class="command-box" role="button" tabindex="0" onclick="copyAdbInstall(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyAdbInstall(this);event.preventDefault();}">
-          <code>adb install FlowPilot-v1.0.2.apk</code>
+          <code>adb install FlowPilot-v1.1.0.apk</code>
           <span class="copy-tag" id="adb-copy-feedback" data-i18n="btn_copy">KOPYALA</span>
         </div>
       </div>
@@ -105,11 +105,11 @@
       <div class="attr-bar">
         <div class="attr-item">
           <div class="attr-title" data-i18n="stat_apk_label">APK Boyutu</div>
-          <div class="attr-val">~20.6 MB <small>(Debug APK; release is optimized)</small></div>
+          <div class="attr-val">Release asset <small>(see GitHub Releases)</small></div>
         </div>
         <div class="attr-item">
           <div class="attr-title" data-i18n="stat_runtime_label">Çalışma Modeli</div>
-          <div class="attr-val">Event-Driven <small>(0 Wake-Lock)</small></div>
+          <div class="attr-val">Event-Driven <small>(No persistent wake-locks)</small></div>
         </div>
         <div class="attr-item">
           <div class="attr-title" data-i18n="stat_shizuku_label">Yetki Katmanı</div>
@@ -117,7 +117,7 @@
         </div>
         <div class="attr-item">
           <div class="attr-title" data-i18n="stat_telemetry_label">Telemetri & Ağ</div>
-          <div class="attr-val" data-i18n-html="stat_telemetry_val">0 telemetri <small>(Yalnızca yapılandırılan webhook'lar ağ kullanır)</small></div>
+          <div class="attr-val" data-i18n-html="stat_telemetry_val">0 telemetri <small>(Kullanıcının açıkça kullandığı ağ, SMS ve paylaşım özellikleri hariç)</small></div>
         </div>
       </div>
     </div>
@@ -130,7 +130,7 @@
         <span class="section-label" data-i18n="wb_label">İnteraktif Kural Mühendisliği</span>
         <h2 class="section-title" data-i18n="wb_title">Uygulamayı ve Otomasyon Mantığını İnceleyin</h2>
         <p class="section-desc" data-i18n="wb_desc">
-          Aşağıdaki hazır kuralları seçerek hem cihaz ekranındaki görünümünü hem de arkasındaki veri/eylem yapısını canlı olarak görün.
+          Aşağıdaki hazır kuralları seçerek cihaz ekranını ve kavramsal otomasyon örneklerini inceleyin; gösterilen kod serileştirilmiş dışa aktarma biçimi değildir.
         </p>
       </div>
 
@@ -179,7 +179,7 @@
           <div class="rule-spec" id="wb-spec-box">
             <div class="spec-header">
               <span id="wb-spec-name">flowpilot_rule_night_mode.json</span>
-              <span>PARSED AST</span>
+              <span>CONCEPT</span>
             </div>
             <pre id="wb-code-content"></pre>
           </div>
@@ -212,7 +212,7 @@
             <tr>
               <td data-i18n="comp_row_1_title">Arka Plan Kaynak Tüketimi</td>
               <td><span class="badge-bad" data-i18n="comp_row_1_old">Sürekli çalışan Foreground Service ve Wake-Lock</span></td>
-              <td><span class="badge-good" data-i18n="comp_row_1_new">Olay tabanlı (Event-driven) Broadcast & WorkManager</span></td>
+              <td><span class="badge-good" data-i18n="comp_row_1_new">Olay tabanlı alıcılar ve ihtiyaç odaklı dinleyiciler</span></td>
             </tr>
             <tr>
               <td data-i18n="comp_row_2_title">Ayrıcalıklı Sistem Erişimi</td>
@@ -221,13 +221,13 @@
             </tr>
             <tr>
               <td data-i18n="comp_row_3_title">Uygulama Boyutu & Şişkinlik</td>
-              <td><span class="badge-bad">60 MB - 140 MB</span></td>
-              <td><span class="badge-good">~20.6 MB (Debug APK; release is optimized)</span></td>
+              <td><span class="badge-warn">Varies by app and configuration</span></td>
+              <td><span class="badge-good">Release asset size published on GitHub</span></td>
             </tr>
             <tr>
               <td data-i18n="comp_row_4_title">Gizlilik & Telemetri</td>
               <td><span class="badge-warn" data-i18n="comp_row_4_old">Crashlytics, analitik SDK'ları, hesap zorunluluğu</span></td>
-              <td><span class="badge-good" data-i18n="comp_row_4_new">Sıfır telemetri, sıfır hesap, yalnızca kullanıcı yapılandırırsa ağ</span></td>
+              <td><span class="badge-good" data-i18n="comp_row_4_new">Sıfır telemetri ve hesap; dış iletişim yalnız açıkça kullanılan özelliklerle</span></td>
             </tr>
             <tr>
               <td data-i18n="comp_row_5_title">Kaynak Kod Lisansı</td>
@@ -247,7 +247,7 @@
         <span class="section-label" data-i18n="mat_label">Yetkinlik Haritası</span>
         <h2 class="section-title" data-i18n="mat_title">Desteklenen Tetikleyiciler ve Eylemler</h2>
         <p class="section-desc" data-i18n="mat_desc">
-          FlowPilot, Android'in yerel API sınırları dahilinde çalışırken, ayrıcalıklı işlemler için Shizuku'dan yararlanır.
+          FlowPilot; NFC arka plan onayı, güvenli kural çoğaltma, çakışma uyarıları ve İngilizce/Türkçe uygulama diliyle Android'in yerel API sınırları içinde çalışır.
         </p>
       </div>
 
@@ -266,6 +266,7 @@
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_wifi_state">Wi-Fi Bağlandı / Kesildi</span></span><span class="cap-badge">NetworkCallback</span></li>
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_wifi_ssid">Belirli SSID Eşleşmesi</span></span><span class="cap-badge">Location/Wifi</span></li>
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_bt_state">Bluetooth Cihaz Durumu</span></span><span class="cap-badge">BluetoothAdapter</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_nfc">NFC Etiketi (arka planda onaylı)</span></span><span class="cap-badge">ReaderMode</span></li>
           </ul>
         </div>
 
@@ -293,7 +294,7 @@
           <ul class="cap-list">
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_wifi_toggle">Wi-Fi Aç / Kapat</span></span><span class="cap-badge shizuku">Shizuku IPC</span></li>
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_bt_toggle">Bluetooth Aç / Kapat</span></span><span class="cap-badge shizuku">Shizuku / API</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_hotspot">Taşınabilir Erişim Noktası</span></span><span class="cap-badge shizuku">Shizuku IPC</span></li>
+            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_hotspot">Mobil Veri / Uçak Modu</span></span><span class="cap-badge shizuku">Shizuku IPC</span></li>
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_launch_app">Uygulama / Aktivite Başlat</span></span><span class="cap-badge">PackageManager</span></li>
             <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_notify">Özel Sistem Bildirimi</span></span><span class="cap-badge">NotificationManager</span></li>
           </ul>
@@ -356,7 +357,7 @@
         <span class="section-label" data-i18n="inst_label">Hızlı Dağıtım</span>
         <h2 class="section-title" data-i18n="inst_title">Kurulum & Shizuku Yapılandırması</h2>
         <p class="section-desc" data-i18n="inst_desc">
-          Root gerekmez. Kablosuz Hata Ayıklama (Android 11+) veya tek bir ADB komutuyla 60 saniyede hazır.
+          Root gerekmez. Shizuku, Android 11+ Kablosuz Hata Ayıklama veya USB üzerinden başlatılabilir.
         </p>
       </div>
 
@@ -367,7 +368,7 @@
             <div class="install-step-badge" data-i18n="step_1_badge">ADIM 01</div>
             <div class="install-step-title" data-i18n="step_1_title">APK'yı Yükleyin</div>
             <div class="install-step-desc" data-i18n="step_1_desc">
-              GitHub Releases sayfasından derlenmiş <span class="tag">FlowPilot-v1.0.2.apk</span> dosyasını indirin veya ADB ile doğrudan cihaza kurun.
+              GitHub Releases sayfasından derlenmiş <span class="tag">FlowPilot-v1.1.0.apk</span> dosyasını indirin veya ADB ile doğrudan cihaza kurun.
             </div>
           </div>
 
@@ -426,7 +427,7 @@
             <div class="term-line term-out" style="--line-delay: 90ms;">List of devices attached</div>
             <div class="term-line term-out" style="--line-delay: 140ms;">2407FRK8EC&nbsp;&nbsp;&nbsp;&nbsp;device  # Xiaomi 15T Pro</div>
             <br>
-            <div class="term-line" style="--line-delay: 190ms;"><span class="term-prompt">$ </span><span class="term-cmd">adb install FlowPilot-v1.0.2.apk</span></div>
+            <div class="term-line" style="--line-delay: 190ms;"><span class="term-prompt">$ </span><span class="term-cmd">adb install FlowPilot-v1.1.0.apk</span></div>
             <div class="term-line term-out" style="--line-delay: 240ms;">Performing Streamed Install</div>
             <div class="term-line term-out" style="--line-delay: 290ms; color: var(--emerald);">Success</div>
             <br>

@@ -1,6 +1,6 @@
 # FlowPilot Status
 
-Last updated: 2026-09-14
+Last updated: 2026-09-15
 
 ## Build state
 
@@ -13,7 +13,7 @@ Last updated: 2026-09-14
 - Encrypted backup unit coverage verifies full-secret round trips, enabled-state preservation, plaintext non-leakage, wrong-password/tamper rejection, format/version/KDF bounds, single-rule backup, normal-export regression, and cross-device Android Keystore re-encryption.
 - History localization unit coverage verifies locale-neutral outcome records, masked SMS result arguments, legacy successful outcome mapping, technical failure fallback, and Turkish automatic rule-name generation.
 - Service locale and notification refresh contract verified: persisted app locale drives foreground engine and startup-failure notification channels and text across boot, service restart, process recreation, and task removal; language switch refreshes active notifications and channel metadata immediately (#23).
-- Conflict analyzer and pre-save/pre-enable warning implemented: runtime-aligned trigger overlap, opposing state-action matrix, likely/possible confidence, conflict rule inspection with pending-state restoration, and deliberate non-blocking override. GitHub `Build & Test` passed; physical-device validation remains pending.
+- Conflict analyzer and pre-save/pre-enable warning implemented: runtime-aligned trigger overlap, opposing state-action matrix, likely/possible confidence, conflict rule inspection with pending-state restoration, and deliberate non-blocking override. GitHub `Build & Test` and physical-device validation passed.
 - GitHub Pages site modularized: split single monolithic `docs/index.html` into external stylesheet (`docs/assets/css/style.css`) and script (`docs/assets/js/app.js`), unified brand favicon (`docs/assets/favicon.svg`), converted brand into accessible home link, compacted desktop footer, and added mobile-first responsive pass (#2, #3).
 
 ## Background stability & engine keepalive
@@ -27,6 +27,7 @@ Last updated: 2026-09-14
 
 ## Device-verified features
 
+- Safe rule duplication, pre-save/pre-enable conflict warnings, background NFC confirmation, and app language switching.
 - Time schedules, charger, battery threshold, screen, Wi-Fi, and notification triggers.
 - Notifications, app launch, URL opening, alarm, timer, offline TTS, media volume, vibration, Play sound, webhook base action, NFC, Battery Saver, Auto-rotate, Do Not Disturb, and Dark theme actions.
 - Webhook header/body template variables and unknown-token preservation.
@@ -43,7 +44,6 @@ Last updated: 2026-09-14
 
 ## Implemented; device validation pending
 
-- Safe rule duplication from the Home list overflow menu: creates a disabled copy with a new UUID/creation time, resets `lastTriggeredAt` and transient registration state, preserves complete configuration, re-encrypts webhook secrets with fresh Android Keystore ciphertext, and opens the copy in Edit immediately. GitHub unit/build verification and SDK-free static/resource contracts passed; physical-device validation remains pending.
 - Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions (unit tests passed; device smoke tests pending):
   - Time interval filtering with overnight span support (e.g. 23:00 - 07:00 crossing midnight).
   - Day of week filtering with Daily, Weekdays, Weekends, and custom day toggles.
@@ -76,9 +76,10 @@ Last updated: 2026-09-14
   - AES-256-GCM portable envelope with PBKDF2-HMAC-SHA256 (100,000 iterations), random salt/IV, and six-character minimum password.
   - Encrypted export/share retains full rule data and enabled state; wrong passwords, altered payloads, unsupported versions/formats, and unsafe KDF bounds fail before import mutation.
   - Normal JSON export/share remains sanitized and normal import disables imported rules.
-- Localized history results and automatic rule names (unit tests passed; Turkish UI smoke test pending):
+- Localized history results and automatic rule names (unit tests passed):
   - New records store locale-neutral result codes; known legacy successful results render in current app language.
   - SMS recipients stay masked; raw technical failures remain redacted fallback text.
+  - English, Turkish, and system-language switching passed physical-device validation; active background notification text and channel metadata refresh immediately.
 - Sound profile denied Notification Policy Access behavior.
 - Run history screen smoke test on Xiaomi 15T Pro / HyperOS 3.
 - NFC tag trigger non-matching/engine-stopped paths.

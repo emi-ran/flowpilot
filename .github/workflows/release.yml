@@ -68,11 +68,7 @@ jobs:
           fi
 
           ci_runs_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${release_commit}&event=push&status=completed&per_page=100"
-          curl --fail --silent --show-error \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$ci_runs_url" > "$RUNNER_TEMP/ci-runs.json"
+          gh api "$ci_runs_url" > "$RUNNER_TEMP/ci-runs.json"
           ci_run_id=$(jq --exit-status --raw-output --arg commit "$release_commit" '
             [.workflow_runs[] | select(.head_sha == $commit and .event == "push" and .head_branch == "main" and .status == "completed")]
             | max_by(.run_started_at) | select(.conclusion == "success") | .id
@@ -80,11 +76,7 @@ jobs:
             echo "ERROR: Android CI push run for $release_commit on main has not completed successfully"
             exit 1
           }
-          curl --fail --silent --show-error \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${ci_run_id}/jobs?filter=latest&per_page=100" > "$RUNNER_TEMP/ci-jobs.json"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${ci_run_id}/jobs?filter=latest&per_page=100" > "$RUNNER_TEMP/ci-jobs.json"
           if ! jq --exit-status '
             any(.jobs[]; .name == "Build & Test" and .status == "completed" and .conclusion == "success")
           ' "$RUNNER_TEMP/ci-jobs.json" > /dev/null; then
@@ -92,24 +84,35 @@ jobs:
             exit 1
           fi
 
-          release_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}"
-          release_status=$(curl --silent --show-error --output "$RUNNER_TEMP/existing-release.json" --write-out '%{http_code}' \
-            --header 'Authorization: Bearer $GH_TOKEN' \
-            --header 'Accept: application/vnd.github+json' \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$release_url")
-          case "$release_status" in
-            404) ;;
-            200)
-              jq --exit-status --raw-output '.body | strings' "$RUNNER_TEMP/existing-release.json" > "$RUNNER_TEMP/existing-release-body.md"
-              echo "ERROR: release for $GITHUB_REF_NAME already exists; refusing to overwrite its notes or assets"
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" > "$RUNNER_TEMP/existing-release.json" 2> "$RUNNER_TEMP/existing-release-error.txt"; then
+            if ! jq --exit-status --arg tag "$GITHUB_REF_NAME" '
+              .draft == true and .tag_name == $tag and (.assets | length) == 0
+            ' "$RUNNER_TEMP/existing-release.json" > /dev/null; then
+              echo "ERROR: release for $GITHUB_REF_NAME already exists and is not an empty recoverable draft"
               exit 1
-              ;;
-            *)
-              echo "ERROR: unable to query existing release for $GITHUB_REF_NAME (HTTP $release_status)"
+            fi
+            echo "Recovering empty draft release for $GITHUB_REF_NAME"
+          elif ! grep --fixed-strings --quiet 'HTTP 404' "$RUNNER_TEMP/existing-release-error.txt"; then
+            cat "$RUNNER_TEMP/existing-release-error.txt"
+            echo "ERROR: unable to query existing release for $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+          gh api "repos/${GITHUB_REPOSITORY}/releases/latest" > "$RUNNER_TEMP/latest-release.json"
+          jq --exit-status --raw-output '.body | strings' "$RUNNER_TEMP/latest-release.json" > "$RUNNER_TEMP/latest-release-body.md"
+          for heading in '## 🧪 Verification' '## 📥 Installation' '## 📱 Compatibility'; do
+            grep --fixed-strings --quiet "$heading" "$RUNNER_TEMP/latest-release-body.md" || {
+              echo "ERROR: latest release notes missing expected structure: $heading"
               exit 1
-              ;;
-          esac
+            }
+          done
+
+          notes_source="docs/RELEASE_NOTES_${GITHUB_REF_NAME#v}.md"
+          [[ -s "$notes_source" ]] || { echo "ERROR: missing prepared release notes: $notes_source"; exit 1; }
+          grep --fixed-strings --quiet "## [${GITHUB_REF_NAME#v}]" CHANGELOG.md || {
+            echo "ERROR: CHANGELOG.md missing release section for ${GITHUB_REF_NAME#v}"
+            exit 1
+          }
 
   release:
     name: Build & Publish Release APK
@@ -141,11 +144,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Run resource contracts
+        run: python scripts/test_lint_resource_contracts.py
+
       - name: Run Debug Unit Tests
         run: ./gradlew testDebugUnitTest --no-daemon
 
-      - name: Run Debug Lint
-        run: ./gradlew lintDebug --no-daemon
+      - name: Run Debug Lint and assemble APK
+        run: ./gradlew lintDebug assembleDebug --no-daemon
 
       - name: Validate signing environment
         env:
@@ -195,51 +201,54 @@ jobs:
           release_apk_name="FlowPilot-${GITHUB_REF_NAME}.apk"
           release_apk_path="$release_dir/$release_apk_name"
           mv "$release_apk" "$release_apk_path"
+
+          build_tools_dir="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}/build-tools/36.0.0"
+          aapt2="$build_tools_dir/aapt2"
+          apksigner="$build_tools_dir/apksigner"
+          [[ -x "$aapt2" && -x "$apksigner" ]] || { echo 'ERROR: required Android build tools unavailable'; exit 1; }
+
+          package_line=$("$aapt2" dump badging "$release_apk_path" | sed -n '1p')
+          [[ "$package_line" == *"name='com.flowpilot.app'"* ]] || { echo 'ERROR: APK package ID mismatch'; exit 1; }
+          [[ "$package_line" == *"versionCode='4'"* ]] || { echo 'ERROR: APK versionCode mismatch'; exit 1; }
+          [[ "$package_line" == *"versionName='1.1.0'"* ]] || { echo 'ERROR: APK versionName mismatch'; exit 1; }
+          "$apksigner" verify --verbose "$release_apk_path"
+          signer_digest=$("$apksigner" verify --print-certs "$release_apk_path" | sed -nE 's/^Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)$/\1/p' | tr '[:upper:]' '[:lower:]')
+          expected_signer_digest='f1e45d3a669954ddfb858d5d3a964a2fa7ba3d00bcb0e65b5ced1ca6d5a79f2b'
+          [[ "$signer_digest" == "$expected_signer_digest" ]] || { echo 'ERROR: APK signer certificate mismatch'; exit 1; }
+
           release_checksum_path="${release_apk_path}.sha256"
-          sha256sum "$release_apk_path" > "$release_checksum_path"
-          sha256sum --check "$release_checksum_path"
+          (
+            cd "$release_dir"
+            sha256sum "$release_apk_name" > "${release_apk_name}.sha256"
+            sha256sum --check "${release_apk_name}.sha256"
+          )
           release_sha256=$(awk '{print $1}' "$release_checksum_path")
 
-          release_title="FlowPilot ${GITHUB_REF_NAME}"
+          release_title="FlowPilot ${GITHUB_REF_NAME} — Safer Automations, Conflict Warnings & Privacy Hardening"
           release_notes_path="$RUNNER_TEMP/release-notes.md"
-          cat > "$release_notes_path" <<EOF
-          Signed Android APK release for FlowPilot.
+          notes_source="docs/RELEASE_NOTES_${GITHUB_REF_NAME#v}.md"
+          [[ -s "$notes_source" ]] || { echo "ERROR: missing prepared release notes: $notes_source"; exit 1; }
+          python3 - "$notes_source" "$release_notes_path" "$release_apk_name" "$release_sha256" "$RELEASE_COMMIT" <<'PY'
+          from pathlib import Path
+          import sys
 
-          ---
+          source, target, apk_name, digest, commit = sys.argv[1:]
+          notes = Path(source).read_text(encoding="utf-8")
+          replacements = {
+              "{{APK_NAME}}": apk_name,
+              "{{SHA256}}": digest,
+              "{{RELEASE_COMMIT}}": commit,
+          }
+          for marker, value in replacements.items():
+              if marker not in notes:
+                  raise SystemExit(f"ERROR: release notes missing marker {marker}")
+              notes = notes.replace(marker, value)
+          if "{{" in notes or "}}" in notes:
+              raise SystemExit("ERROR: unresolved release-note marker")
+          Path(target).write_text(notes, encoding="utf-8")
+          PY
 
-          ## ✨ Highlights
-
-          - Signed release APK built from current \`main\` commit \`${RELEASE_COMMIT}\`.
-
-          ## 🧪 Verification
-
-          - Required Android CI \`Build & Test\` completed successfully for this exact commit.
-          - Release workflow completed debug unit tests, debug lint, and signed APK assembly.
-
-          ## 📥 Installation
-
-          1. Download \`${release_apk_name}\`.
-          2. Verify checksum before installation.
-          3. Install APK on Android 8.0 (API 26) or newer.
-
-          ### SHA-256 Checksum
-
-          \`\`\`
-          SHA256 (${release_apk_name}) = ${release_sha256}
-          \`\`\`
-
-          ## 📱 Compatibility
-
-          - Android 8.0+ (API 26–36).
-
-          ---
-
-          ## 🇹🇷 Türkçe Özet
-
-          İmzalı FlowPilot APK sürümü hazır. Kurulumdan önce SHA-256 sağlama toplamını doğrulayın.
-          EOF
-
-          for heading in '## ✨ Highlights' '## 🧪 Verification' '## 📥 Installation' '### SHA-256 Checksum' '## 📱 Compatibility' '## 🇹🇷 Türkçe Özet'; do
+          for heading in '## ✨ Safer Rule Management' '## 🛡️ Automation Security' '## 🔒 History Privacy' '## 🌐 Language & Background Notifications' '## 🧪 Verification' '## 📥 Installation' '### SHA-256 Checksum' '## 📱 Compatibility' '## 🇹🇷 Türkçe Özet'; do
             grep --fixed-strings --quiet "$heading" "$release_notes_path" || { echo "ERROR: release notes missing $heading"; exit 1; }
           done
           grep --fixed-strings --quiet "SHA256 (${release_apk_name}) = ${release_sha256}" "$release_notes_path" || { echo 'ERROR: release notes checksum mismatch'; exit 1; }

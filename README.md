@@ -4,7 +4,7 @@
 
 ### The private, battery-first Android automation engine — without root.
 
-Automate your device seamlessly with event-driven triggers, privileged system actions via Shizuku, and a fluid Material 3 interface. No telemetry, no cloud accounts, and zero background battery drain.
+Automate your device with event-driven triggers, privileged system actions via Shizuku, and a fluid Material 3 interface. No telemetry or cloud accounts, with battery-efficient demand-driven listeners.
 
 <br/>
 
@@ -165,7 +165,7 @@ FlowPilot listens to a rich spectrum of hardware, radio, and system events:
   - **Device Flip:** Face-down on table or turned face-up (Proximity + Gravity Z-axis with 500ms debounce).
   - **Shake:** Firm shake detection with configurable sensitivity slider.
   - **Ambient Light:** Lux drops below or rises above target threshold.
-- 📍 **Hardware Geofencing:** Enter or exit defined geographical zones using Google Play Services `GeofencingClient`. Zero idle battery drain, up to 50 persistent queued events across engine restarts, and coordinate reuse for template variables.
+- 📍 **Hardware Geofencing:** Enter or exit defined geographical zones using Google Play Services `GeofencingClient`. Uses no idle CPU wake-lock, keeps up to 50 queued events across engine restarts, and reuses transition coordinates for template variables.
 - 🏷️ **NFC Tags:** Instant hex UID matching on physical scans. Foreground ReaderMode scans run matching rules automatically; background Android discovery opens FlowPilot and requires explicit confirmation before any matching NFC automation runs.
 - 📞 **Phone & SMS:** Call ringing, answered, outgoing dialed, call ended; SMS received with keyword, prefix, regex, or exact sender matching.
 - 🔔 **Notifications:** Incoming notifications from selected apps with keyword filtering.
@@ -231,7 +231,7 @@ FlowPilot is engineered with an uncompromised commitment to user privacy:
 
 - 🚫 **Zero Telemetry:** No Firebase Analytics, no Sentry, no remote crash reporters, and zero tracking SDKs.
 - 📵 **No Cloud Synchronization:** Your automations, logs, and secrets never touch any third-party cloud.
-- 🛡️ **Hardware Keystore Protection:** Webhook secrets, tokens, and sensitive headers are encrypted with AES-256-GCM using hardware-backed Android Keystore keys.
+- 🛡️ **Android Keystore Protection:** Webhook secrets, tokens, and sensitive headers are encrypted with AES-256-GCM using Android Keystore keys, hardware-backed when supported by the device.
 - 🙈 **Strict Log Sanitization:** Phone numbers, webhook credentials, and sensitive headers are masked across all UI screens and audit logs.
 
 ### Transparent Permission Disclosures
