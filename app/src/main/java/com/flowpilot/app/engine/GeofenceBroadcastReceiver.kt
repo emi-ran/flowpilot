@@ -81,6 +81,7 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 targetLng = 0.0,
                 radiusMeters = 0,
                 timestamp = now,
+                coordinatesTimestamp = location?.time,
             )
         }
 

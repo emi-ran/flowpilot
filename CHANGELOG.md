@@ -4,6 +4,10 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Security
+
+- Keep geofence event retention separate from location freshness: reuse coordinates only for fixes under 60 seconds old at action dispatch, otherwise fetch a fresh location or omit location template values.
+
 ## [1.1.0] - 2026-09-15
 
 ### Added

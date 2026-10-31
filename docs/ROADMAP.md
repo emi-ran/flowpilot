@@ -88,7 +88,7 @@ Do not bundle unrelated features. One feature family at a time.
     - Dynamic diff synchronization (`calculateGeofenceDiff`): active rules added, disabled/deleted rules removed, and modified rules safely removed before re-adding to prevent request ID collisions.
     - Strict config bounds (lat: -90..90, lng: -180..180 excluding 0,0; radius: 50..1000m).
     - Location prerequisites gating: requires `ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION` ("Allow all the time"), and enabled system location services.
-    - Event-driven battery behavior: transition coordinates directly forwarded to rule execution for location template resolution, avoiding fresh GPS lock queries for notification-only or template-driven geofence actions.
+    - Event-driven battery behavior: location-template actions reuse transition coordinates only when their fix is less than 60 seconds old at dispatch; otherwise they request a fresh fix or leave location values empty.
     - Status & diagnostics UI: per-rule state indicators (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, `REGISTRATION_FAILED`) and receiver error banners.
     - Prerequisite/registration errors retry with bounded backoff (10s base, 60s maximum); a config or prerequisite change retries immediately.
 
@@ -229,7 +229,7 @@ Each must expose its required permission or Shizuku state. Do not show success u
    - Verify Home screen status shows `Registered` for active geofence rules.
    - Cross geofence boundary: verify `GeofenceBroadcastReceiver` receives transition intent, persists to DataStore queue, reconciles `AutomationService`, and executes matching rule.
    - Verify rule evaluation correctly filters `ENTER` vs `EXIT` triggers.
-   - Verify transition coordinates populate `${location.lat}` and `${location.lng}` without performing redundant fresh GPS lookups for notification-only actions.
+   - Verify recent transition coordinates populate location templates without a redundant location lookup; after a delay or stale queued fix, verify a fresh lookup or empty values.
    - Disable rule or stop engine: verify geofences are unregistered from Google Play Services and status reflects `Unregistered`.
 10. **Encrypted backup and localized-history device smoke test**
     - App language switching passed Xiaomi physical-device validation.
