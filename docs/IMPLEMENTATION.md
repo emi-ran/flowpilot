@@ -247,3 +247,7 @@ shows an in-picker instruction when text is missing.
 - `.\gradlew.bat testDebugUnitTest --no-daemon` (Robolectric) and `.\gradlew.bat lintDebug --no-daemon`.
 - Per `AGENTS.md`, the primary agent runs Gradle verification; after a successful build it installs the debug APK on the connected target and launches `com.flowpilot.app`. Subagents do not compile, test, build, install, or launch.
 - No TODO placeholders for core paths; compile is the completion gate.
+
+### Import trust boundary
+
+ImportValidator checks semantic ranges, references, IDs, and list/string sizes at the repository boundary before DataStore edits. Normal import disables rules; encrypted restore retains enabled flags. Both import strategies assign fresh IDs, revoke execution leases, and copy verified device-local TTS audio to a fresh cache name. If audio is missing, the reference is cleared and the user is prompted to regenerate it; mismatched references reject the import. Copied files are removed on failure. Document input is limited to 8 MiB, decrypted plaintext to 3 MiB, rules to 1,000, actions/conditions/delays to 100 each, and strings to 64 Ki UTF-16 units. Encrypted salt and IV sizes are 16 and 12 bytes.

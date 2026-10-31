@@ -440,23 +440,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun importAutomations(
         rules: List<Automation>,
         strategy: com.flowpilot.app.data.backup.ImportStrategy,
-        onResult: (Result<Int>) -> Unit,
+        onResult: (Result<AutomationRepository.ImportResult>) -> Unit,
     ) {
         viewModelScope.launch {
             if (rules.isEmpty()) {
                 onResult(Result.failure(Exception("No automations found in backup")))
                 return@launch
             }
-            val count = repository.importAutomations(rules, strategy)
-            refreshPermissions()
-            onResult(Result.success(count))
+            val result = runCatching { repository.importAutomations(rules, strategy) }
+            if (result.isSuccess) refreshPermissions()
+            onResult(result)
         }
     }
 
     fun importAutomations(
         jsonString: String,
         strategy: com.flowpilot.app.data.backup.ImportStrategy,
-        onResult: (Result<Int>) -> Unit,
+        onResult: (Result<AutomationRepository.ImportResult>) -> Unit,
     ) {
         viewModelScope.launch {
             val parseResult = com.flowpilot.app.data.backup.BackupManager.parseImport(jsonString)
@@ -469,9 +469,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 onResult(Result.failure(Exception("No automations found in backup")))
                 return@launch
             }
-            val count = repository.importAutomations(importedRules, strategy)
-            refreshPermissions()
-            onResult(Result.success(count))
+            val result = runCatching { repository.importAutomations(importedRules, strategy) }
+            if (result.isSuccess) refreshPermissions()
+            onResult(result)
         }
     }
 

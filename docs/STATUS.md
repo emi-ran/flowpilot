@@ -105,3 +105,7 @@ Last updated: 2026-09-15
 ## Next validation
 
 See `ROADMAP.md` for exact device smoke-test scenarios.
+
+### Import validation
+
+Normal imports remain disabled and encrypted restores preserve enabled states. Both import strategies generate new IDs and copy verified device-local TTS audio when available. Missing audio is cleared and reported for regeneration; mismatched cache references reject import. Validation rejects invalid inputs before mutation; limits are 8 MiB document, 3 MiB encrypted plaintext, 1,000 rules, 100 actions/conditions/delays per rule, and 64 Ki UTF-16 units per string.
