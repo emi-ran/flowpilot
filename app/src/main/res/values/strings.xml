@@ -661,6 +661,8 @@
     <string name="backup_import_strategy_replace">Replace all rules</string>
     <string name="backup_import_strategy_replace_desc">Erase current rules and restore only the imported ones</string>
     <string name="backup_import_success">Successfully imported %1$d automation(s)</string>
+    <string name="backup_import_tts_missing_title">Speech audio needs to be generated</string>
+    <string name="backup_import_tts_missing_message">Import complete. Audio is missing for %1$d speech rule(s). Open each speech rule and generate its audio again before it can speak.</string>
     <string name="backup_import_empty">No valid automations found in file</string>
     <string name="backup_import_error">Failed to import: %1$s</string>
     <string name="backup_share_rule_title">Share automation</string>

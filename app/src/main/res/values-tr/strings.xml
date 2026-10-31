@@ -661,6 +661,8 @@
     <string name="backup_import_strategy_replace">Tüm kuralları değiştir (Sıfırla)</string>
     <string name="backup_import_strategy_replace_desc">Mevcut kuralları siler ve yalnızca içe aktarılanları geri yükler</string>
     <string name="backup_import_success">%1$d otomasyon başarıyla içe aktarıldı</string>
+    <string name="backup_import_tts_missing_title">Konuşma sesi yeniden oluşturulmalı</string>
+    <string name="backup_import_tts_missing_message">İçe aktarma tamamlandı. %1$d konuşma kuralının ses dosyası eksik. Konuşabilmeleri için her konuşma kuralını açıp sesini yeniden oluşturun.</string>
     <string name="backup_import_empty">Dosyada geçerli otomasyon kuralı bulunamadı</string>
     <string name="backup_import_error">İçe aktarılamadı: %1$s</string>
     <string name="backup_share_rule_title">Otomasyonu paylaş</string>

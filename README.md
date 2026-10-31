@@ -254,6 +254,8 @@ FlowPilot declares sensitive permissions solely to power explicit automation fea
 
 Restoring is effortless: choose your file, enter your password, and select **Merge** or **Replace**. Secrets are automatically re-encrypted with your new device's local Android Keystore.
 
+Imported plain JSON rules are disabled; encrypted restores retain their enabled state. TTS audio is not included in backups: if it is unavailable on the target device, regenerate it after import.
+
 ---
 
 ## 🛠️ Tech Stack & Architecture

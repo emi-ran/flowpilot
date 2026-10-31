@@ -23,6 +23,7 @@
 
 ## Releases
 
+- Yayınlanmamış kayda değer özellik, düzeltme ve güvenlik değişikliklerini aynı işte `CHANGELOG.md` içindeki `Unreleased` bölümüne uygun başlık altında ekle. Sürüm çıkarılırken bu kayıtları ilgili sürüm bölümüne taşı; doğrulanmamış test veya cihaz sonuçlarını başarılı gösterme.
 - `app/build.gradle.kts` sürümü ile tag `vX.Y.Z` eşleşir.
 - Signed local release için `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` gerekir. Unsigned APK publish edilmez.
 - GitHub Release notları: Sabit body yapısı kullanılır; release title body içinde tekrar edilmez. Sıra: kısa English özet, `---`, emoji section başlıklı değişiklikler, `## 🧪 Verification`, `## 📥 Installation`, `### SHA-256 Checksum`, `## 📱 Compatibility`, `---`, sonra en sonda `## 🇹🇷 Türkçe Özet`. Her release APK asset checksum değeri body’deki code block ile aynı olmalıdır. Release Markdown ve GitHub API güncellemelerinde UTF-8 korunur; PowerShell `-f` ile Unicode body/title yazılmaz, UTF-8 JSON payload kullanılır.
