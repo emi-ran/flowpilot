@@ -9,12 +9,12 @@ private val LOCATION_TOKENS = setOf(
     "location.maps_url", "maps_url", "location.coords", "coords",
 )
 
-fun Automation.requiresLocation(): Boolean = effectiveActions.any { action ->
-    when (action) {
-        ActionType.HTTP_WEBHOOK -> webhookHeaders.containsLocationToken() || webhookBody.containsLocationToken()
-        ActionType.SEND_SMS, ActionType.DRAFT_SMS -> smsRecipient.containsLocationToken() || smsMessage.containsLocationToken()
-        else -> false
-    }
+fun Automation.requiresLocation(): Boolean = effectiveActions.any { requiresLocation(it) }
+
+fun Automation.requiresLocation(action: ActionType): Boolean = when (action) {
+    ActionType.HTTP_WEBHOOK -> webhookHeaders.containsLocationToken() || webhookBody.containsLocationToken()
+    ActionType.SEND_SMS, ActionType.DRAFT_SMS -> smsRecipient.containsLocationToken() || smsMessage.containsLocationToken()
+    else -> false
 }
 
 private fun String.containsLocationToken(): Boolean =
@@ -25,12 +25,19 @@ fun isValidCachedLocation(location: Location, nowMs: Long): Boolean {
     return ageMs in 0 until 60_000L && location.hasAccuracy() && location.accuracy <= 50f
 }
 
-// ponytail: event coordinates reused directly without freshness check; add timestamp validation if transitions are queued for long periods
+internal const val MAX_COORDINATE_AGE_MS = 60_000L
+
 suspend fun resolveExecutionCoordinates(
     requiresLocation: Boolean,
-    eventCoordinates: Pair<Double, Double>?,
+    event: GeofenceTransition?,
     freshLocationProvider: suspend () -> Pair<Double, Double>?,
+    eventLocationAllowed: Boolean = true,
+    nowMs: Long = System.currentTimeMillis(),
 ): Pair<Double, Double>? {
     if (!requiresLocation) return null
-    return eventCoordinates ?: freshLocationProvider()
+    val timestamp = event?.coordinatesTimestamp
+    if (eventLocationAllowed && timestamp != null && timestamp > 0 && timestamp <= nowMs && nowMs - timestamp < MAX_COORDINATE_AGE_MS) {
+        event.coordinates?.let { return it }
+    }
+    return freshLocationProvider()
 }

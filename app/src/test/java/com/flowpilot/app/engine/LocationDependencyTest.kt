@@ -32,7 +32,8 @@ class LocationDependencyTest {
         var providerCalled = false
         val coords = resolveExecutionCoordinates(
             requiresLocation = true,
-            eventCoordinates = 41.0082 to 28.9784,
+            event = GeofenceTransition("rule", GeofenceEvent.ENTER, currentLat = 41.0082, currentLng = 28.9784, coordinatesTimestamp = 100_000L),
+            nowMs = 159_999L,
             freshLocationProvider = {
                 providerCalled = true
                 0.0 to 0.0
@@ -47,7 +48,7 @@ class LocationDependencyTest {
         var providerCalled = false
         val coords = resolveExecutionCoordinates(
             requiresLocation = false,
-            eventCoordinates = null,
+            event = null,
             freshLocationProvider = {
                 providerCalled = true
                 41.0082 to 28.9784
@@ -62,7 +63,7 @@ class LocationDependencyTest {
         var providerCalled = false
         val coords = resolveExecutionCoordinates(
             requiresLocation = true,
-            eventCoordinates = null,
+            event = null,
             freshLocationProvider = {
                 providerCalled = true
                 41.0082 to 28.9784
@@ -73,7 +74,7 @@ class LocationDependencyTest {
     }
 
     @Test
-    fun geofenceTransition_coordinatesExtractsDeliveredOrTargetCoordinates() {
+    fun geofenceTransition_coordinatesExtractsOnlyDeliveredCoordinates() {
         val withCurrent = GeofenceTransition(
             automationId = "test",
             event = GeofenceEvent.ENTER,
@@ -90,7 +91,7 @@ class LocationDependencyTest {
             targetLat = 41.0082,
             targetLng = 28.9784,
         )
-        assertThat(withTargetFallback.coordinates).isEqualTo(41.0082 to 28.9784)
+        assertThat(withTargetFallback.coordinates).isNull()
 
         val withZeros = GeofenceTransition(
             automationId = "test",
@@ -99,6 +100,39 @@ class LocationDependencyTest {
             currentLng = 0.0,
         )
         assertThat(withZeros.coordinates).isNull()
+    }
+
+    @Test
+    fun staleFutureAndLegacyCoordinatesUseFreshProviderOrRemainEmpty() = runBlocking {
+        val base = GeofenceTransition("rule", GeofenceEvent.ENTER, currentLat = 41.0, currentLng = 29.0)
+        for (timestamp in listOf(null, 0L, 40_000L, 100_001L)) {
+            var calls = 0
+            val actual = resolveExecutionCoordinates(true, base.copy(coordinatesTimestamp = timestamp), {
+                calls++
+                42.0 to 30.0
+            }, nowMs = 100_000L)
+            assertThat(calls).isEqualTo(1)
+            assertThat(actual).isEqualTo(42.0 to 30.0)
+            val unavailable = resolveExecutionCoordinates(true, base.copy(coordinatesTimestamp = timestamp), { null }, nowMs = 100_000L)
+            assertThat(unavailable).isNull()
+        }
+    }
+
+    @Test
+    fun deniedLocationDoesNotReuseQueuedCoordinates() = runBlocking {
+        val event = GeofenceTransition("rule", GeofenceEvent.ENTER, currentLat = 41.0, currentLng = 29.0, coordinatesTimestamp = 99_999L)
+        val result = resolveExecutionCoordinates(true, event, { null }, eventLocationAllowed = false, nowMs = 100_000L)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun legacyQueuedEventWithoutFixTimeIsNotTrusted() = runBlocking {
+        val legacy = kotlinx.serialization.json.Json.decodeFromString(
+            GeofenceTransition.serializer(),
+            """{"automationId":"rule","event":"ENTER","currentLat":41.0,"currentLng":29.0,"timestamp":99999}""",
+        )
+        assertThat(legacy.coordinatesTimestamp).isNull()
+        assertThat(resolveExecutionCoordinates(true, legacy, { null }, nowMs = 100_000L)).isNull()
     }
 
     @Test

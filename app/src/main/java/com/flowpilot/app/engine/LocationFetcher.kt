@@ -19,6 +19,18 @@ import kotlin.coroutines.resume
 object LocationFetcher {
     private const val TAG = "LocationFetcher"
 
+    fun isLocationAvailable(context: Context, isBackgroundExecution: Boolean): Boolean {
+        if (isBackgroundExecution && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
+        ) return false
+        val fine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val coarse = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (!fine && !coarse) return false
+        val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) manager.isLocationEnabled
+        else manager.isProviderEnabled(LocationManager.GPS_PROVIDER) || manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
     /**
      * Retrieves the device coordinates (latitude to longitude).
      *
@@ -81,7 +93,7 @@ object LocationFetcher {
                 requestFreshLocation(lm)
             }
 
-            if (freshLocation != null) {
+            if (freshLocation != null && isValidCachedLocation(freshLocation, System.currentTimeMillis())) {
                 Log.d(TAG, "Obtained fresh location fix")
                 return@withContext freshLocation.latitude to freshLocation.longitude
             }

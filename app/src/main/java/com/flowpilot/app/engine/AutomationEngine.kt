@@ -491,7 +491,7 @@ class AutomationEngine(
                     rules = matches,
                     trigger = trigger,
                     liveState = liveState,
-                    eventCoordinates = transition.coordinates,
+                    geofenceTransition = transition,
                 )
             }
         }
@@ -503,7 +503,7 @@ class AutomationEngine(
         liveState: LiveSystemState = LiveSystemState(),
         smsSender: String? = null,
         smsBody: String? = null,
-        eventCoordinates: Pair<Double, Double>? = null,
+        geofenceTransition: GeofenceTransition? = null,
         eventAuthorization: EventExecutionAuthorization.Token? = null,
     ) {
         for (candidate in rules.distinctBy { it.id }) {
@@ -518,13 +518,6 @@ class AutomationEngine(
                 var cancelled = false
                 var actionRecords = mutableListOf<ActionExecutionRecord>()
                 try {
-                    val coords = resolveExecutionCoordinates(
-                        requiresLocation = rule.requiresLocation(),
-                        eventCoordinates = eventCoordinates,
-                        freshLocationProvider = {
-                            LocationFetcher.getCoordinates(appContext, isBackgroundExecution = true)
-                        },
-                    )
                     val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
                         trigger = trigger?.name ?: "",
                         timestamp = System.currentTimeMillis(),
@@ -533,8 +526,6 @@ class AutomationEngine(
                         wifiSsid = liveState.connectedWifiSsid,
                         smsSender = smsSender,
                         smsBody = smsBody,
-                        locationLat = coords?.first,
-                        locationLng = coords?.second,
                     )
                     withContext(Dispatchers.IO) {
                         actionRecords = mutableListOf()
@@ -568,11 +559,21 @@ class AutomationEngine(
                                 currentCoroutineContext().ensureActive()
                                 val result = try {
                                     repository.dispatchIfAuthorized(reservation) {
+                                        val needsLocation = rule.requiresLocation(action)
+                                        val coords = resolveExecutionCoordinates(
+                                            requiresLocation = needsLocation,
+                                            event = geofenceTransition,
+                                            freshLocationProvider = {
+                                                LocationFetcher.getCoordinates(appContext, isBackgroundExecution = true)
+                                            },
+                                            eventLocationAllowed = needsLocation && LocationFetcher.isLocationAvailable(appContext, isBackgroundExecution = true),
+                                        )
+                                        val actionContext = templateContext.copy(locationLat = coords?.first, locationLng = coords?.second)
                                         eventAuthorization?.let { authorization ->
                                             AutomationService.executeIfEventAuthorized(authorization) {
-                                                dispatcher.execute(action, actionParameters(rule, templateContext))
+                                                dispatcher.execute(action, actionParameters(rule, actionContext))
                                             }
-                                        } ?: dispatcher.execute(action, actionParameters(rule, templateContext))
+                                        } ?: dispatcher.execute(action, actionParameters(rule, actionContext))
                                     }
                                 } catch (ce: CancellationException) {
                                     throw ce

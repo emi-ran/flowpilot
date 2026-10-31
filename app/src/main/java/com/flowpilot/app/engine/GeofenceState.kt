@@ -21,14 +21,13 @@ data class GeofenceTransition(
     val targetLng: Double = 0.0,
     val radiusMeters: Int = 0,
     val timestamp: Long = System.currentTimeMillis(),
+    val coordinatesTimestamp: Long? = null,
 )
 
 val GeofenceTransition.coordinates: Pair<Double, Double>?
     get() = when {
-        currentLat.isFinite() && currentLng.isFinite() && (currentLat != 0.0 || currentLng != 0.0) ->
+        currentLat.isFinite() && currentLat in -90.0..90.0 && currentLng.isFinite() && currentLng in -180.0..180.0 && (currentLat != 0.0 || currentLng != 0.0) ->
             Pair(currentLat, currentLng)
-        targetLat.isFinite() && targetLng.isFinite() && (targetLat != 0.0 || targetLng != 0.0) ->
-            Pair(targetLat, targetLng)
         else -> null
     }
 

@@ -69,7 +69,7 @@ Last updated: 2026-09-15
   - Strict circular boundary config validation (latitude: -90..90, longitude: -180..180 excluding 0,0; radius: 50..1000m).
   - Lifecycle diffing (`calculateGeofenceDiff`): dynamically adds new geofences, unregisters disabled/deleted rules, and removes-before-re-adding modified rules to prevent request ID collisions.
   - Rule evaluation filtering for `ENTER` vs `EXIT` events (`RuleEvaluator.evaluateGeofence`) with cooldown and live condition checks.
-  - Transition coordinate reuse (`resolveExecutionCoordinates`): event coordinates reused directly for location template variables; skips fresh GPS lookup for notification-only or template-driven geofence actions.
+  - Transition coordinates are reused for location templates only when the location fix is less than 60 seconds old at action dispatch. Missing, legacy, future, or stale timestamps trigger a fresh lookup; unavailable fixes produce empty location values.
   - Engine lifecycle integration: system geofences remain registered during temporary engine restarts while enabled; unregistered only when engine is disabled.
   - Registration diagnostics and status UI on Home screen (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, `REGISTRATION_FAILED`) and receiver error banners.
 - Password-encrypted full backup and restore (unit tests passed; device smoke test pending):

@@ -42,6 +42,7 @@ class AutomationRepositoryGeofenceQueueTest {
             currentLat = 41.0082,
             currentLng = 28.9784,
             timestamp = 1000L,
+            coordinatesTimestamp = 900L,
         )
         val event2 = GeofenceTransition(
             automationId = "rule-2",
@@ -57,6 +58,7 @@ class AutomationRepositoryGeofenceQueueTest {
         assertThat(drained).hasSize(2)
         assertThat(drained[0].automationId).isEqualTo("rule-1")
         assertThat(drained[0].event).isEqualTo(GeofenceEvent.ENTER)
+        assertThat(drained[0].coordinatesTimestamp).isEqualTo(900L)
         assertThat(drained[1].automationId).isEqualTo("rule-2")
         assertThat(drained[1].event).isEqualTo(GeofenceEvent.EXIT)
 
