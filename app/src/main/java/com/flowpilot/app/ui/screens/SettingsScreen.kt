@@ -63,6 +63,7 @@ fun SettingsScreen(
     var showImportDialog by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
     var decryptError by remember { mutableStateOf<String?>(null) }
+    var missingTtsCount by remember { mutableIntStateOf(0) }
     var pendingExportType by remember { mutableStateOf<PendingExportType?>(null) }
     var pendingExportPassword by remember { mutableStateOf<String?>(null) }
 
@@ -101,7 +102,7 @@ fun SettingsScreen(
         scope.launch(Dispatchers.IO) {
             try {
                 val content = context.contentResolver.openInputStream(uri)?.use { stream ->
-                    stream.bufferedReader(Charsets.UTF_8).readText()
+                    BackupManager.readImportDocument(stream)
                 } ?: ""
                 withContext(Dispatchers.Main) {
                     val trimmed = content.trim()
@@ -313,8 +314,12 @@ fun SettingsScreen(
             onConfirm = { strategy ->
                 vm.importAutomations(pendingImportRules, strategy) { result ->
                     if (result.isSuccess) {
-                        val importedCount = result.getOrNull() ?: 0
-                        Toast.makeText(context, context.getString(R.string.backup_import_success, importedCount), Toast.LENGTH_SHORT).show()
+                        val imported = result.getOrThrow()
+                        if (imported.missingTtsCount > 0) {
+                            missingTtsCount = imported.missingTtsCount
+                        } else {
+                            Toast.makeText(context, context.getString(R.string.backup_import_success, imported.count), Toast.LENGTH_SHORT).show()
+                        }
                     } else {
                         val err = result.exceptionOrNull()?.message ?: ""
                         Toast.makeText(context, context.getString(R.string.backup_import_error, err), Toast.LENGTH_LONG).show()
@@ -330,6 +335,17 @@ fun SettingsScreen(
                 pendingImportContent = null
                 pendingImportRules = emptyList()
                 pendingImportIsEncrypted = false
+            },
+        )
+    }
+
+    if (missingTtsCount > 0) {
+        AlertDialog(
+            onDismissRequest = { missingTtsCount = 0 },
+            title = { Text(stringResource(R.string.backup_import_tts_missing_title)) },
+            text = { Text(stringResource(R.string.backup_import_tts_missing_message, missingTtsCount)) },
+            confirmButton = {
+                TextButton(onClick = { missingTtsCount = 0 }) { Text(stringResource(android.R.string.ok)) }
             },
         )
     }

@@ -7,6 +7,11 @@ All notable FlowPilot changes are documented here.
 ### Security
 
 - Keep geofence event retention separate from location freshness: reuse coordinates only for fixes under 60 seconds old at action dispatch, otherwise fetch a fresh location or omit location template values.
+- Validate normal and encrypted imports before changing stored rules, rejecting invalid rule IDs, unsafe references, invalid active settings, and oversized documents or fields. Imported rules receive new IDs; failed imports preserve existing rules.
+
+### Changed
+
+- Preserve normal-import disabled states and encrypted-restore enabled states. When device-local TTS audio is unavailable, import the rule and prompt the user to regenerate its audio; available verified audio is copied to the new rule ID.
 
 ## [1.1.0] - 2026-09-15
 

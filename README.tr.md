@@ -254,6 +254,8 @@ FlowPilot hassas izinleri yalnızca açık otomasyon özelliklerini yerine getir
 
 Geri yükleme çok kolaydır: Dosyanızı seçin, parolanızı girin ve **Birleştir** veya **Üzerine Yaz** tercihinizi yapın. İçe aktarılan sırlar hedef cihazın yerel Android Keystore'u ile anında yeniden şifrelenir.
 
+Normal JSON ile içe aktarılan kurallar devre dışı bırakılır; şifreli geri yüklemede etkinlik durumları korunur. TTS ses dosyaları yedeğe dahil edilmez: hedef cihazda bulunmuyorsa içe aktarmadan sonra sesi yeniden oluşturun.
+
 ---
 
 ## 🛠️ Mimari ve Teknolojiler

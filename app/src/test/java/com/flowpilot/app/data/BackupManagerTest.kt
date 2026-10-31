@@ -179,7 +179,7 @@ class BackupManagerTest {
         )
 
         val count = repository.importAutomations(importedRules, ImportStrategy.MERGE)
-        assertThat(count).isEqualTo(2)
+        assertThat(count.count).isEqualTo(2)
 
         val current = repository.automations.first()
         assertThat(current).hasSize(3)
@@ -208,12 +208,157 @@ class BackupManagerTest {
         )
 
         val count = repository.importAutomations(importedRules, ImportStrategy.REPLACE_ALL)
-        assertThat(count).isEqualTo(1)
+        assertThat(count.count).isEqualTo(1)
 
         val current = repository.automations.first()
         assertThat(current).hasSize(1)
         assertThat(current.first().name).isEqualTo("Brand New Rule")
+        assertThat(current.first().id).isNotEqualTo("new-1")
         assertThat(current.none { it.name == "Old Existing Rule" }).isTrue()
+    }
+
+    @Test
+    fun rejectedImportsLeaveSentinelUnchanged() = runTest {
+        repository.add(name = "Sentinel", triggerEvent = TriggerEvent.DEVICE_SHAKE,
+            appPackage = "", appName = "", actions = listOf(ActionType.TORCH_ON), id = "sentinel")
+        val before = repository.automations.first()
+        val valid = createSampleRule("one", "Rule")
+        val bad = listOf(listOf(valid, valid), listOf(valid.copy(id = "")),
+            listOf(valid.copy(triggerEvent = TriggerEvent.BATTERY_BELOW, batteryLevel = 101)), listOf(valid.copy(ttsAudioFileName = "../evil.wav")),
+            listOf(valid.copy(name = "x".repeat(65537))))
+        for (rules in bad) {
+            for (strategy in ImportStrategy.entries) {
+                assertThat(runCatching { repository.importAutomations(rules, strategy) }.isFailure).isTrue()
+                assertThat(repository.automations.first()).isEqualTo(before)
+            }
+            val normal = BackupManager.exportToString(rules)
+            assertThat(BackupManager.parseImport(normal).isFailure).isTrue()
+            val encrypted = BackupManager.exportEncryptedToString(rules, "password")
+            assertThat(BackupManager.parseEncryptedImport(encrypted, "password").isFailure).isTrue()
+            assertThat(repository.automations.first()).isEqualTo(before)
+        }
+        assertThat(BackupManager.parseImport("x".repeat(BackupManager.MAX_DOCUMENT_BYTES + 1)).isFailure).isTrue()
+        assertThat(BackupManager.parseEncryptedImport("x".repeat(BackupManager.MAX_DOCUMENT_BYTES + 1), "password").isFailure).isTrue()
+        assertThat(repository.automations.first()).isEqualTo(before)
+    }
+
+    @Test
+    fun importedIdsSupportIndependentEditEnableAndDelete() = runTest {
+        val rules = listOf(createSampleRule("a", "A"), createSampleRule("b", "B"))
+        repository.importAutomations(rules, ImportStrategy.REPLACE_ALL)
+        val initial = repository.automations.first()
+        val first = initial.first()
+        val second = initial.last()
+        assertThat(first.id).isNotEqualTo("a")
+        assertThat(first.id).isNotEqualTo(second.id)
+        repository.setEnabled(first.id, false)
+        repository.update(repository.automations.first().first { it.id == first.id }.copy(name = "Edited"))
+        assertThat(repository.automations.first().first { it.id == second.id }.name).isEqualTo("B")
+        assertThat(repository.automations.first().first { it.id == second.id }.enabled).isTrue()
+        repository.delete(first.id)
+        assertThat(repository.automations.first().single().id).isEqualTo(second.id)
+    }
+
+    @Test
+    fun importTtsCopiesLocalCacheAndReportsMissing() = runTest {
+        val tts = com.flowpilot.app.actions.TtsManager(context)
+        val base = createSampleRule("tts-source", "Speech").copy(actions = listOf(ActionType.SPEAK_TEXT), ttsText = "Hello", ttsVoiceName = "voice")
+        val fileName = tts.computeCacheFileName(base.id, base.ttsText, base.ttsVoiceName, base.ttsSpeechRate)
+        val source = requireNotNull(tts.getCacheFile(fileName))
+        source.writeBytes(byteArrayOf(1, 2, 3))
+        try {
+            repository.importAutomations(listOf(base.copy(ttsAudioFileName = fileName)), ImportStrategy.REPLACE_ALL)
+            val imported = repository.automations.first().single()
+            assertThat(imported.id).isNotEqualTo(base.id)
+            assertThat(imported.ttsAudioFileName).isEqualTo(tts.computeCacheFileName(imported.id, base.ttsText, base.ttsVoiceName, base.ttsSpeechRate))
+            assertThat(requireNotNull(tts.getCacheFile(imported.ttsAudioFileName)).readBytes()).isEqualTo(byteArrayOf(1, 2, 3))
+            val missing = base.copy(id = "missing", ttsAudioFileName = tts.computeCacheFileName("missing", base.ttsText, base.ttsVoiceName, base.ttsSpeechRate))
+            val result = repository.importAutomations(listOf(missing), ImportStrategy.REPLACE_ALL)
+            assertThat(result.missingTtsCount).isEqualTo(1)
+            assertThat(repository.automations.first().single().ttsAudioFileName).isEmpty()
+        } finally { source.delete() }
+    }
+
+    @Test
+    fun missingTtsIsReportedForBothBackupFormatsAndStrategies() = runTest {
+        val tts = com.flowpilot.app.actions.TtsManager(context)
+        val rule = createSampleRule("portable", "Speech").copy(actions = listOf(ActionType.SPEAK_TEXT), ttsText = "Hello")
+        val original = rule.copy(ttsAudioFileName = tts.computeCacheFileName(rule.id, rule.ttsText, rule.ttsVoiceName, rule.ttsSpeechRate))
+        val normal = BackupManager.parseImport(BackupManager.exportToString(listOf(original))).getOrThrow()
+        val encrypted = BackupManager.parseEncryptedImport(BackupManager.exportEncryptedToString(listOf(original), "password"), "password").getOrThrow()
+        for (strategy in ImportStrategy.entries) {
+            for ((rules, enabled) in listOf(normal to false, encrypted to true)) {
+                val result = repository.importAutomations(rules, strategy)
+                assertThat(result.missingTtsCount).isEqualTo(1)
+                val imported = repository.automations.first().last()
+                assertThat(imported.enabled).isEqualTo(enabled)
+                assertThat(imported.ttsAudioFileName).isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun failedImportRemovesTtsCopiesAndPreservesRules() = runTest {
+        val tts = com.flowpilot.app.actions.TtsManager(context)
+        val base = createSampleRule("source", "Speech").copy(actions = listOf(ActionType.SPEAK_TEXT), ttsText = "Hello")
+        val fileName = tts.computeCacheFileName(base.id, base.ttsText, base.ttsVoiceName, base.ttsSpeechRate)
+        val source = requireNotNull(tts.getCacheFile(fileName))
+        source.writeBytes(byteArrayOf(1, 2, 3))
+        try {
+            val before = repository.automations.first()
+            val directory = source.parentFile!!
+            val filesBefore = directory.listFiles()!!.map { it.name }.toSet()
+            val invalid = base.copy(id = "other", ttsAudioFileName = fileName)
+            assertThat(runCatching { repository.importAutomations(listOf(base.copy(ttsAudioFileName = fileName), invalid), ImportStrategy.REPLACE_ALL) }.isFailure).isTrue()
+            assertThat(repository.automations.first()).isEqualTo(before)
+            assertThat(directory.listFiles()!!.map { it.name }.toSet()).isEqualTo(filesBefore)
+        } finally { source.delete() }
+    }
+
+    @Test
+    fun headWebhookAndLegacyEmptySecretsRemainImportable() = runTest {
+        val rule = createSampleRule("head", "HEAD").copy(actions = listOf(ActionType.HTTP_WEBHOOK),
+            webhookMethod = "HEAD", webhookUrl = "https://example.com/hook")
+        val normal = BackupManager.parseImport(BackupManager.exportToString(listOf(rule))).getOrThrow()
+        assertThat(normal.single().enabled).isFalse()
+        assertThat(normal.single().webhookUrl).isEmpty()
+        val encrypted = BackupManager.parseEncryptedImport(BackupManager.exportEncryptedToString(listOf(rule), "password"), "password").getOrThrow()
+        assertThat(encrypted.single().enabled).isTrue()
+        assertThat(encrypted.single().webhookMethod).isEqualTo("HEAD")
+        repository.importAutomations(encrypted, ImportStrategy.REPLACE_ALL)
+        assertThat(repository.automations.first().single().webhookMethod).isEqualTo("HEAD")
+    }
+
+    @Test
+    fun unusedFieldsAndWildcardNotificationRemainImportable() = runTest {
+        val rule = createSampleRule("legacy", "Legacy").copy(
+            triggerEvent = TriggerEvent.NOTIFICATION_RECEIVED, notificationAppPackage = "",
+            batteryLevel = 101, alarmHour = 99, webhookMethod = "obsolete",
+        )
+        val parsed = BackupManager.parseImport(BackupManager.exportToString(listOf(rule))).getOrThrow()
+        repository.importAutomations(parsed, ImportStrategy.REPLACE_ALL)
+        assertThat(repository.automations.first().single().notificationAppPackage).isEmpty()
+    }
+
+    @Test
+    fun enumDependentInvalidReferencesRejectBeforeMutation() = runTest {
+        repository.add(name = "Sentinel", triggerEvent = TriggerEvent.DEVICE_SHAKE, appPackage = "", appName = "", actions = listOf(ActionType.TORCH_ON), id = "sentinel")
+        val before = repository.automations.first()
+        val rule = createSampleRule("rule", "Rule")
+        val invalid = listOf(
+            rule.copy(triggerEvent = TriggerEvent.APP_OPENED, appPackage = "../bad"),
+            rule.copy(triggerEvent = TriggerEvent.BLUETOOTH_CONNECTED, bluetoothDeviceAddress = "bad"),
+            rule.copy(triggerEvent = TriggerEvent.NFC_TAG_SCANNED, nfcTagId = "XYZ"),
+            rule.copy(actions = listOf(ActionType.FORCE_STOP_APP), forceStopPackage = "bad;command"),
+            rule.copy(actions = listOf(ActionType.OPEN_URL), url = "file:///data/private"),
+            rule.copy(actions = listOf(ActionType.PLAY_SOUND), soundPreset = com.flowpilot.app.data.model.SoundPreset.CUSTOM, soundUri = "file:///data/private"),
+            rule.copy(actions = listOf(ActionType.HTTP_WEBHOOK), webhookUrl = "http://example.com"),
+            rule.copy(triggerEvent = TriggerEvent.SMS_RECEIVED, smsMatchMode = com.flowpilot.app.data.model.SmsMatchMode.REGEX, smsKeyword = "["),
+        )
+        for (item in invalid) {
+            assertThat(runCatching { repository.importAutomations(listOf(item), ImportStrategy.REPLACE_ALL) }.isFailure).isTrue()
+            assertThat(repository.automations.first()).isEqualTo(before)
+        }
     }
 
     @Test
@@ -307,6 +452,7 @@ class BackupManagerTest {
             name = "Confidential Workflow",
             enabled = true,
             triggerEvent = TriggerEvent.APP_OPENED,
+            appPackage = "com.test.app",
             webhookUrl = "https://leak-check.example/webhook-secret-url",
             webhookHeaders = "X-Secret-Auth: super_secret_token_12345",
             webhookBody = "leak_check_payload_xyz",

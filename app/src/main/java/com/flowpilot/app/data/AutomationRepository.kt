@@ -41,6 +41,8 @@ class AutomationRepository(private val context: Context) {
         val previousLastTriggeredAt: Long,
     )
 
+    data class ImportResult(val count: Int, val missingTtsCount: Int)
+
     internal val rawDataStore: DataStore<Preferences>
         get() = context.dataStore
 
@@ -693,8 +695,33 @@ class AutomationRepository(private val context: Context) {
     suspend fun importAutomations(
         imported: List<Automation>,
         strategy: com.flowpilot.app.data.backup.ImportStrategy,
-    ): Int {
-        if (imported.isEmpty()) return 0
+    ): ImportResult {
+        com.flowpilot.app.data.backup.ImportValidator.validate(imported)
+        if (imported.isEmpty()) return ImportResult(0, 0)
+        var missingTtsCount = 0
+        val createdTtsFiles = mutableListOf<java.io.File>()
+        val tts = com.flowpilot.app.actions.TtsManager(context)
+        fun remapTts(rule: Automation, id: String): String {
+            if (rule.ttsAudioFileName.isEmpty()) {
+                if (com.flowpilot.app.data.model.ActionType.SPEAK_TEXT in rule.effectiveActions) missingTtsCount++
+                return ""
+            }
+            val expected = tts.computeCacheFileName(rule.id, rule.ttsText.trim(), rule.ttsVoiceName, rule.ttsSpeechRate)
+            require(rule.ttsAudioFileName == expected) { "Invalid TTS cache reference" }
+            val source = tts.getCacheFile(expected)
+            if (source?.isFile != true || source.length() == 0L) {
+                if (com.flowpilot.app.data.model.ActionType.SPEAK_TEXT in rule.effectiveActions) missingTtsCount++
+                return ""
+            }
+            val name = tts.computeCacheFileName(id, rule.ttsText.trim(), rule.ttsVoiceName, rule.ttsSpeechRate)
+            val target = requireNotNull(tts.getCacheFile(name))
+            // createNewFile prevents deleting a pre-existing file on copy failure.
+            check(target.createNewFile()) { "TTS cache target already exists" }
+            createdTtsFiles.add(target)
+            source.copyTo(target, overwrite = true)
+            return name
+        }
+        try {
         executionStateMutex.withLock {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
@@ -702,32 +729,42 @@ class AutomationRepository(private val context: Context) {
             val finalRules = when (strategy) {
                 com.flowpilot.app.data.backup.ImportStrategy.MERGE -> {
                     val remapped = imported.map { rule ->
-                        rule.copy(
-                            id = UUID.randomUUID().toString(),
+                        val id = UUID.randomUUID().toString()
+                        revokePendingExecution(rule.copy(
+                            id = id,
+                            ttsAudioFileName = remapTts(rule, id),
                             createdAt = System.currentTimeMillis(),
                             name = rule.normalizedName,
                             executionRevision = nextExecutionRevision(prefs),
-                        ).withEncryptedSecrets()
+                        )).withEncryptedSecrets()
                     }
                     requireUniqueIds(current + remapped)
                     current.map { it.withEncryptedSecrets() } + remapped
                 }
                 com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL -> {
-                    requireUniqueIds(imported)
-                    imported.map { rule ->
+                    val remapped = imported.map { rule ->
+                        val id = UUID.randomUUID().toString()
                         revokePendingExecution(rule.copy(
+                            id = id,
+                            ttsAudioFileName = remapTts(rule, id),
                             name = rule.normalizedName,
                             executionRevision = nextExecutionRevision(prefs),
                         )).withEncryptedSecrets()
                     }
+                    requireUniqueIds(remapped)
+                    remapped
                 }
             }
             prefs[key] = json.encodeToString(listSerializer, finalRules)
         }
         }
+        } catch (error: Throwable) {
+            createdTtsFiles.forEach { it.delete() }
+            throw error
+        }
         cleanupOrphanTtsFiles()
         notifyWidgets()
-        return imported.size
+        return ImportResult(imported.size, missingTtsCount)
     }
 
     suspend fun replaceAll(rules: List<Automation>) {

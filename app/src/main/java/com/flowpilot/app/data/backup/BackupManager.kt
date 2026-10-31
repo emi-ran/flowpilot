@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.io.InputStream
 import java.security.GeneralSecurityException
 import java.security.SecureRandom
 import java.text.SimpleDateFormat
@@ -64,6 +65,26 @@ enum class ImportStrategy {
 }
 
 object BackupManager {
+
+    const val MAX_DOCUMENT_BYTES = ImportValidator.MAX_DOCUMENT_BYTES
+
+    fun readImportDocument(stream: InputStream): String {
+        val output = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        while (true) {
+            val count = stream.read(buffer)
+            if (count < 0) break
+            require(output.size() + count <= MAX_DOCUMENT_BYTES) { "Backup document too large" }
+            output.write(buffer, 0, count)
+        }
+        val bytes = output.toByteArray()
+        require(bytes.size <= MAX_DOCUMENT_BYTES) { "Backup document too large" }
+        return Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString()
+    }
+
+    private fun validateDocument(content: String) {
+        require(content.length <= MAX_DOCUMENT_BYTES && content.toByteArray(Charsets.UTF_8).size <= MAX_DOCUMENT_BYTES) { "Backup document too large" }
+    }
 
     const val MIN_PASSWORD_LENGTH = 6
     const val ENCRYPTED_BACKUP_FORMAT = FlowPilotEncryptedBackup.ENCRYPTED_BACKUP_FORMAT
@@ -226,7 +247,7 @@ object BackupManager {
         if (!isValidPassword(password)) {
             return Result.failure(IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters"))
         }
-        return decryptPayload(jsonContent, password)
+        return runCatching { validateDocument(jsonContent); decryptPayload(jsonContent, password).getOrThrow() }
     }
 
     fun parseEncryptedImport(
@@ -272,6 +293,9 @@ object BackupManager {
         if (cipherBase64.isBlank() || envelope.salt.isBlank() || envelope.iv.isBlank()) {
             return Result.failure(IllegalArgumentException("Corrupted backup envelope: missing cryptographic fields"))
         }
+        if (envelope.salt.length > 32 || envelope.iv.length > 24 || cipherBase64.length > ((ImportValidator.MAX_PLAINTEXT_BYTES + 16 + 2) / 3) * 4) {
+            return Result.failure(IllegalArgumentException("Encrypted backup field too large"))
+        }
 
         val salt = try {
             Base64.getDecoder().decode(envelope.salt)
@@ -289,6 +313,9 @@ object BackupManager {
             Base64.getDecoder().decode(cipherBase64)
         } catch (e: Exception) {
             return Result.failure(IllegalArgumentException("Corrupted ciphertext encoding", e))
+        }
+        if (salt.size != SALT_LENGTH_BYTES || iv.size != GCM_IV_LENGTH_BYTES || ciphertext.size !in 16..ImportValidator.MAX_PLAINTEXT_BYTES + 16) {
+            return Result.failure(IllegalArgumentException("Invalid encrypted backup field size"))
         }
 
         val secretKey = try {
@@ -309,8 +336,11 @@ object BackupManager {
             return Result.failure(SecurityException("Decryption failed", e))
         }
 
-        val plaintext = String(plaintextBytes, Charsets.UTF_8)
-        return parseDecryptedContent(plaintext)
+        if (plaintextBytes.size > ImportValidator.MAX_PLAINTEXT_BYTES) return Result.failure(IllegalArgumentException("Backup plaintext too large"))
+        return runCatching {
+            val plaintext = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(plaintextBytes)).toString()
+            parseDecryptedContent(plaintext).getOrThrow().also { ImportValidator.validate(it) }
+        }
     }
 
     private fun parseDecryptedContent(plaintext: String): Result<List<Automation>> {
@@ -343,6 +373,7 @@ object BackupManager {
     }
 
     fun isEncryptedBackup(jsonContent: String): Boolean {
+        if (jsonContent.length > MAX_DOCUMENT_BYTES) return false
         val trimmed = jsonContent.trim()
         if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return false
         return try {
@@ -360,6 +391,14 @@ object BackupManager {
         rules.map { it.copy(enabled = false) }
 
     fun parseImport(jsonContent: String): Result<List<Automation>> {
+        return runCatching {
+            validateDocument(jsonContent)
+            parseNormalContent(jsonContent).getOrThrow().also { ImportValidator.validate(it) }
+        }
+
+    }
+
+    private fun parseNormalContent(jsonContent: String): Result<List<Automation>> {
         val trimmed = jsonContent.trim()
         if (trimmed.isEmpty()) {
             return Result.failure(IllegalArgumentException("Empty content"))
@@ -367,6 +406,15 @@ object BackupManager {
 
         if (isEncryptedBackup(trimmed)) {
             return Result.failure(IllegalArgumentException("Backup is encrypted; use encrypted restore with password"))
+        }
+
+        // A malformed envelope must not be reinterpreted as a single rule.
+        val root = try { parserJson.parseToJsonElement(trimmed) } catch (_: Exception) {
+            return Result.failure(IllegalArgumentException("Invalid JSON format for automations"))
+        }
+        if (root is kotlinx.serialization.json.JsonObject && "automations" in root) {
+            return try { Result.success(disableImportedRules(parserJson.decodeFromString(FlowPilotBackup.serializer(), trimmed).automations)) }
+            catch (_: Exception) { Result.failure(IllegalArgumentException("Invalid JSON format for automations")) }
         }
 
         // 1. Try parsing as full FlowPilotBackup
