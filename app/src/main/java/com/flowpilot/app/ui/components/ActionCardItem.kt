@@ -55,7 +55,7 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.WIFI_ON, ActionType.WIFI_OFF -> Icons.Default.Wifi
     ActionType.MOBILE_DATA_ON, ActionType.MOBILE_DATA_OFF -> Icons.Default.SignalCellularAlt
     ActionType.AIRPLANE_MODE_ON, ActionType.AIRPLANE_MODE_OFF -> Icons.Default.AirplanemodeActive
-    ActionType.TORCH_ON, ActionType.TORCH_OFF -> Icons.Default.FlashlightOn
+    ActionType.TORCH_ON, ActionType.TORCH_OFF, ActionType.TORCH_TOGGLE -> Icons.Default.FlashlightOn
     ActionType.NFC_ON, ActionType.NFC_OFF -> Icons.Default.Nfc
     ActionType.BATTERY_SAVER_ON, ActionType.BATTERY_SAVER_OFF -> Icons.Default.BatterySaver
     ActionType.AUTO_ROTATE_ON, ActionType.AUTO_ROTATE_OFF -> Icons.Default.ScreenRotation

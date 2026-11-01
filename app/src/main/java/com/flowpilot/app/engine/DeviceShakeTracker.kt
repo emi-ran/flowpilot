@@ -14,14 +14,17 @@ import java.util.concurrent.ConcurrentLinkedQueue
  */
 class DeviceShakeTracker(
     context: Context,
-    private val threshold: Float = ShakeReducer.DEFAULT_THRESHOLD_ACCEL,
+    initialThreshold: Float = ShakeReducer.DEFAULT_THRESHOLD_ACCEL,
     private val debounceMs: Long = ShakeReducer.DEFAULT_DEBOUNCE_MS,
 ) {
     private val appContext = context.applicationContext
     private val sensorManager = appContext.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
     private val accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
-    private val events = ConcurrentLinkedQueue<Long>()
+    @Volatile
+    private var threshold: Float = initialThreshold
+
+    private val events = ConcurrentLinkedQueue<ShakeEvent>()
 
     @Volatile
     private var registered: Boolean = false
@@ -37,12 +40,11 @@ class DeviceShakeTracker(
             val z = event.values.getOrNull(2) ?: return
             val now = System.currentTimeMillis()
 
+            val netAccel = ShakeReducer.calculateNetAcceleration(x, y, z)
             val didShake = synchronized(stateLock) {
-                val (nextState, triggered) = ShakeReducer.evaluate(
+                val (nextState, triggered) = ShakeReducer.evaluateNet(
                     state = state,
-                    x = x,
-                    y = y,
-                    z = z,
+                    netAccel = netAccel,
                     nowMs = now,
                     threshold = threshold,
                     debounceMs = debounceMs,
@@ -52,12 +54,24 @@ class DeviceShakeTracker(
             }
 
             if (didShake) {
-                Log.d("DeviceShakeTracker", "Shake detected at $now")
-                events.add(now)
+                Log.d("DeviceShakeTracker", "Shake detected at $now (%.1f m/s^2)".format(netAccel))
+                events.add(ShakeEvent(timestampMs = now, magnitude = netAccel))
             }
         }
 
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    }
+
+    /**
+     * Applies the softest force any enabled shake rule needs; resets the detector so an in-flight
+     * burst cannot leak across a rule change.
+     */
+    fun updateThreshold(value: Float) {
+        val thresholdValue = ShakeReducer.clampThreshold(value)
+        if (thresholdValue == threshold) return
+        threshold = thresholdValue
+        synchronized(stateLock) { state = ShakeState() }
+        Log.i("DeviceShakeTracker", "Shake threshold set to $thresholdValue m/s^2")
     }
 
     fun updateListeningPolicy(hasActiveRules: Boolean, isScreenOn: Boolean) {
@@ -84,9 +98,9 @@ class DeviceShakeTracker(
         Log.i("DeviceShakeTracker", "Unregistered accelerometer for shake detection")
     }
 
-    fun drainEvents(): List<Long> {
+    fun drainEvents(): List<ShakeEvent> {
         if (events.isEmpty()) return emptyList()
-        val drained = mutableListOf<Long>()
+        val drained = mutableListOf<ShakeEvent>()
         while (true) {
             val event = events.poll() ?: break
             drained.add(event)

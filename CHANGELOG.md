@@ -4,6 +4,10 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Flashlight toggle action (`TORCH_TOGGLE`): turns the torch on when it is off and off when it is on, resolved from camera torch state callbacks so changes made by the system flashlight tile are respected. The "Shake for Flashlight" preset now switches the light instead of only turning it on.
+
 ### Security
 
 - Keep geofence event retention separate from location freshness: reuse coordinates only for fixes under 60 seconds old at action dispatch, otherwise fetch a fresh location or omit location template values.
@@ -12,6 +16,7 @@ All notable FlowPilot changes are documented here.
 ### Changed
 
 - Preserve normal-import disabled states and encrypted-restore enabled states. When device-local TTS audio is unavailable, import the rule and prompt the user to regenerate its audio; available verified audio is copied to the new rule ID.
+- Shake force is now configured per rule: selecting the "Device shaken" trigger reveals a strength slider (6–32 m/s² above gravity, default 20) so each automation can require a light or a firm shake. A hysteresis re-arm keeps one continuous shake from firing multiple times, so a single shake now toggles the flashlight once.
 
 ## [1.1.0] - 2026-09-15
 

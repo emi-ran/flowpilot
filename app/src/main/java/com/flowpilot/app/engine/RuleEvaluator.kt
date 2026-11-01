@@ -157,10 +157,13 @@ object RuleEvaluator {
         rules: List<Automation>,
         liveState: LiveSystemState = LiveSystemState(),
         nowMs: Long = System.currentTimeMillis(),
+        /** Measured net acceleration of the detected shake; rules needing more force are skipped. */
+        shakeMagnitude: Float = Float.MAX_VALUE,
     ): List<Automation> {
         return rules.filter { rule ->
             rule.enabled &&
                 rule.triggerEvent == TriggerEvent.DEVICE_SHAKE &&
+                shakeMagnitude >= ShakeReducer.clampThreshold(rule.shakeThreshold) &&
                 !rule.isCoolingDown(nowMs) &&
                 matchesConditions(rule.conditions, liveState, nowMs)
         }

@@ -621,6 +621,33 @@ class BackupManagerTest {
     }
 
     @Test
+    fun importRejectsShakeThresholdOutsideSupportedRange() {
+        val shakeRule = Automation(
+            id = "r-shake",
+            name = "Shake Rule",
+            triggerEvent = TriggerEvent.DEVICE_SHAKE,
+            createdAt = 100L,
+        )
+
+        val tooFirm = BackupManager.parseImport(
+            BackupManager.exportToString(listOf(shakeRule.copy(shakeThreshold = 60f))),
+        )
+        assertThat(tooFirm.isFailure).isTrue()
+        assertThat(tooFirm.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
+
+        val tooSoft = BackupManager.parseImport(
+            BackupManager.exportToString(listOf(shakeRule.copy(shakeThreshold = 0.5f))),
+        )
+        assertThat(tooSoft.isFailure).isTrue()
+
+        val valid = BackupManager.parseImport(
+            BackupManager.exportToString(listOf(shakeRule.copy(shakeThreshold = 12f))),
+        )
+        assertThat(valid.isSuccess).isTrue()
+        assertThat(valid.getOrThrow().single().shakeThreshold).isEqualTo(12f)
+    }
+
+    @Test
     fun regularExport_regressionPreserved_omitsSecretsAndForcesDisabled() {
         val sensitiveRule = Automation(
             id = "r-reg",

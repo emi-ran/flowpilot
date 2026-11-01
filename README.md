@@ -163,7 +163,7 @@ FlowPilot listens to a rich spectrum of hardware, radio, and system events:
 - 📶 **Connectivity:** Wi-Fi connected/disconnected (any or target SSID), Bluetooth device connected/disconnected.
 - 🔄 **Sensors & Motion:**
   - **Device Flip:** Face-down on table or turned face-up (Proximity + Gravity Z-axis with 500ms debounce).
-  - **Shake:** Firm shake detection with configurable sensitivity slider.
+  - **Shake:** Shake detection with a per-rule strength slider (6–32 m/s²) under the trigger settings; one shake produces one trigger.
   - **Ambient Light:** Lux drops below or rises above target threshold.
 - 📍 **Hardware Geofencing:** Enter or exit defined geographical zones using Google Play Services `GeofencingClient`. Uses no idle CPU wake-lock, keeps up to 50 queued events across engine restarts, and reuses recent transition coordinates for location template variables. Older coordinates trigger a fresh lookup or leave location values empty.
 - 🏷️ **NFC Tags:** Instant hex UID matching on physical scans. Foreground ReaderMode scans run matching rules automatically; background Android discovery opens FlowPilot and requires explicit confirmation before any matching NFC automation runs.

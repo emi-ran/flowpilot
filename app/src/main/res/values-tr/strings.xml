@@ -122,8 +122,8 @@
     <string name="preset_flip_silence_title">Yüzüstü Sessize Al</string>
     <string name="preset_flip_silence_desc">Telefon yüzüstü masaya bırakıldığında Rahatsız Etmeyin modunu açar ve hafif bir onay titreşimi verir.</string>
 
-    <string name="preset_shake_torch_title">Sallayarak Feneri Aç</string>
-    <string name="preset_shake_torch_desc">Telefon sallandığında arka kamera fenerini açar ve çift titreşimle geri bildirim verir.</string>
+    <string name="preset_shake_torch_title">Sallayarak Feneri Aç/Kapat</string>
+    <string name="preset_shake_torch_desc">Telefon sallandığında arka kamera fenerini açar veya kapatır ve çift titreşimle geri bildirim verir.</string>
 
     <string name="preset_cinema_title">Sinema / Gece Okuma Modu</string>
     <string name="preset_cinema_desc" formatted="false">Ortam ışığı 5 lüksün altına indiğinde ve ekran açıkken ekran parlaklığını %5\'e düşürür ve koyu temayı açar.</string>
@@ -207,6 +207,7 @@
     <string name="action_airplane_mode_off">Uçak Modunu kapat</string>
     <string name="action_torch_on">El Fenerini aç</string>
     <string name="action_torch_off">El Fenerini kapat</string>
+    <string name="action_torch_toggle">El Fenerini aç/kapat</string>
     <string name="action_set_screen_brightness">Ekran parlaklığını ayarla</string>
     <string name="action_auto_brightness_on">Otomatik parlaklığı aç</string>
     <string name="action_auto_brightness_off">Otomatik parlaklığı kapat</string>
@@ -382,6 +383,7 @@
     <string name="action_lock_screen_desc">Ekranı kilitler ve ekranı kapatır (Shizuku gerekir)</string>
     <string name="action_torch_on_desc">Kamera fenerini / flaşı açar</string>
     <string name="action_torch_off_desc">Kamera fenerini / flaşı kapatır</string>
+    <string name="action_torch_toggle_desc">Fener kapalıysa açar, açıksa kapatır</string>
     <string name="action_battery_saver_on_desc">Android Pil Tasarrufu modunu açar</string>
     <string name="action_battery_saver_off_desc">Android Pil Tasarrufu modunu kapatır</string>
     <string name="action_bluetooth_on_desc">Bluetooth\'u açar (Shizuku gerekir)</string>
@@ -441,6 +443,11 @@
     <string name="light_preset_office">Ofis (300 lx)</string>
     <string name="light_preset_daylight">Gün ışığı (600 lx)</string>
     <string name="shake_hint">Tetiklemek için telefonu sallayın. Ekran açıkken aktiftir.</string>
+    <string name="shake_strength">Sallama gücü</string>
+    <string name="shake_level_light">Hafif sallama</string>
+    <string name="shake_level_medium">Orta sallama</string>
+    <string name="shake_level_firm">Sert sallama</string>
+    <string name="shake_level_strong">Güçlü sallama</string>
     <string name="unlock_hint">Telefon parmak izi, yüz veya PIN ile her açıldığında tetiklenir.</string>
     <string name="sms_sender_filter_label">Gönderici filtresi (isteğe bağlı)</string>
     <string name="sms_sender_filter_placeholder">örn. +90555... veya tümü için boş bırakın</string>

@@ -31,6 +31,7 @@ import com.flowpilot.app.data.backup.ImportStrategy
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.FollowSwitch
+import com.flowpilot.app.ui.util.labelRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -468,7 +469,7 @@ private fun ThemePickerDialog(
 
 
 @Composable
-fun SettingRowWithSubtitle(
+private fun SettingRowWithSubtitle(
     label: String,
     subtitle: String,
     icon: ImageVector,

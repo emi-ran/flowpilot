@@ -141,18 +141,18 @@ object AutomationPresets {
         ),
         AutomationPreset(
             id = "preset_shake_torch",
-            title = "Sallayarak Feneri Aç",
-            description = "Telefon sallandığında arka kamera fenerini açar ve çift titreşimle geri bildirim verir.",
+            title = "Sallayarak Feneri Aç/Kapat",
+            description = "Telefon sallandığında arka kamera fenerini açar veya kapatır ve çift titreşimle geri bildirim verir.",
             titleRes = R.string.preset_shake_torch_title,
             descriptionRes = R.string.preset_shake_torch_desc,
             category = PresetCategory.GESTURES,
             iconName = "FlashlightOn",
             template = Automation(
                 id = UUID.randomUUID().toString(),
-                name = "Sallayarak Feneri Aç",
+                name = "Sallayarak Feneri Aç/Kapat",
                 triggerEvent = TriggerEvent.DEVICE_SHAKE,
                 actions = listOf(
-                    ActionType.TORCH_ON,
+                    ActionType.TORCH_TOGGLE,
                     ActionType.VIBRATE,
                 ),
                 actionDelays = listOf(0, 0),

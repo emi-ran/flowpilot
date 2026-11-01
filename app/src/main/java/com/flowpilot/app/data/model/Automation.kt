@@ -95,6 +95,7 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     AIRPLANE_MODE_OFF("Turn Airplane mode off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
     TORCH_ON("Turn Flashlight on", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
     TORCH_OFF("Turn Flashlight off", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
+    TORCH_TOGGLE("Toggle Flashlight", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
     SET_SCREEN_BRIGHTNESS("Set screen brightness", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     AUTO_BRIGHTNESS_ON("Turn Auto-brightness on", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     AUTO_BRIGHTNESS_OFF("Turn Auto-brightness off", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
@@ -310,6 +311,11 @@ data class Automation(
     val flipScreenOffDetection: Boolean = false,
     /** Threshold in lux for LIGHT_BELOW / LIGHT_ABOVE triggers. */
     val lightLux: Int = 10,
+    /**
+     * Required shake force (m/s^2 above gravity) for the DEVICE_SHAKE trigger.
+     * Each rule keeps its own value, so a gentle shake can drive one automation while another needs a firm shake.
+     */
+    val shakeThreshold: Float = DEFAULT_SHAKE_THRESHOLD,
     /** Screen brightness percent (0..100) for SET_SCREEN_BRIGHTNESS action. */
     val screenBrightnessPercent: Int = 50,
     /** Target package for FORCE_STOP_APP action. */
@@ -398,6 +404,13 @@ data class Automation(
     }
 
     companion object {
+        /** Softest usable shake force handed to the detector. */
+        const val MIN_SHAKE_THRESHOLD = 6f
+        /** Firmest shake force; higher values are unreachable by hand. */
+        const val MAX_SHAKE_THRESHOLD = 32f
+        /** Default required shake force (firm shake). */
+        const val DEFAULT_SHAKE_THRESHOLD = 20f
+
         val LEGACY_SMS_GENERATED_NAME = Regex("SMS from (?=[+0-9 ()./-]*[0-9][+0-9 ()./-]*[0-9][+0-9 ()./-]*[0-9][+0-9 ()./-]* · )[+0-9 ()./-]* · .+")
     }
 }

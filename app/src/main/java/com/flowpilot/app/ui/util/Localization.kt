@@ -80,6 +80,7 @@ val ActionType.labelRes: Int
         ActionType.AIRPLANE_MODE_OFF -> R.string.action_airplane_mode_off
         ActionType.TORCH_ON -> R.string.action_torch_on
         ActionType.TORCH_OFF -> R.string.action_torch_off
+        ActionType.TORCH_TOGGLE -> R.string.action_torch_toggle
         ActionType.SET_SCREEN_BRIGHTNESS -> R.string.action_set_screen_brightness
         ActionType.AUTO_BRIGHTNESS_ON -> R.string.action_auto_brightness_on
         ActionType.AUTO_BRIGHTNESS_OFF -> R.string.action_auto_brightness_off
@@ -250,6 +251,7 @@ val ActionType.descriptionRes: Int
         ActionType.AIRPLANE_MODE_OFF -> R.string.action_airplane_mode_off_desc
         ActionType.TORCH_ON -> R.string.action_torch_on_desc
         ActionType.TORCH_OFF -> R.string.action_torch_off_desc
+        ActionType.TORCH_TOGGLE -> R.string.action_torch_toggle_desc
         ActionType.SET_SCREEN_BRIGHTNESS -> R.string.action_set_screen_brightness_desc
         ActionType.AUTO_BRIGHTNESS_ON -> R.string.action_auto_brightness_on_desc
         ActionType.AUTO_BRIGHTNESS_OFF -> R.string.action_auto_brightness_off_desc

@@ -55,7 +55,11 @@ Last updated: 2026-09-15
   - Wi-Fi on/off (`WIFI_ON`, `WIFI_OFF`) via Shizuku `svc wifi enable|disable` with `WifiManager.isWifiEnabled` verification.
   - Mobile Data on/off (`MOBILE_DATA_ON`, `MOBILE_DATA_OFF`) via Shizuku `svc data enable|disable` with `Settings.Global.mobile_data` / `TelephonyManager.isDataEnabled` verification.
   - Airplane Mode on/off (`AIRPLANE_MODE_ON`, `AIRPLANE_MODE_OFF`) via Shizuku `cmd connectivity airplane-mode enable|disable` with `Settings.Global.AIRPLANE_MODE_ON` verification.
-  - Flashlight on/off (`TORCH_ON`, `TORCH_OFF`) via direct `CameraManager.setTorchMode` with hardware camera flash detection.
+  - Flashlight on/off/toggle (`TORCH_ON`, `TORCH_OFF`, `TORCH_TOGGLE`) via direct `CameraManager.setTorchMode` with hardware camera flash detection. Toggle state follows `CameraManager.registerTorchCallback`, so system-tile toggles are reflected; an unobserved state is treated as off.
+- Per-rule shake force (unit tests passed; device threshold validation pending):
+  - The `DEVICE_SHAKE` trigger exposes a strength slider in Create/Edit (`Automation.shakeThreshold`, 6–32 m/s² above gravity, default 20), so different automations can react to light or firm shakes.
+  - The accelerometer listens at the softest enabled rule force; every detected shake carries its measured magnitude and only rules whose threshold it meets execute.
+  - `ShakeReducer` uses hysteresis (signal must drop below 50% of the listening threshold) before re-arming, so one continuous shake burst produces a single trigger even when its spikes outlast the 800 ms debounce.
 - Action list reordering in Create and Edit screens (`ReorderableActionList`, `ActionCardItem`) with Move Up / Move Down controls; execution preserves exact order and per-action delay sequence; unit tests passed (`ActionsReorderStateTest`).
 - Active Location & Background GPS Support (unit tests passed; device smoke test pending):
   - Multi-tier `LocationFetcher`: fresh cache (<60s, <50m) -> 5s active GPS fix timeout -> best cached fallback.
