@@ -827,6 +827,14 @@ fun ActionPicker(
                         iconTint = Color(0xFFFFF59D),
                         keywords = listOf("flashlight", "torch", "flash", "light", "camera", "off", "disable"),
                     ),
+                    PickerItem(
+                        value = ActionType.TORCH_TOGGLE,
+                        title = ActionType.TORCH_TOGGLE.label,
+                        subtitle = "Turn the flashlight on if it is off, off if it is on",
+                        icon = Icons.Default.FlashlightOn,
+                        iconTint = Color(0xFFFFE082),
+                        keywords = listOf("flashlight", "torch", "flash", "light", "camera", "toggle", "switch", "flip"),
+                    ),
                 ),
             ),
             PickerCategoryGroup(

@@ -454,6 +454,22 @@ class RuleEvaluatorTest {
         assertThat(result).containsExactly(shake)
     }
 
+    @Test fun shake_requires_rule_specific_force() {
+        val soft = rule(TriggerEvent.DEVICE_SHAKE).copy(id = "soft", shakeThreshold = 8f)
+        val firm = rule(TriggerEvent.DEVICE_SHAKE).copy(id = "firm", shakeThreshold = 20f)
+        val vigorous = rule(TriggerEvent.DEVICE_SHAKE).copy(id = "vigorous", shakeThreshold = 28f)
+        val rules = listOf(soft, firm, vigorous)
+
+        // A light shake only satisfies the rule that asked for the least force.
+        assertThat(RuleEvaluator.evaluateShake(rules, nowMs = 1000L, shakeMagnitude = 12f))
+            .containsExactly(soft)
+        assertThat(RuleEvaluator.evaluateShake(rules, nowMs = 1000L, shakeMagnitude = 22f))
+            .containsExactly(soft, firm)
+        assertThat(RuleEvaluator.evaluateShake(rules, nowMs = 1000L, shakeMagnitude = 30f))
+            .containsExactly(soft, firm, vigorous)
+        assertThat(RuleEvaluator.evaluateShake(rules, nowMs = 1000L, shakeMagnitude = 7f)).isEmpty()
+    }
+
     @Test fun unlocked_matches_only_unlocked_rules() {
         val unlocked = rule(TriggerEvent.DEVICE_UNLOCKED).copy(id = "u1")
         val on = rule(TriggerEvent.SCREEN_ON).copy(id = "s1")

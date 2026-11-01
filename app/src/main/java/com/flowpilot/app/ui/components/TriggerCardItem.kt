@@ -31,6 +31,7 @@ import com.flowpilot.app.R
 import com.flowpilot.app.data.model.SmsMatchMode
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.ui.util.localizedLabel
+import kotlin.math.roundToInt
 
 fun triggerIcon(event: TriggerEvent): ImageVector = when (event) {
     TriggerEvent.APP_OPENED -> Icons.Default.Apps
@@ -92,6 +93,9 @@ fun TriggerCardItem(
     // Light
     lightLux: Int = 10,
     onLightLuxChange: (Int) -> Unit = {},
+    // Shake
+    shakeThreshold: Float = com.flowpilot.app.data.model.Automation.DEFAULT_SHAKE_THRESHOLD,
+    onShakeThresholdChange: (Float) -> Unit = {},
     // SMS
     smsSenderFilter: String = "",
     onSmsSenderFilterChange: (String) -> Unit = {},
@@ -200,7 +204,7 @@ fun TriggerCardItem(
                         TriggerEvent.CALL_ANSWERED -> stringResource(R.string.trigger_call_answered_desc)
                         TriggerEvent.CALL_OUTGOING -> stringResource(R.string.trigger_call_outgoing_desc)
                         TriggerEvent.CALL_ENDED -> stringResource(R.string.trigger_call_ended_desc)
-                        TriggerEvent.DEVICE_SHAKE -> stringResource(R.string.trigger_device_shake_desc)
+                        TriggerEvent.DEVICE_SHAKE -> stringResource(R.string.trigger_device_shake_desc) + " · " + shakeStrengthLabel(shakeThreshold)
                         TriggerEvent.DEVICE_UNLOCKED -> stringResource(R.string.trigger_device_unlocked_desc)
                         TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> stringResource(R.string.detail_threshold_light, lightLux)
                         TriggerEvent.SMS_RECEIVED -> {
@@ -524,7 +528,33 @@ fun TriggerCardItem(
                     }
                 }
                 TriggerEvent.DEVICE_SHAKE -> {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        stringResource(R.string.shake_strength),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            shakeStrengthLabel(shakeThreshold),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.width(96.dp),
+                        )
+                        Slider(
+                            value = shakeThreshold.coerceIn(
+                                com.flowpilot.app.data.model.Automation.MIN_SHAKE_THRESHOLD,
+                                com.flowpilot.app.data.model.Automation.MAX_SHAKE_THRESHOLD,
+                            ),
+                            onValueChange = { onShakeThresholdChange(it.roundToInt().toFloat()) },
+                            valueRange = com.flowpilot.app.data.model.Automation.MIN_SHAKE_THRESHOLD..
+                                com.flowpilot.app.data.model.Automation.MAX_SHAKE_THRESHOLD,
+                            steps = 0,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                     Text(
                         stringResource(R.string.shake_hint),
                         style = MaterialTheme.typography.bodySmall,
@@ -796,4 +826,13 @@ fun TriggerCardItem(
             }
         }
     }
+}
+
+/** Readable name for the required shake force, mirroring the slider position. */
+@Composable
+private fun shakeStrengthLabel(threshold: Float): String = when {
+    threshold < 12f -> stringResource(R.string.shake_level_light)
+    threshold < 20f -> stringResource(R.string.shake_level_medium)
+    threshold < 27f -> stringResource(R.string.shake_level_firm)
+    else -> stringResource(R.string.shake_level_strong)
 }

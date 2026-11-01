@@ -90,7 +90,7 @@ class AutomationPresetsTest {
 
         val shake = AutomationPresets.all.first { it.id == "preset_shake_torch" }
         assertEquals(TriggerEvent.DEVICE_SHAKE, shake.template.triggerEvent)
-        assertTrue(shake.template.effectiveActions.contains(ActionType.TORCH_ON))
+        assertTrue(shake.template.effectiveActions.contains(ActionType.TORCH_TOGGLE))
         assertTrue(shake.template.effectiveActions.contains(ActionType.VIBRATE))
     }
 }

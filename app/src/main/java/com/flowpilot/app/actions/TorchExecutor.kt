@@ -6,8 +6,11 @@ import android.hardware.camera2.CameraManager
 import com.flowpilot.app.data.model.ActionType
 
 /**
- * Toggles the device camera flash (flashlight/torch) via standard Android CameraManager.setTorchMode.
+ * Drives the device camera flash (flashlight/torch) via standard Android CameraManager.setTorchMode.
  * Requires no special permissions or Shizuku; safe and standard across all Android 6.0+ devices.
+ *
+ * Android has no torch-state getter, so [TorchStateStore] tracks the last known state per camera
+ * (including changes made from the system flashlight tile) to resolve toggle requests.
  */
 class TorchExecutor(
     private val context: Context,
@@ -32,14 +35,18 @@ class TorchExecutor(
     private val torchModeSetter: (CameraManager, String, Boolean) -> Unit = { cm, id, enabled ->
         cm.setTorchMode(id, enabled)
     },
+    private val torchStateStore: TorchStateStore = CameraTorchStateStore(context),
 ) : ActionExecutor {
 
-    override val supportedTypes = setOf(ActionType.TORCH_ON, ActionType.TORCH_OFF)
+    override val supportedTypes =
+        setOf(ActionType.TORCH_ON, ActionType.TORCH_OFF, ActionType.TORCH_TOGGLE)
 
     override fun execute(action: ActionType, parameters: ActionParameters): ActionResult {
-        val (enabled, label) = when (action) {
-            ActionType.TORCH_ON -> true to "on"
-            ActionType.TORCH_OFF -> false to "off"
+        // null means "flip the current state" (TORCH_TOGGLE).
+        val targetState: Boolean? = when (action) {
+            ActionType.TORCH_ON -> true
+            ActionType.TORCH_OFF -> false
+            ActionType.TORCH_TOGGLE -> null
             else -> return ActionResult(false, "Unsupported action for Torch")
         }
 
@@ -49,9 +56,14 @@ class TorchExecutor(
         val cameraId = defaultCameraFinder(cm)
             ?: return ActionResult(false, "No camera with flash found on this device")
 
+        // A never-observed state is treated as off so the first toggle always lights the torch.
+        val enabled = targetState ?: !(torchStateStore.read(cameraId) ?: false)
+
         return try {
             torchModeSetter(cm, cameraId, enabled)
-            ActionResult(true, "Flashlight turned $label")
+            // Optimistic write: system callbacks correct it if the platform rejects the change.
+            torchStateStore.write(cameraId, enabled)
+            ActionResult(true, "Flashlight turned ${if (enabled) "on" else "off"}")
         } catch (t: Throwable) {
             ActionResult(false, "Flashlight toggle error: ${t.message ?: t.javaClass.simpleName}")
         }

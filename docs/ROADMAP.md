@@ -179,8 +179,9 @@ Each must expose its required permission or Shizuku state. Do not show success u
 11. **Sound profile (Normal/Vibrate/Silent)** (implementation complete; device smoke test pending)
     - `AudioManager.ringerMode` (`RINGER_MODE_NORMAL` / `RINGER_MODE_VIBRATE` / `RINGER_MODE_SILENT`)
     - Requires user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY` special access (`NotificationManager.isNotificationPolicyAccessGranted`)
-12. **Flashlight (Torch) on/off** (implementation complete; unit tests passed; device smoke test pending)
+12. **Flashlight (Torch) on/off/toggle** (implementation complete; unit tests passed; device smoke test pending)
     - Direct `CameraManager.setTorchMode` with rear camera flash hardware detection; requires zero permissions and no Shizuku.
+    - `TORCH_TOGGLE` resolves the current state from `CameraManager.registerTorchCallback`; unobserved state is treated as off.
 
 ## Existing Device-specific Controls
 

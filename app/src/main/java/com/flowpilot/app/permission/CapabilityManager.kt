@@ -197,7 +197,7 @@ class CapabilityManager(private val context: Context) {
      */
     fun statusFor(action: ActionType): CapabilityStatus = when (action.requirement) {
         CapabilityRequirement.NONE -> when (action) {
-            ActionType.TORCH_ON, ActionType.TORCH_OFF ->
+            ActionType.TORCH_ON, ActionType.TORCH_OFF, ActionType.TORCH_TOGGLE ->
                 if (hasCameraFlash()) CapabilityStatus.AVAILABLE else CapabilityStatus.UNSUPPORTED
             else -> CapabilityStatus.AVAILABLE
         }

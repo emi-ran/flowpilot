@@ -8,7 +8,7 @@ minSdk 26, JDK 17.
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
 battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | Bluetooth device connected | Bluetooth device disconnected | NFC tag scanned | notification received | SMS received | phone call ringing | phone call answered | phone call outgoing | phone call ended | device flipped face down | device flipped face up | device shaken | ambient light below | ambient light above | geofence enter | geofence exit] (AND optional conditions: battery, charger, screen, Wi-Fi, time window, days of week) DO one or more [Bluetooth on | Bluetooth off | NFC on | NFC off | Battery Saver on |
-Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | Wi-Fi on/off | Mobile data on/off | Airplane mode on/off | Location on/off | Flashlight on/off | set screen brightness | auto-brightness on/off | lock screen | force stop app | Open dialer | Dial number | Call number | send SMS | prepare SMS draft | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | Wi-Fi on/off | Mobile data on/off | Airplane mode on/off | Location on/off | Flashlight on/off/toggle | set screen brightness | auto-brightness on/off | lock screen | force stop app | Open dialer | Dial number | Call number | send SMS | prepare SMS draft | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, phone call transitions via TelephonyCallback / PhoneStateListener, device orientation transitions via Proximity and Accelerometer/Gravity sensors, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -99,6 +99,8 @@ app/src/main/java/com/flowpilot/app/
     BluetoothDeviceTracker.kt        bonded-device ACL broadcasts + per-device transition reducer
     DeviceFlipState.kt               pure flip orientation models and debounce state reducer
     DeviceFlipTracker.kt             motion sensor listener with dynamic lifecycle and battery-saving unregistering
+    ShakeReducer.kt                  pure threshold + hysteresis shake detector
+    DeviceShakeTracker.kt            accelerometer listener with live-adjustable shake force
     NfcTagHandoff.kt                 transient platform-reader tag UID queue and UI capture state
     NfcTagUtils.kt                   pure tag UID normalization and validation
     NfcBackgroundConfirmationGate.kt holds untrusted background UID until explicit confirmation
@@ -187,6 +189,8 @@ Queue retention and coordinate freshness are independent. The receiver persists 
 AutoRotateExecutor writes `Settings.System.ACCELEROMETER_ROTATION` to `1` (free rotation) or `0`
 (portrait lock), then reads back the value. It requires `android.permission.WRITE_SETTINGS` checked via
 `Settings.System.canWrite(context)` and returns explicit honest failures for permission blocks or write mismatches.
+
+DeviceShakeTracker listens to Sensor.TYPE_ACCELEROMETER only while an enabled DEVICE_SHAKE rule exists and the screen is on. Each rule stores its own required force (`Automation.shakeThreshold`, 6..32 m/s^2 above gravity, default 20); the tracker listens at the softest enabled value (clamped), emits `ShakeEvent(timestampMs, magnitude)`, and `RuleEvaluator.evaluateShake` executes only rules whose threshold is at or below the measured magnitude. The detector disarms after a trigger and re-arms only when the signal falls below 50% of the listening threshold, so one continuous shake produces a single event; an 800ms debounce additionally separates distinct shakes. Rule edits are picked up by the engine's rule-collection policy loop, which resets the detector when the listening threshold changes.
 
 DndExecutor sets `NotificationManager.setInterruptionFilter` to `INTERRUPTION_FILTER_NONE` (total silence) or
 `INTERRUPTION_FILTER_ALL` (all interruptions), then verifies `currentInterruptionFilter`. It requires

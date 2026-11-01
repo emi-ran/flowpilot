@@ -123,7 +123,7 @@
     <string name="preset_flip_silence_desc">When placed face down on a surface, turns on Do Not Disturb and gives a subtle confirmation pulse.</string>
 
     <string name="preset_shake_torch_title">Shake for Flashlight</string>
-    <string name="preset_shake_torch_desc">When shaken, toggles the camera flashlight and gives double-tap vibration feedback.</string>
+    <string name="preset_shake_torch_desc">Shaking the phone turns the camera flashlight on or off, with double-tap vibration feedback.</string>
 
     <string name="preset_cinema_title">Cinema / Night Reading Mode</string>
     <string name="preset_cinema_desc" formatted="false">When ambient light drops below 5 lux and screen is on, lowers brightness to 5% and enables dark theme.</string>
@@ -207,6 +207,7 @@
     <string name="action_airplane_mode_off">Turn Airplane mode off</string>
     <string name="action_torch_on">Turn Flashlight on</string>
     <string name="action_torch_off">Turn Flashlight off</string>
+    <string name="action_torch_toggle">Toggle Flashlight</string>
     <string name="action_set_screen_brightness">Set screen brightness</string>
     <string name="action_auto_brightness_on">Turn Auto-brightness on</string>
     <string name="action_auto_brightness_off">Turn Auto-brightness off</string>
@@ -382,6 +383,7 @@
     <string name="action_lock_screen_desc">Lock screen and turn off display (requires Shizuku)</string>
     <string name="action_torch_on_desc">Turn camera flash on as flashlight</string>
     <string name="action_torch_off_desc">Turn camera flash / flashlight off</string>
+    <string name="action_torch_toggle_desc">Turn the flashlight on when it is off, and off when it is on</string>
     <string name="action_battery_saver_on_desc">Enable Android low-power saver mode</string>
     <string name="action_battery_saver_off_desc">Disable Android low-power saver mode</string>
     <string name="action_bluetooth_on_desc">Turn Bluetooth radio on (requires Shizuku)</string>
@@ -441,6 +443,11 @@
     <string name="light_preset_office">Office (300 lx)</string>
     <string name="light_preset_daylight">Daylight (600 lx)</string>
     <string name="shake_hint">Shake phone firmly to trigger. Active while screen is on.</string>
+    <string name="shake_strength">Shake strength</string>
+    <string name="shake_level_light">Light shake</string>
+    <string name="shake_level_medium">Medium shake</string>
+    <string name="shake_level_firm">Firm shake</string>
+    <string name="shake_level_strong">Vigorous shake</string>
     <string name="unlock_hint">Triggers each time the phone is unlocked with fingerprint, face, or PIN.</string>
     <string name="sms_sender_filter_label">Sender filter (optional)</string>
     <string name="sms_sender_filter_placeholder">e.g. +90555... or leave blank for any</string>

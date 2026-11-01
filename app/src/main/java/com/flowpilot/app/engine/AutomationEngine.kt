@@ -370,9 +370,16 @@ class AutomationEngine(
         rules: List<com.flowpilot.app.data.model.Automation>,
         liveState: LiveSystemState,
     ) {
-        val hasShake = rules.any { it.enabled && it.triggerEvent == TriggerEvent.DEVICE_SHAKE }
+        val shakeThresholds = rules
+            .filter { it.enabled && it.triggerEvent == TriggerEvent.DEVICE_SHAKE }
+            .map { it.shakeThreshold }
+        val minThreshold = ShakeReducer.minimumThreshold(shakeThresholds)
+        if (minThreshold != null) {
+            // Every rule keeps its own force; the sensor only needs to catch the softest one.
+            shakeTracker.updateThreshold(minThreshold)
+        }
         shakeTracker.updateListeningPolicy(
-            hasActiveRules = hasShake,
+            hasActiveRules = minThreshold != null,
             isScreenOn = liveState.isScreenOn != false,
         )
     }
@@ -394,8 +401,13 @@ class AutomationEngine(
         val events = shakeTracker.drainEvents()
         if (events.isEmpty()) return
         val rules = repository.automations.first()
-        for (eventTime in events) {
-            val matches = RuleEvaluator.evaluateShake(rules, liveState, nowMs = eventTime)
+        for (event in events) {
+            val matches = RuleEvaluator.evaluateShake(
+                rules = rules,
+                liveState = liveState,
+                nowMs = event.timestampMs,
+                shakeMagnitude = event.magnitude,
+            )
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing shake rules (${matches.size} rule(s))")
                 executeAll(matches, trigger = TriggerEvent.DEVICE_SHAKE, liveState = liveState)

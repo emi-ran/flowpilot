@@ -168,6 +168,7 @@ fun CreateScreen(
         soundSourceDurationMs(context, SoundPreset.CUSTOM, uri.toString())?.let { soundDurationMs = it.coerceIn(1_000, 60_000) }
     }
     var lightLux by remember { mutableIntStateOf(50) }
+    var shakeThreshold by remember { mutableFloatStateOf(com.flowpilot.app.data.model.Automation.DEFAULT_SHAKE_THRESHOLD) }
     var screenBrightnessPercent by remember { mutableIntStateOf(50) }
     var forceStopPackage by remember { mutableStateOf("") }
     var forceStopAppName by remember { mutableStateOf("") }
@@ -241,6 +242,7 @@ fun CreateScreen(
         phoneNumber = t.phoneNumber
         flipScreenOffDetection = t.flipScreenOffDetection
         lightLux = t.lightLux
+        shakeThreshold = t.shakeThreshold
         smsSenderFilter = t.smsSenderFilter
         smsMatchMode = t.smsMatchMode
         smsKeyword = t.smsKeyword
@@ -451,6 +453,7 @@ fun CreateScreen(
                         smsRecipient = smsRecipient.trim(),
                         smsMessage = smsMessage,
                         lightLux = lightLux,
+                        shakeThreshold = shakeThreshold,
                         screenBrightnessPercent = screenBrightnessPercent,
                         forceStopPackage = forceStopPackage,
                         forceStopAppName = forceStopAppName,
@@ -610,6 +613,8 @@ fun CreateScreen(
                 onFlipScreenOffChange = { flipScreenOffDetection = it },
                 lightLux = lightLux,
                 onLightLuxChange = { lightLux = it },
+                shakeThreshold = shakeThreshold,
+                onShakeThresholdChange = { shakeThreshold = it },
                 smsSenderFilter = smsSenderFilter,
                 onSmsSenderFilterChange = { smsSenderFilter = it },
                 smsMatchMode = smsMatchMode,
@@ -947,6 +952,7 @@ fun CreateScreen(
                             notificationKeyword = notificationKeyword,
                             conditions = conditions,
                             lightLux = lightLux,
+                            shakeThreshold = shakeThreshold,
                             smsSenderFilter = smsSenderFilter.trim(),
                             smsMatchMode = smsMatchMode,
                             smsKeyword = smsKeyword.trim(),
@@ -1012,6 +1018,7 @@ fun CreateScreen(
                                 smsRecipient = smsRecipient.trim(),
                                 smsMessage = smsMessage,
                                 lightLux = lightLux,
+                                shakeThreshold = shakeThreshold,
                                 screenBrightnessPercent = screenBrightnessPercent,
                                 forceStopPackage = forceStopPackage,
                                 forceStopAppName = forceStopAppName,

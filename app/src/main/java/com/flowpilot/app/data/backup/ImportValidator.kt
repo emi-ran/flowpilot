@@ -51,6 +51,12 @@ internal object ImportValidator {
                 TriggerEvent.TIME_SCHEDULE -> require(r.scheduledMinute in 0..1439 && r.scheduledDays.all { it in 1..7 }) { "Invalid schedule" }
                 TriggerEvent.BATTERY_BELOW, TriggerEvent.BATTERY_ABOVE -> require(r.batteryLevel in 0..100) { "Invalid battery level" }
                 TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> require(r.lightLux in 0..1000000) { "Invalid light level" }
+                TriggerEvent.DEVICE_SHAKE -> require(
+                    r.shakeThreshold.isFinite() &&
+                        r.shakeThreshold in
+                        com.flowpilot.app.data.model.Automation.MIN_SHAKE_THRESHOLD..
+                        com.flowpilot.app.data.model.Automation.MAX_SHAKE_THRESHOLD,
+                ) { "Invalid shake threshold" }
                 TriggerEvent.GEOFENCE_ENTER, TriggerEvent.GEOFENCE_EXIT -> require(r.geofenceLatitude.isFinite() && r.geofenceLatitude in -90.0..90.0 && r.geofenceLongitude.isFinite() && r.geofenceLongitude in -180.0..180.0 && r.geofenceRadiusMeters in 50..1000) { "Invalid location range" }
                 else -> Unit
             }

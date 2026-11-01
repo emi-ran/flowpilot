@@ -163,6 +163,7 @@ fun DetailScreen(
         soundSourceDurationMs(context, SoundPreset.CUSTOM, uri.toString())?.let { soundDurationMs = it.coerceIn(1_000, 60_000) }
     }
     var lightLux by remember(initialRule.id) { mutableIntStateOf(initialRule.lightLux) }
+    var shakeThreshold by remember(initialRule.id) { mutableFloatStateOf(initialRule.shakeThreshold) }
     var screenBrightnessPercent by remember(initialRule.id) { mutableIntStateOf(initialRule.screenBrightnessPercent) }
     var forceStopPackage by remember(initialRule.id) { mutableStateOf(initialRule.forceStopPackage) }
     var forceStopAppName by remember(initialRule.id) { mutableStateOf(initialRule.forceStopAppName) }
@@ -369,6 +370,7 @@ fun DetailScreen(
                         smsRecipient = smsRecipient.trim(),
                         smsMessage = smsMessage,
                         lightLux = lightLux,
+                        shakeThreshold = shakeThreshold,
                         screenBrightnessPercent = screenBrightnessPercent,
                         forceStopPackage = forceStopPackage,
                         forceStopAppName = forceStopAppName,
@@ -484,6 +486,7 @@ fun DetailScreen(
                                 smsRecipient = smsRecipient.trim(),
                                 smsMessage = smsMessage,
                                 lightLux = lightLux,
+                                shakeThreshold = shakeThreshold,
                                 screenBrightnessPercent = screenBrightnessPercent,
                                 forceStopPackage = forceStopPackage,
                                 forceStopAppName = forceStopAppName,
@@ -582,6 +585,8 @@ fun DetailScreen(
                 onFlipScreenOffChange = { flipScreenOffDetection = it },
                 lightLux = lightLux,
                 onLightLuxChange = { lightLux = it },
+                shakeThreshold = shakeThreshold,
+                onShakeThresholdChange = { shakeThreshold = it },
                 smsSenderFilter = smsSenderFilter,
                 onSmsSenderFilterChange = { smsSenderFilter = it },
                 smsMatchMode = smsMatchMode,
@@ -957,6 +962,7 @@ fun DetailScreen(
                                 smsRecipient = smsRecipient.trim(),
                                 smsMessage = smsMessage,
                                 lightLux = lightLux,
+                                shakeThreshold = shakeThreshold,
                                 screenBrightnessPercent = screenBrightnessPercent,
                                 forceStopPackage = forceStopPackage,
                                 forceStopAppName = forceStopAppName,

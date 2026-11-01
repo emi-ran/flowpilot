@@ -143,7 +143,7 @@ Günlük yaşamınızı anında kolaylaştıracak yerleşik şablonlarla hemen b
 | 🔋 **Tam Pil Koruması** | Pil %100'e ulaştığında | Çevrimdışı sesli şarjdan çıkarma uyarısı seslendirir ve bildirim gönderir |
 | ⚡ **Acil Pil Tasarrufu** | Pil %15 altına düştüğünde | Pil Tasarrufunu açar, Bluetooth'u kapatır, parlaklığı %15 yapar, Koyu Temaya geçer |
 | 🔕 **Ters Çevir ve Sustur** | Telefon yüzüstü konulduğunda | Çift sensör doğrulamasıyla (Yakınlık + Yerçekimi Z-ekseni) DND modunu titreşimle açar |
-| 🔦 **Sallayarak Fener Aç** | Cihaz sağlam sallandığında | Kamera flaşını dokunsal geri bildirimle açar veya kapatır |
+| 🔦 **Sallayarak Fener Aç/Kapat** | Cihaz sağlam sallandığında | Kamera flaşını dokunsal geri bildirimle açar veya kapatır |
 | 🎬 **Sinema / Gece Okuma** | Ortam ışığı < 5 lüks olduğunda | Parlaklığı minimuma indirir ve sistemi Koyu Temaya geçirir |
 | 🚗 **Evden Çıkış Modu** | Ev Wi-Fi bağlantısı koptuğunda | Mobil Veriyi açar (Shizuku), Normal zil sesine geçer, medya sesini %80 yapar |
 | 🏠 **Eve Giriş Modu** | Ev Wi-Fi ağına bağlanıldığında | Pil tasarrufu için Mobil Veriyi kapatır (Shizuku) ve dengeli ses ayarlarını geri yükler |
@@ -163,7 +163,7 @@ FlowPilot zengin bir donanım, radyo ve sistem olayı yelpazesini dinler:
 - 📶 **Bağlantılar:** Wi-Fi ağına bağlanma / ayrılma (tüm ağlar veya belirli SSID), Bluetooth cihazına bağlanma / ayrılma.
 - 🔄 **Sensörler & Hareket:**
   - **Cihazı Çevirme:** Yüzüstü masaya konma veya tekrar çevrilme (Yakınlık + Yerçekimi Z-ekseni, 500ms kararlılık filtresi).
-  - **Sallama:** Hassasiyet ayarlı telefon sallama algılaması.
+  - **Sallama:** Tetik ayarlarındaki kural bazlı güç kaydırıcısı (6–32 m/s²); tek sallama tek tetik üretir.
   - **Ortam Işığı:** Lüks değerinin belirlenen sınırın altına düşmesi veya üstüne çıkması.
 - 📍 **Donanım Coğrafi Çit (Geofence):** Google Play Services `GeofencingClient` ile belirlenen alana giriş/çıkış. Boşta CPU wake-lock kullanmaz; yeniden başlatmada kaybolmayan 50 olaylık kalıcı kuyruk kullanır. Güncel geçiş koordinatları konum şablonlarında kullanılır; eski koordinatlar yerine yeni konum alınır veya değerler boş bırakılır.
 - 🏷️ **NFC Etiketleri:** Fiziksel taramalarda anında hex UID eşleşmesi. Ön plandaki ReaderMode taramaları eşleşen kuralları otomatik çalıştırır; Android arka plan keşfi FlowPilot'ı açar ve eşleşen NFC otomasyonu çalışmadan önce açık onay ister.
