@@ -34,6 +34,8 @@ cd flowpilot
 ./gradlew assembleDebug
 ```
 
+The debug APK installs as **FlowPilot Dev** (`com.flowpilot.app.debug`) and can coexist with the release app (`com.flowpilot.app`). Debug builds skip release update checks.
+
 ---
 
 ## Submitting a Pull Request (PR)

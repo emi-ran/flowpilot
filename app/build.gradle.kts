@@ -49,6 +49,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Coexists with the release install instead of replacing it with a debug-signed APK.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-dev"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
