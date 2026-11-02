@@ -4,6 +4,8 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-03
+
 ### Added
 
 - In-app updates: Settings can check the public GitHub Releases API automatically at most once a day or on demand. A newer stable release opens a notes dialog with Download &amp; Install, Open release page, Remind me later, and Skip this version. Downloads are limited to the `emi-ran/flowpilot` GitHub release APK, handed to Android's DownloadManager, and installed only after the user confirms the system installer. The automatic check can be disabled; the About and README privacy wording now says "offline by default" instead of "100% offline".

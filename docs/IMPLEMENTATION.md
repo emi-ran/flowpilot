@@ -59,7 +59,7 @@ Unit tests cover legacy normalization and omitted-null JSON, heterogeneous match
 | Wi-Fi on/off      | NO (modern Android restriction) | NO | YES: Shizuku `svc wifi enable\|disable` + bounded `WifiManager.isWifiEnabled` readback | YES |
 | Mobile Data on/off| NO (modern Android restriction) | NO | YES: Shizuku `svc data enable\|disable` + `Settings.Global.mobile_data` readback | YES |
 | Airplane mode     | NO (modern Android restriction) | NO | YES: Shizuku `cmd connectivity airplane-mode enable\|disable` + `Settings.Global` readback | YES |
-| Wi-Fi hotspot     | NO | NO | YES (Android 16+ only): Shizuku `newProcess` + `app_process` `HotspotBridge` registers as `com.android.shell` and calls public `TetheringManager.startTethering`/`stopTethering`; exit code 0 after `onTetheringStarted`/`onTetheringStopped` | NOT VERIFIED (bridge registers as shell) |
+| Wi-Fi hotspot     | NO | NO | YES (Android 16+ only): Shizuku `newProcess` + `app_process` `HotspotBridge` registers as `com.android.shell` and calls public `TetheringManager.startTethering`/`stopTethering`; exit code 0 after `onTetheringStarted`/`onTetheringStopped` | VERIFIED on Xiaomi 15T Pro (Android 16), including screen-off and full app path |
 
 - Do Not Disturb and Sound Profile toggling require user-grantable Notification Policy Access
   special access checked via `NotificationManager.isNotificationPolicyAccessGranted` and opened with
