@@ -28,6 +28,9 @@
     <!-- Internet permission for HTTP webhook actions. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Install a user-approved APK downloaded from this repository's GitHub release. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <!-- NFC hardware and tag discovery -->
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <uses-permission android:name="android.permission.NFC" />
@@ -148,6 +151,16 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Completes an app-initiated update download and opens the system installer. -->
+        <receiver
+            android:name=".update.UpdateDownloadReceiver"
+            android:exported="true"
+            android:permission="android.permission.SEND_DOWNLOAD_COMPLETED_INTENTS">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
             </intent-filter>
         </receiver>
 

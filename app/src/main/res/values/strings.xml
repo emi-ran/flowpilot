@@ -62,6 +62,37 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_select_theme">Select theme</string>
+    <string name="settings_updates_title">Updates</string>
+    <string name="settings_updates_subtitle">GitHub Releases is checked at most once a day. No telemetry.</string>
+    <string name="settings_auto_update_check">Check for updates automatically</string>
+    <string name="settings_check_updates">Check for updates</string>
+    <string name="settings_update_checking">Checking…</string>
+    <string name="settings_update_up_to_date">You\'re up to date</string>
+    <string name="settings_update_check_failed">Couldn\'t check for updates</string>
+    <string name="settings_update_available">v%1$s is available</string>
+
+    <!-- Update dialog and notifications -->
+    <string name="update_banner_title">FlowPilot v%1$s is available</string>
+    <string name="update_banner_action">Update</string>
+    <string name="update_banner_dismiss">Dismiss</string>
+    <string name="update_dialog_title">Update to v%1$s</string>
+    <string name="update_dialog_size">%1$s download</string>
+    <string name="update_dialog_whats_new">What\'s new</string>
+    <string name="update_dialog_no_notes">No release notes were provided.</string>
+    <string name="update_dialog_download_install">Download &amp; Install</string>
+    <string name="update_dialog_open_release">Open release page</string>
+    <string name="update_dialog_remind_later">Remind me later</string>
+    <string name="update_dialog_skip_version">Skip this version</string>
+    <string name="update_download_title">FlowPilot v%1$s update</string>
+    <string name="update_download_description">Downloading the FlowPilot update</string>
+    <string name="update_download_started">Download started. The install prompt will appear when it finishes.</string>
+    <string name="update_download_failed">Couldn\'t start the update download.</string>
+    <string name="update_install_permission_required">Allow FlowPilot to install unknown apps, then tap Download &amp; Install again.</string>
+    <string name="update_install_notification_title">Update ready to install</string>
+    <string name="update_install_notification_text">Tap to install FlowPilot v%1$s.</string>
+    <string name="update_permission_notification_title">Install permission required</string>
+    <string name="update_permission_notification_text">Allow unknown-app installs to install FlowPilot v%1$s.</string>
+    <string name="update_notification_channel">FlowPilot updates</string>
 
     <!-- Home Screen -->
     <string name="home_engine_running">Automation engine active</string>
@@ -819,8 +850,8 @@
     <string name="about_app_motto">Privacy-first, offline, and lightweight Android automation engine.</string>
     <string name="about_badge_version">v%1$s (Build %2$d)</string>
     <string name="about_badge_license">GPL-3.0 License</string>
-    <string name="about_feat_offline_title">100% Offline &amp; Private</string>
-    <string name="about_feat_offline_desc">No telemetry or cloud sync. Configured Webhooks, SMS, and exports can send only data you choose.</string>
+    <string name="about_feat_offline_title">Offline by Default &amp; Private</string>
+    <string name="about_feat_offline_desc">No telemetry or cloud sync. Automatic update checks contact GitHub only when enabled; disable them in Settings. Webhooks, SMS, and exports send only data you choose.</string>
     <string name="about_feat_battery_title">Optimized &amp; Battery-Friendly</string>
     <string name="about_feat_battery_desc">Event-driven architecture. Sensors and listeners activate only when matching rules require them.</string>
     <string name="about_feat_shizuku_title">Shizuku Integration</string>

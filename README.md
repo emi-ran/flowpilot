@@ -13,7 +13,7 @@ Automate your device with event-driven triggers, privileged system actions via S
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Shizuku Supported](https://img.shields.io/badge/Shizuku-Supported-FB8C00)](https://shizuku.rikka.app)
-[![Privacy](https://img.shields.io/badge/Telemetry-Zero%20%2F%20100%25%20Offline-00C853)](#-privacy--zero-trust-promise)
+[![Privacy](https://img.shields.io/badge/Telemetry-Zero%20%2F%20Offline%20by%20Default-00C853)](#-privacy--zero-trust-promise)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
 <br/>
@@ -63,8 +63,8 @@ Most Android automation tools force you to choose between steep complexity, heav
       <p>No constant CPU wake-locks or polling loops. Hardware sensors (accelerometer, proximity, light) and broadcast receivers register <b>only when an active rule needs them</b> and unregister instantly when idle.</p>
     </td>
     <td width="50%">
-      <h3>🔒 100% Offline &amp; Private</h3>
-      <p>No analytics, no telemetry, no remote servers, and no accounts. Everything happens on your device. Webhooks and SMS actions send only the data you explicitly configure.</p>
+      <h3>🔒 Offline by Default &amp; Private</h3>
+      <p>No analytics, no telemetry, no remote accounts. Optional update checks query GitHub only when enabled and can be turned off in Settings. Webhooks and SMS actions send only the data you explicitly configure.</p>
     </td>
   </tr>
   <tr>
@@ -238,6 +238,7 @@ FlowPilot uses **Shizuku** to perform elevated actions (Mobile Data, Airplane Mo
 FlowPilot is engineered with an uncompromised commitment to user privacy:
 
 - 🚫 **Zero Telemetry:** No Firebase Analytics, no Sentry, no remote crash reporters, and zero tracking SDKs.
+- 🔄 **Optional Update Checks:** When enabled, FlowPilot reads the public GitHub Releases API at most once a day and sends no account or device identifier. Disable it in Settings; manual checks remain available.
 - 📵 **No Cloud Synchronization:** Your automations, logs, and secrets never touch any third-party cloud.
 - 🛡️ **Android Keystore Protection:** Webhook secrets, tokens, and sensitive headers are encrypted with AES-256-GCM using Android Keystore keys, hardware-backed when supported by the device.
 - 🙈 **Strict Log Sanitization:** Phone numbers, webhook credentials, and sensitive headers are masked across all UI screens and audit logs.
@@ -248,6 +249,7 @@ FlowPilot declares sensitive permissions solely to power explicit automation fea
 - `RECEIVE_SMS` & `SEND_SMS`: Used exclusively by the SMS trigger and direct SMS responder actions.
 - `ACCESS_BACKGROUND_LOCATION`: Powers zero-battery hardware geofencing (`GeofencingClient`) and injects coordinates only into user-configured automations.
 - `FOREGROUND_SERVICE_LOCATION`: Required by Android 14+ to keep geofencing and active location tasks compliant while running in the background.
+- `REQUEST_INSTALL_PACKAGES`: Used only to open Android's installer for an APK downloaded from the official FlowPilot GitHub release after the user taps Download &amp; Install. FlowPilot never downloads or installs unattended.
 
 *Note: FlowPilot does not seek Google Play approval because these uncompromised permissions are essential for core automation functionality. Download verified APKs directly from GitHub Releases.*
 

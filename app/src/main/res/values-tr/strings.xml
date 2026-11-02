@@ -62,6 +62,37 @@
     <string name="settings_theme_dark">Koyu</string>
     <string name="settings_theme_light">Aydınlık</string>
     <string name="settings_select_theme">Tema seçin</string>
+    <string name="settings_updates_title">Güncellemeler</string>
+    <string name="settings_updates_subtitle">GitHub Releases en fazla günde bir kontrol edilir. Telemetri yok.</string>
+    <string name="settings_auto_update_check">Güncellemeleri otomatik kontrol et</string>
+    <string name="settings_check_updates">Güncellemeleri kontrol et</string>
+    <string name="settings_update_checking">Kontrol ediliyor…</string>
+    <string name="settings_update_up_to_date">Güncel sürümü kullanıyorsunuz</string>
+    <string name="settings_update_check_failed">Güncellemeler kontrol edilemedi</string>
+    <string name="settings_update_available">v%1$s mevcut</string>
+
+    <!-- Update dialog and notifications -->
+    <string name="update_banner_title">FlowPilot v%1$s mevcut</string>
+    <string name="update_banner_action">Güncelle</string>
+    <string name="update_banner_dismiss">Yoksay</string>
+    <string name="update_dialog_title">v%1$s sürümüne güncelle</string>
+    <string name="update_dialog_size">%1$s indirme</string>
+    <string name="update_dialog_whats_new">Yenilikler</string>
+    <string name="update_dialog_no_notes">Sürüm notu paylaşılmamış.</string>
+    <string name="update_dialog_download_install">İndir ve yükle</string>
+    <string name="update_dialog_open_release">Sürüm sayfasını aç</string>
+    <string name="update_dialog_remind_later">Daha sonra hatırlat</string>
+    <string name="update_dialog_skip_version">Bu sürümü atla</string>
+    <string name="update_download_title">FlowPilot v%1$s güncellemesi</string>
+    <string name="update_download_description">FlowPilot güncellemesi indiriliyor</string>
+    <string name="update_download_started">İndirme başladı. Tamamlanınca yükleme istemi açılacak.</string>
+    <string name="update_download_failed">Güncelleme indirmesi başlatılamadı.</string>
+    <string name="update_install_permission_required">FlowPilot\'a bilinmeyen uygulama yükleme iznini verin, sonra İndir ve yükle\'ye tekrar dokunun.</string>
+    <string name="update_install_notification_title">Güncelleme yüklemeye hazır</string>
+    <string name="update_install_notification_text">FlowPilot v%1$s yüklemek için dokunun.</string>
+    <string name="update_permission_notification_title">Yükleme izni gerekli</string>
+    <string name="update_permission_notification_text">FlowPilot v%1$s yüklemek için bilinmeyen uygulama yükleme iznini verin.</string>
+    <string name="update_notification_channel">FlowPilot güncellemeleri</string>
 
     <!-- Home Screen -->
     <string name="home_engine_running">Otomasyon motoru etkin</string>
@@ -819,8 +850,8 @@
     <string name="about_app_motto">Gizlilik odaklı, çevrimdışı ve hafif Android otomasyon motoru.</string>
     <string name="about_badge_version">v%1$s (Derleme %2$d)</string>
     <string name="about_badge_license">GPL-3.0 Lisansı</string>
-    <string name="about_feat_offline_title">%100 Çevrimdışı &amp; Gizli</string>
-    <string name="about_feat_offline_desc">Telemetri veya bulut eşitlemesi yoktur. Yapılandırılmış Webhook, SMS ve dışa aktarma işlemleri yalnızca seçtiğiniz verileri gönderebilir.</string>
+    <string name="about_feat_offline_title">Varsayılan Olarak Çevrimdışı &amp; Gizli</string>
+    <string name="about_feat_offline_desc">Telemetri veya bulut eşitlemesi yoktur. Otomatik güncelleme kontrolü açıksa GitHub\'a bağlanır; Ayarlardan kapatabilirsiniz. Webhook, SMS ve dışa aktarma işlemleri yalnızca seçtiğiniz verileri gönderebilir.</string>
     <string name="about_feat_battery_title">Optimize &amp; Pil Dostu</string>
     <string name="about_feat_battery_desc">Olay odaklı mimari. Sensörler ve dinleyiciler yalnızca eşleşen kurallar aktif olduğunda çalışır.</string>
     <string name="about_feat_shizuku_title">Shizuku Entegrasyonu</string>

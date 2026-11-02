@@ -59,6 +59,7 @@ import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.analysis.AutomationConflict
 import com.flowpilot.app.analysis.AutomationConflictAnalyzer
 import com.flowpilot.app.ui.components.ConflictWarningDialog
+import com.flowpilot.app.ui.components.UpdateBanner
 
 @Composable
 fun HomeScreen(
@@ -77,6 +78,8 @@ fun HomeScreen(
     val engineEnabled by vm.engineEnabled.collectAsState()
     val engineFailure by vm.engineFailure.collectAsState()
     val geofenceDiagnostics by vm.geofenceDiagnostics.collectAsState()
+    val updateAvailable by vm.updateAvailable.collectAsState()
+    val updateBannerDismissed by vm.updateBannerDismissed.collectAsState()
     val geofenceReceiverError = geofenceDiagnostics[AutomationRepository.GEOFENCE_RECEIVER_DIAGNOSTIC_ID]
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -214,6 +217,13 @@ fun HomeScreen(
                 .padding(horizontal = 20.dp)
         ) {
             // Hero Status Card for Automation Engine
+            if (updateAvailable != null && !updateBannerDismissed) {
+                UpdateBanner(
+                    update = updateAvailable!!,
+                    onUpdate = vm::openUpdateDialog,
+                    onDismiss = vm::dismissUpdateBanner,
+                )
+            }
             val heroAccent = if (engine) successAccent() else MaterialTheme.colorScheme.onSurfaceVariant
 
             Card(

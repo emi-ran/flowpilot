@@ -260,6 +260,14 @@ and localized language name; reopening it scrolls to the selected voice. A hold 
 temporary preview for that row without changing the selected voice. Preview requires nonblank spoken text and
 shows an in-picker instruction when text is missing.
 
+## Update checks
+
+`GitHubReleaseClient` reads `https://api.github.com/repos/emi-ran/flowpilot/releases/latest` on `Dispatchers.IO` with 10-second connect/read timeouts and a 512 KiB response cap. It parses the tag as an `AppVersion` and returns `null` unless the release is newer than `BuildConfig.VERSION_NAME`. Accepted release and asset URLs must be HTTPS on `github.com` under `/emi-ran/flowpilot/releases/`; no redirects are followed. `UpdatePolicy` permits an automatic check at most once every 24 hours, honors a skipped tag and a 24-hour reminder deadline, and makes manual checks ignore skip/reminder state. Preferences live in DataStore with automatic checks enabled by default; the switch writes `setUpdateAutoCheck` and stops future automatic requests.
+
+`AppViewModel` combines the repository preference flow with one in-flight check guard. It records the check attempt, exposes the available release, dialog visibility, banner-dismissed state, and manual-check status, then clears the release on skip or remind. The Home banner and Settings rows are neutral surfaces; the dialog renders the release notes in a bounded scroll area and offers Download & Install only when a trusted APK asset exists, otherwise the release page. Download & Install starts a DownloadManager request to app-specific external storage with the APK MIME type and a sanitized filename. If unknown-app installation is disabled, the request stops before enqueue and opens the per-app settings page.
+
+`UpdateDownloadReceiver` accepts only `ACTION_DOWNLOAD_COMPLETE`, matches the extra download id against the id saved before enqueueing, requires `STATUS_SUCCESSFUL`, and clears the stored request. If installation permission is still disabled, it posts a permission notification; otherwise it posts a tap-to-install notification and attempts the install intent once. The system installer remains the final confirmation, so no unattended install path exists.
+
 ## Battery / reliability
 
 - Engine runs in a special-use foreground service with an ongoing notification

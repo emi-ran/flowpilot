@@ -9,11 +9,16 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.flowpilot.app.BuildConfig
 import com.flowpilot.app.R
 import com.flowpilot.app.actions.ShizukuShell
 import com.flowpilot.app.actions.ActionResultCode
 import com.flowpilot.app.ui.util.labelRes
 import com.flowpilot.app.data.AutomationRepository
+import com.flowpilot.app.update.AppVersion
+import com.flowpilot.app.update.GitHubReleaseClient
+import com.flowpilot.app.update.UpdatePolicy
+import com.flowpilot.app.update.UpdateRelease
 import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
@@ -29,6 +34,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +55,12 @@ data class ManualRunResult(
     val failureCount: Int,
     val failureMessages: List<String>,
 )
+
+enum class UpdateCheckStatus {
+    IDLE,
+    UP_TO_DATE,
+    FAILED,
+}
 
 internal suspend fun duplicateRuleResult(duplicate: suspend () -> Automation?): Result<Automation> =
     try {
@@ -95,6 +107,106 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val geofenceDiagnostics: StateFlow<Map<String, GeofenceDiagnostic>> = repository.geofenceDiagnostics
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
+    private val currentVersion: AppVersion? = AppVersion.parse(BuildConfig.VERSION_NAME)
+    private val updateClient: GitHubReleaseClient? = currentVersion?.let(::GitHubReleaseClient)
+
+    val updateAutoCheck: StateFlow<Boolean> = repository.updatePreferences
+        .map { it.autoCheckEnabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private val _updateAvailable = MutableStateFlow<UpdateRelease?>(null)
+    val updateAvailable: StateFlow<UpdateRelease?> = _updateAvailable.asStateFlow()
+
+    private val _updateDialogVisible = MutableStateFlow(false)
+    val updateDialogVisible: StateFlow<Boolean> = _updateDialogVisible.asStateFlow()
+
+    private val _updateBannerDismissed = MutableStateFlow(false)
+    val updateBannerDismissed: StateFlow<Boolean> = _updateBannerDismissed.asStateFlow()
+
+    private val _updateChecking = MutableStateFlow(false)
+    val updateChecking: StateFlow<Boolean> = _updateChecking.asStateFlow()
+
+    private val _updateStatus = MutableStateFlow(UpdateCheckStatus.IDLE)
+    val updateStatus: StateFlow<UpdateCheckStatus> = _updateStatus.asStateFlow()
+
+    fun setUpdateAutoCheck(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setUpdateAutoCheck(enabled)
+        }
+    }
+
+    fun checkForUpdates(manual: Boolean = true) {
+        if (_updateChecking.value) return
+        val client = updateClient
+        if (client == null) {
+            if (manual) _updateStatus.value = UpdateCheckStatus.FAILED
+            return
+        }
+        _updateChecking.value = true
+        if (manual) _updateStatus.value = UpdateCheckStatus.IDLE
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            try {
+                val release = client.latestUpdate().getOrElse { throw it }
+                repository.recordUpdateCheck(now)
+                if (release == null) {
+                    if (manual) _updateStatus.value = UpdateCheckStatus.UP_TO_DATE
+                    return@launch
+                }
+                val prefs = repository.updatePreferences.first()
+                if (UpdatePolicy.shouldPrompt(
+                        release = release,
+                        skippedVersion = prefs.skippedVersion,
+                        remindAfter = prefs.remindAfter,
+                        now = now,
+                        manual = manual,
+                    )
+                ) {
+                    _updateAvailable.value = release
+                    _updateBannerDismissed.value = false
+                    _updateDialogVisible.value = true
+                    _updateStatus.value = UpdateCheckStatus.IDLE
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                repository.recordUpdateCheck(now)
+                if (manual) _updateStatus.value = UpdateCheckStatus.FAILED
+            } finally {
+                _updateChecking.value = false
+            }
+        }
+    }
+
+    fun openUpdateDialog() {
+        if (_updateAvailable.value != null) _updateDialogVisible.value = true
+    }
+
+    fun dismissUpdateDialog() {
+        _updateDialogVisible.value = false
+    }
+
+    fun dismissUpdateBanner() {
+        _updateBannerDismissed.value = true
+    }
+
+    fun remindUpdateLater() {
+        _updateDialogVisible.value = false
+        _updateAvailable.value = null
+        viewModelScope.launch {
+            repository.remindUpdateAfter(System.currentTimeMillis() + UpdatePolicy.REMIND_INTERVAL_MS)
+        }
+    }
+
+    fun skipUpdateVersion() {
+        val release = _updateAvailable.value ?: return
+        _updateDialogVisible.value = false
+        _updateAvailable.value = null
+        viewModelScope.launch {
+            repository.skipUpdateVersion(release.tagName)
+        }
+    }
+
     fun setAppLanguage(language: String) {
         viewModelScope.launch {
             repository.setAppLanguage(language)
@@ -116,6 +228,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         observeRules()
         observeGeofenceDiagnostics()
         AutomationService.loadFailure(app)
+        autoCheckForUpdatesIfDue()
         refreshPermissions()
         try {
             rikka.shizuku.Shizuku.addBinderReceivedListenerSticky {
@@ -125,6 +238,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         } catch (_: Throwable) {}
+    }
+
+    private fun autoCheckForUpdatesIfDue() {
+        viewModelScope.launch {
+            val prefs = repository.updatePreferences.first()
+            if (!prefs.autoCheckEnabled) return@launch
+            if (!UpdatePolicy.isAutoCheckDue(prefs.lastCheckAt, System.currentTimeMillis())) return@launch
+            checkForUpdates(manual = false)
+        }
     }
 
     private fun observeRules() {

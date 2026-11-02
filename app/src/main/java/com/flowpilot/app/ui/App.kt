@@ -1,5 +1,6 @@
 package com.flowpilot.app.ui
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -16,19 +17,25 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.flowpilot.app.R
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.ui.components.UpdateDialog
 import com.flowpilot.app.ui.screens.CreateScreen
 import com.flowpilot.app.ui.screens.DetailScreen
 import com.flowpilot.app.ui.screens.HistoryScreen
 import com.flowpilot.app.ui.screens.HomeScreen
 import com.flowpilot.app.ui.screens.PermissionsScreen
 import com.flowpilot.app.ui.screens.SettingsScreen
+import com.flowpilot.app.update.UpdateDownloadResult
+import com.flowpilot.app.update.UpdateDownloader
 
 enum class Page { HOME, SETTINGS, CREATE, PERMISSIONS, HISTORY, DETAIL }
 
@@ -40,6 +47,9 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     var inspectedRule by remember { mutableStateOf<Automation?>(null) }
     var inspectReturnPage by remember { mutableStateOf(Page.HOME) }
     var initialPreset by remember { mutableStateOf<com.flowpilot.app.data.model.AutomationPreset?>(null) }
+    val context = LocalContext.current
+    val updateAvailable by vm.updateAvailable.collectAsState()
+    val updateDialogVisible by vm.updateDialogVisible.collectAsState()
 
     BackHandler(enabled = page != Page.HOME) {
         if (page == Page.DETAIL && inspectedRule != null) {
@@ -126,6 +136,44 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                 page = inspectReturnPage
             }
         }
+    }
+
+    val update = updateAvailable
+    if (updateDialogVisible && update != null) {
+        UpdateDialog(
+            update = update,
+            onDismiss = vm::dismissUpdateDialog,
+            onDownload = {
+                when (val result = UpdateDownloader.start(context, update)) {
+                    is UpdateDownloadResult.Started -> {
+                        Toast.makeText(context, R.string.update_download_started, Toast.LENGTH_SHORT).show()
+                        vm.dismissUpdateDialog()
+                    }
+                    UpdateDownloadResult.PermissionRequired -> {
+                        Toast.makeText(
+                            context,
+                            R.string.update_install_permission_required,
+                            Toast.LENGTH_LONG,
+                        ).show()
+                        UpdateDownloader.openInstallPermissionSettings(context)
+                    }
+                    is UpdateDownloadResult.Failed -> {
+                        Toast.makeText(context, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+                    }
+                    UpdateDownloadResult.NoAsset -> {
+                        Toast.makeText(context, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+                        UpdateDownloader.openReleasePage(context, update)
+                        vm.dismissUpdateDialog()
+                    }
+                }
+            },
+            onOpenRelease = {
+                UpdateDownloader.openReleasePage(context, update)
+                vm.dismissUpdateDialog()
+            },
+            onRemindLater = vm::remindUpdateLater,
+            onSkipVersion = vm::skipUpdateVersion,
+        )
     }
 }
 
