@@ -247,6 +247,24 @@ FlowPilot declares sensitive permissions solely to power explicit automation fea
 
 ---
 
+## 🔐 Verify a Release APK
+
+Releases built by GitHub Actions publish a build provenance attestation for the signed APK. Verify the artifact you downloaded against this repository:
+
+```bash
+gh attestation verify FlowPilot-vX.Y.Z.apk --repo emi-ran/flowpilot
+apksigner verify --print-certs FlowPilot-vX.Y.Z.apk
+sha256sum FlowPilot-vX.Y.Z.apk
+```
+
+- `gh attestation verify` (GitHub CLI 2.49+) confirms that this repository's release workflow attested the APK digest, and prints the source commit. Releases published before the attestation step was added have no attestation.
+- `apksigner verify --print-certs` must report `Signer #1 certificate SHA-256 digest: f1e45d3a669954ddfb858d5d3a964a2fa7ba3d00bcb0e65b5ced1ca6d5a79f2b`.
+- `sha256sum` must match the published `.sha256` asset and the checksum in the release notes.
+
+If any check fails, do not install the APK. Gradle dependency checksums, repository filters, and the complete procedure are documented in [`docs/SUPPLY_CHAIN.md`](docs/SUPPLY_CHAIN.md).
+
+---
+
 ## 📦 Backup & Recovery
 
 | Mode | Format | Security | Ideal For |

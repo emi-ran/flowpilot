@@ -13,6 +13,8 @@ All notable FlowPilot changes are documented here.
 ### Security
 
 - Reject imported condition trees deeper than 4 group levels, with more than 32 leaves, or containing empty groups before any DataStore mutation; existing flat-only payloads still import unchanged.
+- Release APKs now carry a GitHub build provenance attestation created after the signed APK passes package/version identity, `apksigner` certificate-digest, and SHA-256 checks and before the release assets are uploaded. If attestation cannot be created, the release job fails. Verification with `gh attestation verify`, `apksigner verify --print-certs`, and `sha256sum` is documented in `docs/SUPPLY_CHAIN.md`.
+- Gradle dependency verification checksums, generated and reviewed as `gradle/verification-metadata.xml`, now cover plugins, artifact metadata, and the app dependency graph; Gradle's default strict mode fails local and CI builds on a missing or mismatched checksum. `google()` is content-filtered to the Android/Gradle groups, and every workflow `uses:` stays pinned to a full commit SHA. Dependency lockfiles are intentionally not used; see `docs/SUPPLY_CHAIN.md` for the rationale.
 - Keep geofence event retention separate from location freshness: reuse coordinates only for fixes under 60 seconds old at action dispatch, otherwise fetch a fresh location or omit location template values.
 - Validate normal and encrypted imports before changing stored rules, rejecting invalid rule IDs, unsafe references, invalid active settings, and oversized documents or fields. Imported rules receive new IDs; failed imports preserve existing rules.
 
@@ -26,6 +28,7 @@ All notable FlowPilot changes are documented here.
 - Home uses the same neutral treatment: the engine status card and rule cards are neutral surfaces with a green status accent or per-trigger accent instead of a blue fill, rule detail lines use muted text, and "Available" capability pills use a muted success green.
 - Shake force is now configured per rule: selecting the "Device shaken" trigger reveals a strength slider (6–32 m/s² above gravity, default 20) so each automation can require a light or a firm shake. A hysteresis re-arm keeps one continuous shake from firing multiple times, so a single shake now toggles the flashlight once.
 - Rule editor (create and edit) uses one neutral card language: trigger, condition, action, and advanced-options cards share a bordered low surface, section headers read as letter-spaced labels with a muted hint ("CONDITIONS optional · all must match") and neutral reorder hint, action numbers and delay chips no longer use the blue primary fill, the redundant action subtitle is gone, and the footer separates Cancel/Save with a hairline divider and taller buttons.
+- Privileged actions now verify platform state instead of trusting command exit codes: NFC and Battery Saver poll the live adapter/setting after the command and fail honestly on mismatch or an unreadable state, while Lock Screen reports verified completion when the display becomes non-interactive and otherwise reports the command as accepted without claiming completion.
 
 ## [1.1.0] - 2026-09-15
 
