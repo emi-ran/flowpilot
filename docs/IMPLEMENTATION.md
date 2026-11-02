@@ -79,6 +79,8 @@ Unit tests cover legacy normalization and omitted-null JSON, heterogeneous match
 
 Root is never required anywhere.
 
+Shizuku actions normally run through a non-daemon `UserService` (`CommandUserService`) that enforces the fixed command allowlist. Some Android 16 ROMs crash that service while Shizuku starts it (`NullPointerException` in `LoadedApk.makeApplicationInner`, Shizuku issue #2541). `ShizukuShell` now detects the failed bind and sends the same allowlisted command through Shizuku's `IShizukuService.newProcess` instead, with the same 10-second timeout, merged stdout/stderr and exit code. The fallback is used only when no UserService binder exists; the app retries the normal path after a binder restart or 60 seconds, and unlisted commands are rejected before either path runs.
+
 Bluetooth trigger configuration stores selected bonded device address plus cached display name. `BLUETOOTH_CONNECT` is required on Android 12+ for bonded-device access and ACL broadcast device metadata. FlowPilot never starts discovery, pairs devices, or persists device-list history. `BluetoothDevice.ACTION_ACL_CONNECTED` / `ACTION_ACL_DISCONNECTED` broadcasts are dynamically registered only while engine runs; tracker does not query or replay current connections at startup and dedupes consecutive state per address.
 
 ## Architecture (plain, readable)
@@ -155,7 +157,7 @@ app/src/main/java/com/flowpilot/app/
     WebhookTemplateRenderer.kt        pure one-pass header/body substitution for known webhook variables
     TtsManager.kt                     offline voice discovery and pre-synthesized cache management
     TtsExecutor.kt                    offline cached TTS playback
-    ShizukuShell.kt                  Shizuku connection, safe permission check, non-daemon UserService, and the fixed-argument `HotspotBridge` process launch
+    ShizukuShell.kt                  Shizuku connection, safe permission check, non-daemon UserService, allowlisted `newProcess` fallback when the UserService cannot start, and the fixed-argument `HotspotBridge` process launch
   permission/
     CapabilityManager.kt             per-action and setup checks
 tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foreground reduction, encrypted persistence, webhook templates, manual execution summaries, action executors, geofence queue persistence, diff calculation, config validation, prerequisites evaluation, and evaluator.
