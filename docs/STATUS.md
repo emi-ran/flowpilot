@@ -45,11 +45,11 @@ Last updated: 2026-11-02
 
 ## Implemented; device validation pending
 
-- Multiple OR triggers (#5): up to five independently configured, reorderable triggers per rule; typed versioned lists, legacy single-trigger JSON preservation, actual source enum/index in history/templates, one shared cooldown, callback dedupe and enabled-trigger listener union. Migration/matching/backup/import/demand unit coverage added; builds/tests and Xiaomi app + Wi-Fi, engine-restart and disabled-rule smoke verification remain pending.
+- Multiple OR triggers (#5): up to five independently configured, reorderable triggers per rule; typed versioned lists, legacy single-trigger JSON preservation, actual source enum/index in history/templates, one shared cooldown, callback dedupe and enabled-trigger listener union. Unit tests, `lintDebug` and `assembleDebug` pass locally; Xiaomi app + Wi-Fi, engine-restart and disabled-rule device smoke verification remains pending.
 - Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions (unit tests passed; device smoke tests pending):
   - Time interval filtering with overnight span support (e.g. 23:00 - 07:00 crossing midnight).
   - Day of week filtering with Daily, Weekdays, Weekends, and custom day toggles.
-- Nested AND / OR / NOT condition groups (unit tests added; build and device validation pending):
+- Nested AND / OR / NOT condition groups (unit tests, `lintDebug` and `assembleDebug` pass locally; device validation pending):
   - `Automation.conditionTree` supports recursive groups with a per-group combinator, negation, and leaf conditions; rules without a tree keep the legacy flat-AND list unchanged.
   - Create/Edit expose a Match AND/OR selector that converts the flat list into a root group, nested group editing with a collapsed summary, and an AND/OR control plus NOT toggle per group. Add actions are disabled once a tree reaches the 32-leaf import limit.
   - Import rejects trees deeper than 4 levels, trees with more than 32 leaves, and empty groups before any mutation; legacy payloads without a tree still import.
