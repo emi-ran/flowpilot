@@ -280,9 +280,9 @@ Debug builds create no release client, skip automatic and manual checks, and hid
 
 ## Build / verify
 
-- `.\gradlew.bat assembleDebug --no-daemon` -> APK at app/build/outputs/apk/debug/app-debug.apk
+- `.\gradlew.bat assembleDebug --no-daemon` -> APK at app/build/outputs/apk/debug/app-debug.apk. Debug builds use `applicationIdSuffix = ".debug"`, so the package is `com.flowpilot.app.debug`, the launcher label is "FlowPilot Dev", and `versionName` ends with `-dev`; release stays `com.flowpilot.app`.
 - `.\gradlew.bat testDebugUnitTest --no-daemon` (Robolectric) and `.\gradlew.bat lintDebug --no-daemon`.
-- Per `AGENTS.md`, the primary agent runs Gradle verification; after a successful build it installs the debug APK on the connected target and launches `com.flowpilot.app`. Subagents do not compile, test, build, install, or launch.
+- Per `AGENTS.md`, the primary agent runs Gradle verification; after a successful build it installs the debug APK on the connected target and launches `com.flowpilot.app.debug`. Subagents do not compile, test, build, install, or launch.
 - No TODO placeholders for core paths; compile is the completion gate.
 
 ### Import trust boundary

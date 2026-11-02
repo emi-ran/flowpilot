@@ -344,6 +344,8 @@ Install directly to your connected device:
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
+Debug builds install as **FlowPilot Dev** with application ID `com.flowpilot.app.debug`; the release app keeps `com.flowpilot.app`, so both can stay installed side by side. Grant Shizuku, notification access, and any other privileged permission to the debug app separately. Debug builds skip release update checks.
+
 ---
 
 ## 🤝 Contributing

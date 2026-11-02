@@ -344,6 +344,8 @@ Cihazınıza doğrudan ADB ile yükleyin:
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
+Debug derlemeleri **FlowPilot Dev** adıyla ve `com.flowpilot.app.debug` uygulama kimliğiyle kurulur; release uygulaması `com.flowpilot.app` olarak kalır, böylece ikisi yan yana durabilir. Shizuku, bildirim erişimi ve diğer ayrıcalıklı izinleri debug uygulamasına ayrıca verin. Debug derlemeleri release güncelleme kontrollerini atlar.
+
 ---
 
 ## 🤝 Katkıda Bulunma
