@@ -8,7 +8,7 @@ class AutomationPresetsTest {
     @Test
     fun `all presets have unique ids and valid templates`() {
         val presets = AutomationPresets.all
-        assertEquals(9, presets.size)
+        assertEquals(14, presets.size)
 
         val uniqueIds = presets.map { it.id }.toSet()
         assertEquals(presets.size, uniqueIds.size)
@@ -26,7 +26,65 @@ class AutomationPresetsTest {
                 template.effectiveActions.size,
                 template.effectiveActionDelays.size,
             )
+            val tree = template.conditionTree
+            // The battery preset intentionally keeps flat conditions empty so readers that
+            // ignore the tree fall back to the old unguarded behaviour instead of requiring a charger.
+            if (tree != null && preset.id != "preset_battery_emergency") {
+                assertEquals(
+                    "Preset ${preset.id} must keep legacy conditions in sync with its tree",
+                    tree.flattenConditions(),
+                    template.conditions,
+                )
+            }
+            assertTrue(
+                "Preset ${preset.id} exceeds the multi-trigger limit",
+                template.normalizedTriggers().size in 1..TriggerDefinitions.MAX_TRIGGERS,
+            )
         }
+    }
+
+    @Test
+    fun `multi trigger presets combine independent sources`() {
+        val wakeUp = AutomationPresets.all.first { it.id == "preset_wake_up" }.template
+        assertEquals(
+            listOf(TriggerEvent.CHARGER_DISCONNECTED, TriggerEvent.SCREEN_ON),
+            wakeUp.normalizedTriggers().map { it.event },
+        )
+        assertTrue(wakeUp.effectiveActions.contains(ActionType.DND_OFF))
+
+        val nightQuiet = AutomationPresets.all.first { it.id == "preset_night_quiet" }.template
+        assertEquals(
+            listOf(TriggerEvent.TIME_SCHEDULE, TriggerEvent.SCREEN_OFF),
+            nightQuiet.normalizedTriggers().map { it.event },
+        )
+
+        val commute = AutomationPresets.all.first { it.id == "preset_commute_mode" }.template
+        assertEquals(
+            listOf(TriggerEvent.WIFI_DISCONNECTED, TriggerEvent.CHARGER_DISCONNECTED),
+            commute.normalizedTriggers().map { it.event },
+        )
+        assertEquals("Ev Wi-Fi", (commute.normalizedTriggers()[0] as TriggerDefinition.WifiDisconnected).wifiSsid)
+    }
+
+    @Test
+    fun `battery emergency preset skips charging and focus preset negates home wifi`() {
+        val emergency = AutomationPresets.all.first { it.id == "preset_battery_emergency" }.template
+        assertTrue("Flat conditions must stay empty for older readers", emergency.conditions.isEmpty())
+        val guard = emergency.conditionTree as ConditionNode.Group
+        assertTrue(guard.negate)
+        assertEquals(ConditionType.CHARGER_CONNECTED, (guard.children.single() as ConditionNode.Leaf).condition.type)
+
+        val focus = AutomationPresets.all.first { it.id == "preset_focus_mode" }.template
+        val root = focus.conditionTree as ConditionNode.Group
+        assertEquals(ConditionCombinator.AND, root.combinator)
+        assertFalse(root.negate)
+        assertEquals(ConditionType.TIME_BETWEEN, (root.children[0] as ConditionNode.Leaf).condition.type)
+        val notHome = root.children[1] as ConditionNode.Group
+        assertTrue(notHome.negate)
+        val homeWifi = (notHome.children.single() as ConditionNode.Leaf).condition
+        assertEquals(ConditionType.WIFI_CONNECTED, homeWifi.type)
+        assertEquals("Ev Wi-Fi", homeWifi.wifiSsid)
+        assertTrue(focus.effectiveActions.contains(ActionType.DND_ON))
     }
 
     @Test

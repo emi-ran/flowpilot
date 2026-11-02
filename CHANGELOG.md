@@ -4,10 +4,13 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-02
+
 ### Added
 
 - Multiple OR triggers per rule (#5): Create/Edit can add, remove and reorder up to five independently configured trigger definitions. Existing single-trigger JSON stays unchanged; normal export/share and encrypted backup/restore preserve multi-trigger lists. Matching records the actual source and one-based source index, shares the rule cooldown across sources, and reconciles listeners from all enabled definitions. Unit coverage added; Xiaomi app + Wi-Fi, restart and disabled-rule smoke tests remain pending.
 - Nested AND / OR / NOT condition groups: `Automation.conditionTree` adds recursive groups with per-group combinators, negation, empty-group semantics, and a 4-level depth guard. Rules without a tree keep the existing flat-AND `conditions` behavior, and the editor keeps `conditions` as a flattened leaf list for older readers.
+- Five new ready-to-use presets exercise the multi-trigger and nested-logic features: Morning Wake Up, Night Quiet, Morning Commute, Focus / Work Mode, and Night Screen Dimming. Preset cards now show the actual trigger count (`+N`) and an AND/OR marker when a preset ships a condition tree; Battery Saver Emergency only fires while unplugged.
 - Flashlight toggle action (`TORCH_TOGGLE`): turns the torch on when it is off and off when it is on, resolved from camera torch state callbacks so changes made by the system flashlight tile are respected. The "Shake for Flashlight" preset now switches the light instead of only turning it on.
 
 ### Security
@@ -20,6 +23,7 @@ All notable FlowPilot changes are documented here.
 
 ### Changed
 
+- The condition editor now keeps flat rules flat: "Add group" moved behind a single "Nested groups" entry, group headers compact to an "All of / Any of" menu plus NOT, unavailable add actions are hidden, and single-child groups left by older drafts flatten on open instead of rendering as a group inside a group.
 - Condition editing now opens in the legacy flat list with a Match AND/OR selector; choosing OR or adding a nested group converts it into a tree editor with per-group AND/OR segmented controls, a NOT toggle, add-condition/add-group actions, remove actions, and a compact summary when a group is collapsed. Add actions disable at the 32-leaf import limit, and the section hint now reads "optional · combine with AND / OR".
 - Preserve normal-import disabled states and encrypted-restore enabled states. When device-local TTS audio is unavailable, import the rule and prompt the user to regenerate its audio; available verified audio is copied to the new rule ID.
 - Redesigned the preset sheet: cards are neutral with a per-category accent limited to the icon tile and dot, category filters wrap instead of scrolling off-screen, each card keeps one filled "Use" action, and the drag handle and header now clear the status bar and camera cutout.

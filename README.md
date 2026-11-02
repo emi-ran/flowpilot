@@ -141,7 +141,12 @@ Start automating instantly with built-in recipes designed for everyday life:
 | :--- | :--- | :--- |
 | 🌙 **Bedtime Routine** | Time reaches 23:30 | Enables Dark Mode, sets Silent profile, turns on DND, dims screen to 10% |
 | 🔋 **Full Battery Protection** | Battery reaches 100% | Speaks offline unplug voice reminder & pushes persistent notification |
-| ⚡ **Battery Saver Emergency** | Battery drops below 15% | Turns on Battery Saver, disables Bluetooth, lowers brightness, enables Dark Mode |
+| ⚡ **Battery Saver Emergency** | Battery drops below 15% while unplugged | Turns on Battery Saver, disables Bluetooth, lowers brightness, enables Dark Mode |
+| ☀️ **Morning Wake Up** | Charger unplugged OR screen on (weekdays 05:00–10:00) | Turns off DND, restores normal sound, sets brightness to 70% |
+| 🌙 **Night Quiet** | 23:00 schedule OR screen off (22:00–08:00) | Turns on DND, silences sound profile, drops media volume to 20% |
+| 🚗 **Morning Commute** | Home Wi-Fi lost OR charger unplugged (06:00–10:00) | Enables Mobile Data, restores normal sound, sets media volume to 80% |
+| 🎯 **Focus / Work Mode** | Weekdays 09:00, not on home Wi-Fi | Turns on DND and switches sound to vibrate |
+| 🌃 **Night Screen Dimming** | Screen on 00:00–06:00 with battery below 60% | Dims brightness to 10%, enables Dark Theme |
 | 🔕 **Flip to Silence** | Phone placed face-down | Dual sensor check (Proximity + Gravity Z-axis) enables DND with a haptic pulse |
 | 🔦 **Shake for Flashlight** | Firm phone shake | Toggles rear camera torch with tactile haptic feedback |
 | 🎬 **Cinema / Night Reading** | Ambient light drops < 5 lx | Dims brightness to minimum and switches system to Dark Theme |
@@ -175,7 +180,7 @@ A rule can combine up to five independently configured triggers with OR semantic
 ---
 
 ### 2. Conditions (Logic Gates)
-Rules execute only when all specified conditions (AND logic) are satisfied:
+Rules execute only when their conditions pass. Combine them with AND or OR, nest groups, and negate any group with NOT:
 
 - ⏳ **Time Window:** Run only between specific hours (e.g., 23:00 to 07:00), with full midnight-crossing support.
 - 📅 **Days of the Week:** Restrict to weekdays, weekends, or custom individual days.
@@ -183,6 +188,7 @@ Rules execute only when all specified conditions (AND logic) are satisfied:
 - ⚡ **Charging State:** Require device to be currently charging or discharging.
 - 📲 **Screen State:** Require screen to be on or off.
 - 📶 **Wi-Fi Network:** Require connection to a specific Wi-Fi network (SSID).
+- 🧩 **Nested Logic:** Group conditions with per-group AND/OR, negate a group, and nest up to four levels.
 
 ---
 

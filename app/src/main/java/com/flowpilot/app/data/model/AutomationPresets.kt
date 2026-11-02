@@ -106,6 +106,16 @@ object AutomationPresets {
                 name = "Acil Pil Tasarrufu",
                 triggerEvent = TriggerEvent.BATTERY_BELOW,
                 batteryLevel = 15,
+                // Below 15% while charging usually recovers on its own, so only act unplugged.
+                // `conditions` stays empty: a reader that ignores the tree keeps the old
+                // behaviour instead of applying an inverted flat list.
+                conditionTree = ConditionNode.Group(
+                    combinator = ConditionCombinator.AND,
+                    negate = true,
+                    children = listOf(
+                        ConditionNode.Leaf(RuleCondition(type = ConditionType.CHARGER_CONNECTED))
+                    ),
+                ),
                 actions = listOf(
                     ActionType.BATTERY_SAVER_ON,
                     ActionType.SET_SCREEN_BRIGHTNESS,
@@ -252,6 +262,216 @@ object AutomationPresets {
                 actionDelays = listOf(0, 5),
                 smsRecipient = "\${sms.sender}",
                 smsMessage = "Şu anki konumum: \${location.maps_url} (Pil: %\${batteryPercent})",
+                createdAt = System.currentTimeMillis(),
+            ),
+        ),
+        AutomationPreset(
+            id = "preset_wake_up",
+            title = "Sabah Uyanışı",
+            description = "Hafta içi 05:00-10:00 arasında şarjdan çekince veya ekranı açınca Rahatsız Etmeyin'i kapatır, sesi normale alır ve parlaklığı %70 yapar.",
+            titleRes = R.string.preset_wake_up_title,
+            descriptionRes = R.string.preset_wake_up_desc,
+            category = PresetCategory.ROUTINE,
+            iconName = "WbSunny",
+            template = Automation(
+                id = UUID.randomUUID().toString(),
+                name = "Sabah Uyanışı",
+                triggerEvent = TriggerEvent.CHARGER_DISCONNECTED,
+                triggerDefinitions = TriggerDefinitions(
+                    items = listOf(
+                        TriggerDefinition.ChargerDisconnected,
+                        TriggerDefinition.ScreenOn,
+                    )
+                ),
+                conditions = listOf(
+                    RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 5 * 60, endMinute = 10 * 60),
+                    RuleCondition(type = ConditionType.DAYS_OF_WEEK, days = setOf(1, 2, 3, 4, 5)),
+                ),
+                conditionTree = ConditionNode.Group(
+                    combinator = ConditionCombinator.AND,
+                    children = listOf(
+                        ConditionNode.Leaf(
+                            RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 5 * 60, endMinute = 10 * 60)
+                        ),
+                        ConditionNode.Leaf(
+                            RuleCondition(type = ConditionType.DAYS_OF_WEEK, days = setOf(1, 2, 3, 4, 5))
+                        ),
+                    ),
+                ),
+                actions = listOf(
+                    ActionType.DND_OFF,
+                    ActionType.SOUND_PROFILE_NORMAL,
+                    ActionType.SET_SCREEN_BRIGHTNESS,
+                ),
+                actionDelays = listOf(0, 0, 0),
+                screenBrightnessPercent = 70,
+                cooldownMinutes = 60,
+                createdAt = System.currentTimeMillis(),
+            ),
+        ),
+        AutomationPreset(
+            id = "preset_night_quiet",
+            title = "Gece Sessizliği",
+            description = "Saat 23:00'te veya gece ekranı kapatınca Rahatsız Etmeyin'i açar, sesi tamamen kısar ve medya sesini %20'ye indirir.",
+            titleRes = R.string.preset_night_quiet_title,
+            descriptionRes = R.string.preset_night_quiet_desc,
+            category = PresetCategory.ROUTINE,
+            iconName = "DoNotDisturbOn",
+            template = Automation(
+                id = UUID.randomUUID().toString(),
+                name = "Gece Sessizliği",
+                triggerEvent = TriggerEvent.TIME_SCHEDULE,
+                triggerDefinitions = TriggerDefinitions(
+                    items = listOf(
+                        TriggerDefinition.Schedule(
+                            scheduledMinute = 23 * 60,
+                            scheduledDays = setOf(1, 2, 3, 4, 5, 6, 7),
+                        ),
+                        TriggerDefinition.ScreenOff,
+                    )
+                ),
+                scheduledMinute = 23 * 60,
+                scheduledDays = setOf(1, 2, 3, 4, 5, 6, 7),
+                conditions = listOf(
+                    RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 22 * 60, endMinute = 8 * 60),
+                ),
+                conditionTree = ConditionNode.Group(
+                    combinator = ConditionCombinator.AND,
+                    children = listOf(
+                        ConditionNode.Leaf(
+                            RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 22 * 60, endMinute = 8 * 60)
+                        ),
+                    ),
+                ),
+                actions = listOf(
+                    ActionType.DND_ON,
+                    ActionType.SOUND_PROFILE_SILENT,
+                    ActionType.SET_MEDIA_VOLUME,
+                ),
+                actionDelays = listOf(0, 0, 0),
+                mediaVolumePercent = 20,
+                cooldownMinutes = 60,
+                createdAt = System.currentTimeMillis(),
+            ),
+        ),
+        AutomationPreset(
+            id = "preset_commute_mode",
+            title = "Sabah Yola Çıkış",
+            description = "Sabah 06:00-10:00 arasında ev Wi-Fi'sinden ayrılınca veya şarjdan çekince mobil veriyi açar, sesi normale alır ve medya sesini %80 yapar.",
+            titleRes = R.string.preset_commute_title,
+            descriptionRes = R.string.preset_commute_desc,
+            category = PresetCategory.CONNECTIVITY,
+            iconName = "DirectionsCar",
+            template = Automation(
+                id = UUID.randomUUID().toString(),
+                name = "Sabah Yola Çıkış",
+                triggerEvent = TriggerEvent.WIFI_DISCONNECTED,
+                triggerDefinitions = TriggerDefinitions(
+                    items = listOf(
+                        TriggerDefinition.WifiDisconnected(wifiSsid = "Ev Wi-Fi"),
+                        TriggerDefinition.ChargerDisconnected,
+                    )
+                ),
+                wifiSsid = "Ev Wi-Fi",
+                conditions = listOf(
+                    RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 6 * 60, endMinute = 10 * 60),
+                ),
+                conditionTree = ConditionNode.Group(
+                    combinator = ConditionCombinator.AND,
+                    children = listOf(
+                        ConditionNode.Leaf(
+                            RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 6 * 60, endMinute = 10 * 60)
+                        ),
+                    ),
+                ),
+                actions = listOf(
+                    ActionType.MOBILE_DATA_ON,
+                    ActionType.SOUND_PROFILE_NORMAL,
+                    ActionType.SET_MEDIA_VOLUME,
+                ),
+                actionDelays = listOf(0, 0, 0),
+                mediaVolumePercent = 80,
+                cooldownMinutes = 15,
+                createdAt = System.currentTimeMillis(),
+            ),
+        ),
+        AutomationPreset(
+            id = "preset_focus_mode",
+            title = "Odak / Çalışma Modu",
+            description = "Hafta içi 09:00'da, 09:00-18:00 aralığındaysanız ve ev Wi-Fi'sinde değilseniz Rahatsız Etmeyin'i açar ve sesi titreşime alır.",
+            titleRes = R.string.preset_focus_title,
+            descriptionRes = R.string.preset_focus_desc,
+            category = PresetCategory.ROUTINE,
+            iconName = "Work",
+            template = Automation(
+                id = UUID.randomUUID().toString(),
+                name = "Odak / Çalışma Modu",
+                triggerEvent = TriggerEvent.TIME_SCHEDULE,
+                scheduledMinute = 9 * 60,
+                scheduledDays = setOf(1, 2, 3, 4, 5),
+                conditions = listOf(
+                    RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 9 * 60, endMinute = 18 * 60),
+                    RuleCondition(type = ConditionType.WIFI_CONNECTED, wifiSsid = "Ev Wi-Fi"),
+                ),
+                conditionTree = ConditionNode.Group(
+                    combinator = ConditionCombinator.AND,
+                    children = listOf(
+                        ConditionNode.Leaf(
+                            RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 9 * 60, endMinute = 18 * 60)
+                        ),
+                        ConditionNode.Group(
+                            combinator = ConditionCombinator.AND,
+                            negate = true,
+                            children = listOf(
+                                ConditionNode.Leaf(
+                                    RuleCondition(type = ConditionType.WIFI_CONNECTED, wifiSsid = "Ev Wi-Fi")
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                actions = listOf(
+                    ActionType.DND_ON,
+                    ActionType.SOUND_PROFILE_VIBRATE,
+                ),
+                actionDelays = listOf(0, 0),
+                cooldownMinutes = 30,
+                createdAt = System.currentTimeMillis(),
+            ),
+        ),
+        AutomationPreset(
+            id = "preset_night_dim",
+            title = "Gece Ekran Kısma",
+            description = "Gece 00:00-06:00 arasında ekranı açınca, pil %60'ın altındaysa parlaklığı %10'a düşürür ve koyu temayı açar.",
+            titleRes = R.string.preset_night_dim_title,
+            descriptionRes = R.string.preset_night_dim_desc,
+            category = PresetCategory.ROUTINE,
+            iconName = "Brightness4",
+            template = Automation(
+                id = UUID.randomUUID().toString(),
+                name = "Gece Ekran Kısma",
+                triggerEvent = TriggerEvent.SCREEN_ON,
+                conditions = listOf(
+                    RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 0, endMinute = 6 * 60),
+                    RuleCondition(type = ConditionType.BATTERY_BELOW, batteryLevel = 60),
+                ),
+                conditionTree = ConditionNode.Group(
+                    combinator = ConditionCombinator.AND,
+                    children = listOf(
+                        ConditionNode.Leaf(
+                            RuleCondition(type = ConditionType.TIME_BETWEEN, startMinute = 0, endMinute = 6 * 60)
+                        ),
+                        ConditionNode.Leaf(
+                            RuleCondition(type = ConditionType.BATTERY_BELOW, batteryLevel = 60)
+                        ),
+                    ),
+                ),
+                actions = listOf(
+                    ActionType.SET_SCREEN_BRIGHTNESS,
+                    ActionType.DARK_THEME_ON,
+                ),
+                actionDelays = listOf(0, 0),
+                screenBrightnessPercent = 10,
                 createdAt = System.currentTimeMillis(),
             ),
         ),

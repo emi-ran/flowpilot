@@ -31,6 +31,7 @@ import com.flowpilot.app.R
 import com.flowpilot.app.data.model.AutomationPreset
 import com.flowpilot.app.data.model.AutomationPresets
 import com.flowpilot.app.data.model.PresetCategory
+import com.flowpilot.app.data.model.normalizedTriggers
 import com.flowpilot.app.ui.util.localizedLabel
 
 /**
@@ -209,6 +210,23 @@ private fun PresetCardItem(
     } else {
         preset.category.lightAccent
     }
+    val triggers = preset.template.normalizedTriggers()
+    val extraTriggers = triggers.size - 1
+    val extraTriggersLabel = if (extraTriggers > 0) {
+        stringResource(R.string.preset_more_triggers, extraTriggers)
+    } else {
+        null
+    }
+    val logicLabel = if (preset.template.conditionTree != null) {
+        stringResource(R.string.preset_logic_and_or)
+    } else {
+        null
+    }
+    val metaLabel = listOfNotNull(
+        triggers.first().event.localizedLabel() + extraTriggersLabel?.let { " $it" }.orEmpty(),
+        logicLabel,
+        stringResource(R.string.actions_count, preset.template.effectiveActions.size),
+    ).joinToString(" · ")
 
     Surface(
         shape = RoundedCornerShape(18.dp),
@@ -289,8 +307,7 @@ private fun PresetCardItem(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = preset.template.triggerEvent.localizedLabel() + " · " +
-                            stringResource(R.string.actions_count, preset.template.effectiveActions.size),
+                        text = metaLabel,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,

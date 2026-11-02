@@ -4,6 +4,7 @@ Last updated: 2026-11-02
 
 ## Build state
 
+- 2.0.0 release gate passed on 2026-11-02: `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false` and `python scripts/test_lint_resource_contracts.py`. Version code is 5, version name is 2.0.0.
 - Security advisory remediation passed local release gate on 2026-09-14: `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`. Debug APK device install remains blocked because wireless ADB target is offline.
 - Debug/release builds, unit tests, and lint passed: `.\gradlew.bat testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`.
 - Resource contract test passed: `python scripts/test_lint_resource_contracts.py`.
@@ -45,6 +46,7 @@ Last updated: 2026-11-02
 
 ## Implemented; device validation pending
 
+- Preset library expansion and the simplified condition editor: five presets use OR triggers and nested/NOT conditions, preset cards show trigger counts plus an AND/OR marker, and flat rules keep a single add row while single-child groups flatten on open. Unit tests, `lintDebug` and `assembleRelease` pass locally; the sheet and hands-on editing were not verified on a device because the wireless ADB target stayed offline.
 - Multiple OR triggers (#5): up to five independently configured, reorderable triggers per rule; typed versioned lists, legacy single-trigger JSON preservation, actual source enum/index in history/templates, one shared cooldown, callback dedupe and enabled-trigger listener union. Unit tests, `lintDebug` and `assembleDebug` pass locally; Xiaomi app + Wi-Fi, engine-restart and disabled-rule device smoke verification remains pending.
 - Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions (unit tests passed; device smoke tests pending):
   - Time interval filtering with overnight span support (e.g. 23:00 - 07:00 crossing midnight).
