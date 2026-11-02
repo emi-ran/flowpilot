@@ -1,9 +1,10 @@
 # FlowPilot Status
 
-Last updated: 2026-11-02
+Last updated: 2026-11-03
 
 ## Build state
 
+- In-app update checks implemented: optional daily GitHub Releases check, manual check, notes dialog with skip/remind, trusted APK download, DownloadManager completion receiver, and installer notification. Unit tests cover version parsing, release parsing/URL trust, prompt policy, notes formatting, and filename sanitization. Xiaomi 15T Pro (Android 16) preview smoke test: auto check showed v2.0.0, Skip removed the banner, manual check re-showed the skipped version, Download & Install downloaded the 2.6 MB GitHub APK, and the system installer opened at its confirmation screen. Update checker gate passed on 2026-11-03: `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false` plus `python scripts/test_lint_resource_contracts.py`. Not verified: installing a real 1.1.0 → 2.0.0 signature path, blocked background-activity notification fallback, or signed release build.
 - Hotspot actions branch passed `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false` plus `python scripts/test_lint_resource_contracts.py` on 2026-11-02. The R8-minified release APK retains `HotspotBridge`.
 - 2.0.0 release gate passed on 2026-11-02: `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false` and `python scripts/test_lint_resource_contracts.py`. Version code is 5, version name is 2.0.0.
 - Security advisory remediation passed local release gate on 2026-09-14: `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`. Debug APK device install remains blocked because wireless ADB target is offline.

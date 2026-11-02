@@ -30,6 +30,7 @@ import com.flowpilot.app.data.backup.BackupManager
 import com.flowpilot.app.data.backup.ImportStrategy
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.ui.AppViewModel
+import com.flowpilot.app.ui.UpdateCheckStatus
 import com.flowpilot.app.ui.components.FollowSwitch
 import com.flowpilot.app.ui.util.labelRes
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +57,20 @@ fun SettingsScreen(
     val appTheme by vm.appTheme.collectAsState()
     var showThemePicker by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    val updateAutoCheck by vm.updateAutoCheck.collectAsState()
+    val updateChecking by vm.updateChecking.collectAsState()
+    val updateAvailable by vm.updateAvailable.collectAsState()
+    val updateStatus by vm.updateStatus.collectAsState()
+    val updateSubtitle = when {
+        updateChecking -> stringResource(R.string.settings_update_checking)
+        updateAvailable != null -> stringResource(
+            R.string.settings_update_available,
+            updateAvailable!!.versionLabel,
+        )
+        updateStatus == UpdateCheckStatus.UP_TO_DATE -> stringResource(R.string.settings_update_up_to_date)
+        updateStatus == UpdateCheckStatus.FAILED -> stringResource(R.string.settings_update_check_failed)
+        else -> null
+    }
 
     // Backup & Restore states
     var pendingImportContent by remember { mutableStateOf<String?>(null) }
@@ -210,6 +225,37 @@ fun SettingsScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
                 SettingRow(stringResource(R.string.settings_about), Icons.Default.Info, null) {
                     showAboutDialog = true
+                }
+            }
+
+            // Updates Card (release builds only: debug APKs cannot replace a signed release)
+            if (!BuildConfig.DEBUG) {
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    stringResource(R.string.settings_updates_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+                Text(
+                    stringResource(R.string.settings_updates_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
+                    SettingRow(
+                        label = stringResource(R.string.settings_auto_update_check),
+                        icon = Icons.Default.Update,
+                        checked = updateAutoCheck,
+                    ) { vm.setUpdateAutoCheck(it) }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+                    SettingRowWithSubtitle(
+                        label = stringResource(R.string.settings_check_updates),
+                        subtitle = updateSubtitle,
+                        icon = Icons.Default.Refresh,
+                        onClick = { vm.checkForUpdates() },
+                    )
                 }
             }
 
@@ -471,7 +517,7 @@ private fun ThemePickerDialog(
 @Composable
 private fun SettingRowWithSubtitle(
     label: String,
-    subtitle: String,
+    subtitle: String?,
     icon: ImageVector,
     onClick: () -> Unit,
 ) {
@@ -489,11 +535,13 @@ private fun SettingRowWithSubtitle(
                 .padding(start = 16.dp)
         ) {
             Text(label, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            if (subtitle != null) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
         Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }

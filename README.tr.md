@@ -13,7 +13,7 @@ Olay odaklı tetikleyiciler, Shizuku ile ayrıcalıklı sistem yetkileri ve akı
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Aray%C3%BCz-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Shizuku Desteği](https://img.shields.io/badge/Shizuku-Destekli-FB8C00)](https://shizuku.rikka.app)
-[![Gizlilik](https://img.shields.io/badge/Telemetri-S%C4%B1f%C4%B1r%20%2F%20%25100%20%C3%87evrimd%C4%B1%C5%9F%C4%B1-00C853)](#-gizlilik-ve-s%C4%B1f%C4%B1r-g%C3%BCven-ilkesi)
+[![Gizlilik](https://img.shields.io/badge/Telemetri-S%C4%B1f%C4%B1r%20%2F%20Varsay%C4%B1lan%20%C3%87evrimd%C4%B1%C5%9F%C4%B1-00C853)](#-gizlilik-ve-s%C4%B1f%C4%B1r-g%C3%BCven-ilkesi)
 [![Lisans: GPL-3.0](https://img.shields.io/badge/Lisans-GPL--3.0-blue.svg)](LICENSE)
 
 <br/>
@@ -63,8 +63,8 @@ Geleneksel Android otomasyon uygulamaları genelde karmaşık arayüzler, sürek
       <p>İşlemciyi uyanık tutan (wake-lock) gereksiz döngüler yoktur. Donanım sensörleri (ivmeölçer, yakınlık, ışık) ve yayın alıcıları <b>yalnızca aktif bir kural ihtiyaç duyduğunda</b> devreye girer, işi bitince anında kapanır.</p>
     </td>
     <td width="50%">
-      <h3>🔒 %100 Çevrimdışı &amp; Gizli</h3>
-      <p>Analitik, telemetri, uzaktaki sunucular veya hesap kayıtları yoktur. Her şey yalnızca cihazınızda gerçekleşir. Yapılandırılmış Webhook ve SMS eylemleri sadece sizin seçtiğiniz verileri iletir.</p>
+      <h3>🔒 Varsayılan Olarak Çevrimdışı &amp; Gizli</h3>
+      <p>Analitik, telemetri ve uzak hesap yoktur. İsteğe bağlı güncelleme kontrolü yalnızca açıksa GitHub'a sorgu gönderir ve Ayarlar'dan kapatılabilir. Webhook ve SMS eylemleri sadece sizin seçtiğiniz verileri iletir.</p>
     </td>
   </tr>
   <tr>
@@ -238,6 +238,7 @@ FlowPilot, yetkili işlemleri (Mobil Veri, Uçak Modu, GPS, Koyu Tema, Uygulama 
 FlowPilot kullanıcı gizliliğine tavizsiz bir bağlılıkla tasarlanmıştır:
 
 - 🚫 **Sıfır Telemetri:** Firebase Analytics, Sentry, uzaktan çökme raporlayıcıları veya takip SDK'ları yer almaz.
+- 🔄 **İsteğe Bağlı Güncelleme Kontrolü:** Açıksa FlowPilot herkese açık GitHub Releases API'sini günde en fazla bir kez okur; hesap veya cihaz kimliği göndermez. Ayarlar'dan kapatabilir, manuel kontrolü kullanabilirsiniz.
 - 📵 **Bulut Eşitlemesi Yok:** Kurallarınız, günlükleriniz ve anahtarlarınız asla üçüncü taraf bir buluta gönderilmez.
 - 🛡️ **Android Keystore Koruması:** Webhook şifreleri ve özel başlıklar AES-256-GCM ile Android Keystore içinde, cihaz desteklediğinde donanım destekli olarak korunur.
 - 🙈 **Kişisel Veri Maskeleme:** Telefon numaraları, webhook anahtarları ve gizli başlıklar arayüzde ve loglarda maskelenmiş olarak tutulur.
@@ -248,6 +249,7 @@ FlowPilot hassas izinleri yalnızca açık otomasyon özelliklerini yerine getir
 - `RECEIVE_SMS` & `SEND_SMS`: Yalnızca SMS tetikleyicisi ve doğrudan SMS gönderme eylemlerinde kullanılır.
 - `ACCESS_BACKGROUND_LOCATION`: Sıfır pil tüketimli donanım geofence takibi (`GeofencingClient`) ve kullanıcının kurguladığı konum şablonları için kullanılır.
 - `FOREGROUND_SERVICE_LOCATION`: Android 14+ sürümlerinde geofence ve aktif konum görevlerinin arka planda sorunsuz sürmesi için gereklidir.
+- `REQUEST_INSTALL_PACKAGES`: Yalnızca kullanıcı "İndir ve yükle"ye dokunduktan sonra resmi FlowPilot GitHub sürümünden indirilen APK için Android yükleyicisini açar. FlowPilot gözetimsiz indirme veya kurulum yapmaz.
 
 *Not: FlowPilot, bu temel otomasyon izinlerinden feragat etmemek adına Google Play Store dağıtımı hedeflemez. Doğrulanmış APK'ları doğrudan GitHub Releases üzerinden edinebilirsiniz.*
 

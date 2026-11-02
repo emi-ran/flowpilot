@@ -65,6 +65,11 @@ class AutomationRepository(private val context: Context) {
     private val engineKey = androidx.datastore.preferences.core.booleanPreferencesKey("engine_enabled")
     private val languageKey = stringPreferencesKey("app_language")
     private val themeKey = stringPreferencesKey("app_theme")
+    private val updateAutoCheckKey =
+        androidx.datastore.preferences.core.booleanPreferencesKey("update_auto_check")
+    private val updateLastCheckKey = longPreferencesKey("update_last_check")
+    private val updateSkippedVersionKey = stringPreferencesKey("update_skipped_version")
+    private val updateRemindAfterKey = longPreferencesKey("update_remind_after")
 
     val appLanguage: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[languageKey] ?: "system"
@@ -96,6 +101,47 @@ class AutomationRepository(private val context: Context) {
 
     val appTheme: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[themeKey] ?: "system"
+    }
+
+    data class UpdatePreferences(
+        val autoCheckEnabled: Boolean,
+        val lastCheckAt: Long,
+        val skippedVersion: String?,
+        val remindAfter: Long,
+    )
+
+    val updatePreferences: Flow<UpdatePreferences> = context.dataStore.data.map { prefs ->
+        UpdatePreferences(
+            autoCheckEnabled = prefs[updateAutoCheckKey] ?: true,
+            lastCheckAt = prefs[updateLastCheckKey] ?: 0L,
+            skippedVersion = prefs[updateSkippedVersionKey]?.takeIf { it.isNotBlank() },
+            remindAfter = prefs[updateRemindAfterKey] ?: 0L,
+        )
+    }
+
+    suspend fun setUpdateAutoCheck(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[updateAutoCheckKey] = enabled
+        }
+    }
+
+    suspend fun recordUpdateCheck(at: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[updateLastCheckKey] = at
+        }
+    }
+
+    suspend fun skipUpdateVersion(tag: String) {
+        context.dataStore.edit { prefs ->
+            prefs[updateSkippedVersionKey] = tag
+            prefs.remove(updateRemindAfterKey)
+        }
+    }
+
+    suspend fun remindUpdateAfter(at: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[updateRemindAfterKey] = at
+        }
     }
 
     suspend fun setAppTheme(theme: String) {

@@ -6,6 +6,7 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 
+- In-app updates: Settings can check the public GitHub Releases API automatically at most once a day or on demand. A newer stable release opens a notes dialog with Download &amp; Install, Open release page, Remind me later, and Skip this version. Downloads are limited to the `emi-ran/flowpilot` GitHub release APK, handed to Android's DownloadManager, and installed only after the user confirms the system installer. The automatic check can be disabled; the About and README privacy wording now says "offline by default" instead of "100% offline".
 - Wi-Fi hotspot on/off actions (`HOTSPOT_ON`, `HOTSPOT_OFF`) for Android 16+: FlowPilot runs a shell-side `HotspotBridge` through Shizuku's `newProcess` as `app_process` against its own APK, registers the call as the tethering owner (`com.android.shell`), and toggles tethering through the public `TetheringManager` API. Requires Shizuku and Wi-Fi hardware; Android 15 and older report the action as unsupported. Verified on Xiaomi 15T Pro (Android 16): the shell bridge toggled tethering off and on with the screen off, and a targeted instrumentation run toggled it through the full app → Shizuku → bridge path. The R8-minified release APK retains `HotspotBridge`.
 
 ### Fixed
@@ -27,6 +28,7 @@ All notable FlowPilot changes are documented here.
 
 ### Security
 
+- Update checks accept only HTTPS GitHub URLs under `/emi-ran/flowpilot/releases/`, require a parseable version tag newer than `BuildConfig.VERSION_NAME`, and offer only an APK asset from the exact release download path. A downloaded file is installed only when the completion broadcast id matches the one recorded before enqueue, the download reached `STATUS_SUCCESSFUL`, and the user confirms the system installer; no silent install path exists.
 - Reject imported condition trees deeper than 4 group levels, with more than 32 leaves, or containing empty groups before any DataStore mutation; existing flat-only payloads still import unchanged.
 - Release APKs now carry a GitHub build provenance attestation created after the signed APK passes package/version identity, `apksigner` certificate-digest, and SHA-256 checks and before the release assets are uploaded. If attestation cannot be created, the release job fails. Verification with `gh attestation verify`, `apksigner verify --print-certs`, and `sha256sum` is documented in `docs/SUPPLY_CHAIN.md`.
 - Gradle dependency verification checksums, generated and reviewed as `gradle/verification-metadata.xml`, now cover plugins, artifact metadata, and the app dependency graph; Gradle's default strict mode fails local and CI builds on a missing or mismatched checksum. `google()` is content-filtered to the Android/Gradle groups, and every workflow `uses:` stays pinned to a full commit SHA. Dependency lockfiles are intentionally not used; see `docs/SUPPLY_CHAIN.md` for the rationale.
