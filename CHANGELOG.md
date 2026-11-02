@@ -10,6 +10,8 @@ All notable FlowPilot changes are documented here.
 
 ### Security
 
+- Release APKs now carry a GitHub build provenance attestation created after the signed APK passes package/version identity, `apksigner` certificate-digest, and SHA-256 checks and before the release assets are uploaded. If attestation cannot be created, the release job fails. Verification with `gh attestation verify`, `apksigner verify --print-certs`, and `sha256sum` is documented in `docs/SUPPLY_CHAIN.md`.
+- Gradle dependency verification checksums, generated and reviewed as `gradle/verification-metadata.xml`, now cover plugins, artifact metadata, and the app dependency graph; Gradle's default strict mode fails local and CI builds on a missing or mismatched checksum. `google()` is content-filtered to the Android/Gradle groups, and every workflow `uses:` stays pinned to a full commit SHA. Dependency lockfiles are intentionally not used; see `docs/SUPPLY_CHAIN.md` for the rationale.
 - Keep geofence event retention separate from location freshness: reuse coordinates only for fixes under 60 seconds old at action dispatch, otherwise fetch a fresh location or omit location template values.
 - Validate normal and encrypted imports before changing stored rules, rejecting invalid rule IDs, unsafe references, invalid active settings, and oversized documents or fields. Imported rules receive new IDs; failed imports preserve existing rules.
 
