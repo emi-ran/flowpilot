@@ -4,6 +4,10 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Shizuku-backed actions no longer fail permanently when the Shizuku `UserService` cannot start on Android 16 (`LoadedApk.makeApplicationInner` crash, Shizuku issue #2541). `ShizukuShell` falls back to Shizuku's allowlisted `newProcess` shell execution with the same 10-second timeout, and retries the UserService after 60 seconds or a binder restart.
+
 ## [2.0.0] - 2026-11-02
 
 ### Added
