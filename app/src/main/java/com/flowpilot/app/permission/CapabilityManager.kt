@@ -138,6 +138,11 @@ class CapabilityManager(private val context: Context) {
     fun hasNfcHardware(): Boolean =
         context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC)
 
+    /** Wi-Fi hotspot control needs the API 36 public TetheringManager and Wi-Fi hardware; no app can add either. */
+    private fun hasHotspotControl(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA &&
+            context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_WIFI)
+
     /** Is NFC enabled in system settings right now? */
     fun isNfcEnabled(): Boolean {
         if (!hasNfcHardware()) return false
@@ -215,6 +220,7 @@ class CapabilityManager(private val context: Context) {
         CapabilityRequirement.SHIZUKU ->
             when {
                 action.category == com.flowpilot.app.data.model.ActionCategory.NFC && !hasNfcHardware() -> CapabilityStatus.UNSUPPORTED
+                (action == ActionType.HOTSPOT_ON || action == ActionType.HOTSPOT_OFF) && !hasHotspotControl() -> CapabilityStatus.UNSUPPORTED
                 (action == ActionType.BLUETOOTH_ON || action == ActionType.BLUETOOTH_OFF) && !hasBluetoothAdapter() -> CapabilityStatus.UNSUPPORTED
                 (action == ActionType.BLUETOOTH_ON || action == ActionType.BLUETOOTH_OFF) && !hasBluetoothConnectPermission() -> CapabilityStatus.PERMISSION_REQUIRED
                 shizukuState() == ShizukuState.READY -> CapabilityStatus.AVAILABLE

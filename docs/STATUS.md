@@ -4,6 +4,7 @@ Last updated: 2026-11-02
 
 ## Build state
 
+- Hotspot actions branch passed `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false` plus `python scripts/test_lint_resource_contracts.py` on 2026-11-02. The R8-minified release APK retains `HotspotBridge`.
 - 2.0.0 release gate passed on 2026-11-02: `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false` and `python scripts/test_lint_resource_contracts.py`. Version code is 5, version name is 2.0.0.
 - Security advisory remediation passed local release gate on 2026-09-14: `testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`. Debug APK device install remains blocked because wireless ADB target is offline.
 - Debug/release builds, unit tests, and lint passed: `.\gradlew.bat testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`.
@@ -63,6 +64,7 @@ Last updated: 2026-11-02
   - Wi-Fi on/off (`WIFI_ON`, `WIFI_OFF`) via Shizuku `svc wifi enable|disable` with `WifiManager.isWifiEnabled` verification.
   - Mobile Data on/off (`MOBILE_DATA_ON`, `MOBILE_DATA_OFF`) via Shizuku `svc data enable|disable` with `Settings.Global.mobile_data` / `TelephonyManager.isDataEnabled` verification.
   - Airplane Mode on/off (`AIRPLANE_MODE_ON`, `AIRPLANE_MODE_OFF`) via Shizuku `cmd connectivity airplane-mode enable|disable` with `Settings.Global.AIRPLANE_MODE_ON` verification.
+  - Wi-Fi Hotspot on/off (`HOTSPOT_ON`, `HOTSPOT_OFF`) on Android 16+ via Shizuku `newProcess` running `HotspotBridge` under `app_process` against the app APK. The bridge registers as the tethering owner (`com.android.shell`) and uses the public `TetheringManager.startTethering`/`stopTethering`; Android 15 and older report `UNSUPPORTED`. Verified on Xiaomi 15T Pro / Android 16: the shell bridge toggled tethering off and on with the screen off, and a targeted instrumentation run toggled it through the full app → Shizuku → bridge path.
   - Flashlight on/off/toggle (`TORCH_ON`, `TORCH_OFF`, `TORCH_TOGGLE`) via direct `CameraManager.setTorchMode` with hardware camera flash detection. Toggle state follows `CameraManager.registerTorchCallback`, so system-tile toggles are reflected; an unobserved state is treated as off.
 - Per-rule shake force (unit tests passed; device threshold validation pending):
   - The `DEVICE_SHAKE` trigger exposes a strength slider in Create/Edit (`Automation.shakeThreshold`, 6–32 m/s² above gravity, default 20), so different automations can react to light or firm shakes.

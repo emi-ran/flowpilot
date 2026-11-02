@@ -7,8 +7,12 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.os.ParcelFileDescriptor
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import moe.shizuku.server.IShizukuService
 import rikka.shizuku.Shizuku
 
 /** Shizuku wrapper. UserService executes commands under shell/root identity. */
@@ -16,6 +20,9 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
     companion object {
         val instance = ShizukuShell()
         const val REQUEST_PERMISSION_CODE = 1000
+        private const val HOTSPOT_TIMEOUT_SECONDS = 15L
+        private const val APP_PROCESS = "/system/bin/app_process"
+        private const val HOTSPOT_BRIDGE_CLASS = "com.flowpilot.app.actions.HotspotBridge"
     }
 
     @Volatile private var appContext: Context? = null
@@ -111,6 +118,73 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
         }
     }
 
+    /**
+     * Runs [HotspotBridge] under the shell UID through Shizuku's remote process API.
+     *
+     * The tethering service only accepts Wi-Fi tethering from the tethering owner, and
+     * `cmd wifi` is rejected with a SecurityException, so the bridge is started with
+     * app_process against this app's base APK. It intentionally bypasses the UserService
+     * command allowlist: the argument list is fixed here and the only caller input is a Boolean.
+     */
+    override fun runHotspot(enabled: Boolean): Pair<Int, String> {
+        if (!isShizukuRunning()) return -1 to "Shizuku not running"
+        if (!hasPermission()) return -1 to "Shizuku permission not granted"
+
+        val apkPath = appContext?.packageCodePath
+        if (apkPath.isNullOrBlank()) {
+            android.util.Log.w("ShizukuShell", "runHotspot: application context unavailable")
+            return -1 to "Application context unavailable"
+        }
+
+        return try {
+            val binder = Shizuku.getBinder() ?: return -1 to "Shizuku not running"
+            val process = IShizukuService.Stub.asInterface(binder).newProcess(
+                arrayOf(
+                    APP_PROCESS,
+                    "-Djava.class.path=$apkPath",
+                    "/system/bin",
+                    HOTSPOT_BRIDGE_CLASS,
+                    if (enabled) "on" else "off",
+                ),
+                null,
+                null,
+            )
+            val output = StringBuilder()
+            val outThread = Thread { readStream(process.inputStream, output) }
+            val errThread = Thread { readStream(process.errorStream, output) }
+            outThread.start()
+            errThread.start()
+
+            val finished = process.waitForTimeout(HOTSPOT_TIMEOUT_SECONDS, TimeUnit.SECONDS.name)
+            outThread.join(1000)
+            errThread.join(1000)
+
+            if (!finished) {
+                process.destroy()
+                return 124 to "hotspot bridge timed out"
+            }
+            val exitCode = process.exitValue()
+            android.util.Log.i("ShizukuShell", "Hotspot bridge completed: exitCode=$exitCode")
+            exitCode to synchronized(output) { output.toString().trim() }
+        } catch (t: Throwable) {
+            android.util.Log.e("ShizukuShell", "Hotspot bridge execution failed: ${t.javaClass.simpleName}")
+            -1 to "Shizuku hotspot execution failed"
+        }
+    }
+
+    private fun readStream(descriptor: ParcelFileDescriptor, output: StringBuilder) {
+        try {
+            BufferedReader(
+                InputStreamReader(ParcelFileDescriptor.AutoCloseInputStream(descriptor)),
+            ).use { reader ->
+                reader.forEachLine { line ->
+                    synchronized(output) { output.appendLine(line) }
+                }
+            }
+        } catch (_: Throwable) {
+            // Output is best-effort; the exit code remains authoritative.
+        }
+    }
     private fun bindAndGetService(): ICommandService? {
         val latch = bindIfNeeded() ?: return null
         try {

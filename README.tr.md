@@ -195,7 +195,7 @@ Kurallar yalnızca koşulları sağlandığında çalışır. Koşulları VE vey
 ### 3. Eylemler (İşlemler)
 Tek bir kuralda birden çok eylemi sürükle-bırak yöntemiyle dilediğiniz sırada çalıştırın ve eylemler arasına gecikme (0–300 sn) ekleyin:
 
-- 🌐 **Bağlantı Kontrolü (Shizuku ile):** Wi-Fi, Mobil Veri, Uçak Modu, Bluetooth ve GPS Konum açma/kapatma.
+- 🌐 **Bağlantı Kontrolü (Shizuku ile):** Wi-Fi, Mobil Veri, Uçak Modu, Bluetooth, GPS Konum ve Wi-Fi Erişim Noktası (Android 16+) açma/kapatma.
 - 🖥️ **Ekran & Sistem:** El Feneri açma/kapatma, Koyu Tema (Shizuku), Ekranı Otomatik Döndürme, Parlaklık seviyesi, Ekranı Kilitleme (Shizuku), Uygulamayı Zorla Durdurma (Shizuku).
 - 🔊 **Ses & Uyarılar:** Rahatsız Etmeyin (DND) açma/kapatma, Ses Profilleri (Normal / Titreşim / Sessiz), Medya Sesi (%0–100), Özel Ses Çalma (1–60 sn), Titreşim Şablonları (Tek darbe, Çift dokunuş, Uyarı, Kalp atışı, Üçlü dokunuş, SOS) ve Bildirim Gösterme.
 - 🗣️ **Çevrimdışı Seslendirme (TTS):** Cihazın yerleşik TTS motoruyla metinleri sesli olarak okuma (konuşma hızı ayarlı).

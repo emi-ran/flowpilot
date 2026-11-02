@@ -54,6 +54,8 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.OPEN_DIALER, ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> Icons.Default.Phone
     ActionType.BLUETOOTH_ON, ActionType.BLUETOOTH_OFF -> Icons.Default.Bluetooth
     ActionType.WIFI_ON, ActionType.WIFI_OFF -> Icons.Default.Wifi
+    ActionType.HOTSPOT_ON -> Icons.Default.Wifi
+    ActionType.HOTSPOT_OFF -> Icons.Default.WifiOff
     ActionType.MOBILE_DATA_ON, ActionType.MOBILE_DATA_OFF -> Icons.Default.SignalCellularAlt
     ActionType.AIRPLANE_MODE_ON, ActionType.AIRPLANE_MODE_OFF -> Icons.Default.AirplanemodeActive
     ActionType.TORCH_ON, ActionType.TORCH_OFF, ActionType.TORCH_TOGGLE -> Icons.Default.FlashlightOn

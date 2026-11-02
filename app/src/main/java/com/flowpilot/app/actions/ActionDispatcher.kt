@@ -24,6 +24,7 @@ class ActionDispatcher private constructor(
     private val wifi: WifiExecutor,
     private val mobileData: MobileDataExecutor,
     private val airplaneMode: AirplaneModeExecutor,
+    private val hotspot: HotspotExecutor,
     private val torch: TorchExecutor,
     private val brightness: BrightnessExecutor,
     private val lockScreen: LockScreenExecutor,
@@ -35,7 +36,7 @@ class ActionDispatcher private constructor(
         listOf(
             nfc, bluetooth, powerSaver, darkTheme, autoRotate, notification,
             vibration, sound, soundProfile, mediaVolume, launcher, tts, dnd,
-            clock, webhook, phone, wifi, mobileData, airplaneMode, torch,
+            clock, webhook, phone, wifi, mobileData, airplaneMode, hotspot, torch,
             brightness, lockScreen, forceStop, location, sms,
         )
             .flatMap { e -> e.supportedTypes.map { it to e } }
@@ -79,6 +80,7 @@ class ActionDispatcher private constructor(
                     WifiExecutor(context.applicationContext, ShizukuShell.instance),
                     MobileDataExecutor(context.applicationContext, ShizukuShell.instance),
                     AirplaneModeExecutor(context.applicationContext, ShizukuShell.instance),
+                    HotspotExecutor(ShizukuShell.instance),
                     TorchExecutor(context.applicationContext),
                     BrightnessExecutor(context.applicationContext),
                     LockScreenExecutor(context.applicationContext, ShizukuShell.instance),

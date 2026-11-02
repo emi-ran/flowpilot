@@ -228,6 +228,8 @@
     <string name="action_mobile_data_off">Turn Mobile Data off</string>
     <string name="action_wifi_on">Turn Wi-Fi on</string>
     <string name="action_wifi_off">Turn Wi-Fi off</string>
+    <string name="action_hotspot_on">Turn Hotspot on</string>
+    <string name="action_hotspot_off">Turn Hotspot off</string>
     <string name="action_airplane_mode_on">Turn Airplane mode on</string>
     <string name="action_airplane_mode_off">Turn Airplane mode off</string>
     <string name="action_torch_on">Turn Flashlight on</string>
@@ -415,6 +417,8 @@
     <string name="action_bluetooth_off_desc">Turn Bluetooth radio off (requires Shizuku)</string>
     <string name="action_wifi_on_desc">Turn Wi-Fi radio on (requires Shizuku)</string>
     <string name="action_wifi_off_desc">Turn Wi-Fi radio off (requires Shizuku)</string>
+    <string name="action_hotspot_on_desc">Turn portable hotspot on (requires Android 16+ and Shizuku)</string>
+    <string name="action_hotspot_off_desc">Turn portable hotspot off (requires Android 16+ and Shizuku)</string>
     <string name="action_mobile_data_on_desc">Turn mobile cellular data on (requires Shizuku)</string>
     <string name="action_mobile_data_off_desc">Turn mobile cellular data off (requires Shizuku)</string>
     <string name="action_airplane_mode_on_desc">Turn Airplane mode on (requires Shizuku)</string>

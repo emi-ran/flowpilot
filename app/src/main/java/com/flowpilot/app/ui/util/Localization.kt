@@ -76,6 +76,8 @@ val ActionType.labelRes: Int
         ActionType.MOBILE_DATA_OFF -> R.string.action_mobile_data_off
         ActionType.WIFI_ON -> R.string.action_wifi_on
         ActionType.WIFI_OFF -> R.string.action_wifi_off
+        ActionType.HOTSPOT_ON -> R.string.action_hotspot_on
+        ActionType.HOTSPOT_OFF -> R.string.action_hotspot_off
         ActionType.AIRPLANE_MODE_ON -> R.string.action_airplane_mode_on
         ActionType.AIRPLANE_MODE_OFF -> R.string.action_airplane_mode_off
         ActionType.TORCH_ON -> R.string.action_torch_on
@@ -247,6 +249,8 @@ val ActionType.descriptionRes: Int
         ActionType.MOBILE_DATA_OFF -> R.string.action_mobile_data_off_desc
         ActionType.WIFI_ON -> R.string.action_wifi_on_desc
         ActionType.WIFI_OFF -> R.string.action_wifi_off_desc
+        ActionType.HOTSPOT_ON -> R.string.action_hotspot_on_desc
+        ActionType.HOTSPOT_OFF -> R.string.action_hotspot_off_desc
         ActionType.AIRPLANE_MODE_ON -> R.string.action_airplane_mode_on_desc
         ActionType.AIRPLANE_MODE_OFF -> R.string.action_airplane_mode_off_desc
         ActionType.TORCH_ON -> R.string.action_torch_on_desc
