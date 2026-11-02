@@ -165,7 +165,9 @@ Each must expose its required permission or Shizuku state. Do not show success u
 4. **Airplane mode on/off** (implementation complete; unit tests passed; device smoke test pending)
     - Shizuku `cmd connectivity airplane-mode enable|disable` with `Settings.Global.AIRPLANE_MODE_ON` readback verification
 5. Location services on/off
-6. **Hotspot on/off** (technical caveat: `cmd tethering` has no shell command implementation on Android 11+ / HyperOS 3; programmatic control requires signature-level `TETHER_PRIVILEGED`)
+6. **Hotspot on/off** (complete on Android 16; Xiaomi device smoke test passed)
+   - Shizuku `newProcess` runs `HotspotBridge` via `app_process` against the app APK; the bridge registers as the tethering owner (`com.android.shell`) and uses the public `TetheringManager.startTethering`/`stopTethering`.
+   - Verified on Xiaomi 15T Pro (Android 16) with the screen off and through the full app → Shizuku → bridge path. Android 15 and older report the action as unsupported; `cmd tethering` remains unusable on Android 11+ / HyperOS 3.
 7. **Do Not Disturb on/off** (complete; Xiaomi device smoke test passed)
    - `NotificationManager.setInterruptionFilter` (`INTERRUPTION_FILTER_NONE` / `INTERRUPTION_FILTER_ALL`)
    - Requires user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY` special access
