@@ -413,7 +413,7 @@ fun ActionCardItem(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        FilledTonalButton(
+                        SecondaryActionButton(
                             onClick = { onPreviewVibration(vibrationPattern, vibrationDurationMs, vibrationAmplitude) },
                             shape = RoundedCornerShape(10.dp),
                         ) {
@@ -466,7 +466,7 @@ fun ActionCardItem(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        FilledTonalButton(onClick = onPreviewSound, shape = RoundedCornerShape(10.dp)) {
+                        SecondaryActionButton(onClick = onPreviewSound, shape = RoundedCornerShape(10.dp)) {
                             Text(stringResource(R.string.sound_btn_play))
                         }
                         Spacer(Modifier.width(8.dp))

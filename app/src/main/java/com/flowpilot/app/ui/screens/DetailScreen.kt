@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
+import com.flowpilot.app.ui.components.SecondaryActionButton
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.ActionType
@@ -813,7 +814,7 @@ fun DetailScreen(
                     Text(stringResource(R.string.btn_add_action))
                 }
                 if (actions.isNotEmpty()) {
-                    FilledTonalButton(
+                    SecondaryActionButton(
                         onClick = { showRunConfirm = true },
                         shape = RoundedCornerShape(16.dp),
                     ) {

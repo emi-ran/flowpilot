@@ -496,7 +496,7 @@ fun TriggerCardItem(
                                 )
                             }
                             if (liveAmbientLux != null) {
-                                FilledTonalButton(
+                                SecondaryActionButton(
                                     onClick = { onLightLuxChange(liveAmbientLux!!.toInt().coerceIn(1, 1000)) },
                                     shape = RoundedCornerShape(10.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),

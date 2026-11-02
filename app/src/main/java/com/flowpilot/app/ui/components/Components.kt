@@ -24,10 +24,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
@@ -105,6 +111,29 @@ fun FollowSwitch(
 }
 
 /** Small pill label for capability state (Available / Permission required / Shizuku required / Unsupported). */
+/**
+ * Secondary action button. Tonal fills merge into the dark card surfaces and read as disabled,
+ * so secondary actions are outlined with a clearly visible border while keeping primary content.
+ */
+@Composable
+fun SecondaryActionButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(10.dp),
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    content: @Composable RowScope.() -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = shape,
+        contentPadding = contentPadding,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+        content = content,
+    )
+}
+
 /** Muted success accent that stays readable in both themes (green instead of the blue primary). */
 @Composable
 fun successAccent(): Color =
