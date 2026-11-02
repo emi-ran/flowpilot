@@ -8,6 +8,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,6 +18,7 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,11 +27,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.permission.CapabilityStatus
 import com.flowpilot.app.ui.util.labelRes
@@ -103,6 +116,67 @@ fun FollowSwitch(
 }
 
 /** Small pill label for capability state (Available / Permission required / Shizuku required / Unsupported). */
+/**
+ * Secondary action button. Tonal fills merge into the dark card surfaces and read as disabled,
+ * so secondary actions are outlined with a clearly visible border while keeping primary content.
+ */
+@Composable
+fun SecondaryActionButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(10.dp),
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    content: @Composable RowScope.() -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = shape,
+        contentPadding = contentPadding,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+        content = content,
+    )
+}
+
+/** Consistent section label used by the create/edit form (WHEN, CONDITIONS, DO). */
+@Composable
+fun SectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    hint: String? = null,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.6.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (hint != null) {
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                )
+            }
+        }
+        trailing?.invoke()
+    }
+}
+
+/** Muted success accent that stays readable in both themes (green instead of the blue primary). */
+@Composable
+fun successAccent(): Color =
+    if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color(0xFF7FC59A) else Color(0xFF2E7D52)
+
 @Composable
 fun CapabilityPill(
     status: CapabilityStatus,
@@ -110,12 +184,12 @@ fun CapabilityPill(
     onClick: (() -> Unit)? = null,
 ) {
     val bg = when (status) {
-        CapabilityStatus.AVAILABLE -> MaterialTheme.colorScheme.primaryContainer
+        CapabilityStatus.AVAILABLE -> successAccent().copy(alpha = 0.16f)
         CapabilityStatus.UNSUPPORTED -> MaterialTheme.colorScheme.errorContainer
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
     val fg = when (status) {
-        CapabilityStatus.AVAILABLE -> MaterialTheme.colorScheme.onPrimaryContainer
+        CapabilityStatus.AVAILABLE -> successAccent()
         CapabilityStatus.UNSUPPORTED -> MaterialTheme.colorScheme.onErrorContainer
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -143,12 +217,12 @@ fun CapabilityPill(
     onClick: (() -> Unit)? = null,
 ) {
     val bg = when {
-        isSuccess -> MaterialTheme.colorScheme.primaryContainer
+        isSuccess -> successAccent().copy(alpha = 0.16f)
         isError -> MaterialTheme.colorScheme.errorContainer
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
     val fg = when {
-        isSuccess -> MaterialTheme.colorScheme.onPrimaryContainer
+        isSuccess -> successAccent()
         isError -> MaterialTheme.colorScheme.onErrorContainer
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }

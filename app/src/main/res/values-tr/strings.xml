@@ -73,8 +73,9 @@
     <string name="presets_banner_desc">Popüler senaryolardan birini tek tıkla seçin</string>
     <string name="automation_name_label">Otomasyon adı</string>
     <string name="section_when">TETİKLEYİCİ</string>
-    <string name="section_conditions">KOŞULLAR (isteğe bağlı, hepsi eşleşmeli)</string>
     <string name="section_do">EYLEMLER (%1$d eylem)</string>
+    <string name="section_conditions_title">KOŞULLAR</string>
+    <string name="section_conditions_hint">isteğe bağlı · hepsi eşleşmeli</string>
     <string name="section_do_single">EYLEMLER (1 eylem)</string>
     <string name="hold_to_reorder">Sıralamak için basılı tutun</string>
     <string name="advanced_options">Gelişmiş seçenekler</string>
@@ -517,7 +518,6 @@
     <string name="sms_quick_variables">Hızlı değişkenler:</string>
     <string name="sms_direct_send_warning">⚠️ Doğrudan SMS: Arka planda derhal SMS gönderir. Operatör tarifesi geçerli olabilir.</string>
     <string name="action_force_stop_prompt">Zorla durdurulacak uygulamayı seçin</string>
-    <string name="action_system_service_desc">Tetiklendiğinde sistem servisleri üzerinden otomatik çalışır.</string>
     <string name="time_start">Başlangıç saati</string>
     <string name="time_end">Bitiş saati</string>
     <string name="time_overnight_window">🌙 Gece yarısını geçen zaman aralığı</string>

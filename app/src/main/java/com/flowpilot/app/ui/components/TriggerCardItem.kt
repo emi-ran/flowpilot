@@ -10,6 +10,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
@@ -52,6 +54,41 @@ fun triggerIcon(event: TriggerEvent): ImageVector = when (event) {
     TriggerEvent.SMS_RECEIVED -> Icons.Default.Sms
     TriggerEvent.GEOFENCE_ENTER -> Icons.Default.LocationOn
     TriggerEvent.GEOFENCE_EXIT -> Icons.Default.LocationOff
+}
+
+/**
+ * Accent for a trigger, matching the colours used by the trigger picker so the selected trigger
+ * card and the picker read as the same design. Only icon tiles, dots and value chips use it.
+ */
+fun triggerAccent(event: TriggerEvent): Color = when (event) {
+    TriggerEvent.APP_OPENED -> Color(0xFF8AB4F8)
+    TriggerEvent.APP_CLOSED -> Color(0xFFF28B82)
+    TriggerEvent.CHARGER_CONNECTED -> Color(0xFF81C784)
+    TriggerEvent.CHARGER_DISCONNECTED -> Color(0xFFFFB74D)
+    TriggerEvent.BATTERY_ABOVE -> Color(0xFF81C784)
+    TriggerEvent.BATTERY_BELOW -> Color(0xFFE57373)
+    TriggerEvent.SCREEN_ON -> Color(0xFF4DD0E1)
+    TriggerEvent.SCREEN_OFF -> Color(0xFF80CBC4)
+    TriggerEvent.TIME_SCHEDULE -> Color(0xFFCE93D8)
+    TriggerEvent.WIFI_CONNECTED -> Color(0xFF4FC3F7)
+    TriggerEvent.WIFI_DISCONNECTED -> Color(0xFF81D4FA)
+    TriggerEvent.BLUETOOTH_CONNECTED -> Color(0xFF80CBC4)
+    TriggerEvent.BLUETOOTH_DISCONNECTED -> Color(0xFFB2DFDB)
+    TriggerEvent.NFC_TAG_SCANNED -> Color(0xFFB39DDB)
+    TriggerEvent.NOTIFICATION_RECEIVED -> Color(0xFFFFB74D)
+    TriggerEvent.CALL_RINGING -> Color(0xFF81C784)
+    TriggerEvent.CALL_ANSWERED -> Color(0xFF66BB6A)
+    TriggerEvent.CALL_OUTGOING -> Color(0xFF4CAF50)
+    TriggerEvent.CALL_ENDED -> Color(0xFFE57373)
+    TriggerEvent.DEVICE_FLIPPED_DOWN -> Color(0xFFFF8A65)
+    TriggerEvent.DEVICE_FLIPPED_UP -> Color(0xFFFFAB91)
+    TriggerEvent.DEVICE_SHAKE -> Color(0xFFFF7043)
+    TriggerEvent.DEVICE_UNLOCKED -> Color(0xFFFFD54F)
+    TriggerEvent.LIGHT_BELOW -> Color(0xFFFFD54F)
+    TriggerEvent.LIGHT_ABOVE -> Color(0xFFFFB74D)
+    TriggerEvent.SMS_RECEIVED -> Color(0xFF4FC3F7)
+    TriggerEvent.GEOFENCE_ENTER -> Color(0xFF26A69A)
+    TriggerEvent.GEOFENCE_EXIT -> Color(0xFFEF5350)
 }
 
 @Composable
@@ -114,6 +151,7 @@ fun TriggerCardItem(
     onGeofenceRadiusChange: (Int) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val accent = triggerAccent(event)
     var liveAmbientLux by remember { mutableStateOf<Float?>(null) }
 
     val isLightTrigger = event == TriggerEvent.LIGHT_BELOW || event == TriggerEvent.LIGHT_ABOVE
@@ -142,7 +180,8 @@ fun TriggerCardItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(16.dp)) {
             // Main Trigger Header
@@ -155,7 +194,7 @@ fun TriggerCardItem(
                 Box(
                     modifier = Modifier
                         .size(42.dp)
-                        .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)),
+                        .background(accent.copy(alpha = 0.16f), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     if ((event == TriggerEvent.APP_OPENED || event == TriggerEvent.APP_CLOSED) && pkg.isNotEmpty()) {
@@ -174,7 +213,7 @@ fun TriggerCardItem(
                         Icon(
                             triggerIcon(event),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = accent,
                             modifier = Modifier.size(24.dp),
                         )
                     }
@@ -284,7 +323,7 @@ fun TriggerCardItem(
                             shape = RoundedCornerShape(12.dp),
                         ) {
                             Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Schedule, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Schedule, null, tint = accent, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text("%02d:%02d".format(scheduledMinute / 60, scheduledMinute % 60), style = MaterialTheme.typography.titleMedium)
                             }
@@ -434,13 +473,13 @@ fun TriggerCardItem(
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                                    .background(accent.copy(alpha = 0.16f), CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     Icons.Default.LightMode,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = accent,
                                     modifier = Modifier.size(20.dp),
                                 )
                             }
@@ -459,7 +498,7 @@ fun TriggerCardItem(
                                 )
                             }
                             if (liveAmbientLux != null) {
-                                FilledTonalButton(
+                                SecondaryActionButton(
                                     onClick = { onLightLuxChange(liveAmbientLux!!.toInt().coerceIn(1, 1000)) },
                                     shape = RoundedCornerShape(10.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
@@ -484,14 +523,14 @@ fun TriggerCardItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             shape = RoundedCornerShape(8.dp),
                         ) {
                             Text(
                                 "$lightLux lx",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                color = accent,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             )
                         }

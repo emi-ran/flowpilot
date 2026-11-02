@@ -73,8 +73,9 @@
     <string name="presets_banner_desc">Choose from popular scenarios with a single tap</string>
     <string name="automation_name_label">Automation name</string>
     <string name="section_when">WHEN</string>
-    <string name="section_conditions">CONDITIONS (optional, all must match)</string>
     <string name="section_do">DO (%1$d actions)</string>
+    <string name="section_conditions_title">CONDITIONS</string>
+    <string name="section_conditions_hint">optional · all must match</string>
     <string name="section_do_single">DO (1 action)</string>
     <string name="hold_to_reorder">Hold to reorder</string>
     <string name="advanced_options">Advanced options</string>
@@ -517,7 +518,6 @@
     <string name="sms_quick_variables">Quick variables:</string>
     <string name="sms_direct_send_warning">⚠️ Direct SMS: Sends a background text message immediately. Standard carrier rates may apply.</string>
     <string name="action_force_stop_prompt">Tap to choose app to force stop</string>
-    <string name="action_system_service_desc">Runs automatically via system services when triggered.</string>
     <string name="time_start">Start time</string>
     <string name="time_end">End time</string>
     <string name="time_overnight_window">🌙 Overnight window (crosses midnight)</string>

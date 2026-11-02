@@ -8,6 +8,7 @@ package com.flowpilot.app.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -46,7 +47,9 @@ import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.AutomationUI
 import com.flowpilot.app.ui.components.CapabilityPill
 import com.flowpilot.app.ui.components.FollowSwitch
+import com.flowpilot.app.ui.components.triggerAccent
 import com.flowpilot.app.ui.components.triggerIcon
+import com.flowpilot.app.ui.components.successAccent
 import com.flowpilot.app.ui.components.AppIconImage
 import com.flowpilot.app.ui.util.localizedActionSummary
 import com.flowpilot.app.ui.util.localizedLabel
@@ -179,7 +182,7 @@ fun HomeScreen(
                             Icon(
                                 Icons.Default.AutoAwesome,
                                 contentDescription = stringResource(R.string.home_explore_presets),
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -210,19 +213,15 @@ fun HomeScreen(
                 .padding(horizontal = 20.dp)
         ) {
             // Hero Status Card for Automation Engine
-            val heroContainerColor by animateColorAsState(
-                targetValue = if (engine) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                else MaterialTheme.colorScheme.surfaceContainerHigh,
-                animationSpec = tween(250),
-                label = "heroColor",
-            )
+            val heroAccent = if (engine) successAccent() else MaterialTheme.colorScheme.onSurfaceVariant
 
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
                 shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(heroContainerColor),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
@@ -231,18 +230,13 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .size(42.dp)
-                            .background(
-                                if (engine) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.surfaceVariant,
-                                CircleShape,
-                            ),
+                            .background(heroAccent.copy(alpha = 0.16f), RoundedCornerShape(14.dp)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             Icons.Default.Bolt,
                             contentDescription = null,
-                            tint = if (engine) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = heroAccent,
                             modifier = Modifier.size(22.dp),
                         )
                     }
@@ -408,7 +402,7 @@ private fun EmptyState(
             shape = RoundedCornerShape(16.dp),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         ) {
-            Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.home_explore_presets), fontWeight = FontWeight.SemiBold)
         }
@@ -427,10 +421,11 @@ private fun RuleCard(
     onPermission: () -> Unit,
 ) {
     val isRuleEnabled = item.rule.enabled
+    val accent = triggerAccent(item.rule.triggerEvent)
     var showOverflow by remember { mutableStateOf(false) }
     val containerColor by animateColorAsState(
         targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+            isSelected -> MaterialTheme.colorScheme.surfaceContainerHigh
             isRuleEnabled -> MaterialTheme.colorScheme.surfaceContainer
             else -> MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.65f)
         },
@@ -479,8 +474,7 @@ private fun RuleCard(
                 modifier = Modifier
                     .size(44.dp)
                     .background(
-                        color = if (isRuleEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        color = accent.copy(alpha = if (isRuleEnabled) 0.16f else 0.08f),
                         shape = RoundedCornerShape(14.dp),
                     ),
                 contentAlignment = Alignment.Center,
@@ -501,7 +495,7 @@ private fun RuleCard(
                     Icon(
                         imageVector = triggerIcon(item.rule.triggerEvent),
                         contentDescription = null,
-                        tint = if (isRuleEnabled) MaterialTheme.colorScheme.primary
+                        tint = if (isRuleEnabled) accent
                         else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         modifier = Modifier.size(22.dp),
                     )
@@ -566,7 +560,7 @@ private fun RuleCard(
                     Text(
                         text = detail,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp),
                     )
                 }
