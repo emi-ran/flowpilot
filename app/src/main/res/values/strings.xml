@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="triggers_any_summary">Match ANY trigger · one shared cooldown</string>
+    <string name="trigger_add">Add trigger (up to 5)</string>
+    <string name="trigger_remove">Remove trigger</string>
+    <string name="trigger_move_up">Move trigger up</string>
+    <string name="trigger_move_down">Move trigger down</string>
+    <string name="trigger_source_index">Trigger %1$d</string>
     <string name="app_name">FlowPilot</string>
     <string name="notif_channel_engine">Automation engine (silent)</string>
     <string name="notif_channel_engine_desc">Silent status required while FlowPilot automations run</string>

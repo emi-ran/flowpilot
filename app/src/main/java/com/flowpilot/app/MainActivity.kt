@@ -24,11 +24,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.res.stringResource
 import rikka.shizuku.Shizuku
+import androidx.compose.runtime.LaunchedEffect
+import com.flowpilot.app.data.model.hasTrigger
+import com.flowpilot.app.data.model.TriggerEvent
 
 class MainActivity : ComponentActivity() {
 
     private var nfcAdapter: NfcAdapter? = null
     private val nfcIntentSession = NfcIntentSession()
+    private var nfcReaderDemand = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +45,15 @@ class MainActivity : ComponentActivity() {
             val appLanguage by vm.appLanguage.collectAsState()
             val appTheme by vm.appTheme.collectAsState()
             val hasPendingNfcConfirmation by NfcBackgroundConfirmationGate.hasPendingConfirmation.collectAsState()
+            val rules by vm.automations.collectAsState()
+            val captureRequested by NfcTagHandoff.captureRequested.collectAsState()
+            val engineEnabled by vm.engineEnabled.collectAsState()
+            val needsReader = captureRequested || (engineEnabled && rules.any { it.rule.enabled && it.rule.hasTrigger(TriggerEvent.NFC_TAG_SCANNED) })
+            LaunchedEffect(needsReader) {
+                nfcReaderDemand = needsReader
+                if (needsReader && nfcIntentSession.readerModeAllowed && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) enableNfcReaderMode()
+                else disableNfcReaderMode()
+            }
 
             val isDark = when (appTheme.lowercase()) {
                 "light" -> false
@@ -75,7 +88,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (nfcIntentSession.readerModeAllowed) enableNfcReaderMode()
+        if (nfcReaderDemand && nfcIntentSession.readerModeAllowed) enableNfcReaderMode()
     }
 
     override fun onPause() {

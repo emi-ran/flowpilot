@@ -6,6 +6,8 @@ import com.flowpilot.app.data.model.ConditionNode
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.SoundPreset
+import com.flowpilot.app.data.model.TriggerDefinitions
+import com.flowpilot.app.data.model.triggerViews
 import com.flowpilot.app.engine.NfcTagUtils
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.security.SecretCipher
@@ -84,6 +86,13 @@ internal object ImportValidator {
         }
         rules.forEach { r ->
             checkStrings(json.encodeToJsonElement(Automation.serializer(), r))
+            r.triggerDefinitions?.let { definitions ->
+                require(definitions.version == 1) { "Unsupported trigger version" }
+                require(definitions.items.size in 1..TriggerDefinitions.MAX_TRIGGERS) { "Invalid trigger count" }
+                // Validate each isolated payload using exactly the legacy trigger contracts.
+                listOf(r).triggerViews().forEach { validate(listOf(it)) }
+                return@forEach
+            }
             require(r.actions.size <= MAX_ITEMS && r.actionDelays.size <= MAX_ITEMS && r.conditions.size <= MAX_ITEMS) { "Too many rule items" }
             require(r.actionDelays.size <= r.effectiveActions.size && r.actionDelays.all { it in 0..300 }) { "Invalid action delays" }
             when (r.triggerEvent) {

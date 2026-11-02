@@ -6,6 +6,11 @@ import com.flowpilot.app.data.model.ConditionNode
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.data.model.triggerViews
+
+/** First matching definition wins, so overlapping OR branches execute a rule only once. */
+private fun List<Automation>.matchingTriggerViews(predicate: (Automation) -> Boolean): List<Automation> =
+    triggerViews().filter(predicate).distinctBy { it.id }
 
 /** Current live environmental state evaluated against rule conditions. */
 data class LiveSystemState(
@@ -157,7 +162,7 @@ object RuleEvaluator {
             ChargerEvent.DISCONNECTED -> TriggerEvent.CHARGER_DISCONNECTED
         }
         val effectiveState = liveState.copy(isChargerConnected = (event == ChargerEvent.CONNECTED))
-        return rules.filter {
+        return rules.matchingTriggerViews {
             it.enabled &&
                 it.triggerEvent == triggerEvent &&
                 !it.isCoolingDown(nowMs) &&
@@ -172,8 +177,8 @@ object RuleEvaluator {
         nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
         val effectiveState = liveState.copy(batteryPercent = transition.current)
-        return rules.filter { rule ->
-            if (!rule.enabled || rule.isCoolingDown(nowMs)) return@filter false
+        return rules.matchingTriggerViews { rule ->
+            if (!rule.enabled || rule.isCoolingDown(nowMs)) return@matchingTriggerViews false
             val triggerMatches = when (rule.triggerEvent) {
                 TriggerEvent.BATTERY_BELOW -> transition.previous > rule.batteryLevel && transition.current <= rule.batteryLevel
                 TriggerEvent.BATTERY_ABOVE -> transition.previous < rule.batteryLevel && transition.current >= rule.batteryLevel
@@ -195,7 +200,7 @@ object RuleEvaluator {
             ScreenEvent.UNLOCKED -> TriggerEvent.DEVICE_UNLOCKED
         }
         val effectiveState = liveState.copy(isScreenOn = (event != ScreenEvent.OFF))
-        return rules.filter {
+        return rules.matchingTriggerViews {
             it.enabled &&
                 it.triggerEvent == trigger &&
                 !it.isCoolingDown(nowMs) &&
@@ -210,7 +215,7 @@ object RuleEvaluator {
         /** Measured net acceleration of the detected shake; rules needing more force are skipped. */
         shakeMagnitude: Float = Float.MAX_VALUE,
     ): List<Automation> {
-        return rules.filter { rule ->
+        return rules.matchingTriggerViews { rule ->
             rule.enabled &&
                 rule.triggerEvent == TriggerEvent.DEVICE_SHAKE &&
                 shakeMagnitude >= ShakeReducer.clampThreshold(rule.shakeThreshold) &&
@@ -225,8 +230,8 @@ object RuleEvaluator {
         liveState: LiveSystemState = LiveSystemState(),
         nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
-        return rules.filter { rule ->
-            if (!rule.enabled || rule.isCoolingDown(nowMs)) return@filter false
+        return rules.matchingTriggerViews { rule ->
+            if (!rule.enabled || rule.isCoolingDown(nowMs)) return@matchingTriggerViews false
             val triggerMatches = when (rule.triggerEvent) {
                 TriggerEvent.LIGHT_BELOW -> transition.previousLux > rule.lightLux && transition.currentLux <= rule.lightLux
                 TriggerEvent.LIGHT_ABOVE -> transition.previousLux < rule.lightLux && transition.currentLux >= rule.lightLux
@@ -249,8 +254,8 @@ object RuleEvaluator {
         val effectiveState = liveState.copy(
             connectedWifiSsid = if (transition.event == WifiStateEvent.CONNECTED) transition.ssid else null
         )
-        return rules.filter { rule ->
-            if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@filter false
+        return rules.matchingTriggerViews { rule ->
+            if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@matchingTriggerViews false
             val ssidMatches = TriggerTargetMatcher.wifiTargetMatches(rule.wifiSsid, transition.ssid)
             ssidMatches && matchesRuleConditions(rule, effectiveState, nowMs)
         }
@@ -266,7 +271,7 @@ object RuleEvaluator {
             BluetoothDeviceEvent.CONNECTED -> TriggerEvent.BLUETOOTH_CONNECTED
             BluetoothDeviceEvent.DISCONNECTED -> TriggerEvent.BLUETOOTH_DISCONNECTED
         }
-        return rules.filter { rule ->
+        return rules.matchingTriggerViews { rule ->
             rule.enabled &&
                 rule.triggerEvent == trigger &&
                 !rule.isCoolingDown(nowMs) &&
@@ -281,13 +286,13 @@ object RuleEvaluator {
         liveState: LiveSystemState = LiveSystemState(),
         nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
-        return rules.filter { rule ->
-            if (!rule.enabled || rule.triggerEvent != TriggerEvent.NOTIFICATION_RECEIVED || rule.isCoolingDown(nowMs)) return@filter false
+        return rules.matchingTriggerViews { rule ->
+            if (!rule.enabled || rule.triggerEvent != TriggerEvent.NOTIFICATION_RECEIVED || rule.isCoolingDown(nowMs)) return@matchingTriggerViews false
             if (!TriggerTargetMatcher.notificationPackageTargetMatches(rule.notificationAppPackage, event.packageName)) {
-                return@filter false
+                return@matchingTriggerViews false
             }
             if (!TriggerTargetMatcher.notificationKeywordMatches(rule.notificationKeyword, event.title, event.text)) {
-                return@filter false
+                return@matchingTriggerViews false
             }
             matchesRuleConditions(rule, liveState, nowMs)
         }
@@ -301,7 +306,7 @@ object RuleEvaluator {
     ): List<Automation> {
         val normalizedEventId = NfcTagUtils.normalizeTagId(event.tagId)
         if (normalizedEventId.isEmpty()) return emptyList()
-        return rules.filter { rule ->
+        return rules.matchingTriggerViews { rule ->
             rule.enabled &&
                 rule.triggerEvent == TriggerEvent.NFC_TAG_SCANNED &&
                 !rule.isCoolingDown(nowMs) &&
@@ -316,7 +321,7 @@ object RuleEvaluator {
         liveState: LiveSystemState = LiveSystemState(),
         nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
-        return rules.filter { rule ->
+        return rules.matchingTriggerViews { rule ->
             rule.enabled &&
                 rule.triggerEvent == transition.triggerEvent &&
                 !rule.isCoolingDown(nowMs) &&
@@ -330,14 +335,14 @@ object RuleEvaluator {
         liveState: LiveSystemState = LiveSystemState(),
         nowMs: Long = System.currentTimeMillis(),
     ): List<Automation> {
-        return rules.filter { rule ->
+        return rules.matchingTriggerViews { rule ->
             if (!rule.enabled || rule.triggerEvent != TriggerEvent.SMS_RECEIVED || rule.isCoolingDown(nowMs)) {
-                return@filter false
+                return@matchingTriggerViews false
             }
 
             // 1. Sender matching
             if (!PhoneNumberUtils.matches(rule.smsSenderFilter, event.sender)) {
-                return@filter false
+                return@matchingTriggerViews false
             }
 
             // 2. Content matching based on smsMatchMode
@@ -365,7 +370,7 @@ object RuleEvaluator {
                     }
                 }
             }
-            if (!contentMatches) return@filter false
+            if (!contentMatches) return@matchingTriggerViews false
 
             // 3. Environmental conditions
             matchesRuleConditions(rule, liveState, nowMs)
@@ -385,7 +390,7 @@ object RuleEvaluator {
             AppEvent.CLOSED -> TriggerEvent.APP_CLOSED
         }
 
-        val matching = rules.filter { r ->
+        val matching = rules.matchingTriggerViews { r ->
             r.enabled &&
                 r.triggerEvent == triggerEvent &&
                 r.appPackage == pkg &&
@@ -411,10 +416,10 @@ object RuleEvaluator {
             FlipEvent.FLIPPED_DOWN -> TriggerEvent.DEVICE_FLIPPED_DOWN
             FlipEvent.FLIPPED_UP -> TriggerEvent.DEVICE_FLIPPED_UP
         }
-        return rules.filter { rule ->
-            if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@filter false
+        return rules.matchingTriggerViews { rule ->
+            if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@matchingTriggerViews false
             // If screen is off and rule does not permit screen-off evaluation, filter out
-            if (liveState.isScreenOn == false && !rule.flipScreenOffDetection) return@filter false
+            if (liveState.isScreenOn == false && !rule.flipScreenOffDetection) return@matchingTriggerViews false
             matchesRuleConditions(rule, liveState, nowMs)
         }
     }
@@ -429,9 +434,11 @@ object RuleEvaluator {
             GeofenceEvent.ENTER -> TriggerEvent.GEOFENCE_ENTER
             GeofenceEvent.EXIT -> TriggerEvent.GEOFENCE_EXIT
         }
-        return rules.filter { rule ->
+        return rules.matchingTriggerViews { rule ->
             rule.enabled &&
                 rule.id == transition.automationId &&
+                (transition.triggerIndex == null || rule.matchedTriggerIndex == transition.triggerIndex) &&
+                (transition.executionRevision == null || rule.executionRevision == transition.executionRevision) &&
                 rule.triggerEvent == trigger &&
                 !rule.isCoolingDown(nowMs) &&
                 matchesRuleConditions(rule, liveState, nowMs)

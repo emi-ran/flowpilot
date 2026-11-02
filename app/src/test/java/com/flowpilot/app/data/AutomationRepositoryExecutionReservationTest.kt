@@ -53,6 +53,36 @@ class AutomationRepositoryExecutionReservationTest {
         SecretCipher.secretKeyProvider = null
     }
 
+
+    @Test fun multiTrigger_sourcesShareDurableLeaseAndCooldown_andPersistMatchedSource() = runTest {
+        val original = addRule(cooldownMinutes = 5)
+        repository.update(original.copy(triggerDefinitions = com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(
+            com.flowpilot.app.data.model.TriggerDefinition.AppOpened("com.example"),
+            com.flowpilot.app.data.model.TriggerDefinition.WifiConnected("Home"),
+        ))))
+        val snapshot = repository.automations.first().single()
+        val app = com.flowpilot.app.engine.RuleEvaluator.evaluate(listOf(snapshot),
+            com.flowpilot.app.engine.AppEvent.OPENED, "com.example", false, nowMs = 10_000).toExecute.single()
+        val wifi = com.flowpilot.app.engine.RuleEvaluator.evaluateWifi(listOf(snapshot),
+            com.flowpilot.app.engine.WifiTransition(com.flowpilot.app.engine.WifiStateEvent.CONNECTED, "Home"), nowMs = 10_000).single()
+        val gate = CompletableDeferred<Unit>()
+        val claims = listOf(app, wifi).map { source -> async(Dispatchers.IO) {
+            gate.await()
+            repository.reserveExecution(source.id, source.executionRevision, at = 10_000)
+        } }
+        gate.complete(Unit)
+        val winner = claims.awaitAll().filterNotNull().single()
+        repository.releaseExecutionReservation(winner, successful = true)
+        assertThat(repository.reserveExecution(wifi.id, wifi.executionRevision, at = 10_001)).isNull()
+        assertThat(repository.reserveExecution(app.id, app.executionRevision, at = 310_000)).isNotNull()
+        repository.appendHistory(ExecutionHistoryEntry.create(ruleId = snapshot.id, ruleName = snapshot.name,
+            trigger = wifi.triggerEvent.name, triggerSourceIndex = wifi.matchedTriggerIndex + 1,
+            actions = listOf(ActionExecutionRecord.create(actionType = ActionType.SHOW_NOTIFICATION,
+                success = true, message = "done"))))
+        val history = repository.executionHistory.first().single()
+        assertThat(history.trigger).isEqualTo("WIFI_CONNECTED")
+        assertThat(history.triggerSourceIndex).isEqualTo(2)
+    }
     @Test
     fun reserveExecution_claimsCooldownAtomically() = runTest {
         val rule = addRule(cooldownMinutes = 5)

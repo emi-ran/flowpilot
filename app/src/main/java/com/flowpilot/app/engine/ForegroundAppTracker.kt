@@ -18,6 +18,9 @@ class ForegroundAppTracker(
 
     fun reset() { lastEventTime = System.currentTimeMillis() }
 
+    private var observedPackages: Set<String>? = null
+    fun updatePackages(packages: Set<String>) { observedPackages = packages }
+
     data class Transition(
         val packageName: String,
         val isForeground: Boolean,
@@ -63,6 +66,7 @@ class ForegroundAppTracker(
         if (maxTime > lastEventTime) {
             lastEventTime = maxTime
         }
-        return list
+        // Keep other foreground transitions: they close an observed app via the reducer.
+        return if (observedPackages?.isEmpty() == true) emptyList() else list
     }
 }

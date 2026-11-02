@@ -286,6 +286,13 @@ data class Automation(
     val name: String,
     val enabled: Boolean = true,
     val triggerEvent: TriggerEvent = TriggerEvent.APP_OPENED,
+    /** Non-null versioned OR list supersedes every legacy trigger field. */
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val triggerDefinitions: TriggerDefinitions? = null,
+    /** Runtime-only source index; never written to exports, backups or storage. */
+    @kotlinx.serialization.Transient
+    val matchedTriggerIndex: Int = 0,
     val appPackage: String = "",
     val appName: String = "",
     val scheduledMinute: Int = 0,

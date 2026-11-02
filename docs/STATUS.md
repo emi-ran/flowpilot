@@ -44,6 +44,7 @@ Last updated: 2026-09-15
 
 ## Implemented; device validation pending
 
+- Multiple OR triggers (#5): up to five independently configured, reorderable triggers per rule; typed versioned lists, legacy single-trigger JSON preservation, actual source enum/index in history/templates, one shared cooldown, callback dedupe and enabled-trigger listener union. Migration/matching/backup/import/demand unit coverage added; builds/tests and Xiaomi app + Wi-Fi, engine-restart and disabled-rule smoke verification remain pending.
 - Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions (unit tests passed; device smoke tests pending):
   - Time interval filtering with overnight span support (e.g. 23:00 - 07:00 crossing midnight).
   - Day of week filtering with Daily, Weekdays, Weekends, and custom day toggles.

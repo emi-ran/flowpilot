@@ -6,6 +6,7 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 
+- Multiple OR triggers per rule (#5): Create/Edit can add, remove and reorder up to five independently configured trigger definitions. Existing single-trigger JSON stays unchanged; normal export/share and encrypted backup/restore preserve multi-trigger lists. Matching records the actual source and one-based source index, shares the rule cooldown across sources, and reconciles listeners from all enabled definitions. Unit coverage added; Xiaomi app + Wi-Fi, restart and disabled-rule smoke tests remain pending.
 - Nested AND / OR / NOT condition groups: `Automation.conditionTree` adds recursive groups with per-group combinators, negation, empty-group semantics, and a 4-level depth guard. Rules without a tree keep the existing flat-AND `conditions` behavior, and the editor keeps `conditions` as a flattened leaf list for older readers.
 - Flashlight toggle action (`TORCH_TOGGLE`): turns the torch on when it is off and off when it is on, resolved from camera torch state callbacks so changes made by the system flashlight tile are respected. The "Shake for Flashlight" preset now switches the light instead of only turning it on.
 

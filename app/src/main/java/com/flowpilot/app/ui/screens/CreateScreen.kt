@@ -5,6 +5,7 @@
 
 package com.flowpilot.app.ui.screens
 
+import com.flowpilot.app.data.model.*
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -90,7 +91,6 @@ import com.flowpilot.app.ui.components.rememberActionsReorderState
 import com.flowpilot.app.ui.components.actionDragTarget
 import com.flowpilot.app.ui.components.actionDragHandle
 import androidx.compose.material.icons.filled.DragHandle
-import com.flowpilot.app.engine.NfcTagHandoff
 import com.flowpilot.app.engine.NfcTagUtils
 import com.flowpilot.app.analysis.AutomationConflict
 import com.flowpilot.app.analysis.AutomationConflictAnalyzer
@@ -190,7 +190,6 @@ fun CreateScreen(
     var geofenceLatitude by remember { mutableStateOf(0.0) }
     var geofenceLongitude by remember { mutableStateOf(0.0) }
     var geofenceRadiusMeters by remember { mutableIntStateOf(150) }
-    var showTimePicker by remember { mutableStateOf(false) }
     var actions by remember { mutableStateOf(emptyList<ActionType>()) }
     var actionDelays by remember { mutableStateOf(emptyList<Int>()) }
     val onReorderActions: (Int, Int) -> Unit = { fromIndex, toIndex ->
@@ -215,26 +214,18 @@ fun CreateScreen(
     var pkg by remember { mutableStateOf("") }
     var appName by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
-    var showApps by remember { mutableStateOf(false) }
-    var showNotificationApps by remember { mutableStateOf(false) }
     var showLaunchApps by remember { mutableStateOf(false) }
-    var showTriggers by remember { mutableStateOf(false) }
     var showActions by remember { mutableStateOf(false) }
     var showPresets by remember { mutableStateOf(false) }
 
-    LaunchedEffect(event) {
-        if (event == TriggerEvent.NFC_TAG_SCANNED) {
-            NfcTagHandoff.clearLatestScannedTagId()
-            NfcTagHandoff.latestScannedTagId.collect { scannedTagId ->
-                scannedTagId?.let { nfcTagId = it }
-            }
-        }
-    }
+    var triggerItems by remember() { mutableStateOf(listOf<TriggerDefinition>(TriggerDefinition.AppOpened())) }
+    val triggerDefinitions = if (triggerItems.size > 1) TriggerDefinitions(items = triggerItems) else null
 
     val applyPreset: (com.flowpilot.app.data.model.AutomationPreset) -> Unit = { preset ->
         val t = preset.template
         name = t.name
         event = t.triggerEvent
+        triggerItems = t.normalizedTriggers()
         pkg = t.appPackage
         appName = t.appName
         scheduledMinute = t.scheduledMinute
@@ -317,11 +308,8 @@ fun CreateScreen(
         )
     }
 
-    if (showApps) AppPicker(select = { p, n -> pkg = p; appName = n; showApps = false }, selectedPackage = pkg, onDismiss = { showApps = false })
-    if (showNotificationApps) AppPicker(select = { p, n -> notificationAppPackage = p; notificationAppName = n; showNotificationApps = false }, selectedPackage = notificationAppPackage, onDismiss = { showNotificationApps = false })
     if (showLaunchApps) AppPicker(select = { p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }, selectedPackage = launchPackage, onDismiss = { showLaunchApps = false })
     if (showForceStopApps) AppPicker(select = { p, n -> forceStopPackage = p; forceStopAppName = n; showForceStopApps = false }, selectedPackage = forceStopPackage, onDismiss = { showForceStopApps = false })
-    if (showTriggers) TriggerPicker(event, { event = it; showTriggers = false }) { showTriggers = false }
     if (showConditionPicker) {
         ConditionPickerDialog(
             onAdd = { cond ->
@@ -373,15 +361,6 @@ fun CreateScreen(
             onDismiss = { pendingCandidate = null; pendingSave = null; pendingConflicts = emptyList() },
         )
     }
-    if (showTimePicker) {
-        val pickerState = rememberTimePickerState(scheduledMinute / 60, scheduledMinute % 60, is24Hour = true)
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            confirmButton = { TextButton({ scheduledMinute = pickerState.hour * 60 + pickerState.minute; showTimePicker = false }) { Text(stringResource(R.string.btn_ok)) } },
-            dismissButton = { TextButton({ showTimePicker = false }) { Text(stringResource(R.string.btn_cancel)) } },
-            text = { TimePicker(pickerState) },
-        )
-    }
     if (showAlarmTimePicker) {
         val alarmPickerState = rememberTimePickerState(alarmHour, alarmMinute, is24Hour = true)
         AlertDialog(
@@ -410,6 +389,7 @@ fun CreateScreen(
                         name = name.ifBlank { "New automation" },
                         enabled = true,
                         triggerEvent = event,
+                        triggerDefinitions = triggerDefinitions,
                         appPackage = pkg,
                         appName = appName,
                         action = actions.firstOrNull() ?: ActionType.SHOW_NOTIFICATION,
@@ -596,54 +576,33 @@ fun CreateScreen(
                 title = stringResource(R.string.section_when),
                 modifier = Modifier.padding(top = 10.dp, bottom = 10.dp),
             )
-            TriggerCardItem(
-                event = event,
-                onChangeTrigger = { showTriggers = true },
-                pkg = pkg,
-                appName = appName,
-                onOpenAppPicker = { showApps = true },
-                scheduledMinute = scheduledMinute,
-                scheduledDays = scheduledDays,
-                onOpenTimePicker = { showTimePicker = true },
-                onDaysChange = { scheduledDays = it },
-                batteryLevel = batteryLevel,
-                onBatteryLevelChange = { batteryLevel = it },
-                wifiSsid = wifiSsid,
-                onWifiSsidChange = { wifiSsid = it },
-                bluetoothAddress = bluetoothDeviceAddress,
-                bluetoothName = bluetoothDeviceName,
-                onBluetoothChange = { addr, devName ->
-                    bluetoothDeviceAddress = addr
-                    bluetoothDeviceName = devName
-                },
-                nfcTagId = nfcTagId,
-                onNfcTagChange = { nfcTagId = it },
-                notificationAppPackage = notificationAppPackage,
-                notificationAppName = notificationAppName,
-                notificationKeyword = notificationKeyword,
-                onOpenNotificationAppPicker = { showNotificationApps = true },
-                onNotificationKeywordChange = { notificationKeyword = it },
-                flipScreenOffDetection = flipScreenOffDetection,
-                onFlipScreenOffChange = { flipScreenOffDetection = it },
-                lightLux = lightLux,
-                onLightLuxChange = { lightLux = it },
-                shakeThreshold = shakeThreshold,
-                onShakeThresholdChange = { shakeThreshold = it },
-                smsSenderFilter = smsSenderFilter,
-                onSmsSenderFilterChange = { smsSenderFilter = it },
-                smsMatchMode = smsMatchMode,
-                onSmsMatchModeChange = { smsMatchMode = it },
-                smsKeyword = smsKeyword,
-                onSmsKeywordChange = { smsKeyword = it },
-                geofenceName = geofenceName,
-                onGeofenceNameChange = { geofenceName = it },
-                geofenceLatitude = geofenceLatitude,
-                onGeofenceLatitudeChange = { geofenceLatitude = it },
-                geofenceLongitude = geofenceLongitude,
-                onGeofenceLongitudeChange = { geofenceLongitude = it },
-                geofenceRadiusMeters = geofenceRadiusMeters,
-                onGeofenceRadiusChange = { geofenceRadiusMeters = it },
-            )
+            com.flowpilot.app.ui.components.TriggerListEditor(triggerItems) { updated ->
+                triggerItems = updated
+                val first = Automation(id = "", name = "", createdAt = 0).withTrigger(updated.first())
+                event = first.triggerEvent
+                    pkg = first.appPackage
+                    appName = first.appName
+                    batteryLevel = first.batteryLevel
+                    scheduledMinute = first.scheduledMinute
+                    scheduledDays = first.scheduledDays
+                    wifiSsid = first.wifiSsid
+                    bluetoothDeviceAddress = first.bluetoothDeviceAddress
+                    bluetoothDeviceName = first.bluetoothDeviceName
+                    nfcTagId = first.nfcTagId
+                    notificationAppPackage = first.notificationAppPackage
+                    notificationAppName = first.notificationAppName
+                    notificationKeyword = first.notificationKeyword
+                    flipScreenOffDetection = first.flipScreenOffDetection
+                    shakeThreshold = first.shakeThreshold
+                    lightLux = first.lightLux
+                    smsSenderFilter = first.smsSenderFilter
+                    smsMatchMode = first.smsMatchMode
+                    smsKeyword = first.smsKeyword
+                    geofenceName = first.geofenceName
+                    geofenceLatitude = first.geofenceLatitude
+                    geofenceLongitude = first.geofenceLongitude
+                    geofenceRadiusMeters = first.geofenceRadiusMeters
+            }
 
             SectionHeader(
                 title = stringResource(R.string.section_conditions_title),
@@ -950,6 +909,7 @@ fun CreateScreen(
                             id = newRuleId,
                             name = finalName,
                             triggerEvent = event,
+                        triggerDefinitions = triggerDefinitions,
                             appPackage = pkg,
                             scheduledMinute = scheduledMinute,
                             scheduledDays = scheduledDays,
@@ -977,6 +937,7 @@ fun CreateScreen(
                             vm.addRule(
                                 name = finalName,
                                 triggerEvent = event,
+                        triggerDefinitions = triggerDefinitions,
                                 appPackage = pkg,
                                 appName = appName,
                                 actions = actions,
@@ -1052,11 +1013,7 @@ fun CreateScreen(
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(16.dp),
                     enabled =
-                        (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
-                            (event != TriggerEvent.NOTIFICATION_RECEIVED || notificationAppPackage.isNotEmpty()) &&
-                            (event != TriggerEvent.BLUETOOTH_CONNECTED && event != TriggerEvent.BLUETOOTH_DISCONNECTED || bluetoothDeviceAddress.isNotEmpty()) &&
-                            (event != TriggerEvent.NFC_TAG_SCANNED || NfcTagUtils.isValidTagId(nfcTagId)) &&
-                            (event != TriggerEvent.GEOFENCE_ENTER && event != TriggerEvent.GEOFENCE_EXIT || isValidGeofenceConfig(geofenceLatitude, geofenceLongitude, geofenceRadiusMeters)) &&
+                        triggerItems.all { it.isValidTriggerDefinition() } &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&

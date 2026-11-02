@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="triggers_any_summary">HERHANGİ bir tetikleyici eşleşsin · ortak bekleme süresi</string>
+    <string name="trigger_add">Tetikleyici ekle (en fazla 5)</string>
+    <string name="trigger_remove">Tetikleyiciyi kaldır</string>
+    <string name="trigger_move_up">Tetikleyiciyi yukarı taşı</string>
+    <string name="trigger_move_down">Tetikleyiciyi aşağı taşı</string>
+    <string name="trigger_source_index">Tetikleyici %1$d</string>
     <string name="app_name">FlowPilot</string>
     <string name="notif_channel_engine">Otomasyon motoru (sessiz)</string>
     <string name="notif_channel_engine_desc">FlowPilot otomasyonları çalışırken gerekli sessiz durum bildirimi</string>

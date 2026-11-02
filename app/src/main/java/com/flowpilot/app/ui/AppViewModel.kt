@@ -1,5 +1,7 @@
 package com.flowpilot.app.ui
 
+import com.flowpilot.app.data.model.hasTrigger
+
 import android.Manifest
 import android.app.Application
 import android.content.Intent
@@ -143,20 +145,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val actionStatuses = rule.effectiveActions.map { capabilities.statusFor(it) }
 
                 // Check trigger/condition prerequisites for Wi-Fi, Bluetooth, NFC, Notifications, Phone Calls
-                val hasWifiTriggerOrCond = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.WIFI_CONNECTED ||
-                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.WIFI_DISCONNECTED ||
+                val hasWifiTriggerOrCond = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.WIFI_CONNECTED, com.flowpilot.app.data.model.TriggerEvent.WIFI_DISCONNECTED) ||
                     rule.conditions.any { it.type == com.flowpilot.app.data.model.ConditionType.WIFI_CONNECTED || it.type == com.flowpilot.app.data.model.ConditionType.WIFI_DISCONNECTED }
 
-                val hasNotificationTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED
-                val hasBluetoothTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED ||
-                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED
-                val hasNfcTagTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.NFC_TAG_SCANNED
-                val hasCallTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_RINGING ||
-                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED ||
-                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING ||
-                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED
-                val hasFlipTrigger = rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_DOWN ||
-                    rule.triggerEvent == com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_UP
+                val hasNotificationTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED)
+                val hasBluetoothTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED, com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED)
+                val hasNfcTagTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.NFC_TAG_SCANNED)
+                val hasCallTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.CALL_RINGING, com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED, com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING, com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED)
+                val hasFlipTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_DOWN, com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_UP)
 
                 val triggerStatus = when {
                     hasWifiTriggerOrCond && !capabilities.hasWifiPermissions() -> CapabilityStatus.PERMISSION_REQUIRED
@@ -260,6 +256,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         notificationKeyword: String = "",
         conditions: List<com.flowpilot.app.data.model.RuleCondition> = emptyList(),
         conditionTree: com.flowpilot.app.data.model.ConditionNode? = null,
+        triggerDefinitions: com.flowpilot.app.data.model.TriggerDefinitions? = null,
         notificationTitle: String = "FlowPilot",
         notificationBody: String = "Automation ran",
         vibrationPattern: com.flowpilot.app.data.model.VibrationPattern = com.flowpilot.app.data.model.VibrationPattern.PULSE,
@@ -326,6 +323,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 notificationKeyword = notificationKeyword,
                 conditions = conditions,
                 conditionTree = conditionTree,
+                triggerDefinitions = triggerDefinitions,
                 notificationTitle = notificationTitle,
                 notificationBody = notificationBody,
                 vibrationPattern = vibrationPattern,

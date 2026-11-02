@@ -2,6 +2,7 @@ package com.flowpilot.app.engine
 
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.data.model.triggerViews
 import java.time.LocalDateTime
 
 /** Pure time-schedule matching. Process startup primes time instead of replaying it. */
@@ -14,11 +15,11 @@ object ScheduleEvaluator {
     ): List<Automation> {
         val minute = now.hour * 60 + now.minute
         val day = now.dayOfWeek.value
-        return rules.filter { rule ->
+        return rules.triggerViews().filter { rule ->
             rule.enabled && rule.triggerEvent == TriggerEvent.TIME_SCHEDULE &&
                 !rule.isCoolingDown(nowMs) &&
                 TriggerTargetMatcher.scheduleTargetMatches(rule.scheduledMinute, rule.scheduledDays, minute, day) &&
                 RuleEvaluator.matchesRuleConditions(rule, liveState, nowMs)
-        }
+        }.distinctBy { it.id }
     }
 }

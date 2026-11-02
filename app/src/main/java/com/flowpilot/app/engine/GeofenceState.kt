@@ -2,6 +2,7 @@ package com.flowpilot.app.engine
 
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.data.model.geofenceRegistrationViews
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -22,6 +23,10 @@ data class GeofenceTransition(
     val radiusMeters: Int = 0,
     val timestamp: Long = System.currentTimeMillis(),
     val coordinatesTimestamp: Long? = null,
+    /** Null for legacy queued events; otherwise the matched OR definition index. */
+    val triggerIndex: Int? = null,
+    /** Saved rule revision that authorized this source; null only for legacy queue entries. */
+    val executionRevision: Long? = null,
 )
 
 val GeofenceTransition.coordinates: Pair<Double, Double>?
@@ -82,7 +87,7 @@ fun calculateGeofenceDiff(
     currentRegistered: Map<String, Automation>,
     desiredRules: List<Automation>,
 ): GeofenceRegistrationDiff {
-    val activeDesired = desiredRules
+    val activeDesired = desiredRules.geofenceRegistrationViews()
         .filter { rule ->
             rule.enabled &&
                 (rule.triggerEvent == TriggerEvent.GEOFENCE_ENTER || rule.triggerEvent == TriggerEvent.GEOFENCE_EXIT) &&
@@ -202,7 +207,7 @@ class GeofenceRetryPolicy(
         desiredRules: List<Automation>,
         prereqResult: GeofencePrerequisitesResult,
     ): Boolean {
-        val currentSignatures = desiredRules
+        val currentSignatures = desiredRules.geofenceRegistrationViews()
             .filter { it.enabled && (it.triggerEvent == TriggerEvent.GEOFENCE_ENTER || it.triggerEvent == TriggerEvent.GEOFENCE_EXIT) && isValidGeofenceConfig(it.geofenceLatitude, it.geofenceLongitude, it.geofenceRadiusMeters) }
             .map { it.toGeofenceConfigSignature() }
             .toSet()

@@ -928,4 +928,64 @@ class BackupManagerTest {
         assertThat(BackupManager.isEncryptedBackup(encryptedJson)).isTrue()
         assertThat(BackupManager.isEncryptedBackup("not json")).isFalse()
     }
+
+    private fun multiTriggerRule() = createSampleRule("multi", "App or Wi-Fi").copy(
+        triggerDefinitions = com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(
+            com.flowpilot.app.data.model.TriggerDefinition.AppOpened("com.example", "Example"),
+            com.flowpilot.app.data.model.TriggerDefinition.WifiConnected("Home"),
+        )),
+        actions = listOf(ActionType.SOUND_PROFILE_NORMAL, ActionType.VIBRATE),
+        actionDelays = listOf(0, 2),
+    )
+
+    @Test fun multiTrigger_normalExportShareAndEncryptedRestore_preserveDefinitionsAndActionOrder() = runTest {
+        val original = multiTriggerRule()
+        val normal = BackupManager.parseImport(BackupManager.exportToString(listOf(original))).getOrThrow().single()
+        val shared = BackupManager.parseImport(BackupManager.exportSingleToString(original)).getOrThrow().single()
+        val encrypted = BackupManager.exportEncryptedToString(listOf(original), "ValidPass123")
+        val restored = BackupManager.parseEncryptedImport(encrypted, "ValidPass123").getOrThrow().single()
+        listOf(normal, shared, restored).forEach { parsed ->
+            assertThat(parsed.triggerDefinitions).isEqualTo(original.triggerDefinitions)
+            assertThat(parsed.effectiveActions).containsExactlyElementsIn(original.effectiveActions).inOrder()
+            assertThat(parsed.effectiveActionDelays).containsExactly(0, 2).inOrder()
+            assertThat(parsed.triggerEvent).isEqualTo(TriggerEvent.APP_OPENED)
+            assertThat(parsed.appPackage).isEqualTo("com.example")
+        }
+        assertThat(normal.enabled).isFalse()
+        assertThat(shared.enabled).isFalse()
+        assertThat(restored.enabled).isTrue()
+        repository.importAutomations(listOf(restored), ImportStrategy.REPLACE_ALL)
+        val loaded = repository.automations.first().single()
+        assertThat(loaded.id).isNotEqualTo(original.id)
+        assertThat(loaded.triggerDefinitions).isEqualTo(original.triggerDefinitions)
+        assertThat(loaded.enabled).isTrue()
+        assertThat(loaded.effectiveActionDelays).containsExactly(0, 2).inOrder()
+    }
+
+    @Test fun invalidMultiTriggerImports_areRejectedBeforeRepositoryMutation() = runTest {
+        val valid = multiTriggerRule()
+        repository.replaceAll(listOf(createSampleRule("existing", "Existing")))
+        val before = repository.automations.first()
+        val invalidLists = listOf(
+            com.flowpilot.app.data.model.TriggerDefinitions(items = emptyList()),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = List(6) { com.flowpilot.app.data.model.TriggerDefinition.ScreenOn }),
+            com.flowpilot.app.data.model.TriggerDefinitions(version = 2, items = valid.triggerDefinitions!!.items),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.AppOpened(""))),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.WifiConnected("Home"), com.flowpilot.app.data.model.TriggerDefinition.BatteryBelow(101))),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.Schedule(1440))),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.Shake(Float.NaN))),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.GeofenceEnter(geofenceLatitude = 91.0))),
+        )
+        invalidLists.forEach { definitions ->
+            val bad = valid.copy(triggerDefinitions = definitions)
+            if (definitions.items.none { it is com.flowpilot.app.data.model.TriggerDefinition.Shake && !it.shakeThreshold.isFinite() }) {
+                assertThat(BackupManager.parseImport(BackupManager.exportSingleToString(bad)).isFailure).isTrue()
+            }
+            var rejected = false
+            try { repository.importAutomations(listOf(bad), ImportStrategy.REPLACE_ALL) }
+            catch (_: IllegalArgumentException) { rejected = true }
+            assertThat(rejected).isTrue()
+            assertThat(repository.automations.first()).isEqualTo(before)
+        }
+    }
 }

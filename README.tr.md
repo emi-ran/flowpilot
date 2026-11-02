@@ -156,6 +156,8 @@ Günlük yaşamınızı anında kolaylaştıracak yerleşik şablonlarla hemen b
 ### 1. Tetikleyiciler (Olaylar)
 FlowPilot zengin bir donanım, radyo ve sistem olayı yelpazesini dinler:
 
+Bir kural en fazla beş bağımsız tetikleyiciyi VEYA mantığıyla birleştirebilir (örneğin Uygulama açıldı VEYA Wi-Fi bağlandı). Oluştur/Düzenle ekranında tetikleyici ekleyebilir, kaldırabilir ve sıralayabilirsiniz. Tüm kaynaklar ortak kural bekleme süresini ve aynı sıralı eylemleri kullanır; geçmiş eşleşen kaynağı gösterir. Eski tek tetikleyicili kurallar ve JSON biçimi korunur.
+
 - 📱 **Uygulama Döngüsü:** Seçilen uygulamanın açılması veya kapanması (düşük maliyetli `UsageStatsManager` geçişleri).
 - 🔌 **Güç & Pil:** Şarja takılma / çıkarılma, pil seviyesinin belirlenen yüzdenin üstüne çıkması veya altına inmesi.
 - 💡 **Ekran & Durum:** Ekranın açılması / kapanması, kilit ekranının açılması.
