@@ -268,6 +268,8 @@ shows an in-picker instruction when text is missing.
 
 `UpdateDownloadReceiver` accepts only `ACTION_DOWNLOAD_COMPLETE`, matches the extra download id against the id saved before enqueueing, requires `STATUS_SUCCESSFUL`, and clears the stored request. If installation permission is still disabled, it posts a permission notification; otherwise it posts a tap-to-install notification and attempts the install intent once. The system installer remains the final confirmation, so no unattended install path exists.
 
+Debug builds create no release client, skip automatic and manual checks, and hide the Updates settings card. A release APK is signed with the maintainer key, so a debug-signed package cannot be updated with it; exposing the release channel in development would only offer an install the system must reject.
+
 ## Battery / reliability
 
 - Engine runs in a special-use foreground service with an ongoing notification

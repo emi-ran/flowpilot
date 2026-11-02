@@ -107,7 +107,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val geofenceDiagnostics: StateFlow<Map<String, GeofenceDiagnostic>> = repository.geofenceDiagnostics
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    private val currentVersion: AppVersion? = AppVersion.parse(BuildConfig.VERSION_NAME)
+    // Release APKs are signed with a different key, so an update check in a debug build can only
+    // offer an APK the installer must reject. Keep development builds out of the release channel.
+    private val currentVersion: AppVersion? =
+        if (BuildConfig.DEBUG) null else AppVersion.parse(BuildConfig.VERSION_NAME)
     private val updateClient: GitHubReleaseClient? = currentVersion?.let(::GitHubReleaseClient)
 
     val updateAutoCheck: StateFlow<Boolean> = repository.updatePreferences
@@ -136,6 +139,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun checkForUpdates(manual: Boolean = true) {
+        if (BuildConfig.DEBUG) return
         if (_updateChecking.value) return
         val client = updateClient
         if (client == null) {
@@ -241,6 +245,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun autoCheckForUpdatesIfDue() {
+        if (BuildConfig.DEBUG) return
         viewModelScope.launch {
             val prefs = repository.updatePreferences.first()
             if (!prefs.autoCheckEnabled) return@launch

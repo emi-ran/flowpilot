@@ -228,33 +228,35 @@ fun SettingsScreen(
                 }
             }
 
-            // Updates Card
-            Spacer(Modifier.height(20.dp))
-            Text(
-                stringResource(R.string.settings_updates_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
-            Text(
-                stringResource(R.string.settings_updates_subtitle),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
-                SettingRow(
-                    label = stringResource(R.string.settings_auto_update_check),
-                    icon = Icons.Default.Update,
-                    checked = updateAutoCheck,
-                ) { vm.setUpdateAutoCheck(it) }
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
-                SettingRowWithSubtitle(
-                    label = stringResource(R.string.settings_check_updates),
-                    subtitle = updateSubtitle,
-                    icon = Icons.Default.Refresh,
-                    onClick = { vm.checkForUpdates() },
+            // Updates Card (release builds only: debug APKs cannot replace a signed release)
+            if (!BuildConfig.DEBUG) {
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    stringResource(R.string.settings_updates_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 6.dp)
                 )
+                Text(
+                    stringResource(R.string.settings_updates_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)) {
+                    SettingRow(
+                        label = stringResource(R.string.settings_auto_update_check),
+                        icon = Icons.Default.Update,
+                        checked = updateAutoCheck,
+                    ) { vm.setUpdateAutoCheck(it) }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+                    SettingRowWithSubtitle(
+                        label = stringResource(R.string.settings_check_updates),
+                        subtitle = updateSubtitle,
+                        icon = Icons.Default.Refresh,
+                        onClick = { vm.checkForUpdates() },
+                    )
+                }
             }
 
             // Backup, Restore & Sharing Card
