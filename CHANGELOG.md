@@ -12,6 +12,10 @@ All notable FlowPilot changes are documented here.
 
 - Shizuku-backed actions no longer fail permanently when the Shizuku `UserService` cannot start on Android 16 (`LoadedApk.makeApplicationInner` crash, Shizuku issue #2541). `ShizukuShell` falls back to Shizuku's allowlisted `newProcess` shell execution with the same 10-second timeout, and retries the UserService after 60 seconds or a binder restart.
 
+### Changed
+
+- Android CI now restores/saves the Gradle cache via `gradle/actions/setup-gradle` v4.4.4 instead of the retired v1 cache client, uses the Gradle build cache (`org.gradle.caching=true`), and runs tests, lint, debug assembly, and release validation in a single Gradle invocation. The Android-change detector now fails open (builds when the base commit is unresolved) and only pull-request runs cancel in progress, so main push runs used by release validation are not cancelled by a newer push.
+
 ## [2.0.0] - 2026-11-02
 
 ### Added

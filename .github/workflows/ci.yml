@@ -2,7 +2,7 @@ name: Android CI
 
 concurrency:
   group: android-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
+        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
 
       - name: Run connected Android tests
         uses: reactivecircus/android-emulator-runner@324029e2f414c084d8b15ba075288885e74aef9c # v2.34.0
@@ -46,6 +46,7 @@ jobs:
   build:
     name: Build & Test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -57,16 +58,21 @@ jobs:
         id: changes
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            base="${{ github.event.pull_request.base.sha }}"
-          else
-            base="${{ github.event.before }}"
+          set -euo pipefail
+          base=""
+          case "${{ github.event_name }}" in
+            pull_request) base="${{ github.event.pull_request.base.sha }}" ;;
+            push)         base="${{ github.event.before }}" ;;
+          esac
+          android=true
+          if [[ -n "$base" && ! "$base" =~ ^0+$ ]] && git cat-file -e "${base}^{commit}"; then
+            if changed="$(git diff --name-only "$base" "${{ github.sha }}")"; then
+              if ! grep -Eq '^(app/|gradle/|scripts/|gradlew$|gradlew\.bat$|build\.gradle\.kts$|settings\.gradle\.kts$|gradle\.properties$)' <<< "$changed"; then
+                android=false
+              fi
+            fi
           fi
-          if git diff --name-only "$base" "${{ github.sha }}" | grep -Eq '^(app/|gradle/|scripts/|gradlew$|gradlew\.bat$|build\.gradle\.kts$|settings\.gradle\.kts$|gradle\.properties$)'; then
-            echo "android=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "android=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo "android=$android" >> "$GITHUB_OUTPUT"
 
       - name: Confirm documentation-only change
         if: steps.changes.outputs.android != 'true'
@@ -81,27 +87,21 @@ jobs:
 
       - name: Setup Gradle
         if: steps.changes.outputs.android == 'true'
-        uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
+        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
 
       - name: Grant execute permission for gradlew
         if: steps.changes.outputs.android == 'true'
         run: chmod +x gradlew
 
-      - name: Run unit tests
+      - name: Build, test, lint and validate release APK
         if: steps.changes.outputs.android == 'true'
-        run: ./gradlew testDebugUnitTest --no-daemon
-
-      - name: Run Android lint
-        if: steps.changes.outputs.android == 'true'
-        run: ./gradlew lint --no-daemon
-
-      - name: Assemble Debug APK
-        if: steps.changes.outputs.android == 'true'
-        run: ./gradlew assembleDebug --no-daemon
-
-      - name: Validate Release APK
-        if: steps.changes.outputs.android == 'true'
-        run: ./gradlew assembleRelease -PreleaseSigningRequired=false --no-daemon
+        run: >-
+          ./gradlew
+          testDebugUnitTest
+          lint
+          assembleDebug
+          assembleRelease
+          -PreleaseSigningRequired=false
 
       - name: Upload Debug APK
         if: steps.changes.outputs.android == 'true'
