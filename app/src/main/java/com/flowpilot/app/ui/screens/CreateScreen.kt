@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
 import com.flowpilot.app.ui.components.SecondaryActionButton
+import com.flowpilot.app.ui.components.SectionHeader
 import com.flowpilot.app.ui.util.automaticAutomationName
 import com.flowpilot.app.ui.util.localizedLabel
 import android.content.Intent
@@ -584,7 +585,10 @@ fun CreateScreen(
                 singleLine = true,
             )
 
-            Text(stringResource(R.string.section_when), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+            SectionHeader(
+                title = stringResource(R.string.section_when),
+                modifier = Modifier.padding(top = 10.dp, bottom = 10.dp),
+            )
             TriggerCardItem(
                 event = event,
                 onChangeTrigger = { showTriggers = true },
@@ -634,11 +638,10 @@ fun CreateScreen(
                 onGeofenceRadiusChange = { geofenceRadiusMeters = it },
             )
 
-            Text(
-                stringResource(R.string.section_conditions),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
+            SectionHeader(
+                title = stringResource(R.string.section_conditions_title),
+                hint = stringResource(R.string.section_conditions_hint),
+                modifier = Modifier.padding(top = 26.dp, bottom = 10.dp),
             )
 
             ConditionsSection(
@@ -653,43 +656,30 @@ fun CreateScreen(
             )
 
             if (actions.size > 1) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        stringResource(R.string.section_do, actions.size),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(end = 4.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.DragHandle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            stringResource(R.string.hold_to_reorder),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    }
-                }
+                SectionHeader(
+                    title = stringResource(R.string.section_do, actions.size),
+                    modifier = Modifier.padding(top = 26.dp, bottom = 10.dp),
+                    trailing = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.DragHandle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                stringResource(R.string.hold_to_reorder),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                )
             } else {
-                Text(
-                    stringResource(R.string.section_do_single),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
+                SectionHeader(
+                    title = stringResource(R.string.section_do_single),
+                    modifier = Modifier.padding(top = 26.dp, bottom = 10.dp),
                 )
             }
 
@@ -866,6 +856,7 @@ fun CreateScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
             ) {
                 Column(Modifier.padding(14.dp)) {
@@ -875,7 +866,7 @@ fun CreateScreen(
                             .clickable { showAdvanced = !showAdvanced },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Tune, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Tune, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(10.dp))
                         Text(stringResource(R.string.advanced_options), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         val cdText = if (cooldownMinutes == 0) stringResource(R.string.cooldown_none) else "${cooldownMinutes}m"
@@ -915,9 +906,11 @@ fun CreateScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(done, Modifier.weight(1f), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.btn_cancel)) }
+            Spacer(Modifier.height(28.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth().padding(bottom = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(done, Modifier.weight(1f).height(50.dp), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.btn_cancel)) }
                 Button(
                     onClick = {
                         val finalName = name.ifBlank {
@@ -1041,7 +1034,7 @@ fun CreateScreen(
                             pendingConflicts = conflicts
                         }
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(16.dp),
                     enabled =
                         (event != TriggerEvent.APP_OPENED && event != TriggerEvent.APP_CLOSED || pkg.isNotEmpty()) &&
@@ -1466,7 +1459,8 @@ fun ConditionsSection(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
             ) {
                 Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

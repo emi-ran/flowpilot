@@ -21,6 +21,7 @@ All notable FlowPilot changes are documented here.
 - Secondary actions (Preview vibration, Play sound, set light target, Test) are outlined buttons instead of tonal fills, because the tonal fill matched the dark card surface and read as disabled.
 - Home uses the same neutral treatment: the engine status card and rule cards are neutral surfaces with a green status accent or per-trigger accent instead of a blue fill, rule detail lines use muted text, and "Available" capability pills use a muted success green.
 - Shake force is now configured per rule: selecting the "Device shaken" trigger reveals a strength slider (6–32 m/s² above gravity, default 20) so each automation can require a light or a firm shake. A hysteresis re-arm keeps one continuous shake from firing multiple times, so a single shake now toggles the flashlight once.
+- Rule editor (create and edit) uses one neutral card language: trigger, condition, action, and advanced-options cards share a bordered low surface, section headers read as letter-spaced labels with a muted hint ("CONDITIONS optional · all must match") and neutral reorder hint, action numbers and delay chips no longer use the blue primary fill, the redundant action subtitle is gone, and the footer separates Cancel/Save with a hairline divider and taller buttons.
 
 ## [1.1.0] - 2026-09-15
 

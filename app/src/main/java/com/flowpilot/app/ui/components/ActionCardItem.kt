@@ -12,6 +12,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -167,8 +168,9 @@ fun ActionCardItem(
             .fillMaxWidth()
             .then(cardModifier),
         shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDragging) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer
+            containerColor = if (isDragging) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow
         ),
     ) {
         Column(Modifier.padding(16.dp)) {
@@ -183,7 +185,7 @@ fun ActionCardItem(
                     modifier = Modifier
                         .size(24.dp)
                         .background(
-                            if (isDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                            if (isDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
                             CircleShape
                         ),
                     contentAlignment = Alignment.Center,
@@ -192,7 +194,7 @@ fun ActionCardItem(
                         "${index + 1}",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDragging) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = if (isDragging) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Spacer(Modifier.width(10.dp))
@@ -206,7 +208,7 @@ fun ActionCardItem(
                     Icon(
                         actionIcon(action),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -288,7 +290,7 @@ fun ActionCardItem(
                 Surface(
                     onClick = { showDelaySlider = !showDelaySlider },
                     shape = RoundedCornerShape(8.dp),
-                    color = if (delaySeconds > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = if (delaySeconds > 0) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerHigh,
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -298,14 +300,14 @@ fun ActionCardItem(
                             Icons.Default.Schedule,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
-                            tint = if (delaySeconds > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
                             if (delaySeconds == 0) stringResource(R.string.action_no_delay) else stringResource(R.string.action_wait_seconds, delaySeconds),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
-                            color = if (delaySeconds > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -841,15 +843,7 @@ fun ActionCardItem(
                         }
                     }
                 }
-                else -> {
-                    // System toggles (Wi-Fi, Bluetooth, Mobile Data, Flashlight, Airplane Mode, NFC, Battery Saver, Auto-rotate, DND, Dark Theme, Sound Profile, Lock Screen, Location)
-                    Text(
-                        stringResource(R.string.action_system_service_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                }
+                else -> Unit
             }
         }
     }
