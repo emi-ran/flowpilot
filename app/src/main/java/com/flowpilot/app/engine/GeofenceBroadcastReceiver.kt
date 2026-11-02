@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.flowpilot.app.data.AutomationRepository
+import com.flowpilot.app.data.model.geofenceRegistrationViews
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofenceStatusCodes
 import com.google.android.gms.location.GeofencingEvent
@@ -92,8 +93,19 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             val repository = AutomationRepository(appContext)
             try {
-                repository.enqueueGeofenceEvents(transitions)
-                repository.recordGeofenceTransitions(transitions)
+                val rules = repository.automations.first()
+                val registrations = rules.geofenceRegistrationViews().associateBy { it.id }
+                val resolved = transitions.mapNotNull { transition ->
+                    val registration = registrations[transition.automationId] ?: return@mapNotNull null
+                    if (!registration.enabled) return@mapNotNull null
+                    val parent = rules.firstOrNull { rule ->
+                        listOf(rule).geofenceRegistrationViews().any { it.id == registration.id }
+                    } ?: return@mapNotNull null
+                    transition.copy(automationId = parent.id, triggerIndex = registration.matchedTriggerIndex,
+                        executionRevision = parent.executionRevision)
+                }
+                repository.enqueueGeofenceEvents(resolved)
+                repository.recordGeofenceTransitions(resolved)
                 Log.d(TAG, "Persisted ${transitions.size} geofence transition(s) to queue")
 
                 val isEngineEnabled = repository.isEngineEnabled.first()

@@ -156,6 +156,8 @@ Start automating instantly with built-in recipes designed for everyday life:
 ### 1. Triggers (Events)
 FlowPilot listens to a rich spectrum of hardware, radio, and system events:
 
+A rule can combine up to five independently configured triggers with OR semantics (for example App opened OR Wi-Fi connected). Add, remove and reorder them in Create/Edit. All sources share one rule cooldown and execute the same ordered actions; history identifies the matched source. Existing single-trigger rules and JSON stay compatible.
+
 - 📱 **App Lifecycle:** App launched or closed (lightweight `UsageStatsManager` transitions).
 - 🔌 **Power & Battery:** Charger plugged in / unplugged, battery level rises above or drops below custom percentage.
 - 💡 **Screen & State:** Screen turned on/off, device unlocked.

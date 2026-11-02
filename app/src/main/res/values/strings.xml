@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="triggers_any_summary">Match ANY trigger · one shared cooldown</string>
+    <string name="trigger_add">Add trigger (up to 5)</string>
+    <string name="trigger_remove">Remove trigger</string>
+    <string name="trigger_move_up">Move trigger up</string>
+    <string name="trigger_move_down">Move trigger down</string>
+    <string name="trigger_source_index">Trigger %1$d</string>
     <string name="app_name">FlowPilot</string>
     <string name="notif_channel_engine">Automation engine (silent)</string>
     <string name="notif_channel_engine_desc">Silent status required while FlowPilot automations run</string>
@@ -75,7 +81,7 @@
     <string name="section_when">WHEN</string>
     <string name="section_do">DO (%1$d actions)</string>
     <string name="section_conditions_title">CONDITIONS</string>
-    <string name="section_conditions_hint">optional · all must match</string>
+    <string name="section_conditions_hint">optional · combine with AND / OR</string>
     <string name="section_do_single">DO (1 action)</string>
     <string name="hold_to_reorder">Hold to reorder</string>
     <string name="advanced_options">Advanced options</string>
@@ -522,6 +528,24 @@
     <string name="time_end">End time</string>
     <string name="time_overnight_window">🌙 Overnight window (crosses midnight)</string>
     <string name="btn_remove_condition">Remove condition</string>
+    <string name="condition_match_label">Match</string>
+    <string name="condition_combinator_and">AND</string>
+    <string name="condition_combinator_or">OR</string>
+    <string name="condition_not">NOT</string>
+    <string name="btn_add_condition_group">Add group</string>
+    <string name="btn_remove_condition_group">Remove group</string>
+    <string name="btn_collapse_condition_group">Collapse group</string>
+    <string name="btn_expand_condition_group">Expand group</string>
+    <string name="condition_group_empty">Empty group</string>
+    <string name="condition_group_empty_negated">NOT · empty group</string>
+    <plurals name="condition_group_summary">
+        <item quantity="one">%1$s · %2$d item</item>
+        <item quantity="other">%1$s · %2$d items</item>
+    </plurals>
+    <plurals name="condition_group_summary_negated">
+        <item quantity="one">NOT %1$s · %2$d item</item>
+        <item quantity="other">NOT %1$s · %2$d items</item>
+    </plurals>
     <string name="cooldown_rule_description_none">Rule triggers on every matching event.</string>
     <string name="cooldown_rule_description_minutes">Rule will wait %1$d minute(s) after a successful run before triggering automatically again.</string>
 

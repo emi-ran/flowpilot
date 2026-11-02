@@ -46,6 +46,8 @@ class GeofenceTracker(
     private val registeredRules = ConcurrentHashMap<String, Automation>()
 
     private val isUpdating = AtomicBoolean(false)
+    private var systemRegistrationsReconciled = false
+    private val removeLateRegistrations = AtomicBoolean(false)
 
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(context, GeofenceBroadcastReceiver::class.java).apply {
@@ -68,7 +70,29 @@ class GeofenceTracker(
      */
     @Synchronized
     fun updateListeningPolicy(rules: List<Automation>) {
+        removeLateRegistrations.set(false)
         if (isUpdating.get()) {
+            return
+        }
+        // Revision-scoped IDs from a previous process are not in registeredRules. Remove the
+        // PendingIntent's complete registration set once before rebuilding current demand.
+        if (!systemRegistrationsReconciled) {
+            isUpdating.set(true)
+            try {
+                geofencingClient.removeGeofences(geofencePendingIntent)
+                    .addOnSuccessListener {
+                        registeredRules.clear()
+                        systemRegistrationsReconciled = true
+                        isUpdating.set(false)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w(TAG, "Failed to reconcile surviving geofences", e)
+                        isUpdating.set(false)
+                    }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to reconcile surviving geofences", e)
+                isUpdating.set(false)
+            }
             return
         }
 
@@ -249,6 +273,11 @@ class GeofenceTracker(
         try {
             geofencingClient.addGeofences(request, geofencePendingIntent)
                 .addOnSuccessListener {
+                    if (removeLateRegistrations.get()) {
+                        geofencingClient.removeGeofences(rulesToAdd.map { it.id })
+                        onComplete()
+                        return@addOnSuccessListener
+                    }
                     Log.i(TAG, "Successfully registered ${rulesToAdd.size} geofence(s) with system")
                     rulesToAdd.forEach { registeredRules[it.id] = it }
                     retryPolicy.recordSuccess(rulesToAdd.map { it.id })
@@ -302,24 +331,23 @@ class GeofenceTracker(
             return
         }
         retryPolicy.reset()
-        if (registeredRules.isNotEmpty()) {
-            val allIds = registeredRules.keys.toList()
-            try {
-                geofencingClient.removeGeofences(allIds)
-                    .addOnSuccessListener {
-                        Log.i(TAG, "Removed all ${allIds.size} geofence(s) on stop (engine disabled)")
-                        recordUnregistration(allIds)
-                    }
-                    .addOnFailureListener { e ->
-                        Log.w(TAG, "Failed to remove geofences on stop: ${e.message}")
-                        recordRegistrationFailure(allIds, "Unregister failed: ${e.message.orEmpty()}")
-                    }
-            } catch (e: SecurityException) {
-                Log.w(TAG, "SecurityException removing geofences on stop: ${e.message}")
-                recordRegistrationFailure(allIds, "Unregister security error: ${e.message.orEmpty()}")
-            }
-            registeredRules.clear()
+        removeLateRegistrations.set(true)
+        val allIds = registeredRules.keys.toList()
+        try {
+            geofencingClient.removeGeofences(geofencePendingIntent)
+                .addOnSuccessListener {
+                    Log.i(TAG, "Removed all ${allIds.size} geofence(s) on stop (engine disabled)")
+                    recordUnregistration(allIds)
+                }
+                .addOnFailureListener { e ->
+                    Log.w(TAG, "Failed to remove geofences on stop: ${e.message}")
+                    recordRegistrationFailure(allIds, "Unregister failed: ${e.message.orEmpty()}")
+                }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to remove geofences on stop", e)
+            recordRegistrationFailure(allIds, "Unregister failed: ${e.message.orEmpty()}")
         }
+        registeredRules.clear()
     }
 
     fun getRegisteredRules(): Map<String, Automation> = registeredRules.toMap()

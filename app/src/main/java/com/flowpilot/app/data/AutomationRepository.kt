@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.normalizeTriggerStorage
+import com.flowpilot.app.data.model.normalizedTriggers
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.security.SecretCipher
 import com.flowpilot.app.engine.AutomationService
@@ -306,6 +308,8 @@ class AutomationRepository(private val context: Context) {
         notificationAppName: String = "",
         notificationKeyword: String = "",
         conditions: List<com.flowpilot.app.data.model.RuleCondition> = emptyList(),
+        conditionTree: com.flowpilot.app.data.model.ConditionNode? = null,
+        triggerDefinitions: com.flowpilot.app.data.model.TriggerDefinitions? = null,
         notificationTitle: String = "FlowPilot",
         notificationBody: String = "Automation ran",
         vibrationPattern: com.flowpilot.app.data.model.VibrationPattern = com.flowpilot.app.data.model.VibrationPattern.PULSE,
@@ -386,6 +390,8 @@ class AutomationRepository(private val context: Context) {
             notificationAppName = notificationAppName,
             notificationKeyword = notificationKeyword,
             conditions = conditions,
+            conditionTree = conditionTree,
+            triggerDefinitions = triggerDefinitions,
             notificationTitle = notificationTitle,
             notificationBody = notificationBody,
             vibrationPattern = vibrationPattern,
@@ -439,7 +445,7 @@ class AutomationRepository(private val context: Context) {
         context.dataStore.edit { prefs ->
             migrateHistory(prefs)
             val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
-            rule = rule.copy(executionRevision = nextExecutionRevision(prefs))
+            rule = rule.normalizeTriggerStorage().copy(executionRevision = nextExecutionRevision(prefs))
             val encryptedRule = rule.withEncryptedSecrets()
             check(current.none { it.id == rule.id }) { "Duplicate automation ID" }
             val updated = current.map { it.withEncryptedSecrets() } + encryptedRule
@@ -524,7 +530,7 @@ class AutomationRepository(private val context: Context) {
             val revision = nextExecutionRevision(prefs)
             val updated = current.map {
                 if (it.id == rule.id) {
-                    revokePendingExecution(rule.copy(
+                    revokePendingExecution(rule.normalizeTriggerStorage().copy(
                         name = rule.normalizedName,
                         executionRevision = revision,
                     )).withEncryptedSecrets()
@@ -732,7 +738,7 @@ class AutomationRepository(private val context: Context) {
                 com.flowpilot.app.data.backup.ImportStrategy.MERGE -> {
                     val remapped = imported.map { rule ->
                         val id = UUID.randomUUID().toString()
-                        revokePendingExecution(rule.copy(
+                        revokePendingExecution(rule.normalizeTriggerStorage().copy(
                             id = id,
                             ttsAudioFileName = remapTts(rule, id),
                             createdAt = System.currentTimeMillis(),
@@ -746,7 +752,7 @@ class AutomationRepository(private val context: Context) {
                 com.flowpilot.app.data.backup.ImportStrategy.REPLACE_ALL -> {
                     val remapped = imported.map { rule ->
                         val id = UUID.randomUUID().toString()
-                        revokePendingExecution(rule.copy(
+                        revokePendingExecution(rule.normalizeTriggerStorage().copy(
                             id = id,
                             ttsAudioFileName = remapTts(rule, id),
                             name = rule.normalizedName,
@@ -794,7 +800,7 @@ class AutomationRepository(private val context: Context) {
     }
 
     private fun safeDecode(raw: String): List<Automation> = try {
-        recoverDuplicateIds(json.decodeFromString(listSerializer, raw))
+        recoverDuplicateIds(json.decodeFromString(listSerializer, raw)).map { it.normalizeTriggerStorage() }
     } catch (_: Exception) {
         emptyList()
     }
@@ -861,7 +867,11 @@ class AutomationRepository(private val context: Context) {
                 .orEmpty()
                 .associateBy { it.automationId }
                 .toMutableMap()
-            automationIds.distinct().forEach { id ->
+            val ruleIds = prefs[key]?.let(::safeDecode).orEmpty().mapTo(mutableSetOf()) { it.id }
+            automationIds.map { registrationId ->
+                if (registrationId in ruleIds) registrationId
+                else registrationId.replace(Regex("#t[0-9]+_[0-4]$"), "")
+            }.distinct().forEach { id ->
                 val prior = current[id] ?: GeofenceDiagnostic(
                     automationId = id,
                     status = GeofenceDiagnosticStatus.UNREGISTERED,

@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.data.model.normalizedTriggers
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.AutomationUI
 import com.flowpilot.app.ui.components.CapabilityPill
@@ -514,7 +515,7 @@ private fun RuleCard(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "${item.rule.triggerEvent.localizedLabel()} → ${item.rule.localizedActionSummary()}",
+                    text = item.rule.normalizedTriggers().map { it.event.localizedLabel() }.joinToString(" / ") + " → " + item.rule.localizedActionSummary(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

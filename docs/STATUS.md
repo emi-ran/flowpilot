@@ -45,9 +45,14 @@ Last updated: 2026-11-02
 
 ## Implemented; device validation pending
 
+- Multiple OR triggers (#5): up to five independently configured, reorderable triggers per rule; typed versioned lists, legacy single-trigger JSON preservation, actual source enum/index in history/templates, one shared cooldown, callback dedupe and enabled-trigger listener union. Unit tests, `lintDebug` and `assembleDebug` pass locally; Xiaomi app + Wi-Fi, engine-restart and disabled-rule device smoke verification remains pending.
 - Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions (unit tests passed; device smoke tests pending):
   - Time interval filtering with overnight span support (e.g. 23:00 - 07:00 crossing midnight).
   - Day of week filtering with Daily, Weekdays, Weekends, and custom day toggles.
+- Nested AND / OR / NOT condition groups (unit tests, `lintDebug` and `assembleDebug` pass locally; device validation pending):
+  - `Automation.conditionTree` supports recursive groups with a per-group combinator, negation, and leaf conditions; rules without a tree keep the legacy flat-AND list unchanged.
+  - Create/Edit expose a Match AND/OR selector that converts the flat list into a root group, nested group editing with a collapsed summary, and an AND/OR control plus NOT toggle per group. Add actions are disabled once a tree reaches the 32-leaf import limit.
+  - Import rejects trees deeper than 4 levels, trees with more than 32 leaves, and empty groups before any mutation; legacy payloads without a tree still import.
 - Phone call automations family on Xiaomi 15T Pro / HyperOS 3:
   - Triggers: `CALL_RINGING`, `CALL_ANSWERED`, `CALL_OUTGOING`, `CALL_ENDED` (state-only matching; phone-number filtering removed because Android 12+ does not provide outgoing numbers without default-dialer role; legacy filter-configured rules operate as state-only / any-number rules). Device validation for this removal has not been run on device.
   - Actions: `OPEN_DIALER`, `DIAL_NUMBER`, `CALL_NUMBER` (direct call with `CALL_PHONE` permission).
@@ -113,4 +118,4 @@ See `ROADMAP.md` for exact device smoke-test scenarios.
 
 ### Import validation
 
-Normal imports remain disabled and encrypted restores preserve enabled states. Both import strategies generate new IDs and copy verified device-local TTS audio when available. Missing audio is cleared and reported for regeneration; mismatched cache references reject import. Validation rejects invalid inputs before mutation; limits are 8 MiB document, 3 MiB encrypted plaintext, 1,000 rules, 100 actions/conditions/delays per rule, and 64 Ki UTF-16 units per string.
+Normal imports remain disabled and encrypted restores preserve enabled states. Both import strategies generate new IDs and copy verified device-local TTS audio when available. Missing audio is cleared and reported for regeneration; mismatched cache references reject import. Validation rejects invalid inputs before mutation; limits are 8 MiB document, 3 MiB encrypted plaintext, 1,000 rules, 100 actions/conditions/delays per rule, 32 condition-tree leaves and 4 group nesting levels, and 64 Ki UTF-16 units per string. Empty condition groups are rejected on import.

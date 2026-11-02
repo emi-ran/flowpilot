@@ -155,7 +155,9 @@ private fun HistoryEntryCard(entry: ExecutionHistoryEntry) {
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "$dateTimeStr · ${entry.trigger}",
+                        text = "$dateTimeStr · ${entry.trigger}" + (entry.triggerSourceIndex?.let {
+                            " · " + stringResource(R.string.trigger_source_index, it)
+                        } ?: ""),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

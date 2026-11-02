@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.flowpilot.app.BuildConfig
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.normalizeTriggerStorage
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -339,7 +340,7 @@ object BackupManager {
         if (plaintextBytes.size > ImportValidator.MAX_PLAINTEXT_BYTES) return Result.failure(IllegalArgumentException("Backup plaintext too large"))
         return runCatching {
             val plaintext = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(plaintextBytes)).toString()
-            parseDecryptedContent(plaintext).getOrThrow().also { ImportValidator.validate(it) }
+            parseDecryptedContent(plaintext).getOrThrow().also { ImportValidator.validate(it) }.map { it.normalizeTriggerStorage() }
         }
     }
 
@@ -393,7 +394,7 @@ object BackupManager {
     fun parseImport(jsonContent: String): Result<List<Automation>> {
         return runCatching {
             validateDocument(jsonContent)
-            parseNormalContent(jsonContent).getOrThrow().also { ImportValidator.validate(it) }
+            parseNormalContent(jsonContent).getOrThrow().also { ImportValidator.validate(it) }.map { it.normalizeTriggerStorage() }
         }
 
     }

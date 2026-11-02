@@ -2,8 +2,12 @@ package com.flowpilot.app.data.backup
 
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.data.model.ConditionNode
+import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.SoundPreset
+import com.flowpilot.app.data.model.TriggerDefinitions
+import com.flowpilot.app.data.model.triggerViews
 import com.flowpilot.app.engine.NfcTagUtils
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.security.SecretCipher
@@ -31,6 +35,43 @@ internal object ImportValidator {
             !uri.host.isNullOrBlank() && uri.userInfo == null
     } catch (_: Exception) { false }
 
+    private fun validateCondition(condition: RuleCondition) {
+        when (condition.type) {
+            com.flowpilot.app.data.model.ConditionType.BATTERY_BELOW,
+            com.flowpilot.app.data.model.ConditionType.BATTERY_ABOVE ->
+                require(condition.batteryLevel in 0..100) { "Invalid battery condition" }
+            com.flowpilot.app.data.model.ConditionType.TIME_BETWEEN ->
+                require(condition.startMinute in 0..1439 && condition.endMinute in 0..1439) { "Invalid time condition" }
+            com.flowpilot.app.data.model.ConditionType.DAYS_OF_WEEK ->
+                require(condition.days.all { it in 1..7 }) { "Invalid days condition" }
+            else -> Unit
+        }
+    }
+
+    /**
+     * Rejects imported trees that the evaluator or UI cannot represent safely:
+     * nesting beyond [ConditionNode.MAX_DEPTH], more than [ConditionNode.MAX_LEAVES] leaves,
+     * and empty groups (which would silently change a rule's meaning).
+     */
+    private fun validateConditionTree(node: ConditionNode) {
+        var leaves = 0
+        fun walk(current: ConditionNode, depth: Int) {
+            when (current) {
+                is ConditionNode.Leaf -> {
+                    leaves += 1
+                    require(leaves <= ConditionNode.MAX_LEAVES) { "Too many condition leaves" }
+                    validateCondition(current.condition)
+                }
+                is ConditionNode.Group -> {
+                    require(depth <= ConditionNode.MAX_DEPTH) { "Condition tree too deep" }
+                    require(current.children.isNotEmpty()) { "Empty condition group" }
+                    current.children.forEach { child -> walk(child, depth + 1) }
+                }
+            }
+        }
+        walk(node, 1)
+    }
+
     fun validate(rules: List<Automation>) {
         require(rules.size <= MAX_RULES) { "Too many rules" }
         require(rules.all { it.id.isNotBlank() } && rules.map { it.id }.toSet().size == rules.size) {
@@ -45,6 +86,13 @@ internal object ImportValidator {
         }
         rules.forEach { r ->
             checkStrings(json.encodeToJsonElement(Automation.serializer(), r))
+            r.triggerDefinitions?.let { definitions ->
+                require(definitions.version == 1) { "Unsupported trigger version" }
+                require(definitions.items.size in 1..TriggerDefinitions.MAX_TRIGGERS) { "Invalid trigger count" }
+                // Validate each isolated payload using exactly the legacy trigger contracts.
+                listOf(r).triggerViews().forEach { validate(listOf(it)) }
+                return@forEach
+            }
             require(r.actions.size <= MAX_ITEMS && r.actionDelays.size <= MAX_ITEMS && r.conditions.size <= MAX_ITEMS) { "Too many rule items" }
             require(r.actionDelays.size <= r.effectiveActions.size && r.actionDelays.all { it in 0..300 }) { "Invalid action delays" }
             when (r.triggerEvent) {
@@ -60,14 +108,8 @@ internal object ImportValidator {
                 TriggerEvent.GEOFENCE_ENTER, TriggerEvent.GEOFENCE_EXIT -> require(r.geofenceLatitude.isFinite() && r.geofenceLatitude in -90.0..90.0 && r.geofenceLongitude.isFinite() && r.geofenceLongitude in -180.0..180.0 && r.geofenceRadiusMeters in 50..1000) { "Invalid location range" }
                 else -> Unit
             }
-            r.conditions.forEach { condition ->
-                when (condition.type) {
-                    com.flowpilot.app.data.model.ConditionType.BATTERY_BELOW, com.flowpilot.app.data.model.ConditionType.BATTERY_ABOVE -> require(condition.batteryLevel in 0..100) { "Invalid battery condition" }
-                    com.flowpilot.app.data.model.ConditionType.TIME_BETWEEN -> require(condition.startMinute in 0..1439 && condition.endMinute in 0..1439) { "Invalid time condition" }
-                    com.flowpilot.app.data.model.ConditionType.DAYS_OF_WEEK -> require(condition.days.all { it in 1..7 }) { "Invalid days condition" }
-                    else -> Unit
-                }
-            }
+            r.conditions.forEach { condition -> validateCondition(condition) }
+            r.conditionTree?.let { validateConditionTree(it) }
             val actions = r.effectiveActions
             if (ActionType.VIBRATE in actions) require(r.vibrationDurationMs in 1..60000 && r.vibrationAmplitude in 1..255) { "Invalid vibration" }
             if (ActionType.SET_MEDIA_VOLUME in actions) require(r.mediaVolumePercent in 0..100) { "Invalid volume" }

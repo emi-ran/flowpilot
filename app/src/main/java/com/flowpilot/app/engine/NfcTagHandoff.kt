@@ -18,6 +18,9 @@ object NfcTagHandoff {
     private val queue = ConcurrentLinkedQueue<NfcTagScannedEvent>()
     private val _latestScannedTagId = MutableStateFlow<String?>(null)
     val latestScannedTagId: StateFlow<String?> = _latestScannedTagId.asStateFlow()
+    private val _captureRequested = MutableStateFlow(false)
+    val captureRequested: StateFlow<Boolean> = _captureRequested.asStateFlow()
+    fun requestCapture(requested: Boolean) { _captureRequested.value = requested }
 
     /**
      * Accepts IDs only from Android's [android.nfc.NfcAdapter.ReaderCallback].

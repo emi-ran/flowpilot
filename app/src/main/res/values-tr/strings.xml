@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="triggers_any_summary">HERHANGİ bir tetikleyici eşleşsin · ortak bekleme süresi</string>
+    <string name="trigger_add">Tetikleyici ekle (en fazla 5)</string>
+    <string name="trigger_remove">Tetikleyiciyi kaldır</string>
+    <string name="trigger_move_up">Tetikleyiciyi yukarı taşı</string>
+    <string name="trigger_move_down">Tetikleyiciyi aşağı taşı</string>
+    <string name="trigger_source_index">Tetikleyici %1$d</string>
     <string name="app_name">FlowPilot</string>
     <string name="notif_channel_engine">Otomasyon motoru (sessiz)</string>
     <string name="notif_channel_engine_desc">FlowPilot otomasyonları çalışırken gerekli sessiz durum bildirimi</string>
@@ -75,7 +81,7 @@
     <string name="section_when">TETİKLEYİCİ</string>
     <string name="section_do">EYLEMLER (%1$d eylem)</string>
     <string name="section_conditions_title">KOŞULLAR</string>
-    <string name="section_conditions_hint">isteğe bağlı · hepsi eşleşmeli</string>
+    <string name="section_conditions_hint">isteğe bağlı · VE / VEYA ile birleştir</string>
     <string name="section_do_single">EYLEMLER (1 eylem)</string>
     <string name="hold_to_reorder">Sıralamak için basılı tutun</string>
     <string name="advanced_options">Gelişmiş seçenekler</string>
@@ -522,6 +528,24 @@
     <string name="time_end">Bitiş saati</string>
     <string name="time_overnight_window">🌙 Gece yarısını geçen zaman aralığı</string>
     <string name="btn_remove_condition">Koşulu kaldır</string>
+    <string name="condition_match_label">Eşleşme</string>
+    <string name="condition_combinator_and">VE</string>
+    <string name="condition_combinator_or">VEYA</string>
+    <string name="condition_not">DEĞİL</string>
+    <string name="btn_add_condition_group">Grup ekle</string>
+    <string name="btn_remove_condition_group">Grubu kaldır</string>
+    <string name="btn_collapse_condition_group">Grubu daralt</string>
+    <string name="btn_expand_condition_group">Grubu genişlet</string>
+    <string name="condition_group_empty">Boş grup</string>
+    <string name="condition_group_empty_negated">DEĞİL · boş grup</string>
+    <plurals name="condition_group_summary">
+        <item quantity="one">%1$s · %2$d öğe</item>
+        <item quantity="other">%1$s · %2$d öğe</item>
+    </plurals>
+    <plurals name="condition_group_summary_negated">
+        <item quantity="one">DEĞİL %1$s · %2$d öğe</item>
+        <item quantity="other">DEĞİL %1$s · %2$d öğe</item>
+    </plurals>
     <string name="cooldown_rule_description_none">Kural eşleşen her olayda hemen tetiklenir.</string>
     <string name="cooldown_rule_description_minutes">Kural başarılı bir çalışmadan sonra tekrar otomatik tetiklenmek için %1$d dakika bekler.</string>
 

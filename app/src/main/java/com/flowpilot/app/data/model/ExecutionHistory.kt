@@ -127,6 +127,8 @@ data class ExecutionHistoryEntry(
     val timestamp: Long,
     val status: ExecutionStatus,
     val actions: List<ActionExecutionRecord>,
+    /** One-based ordered OR source; null for legacy/manual entries. Contains no payload. */
+    val triggerSourceIndex: Int? = null,
 ) {
     /** Normalize only legacy generated SMS snapshots, never today's rule name. */
     val normalizedRuleName: String
@@ -165,6 +167,7 @@ data class ExecutionHistoryEntry(
             trigger: String,
             timestamp: Long = System.currentTimeMillis(),
             actions: List<ActionExecutionRecord>,
+            triggerSourceIndex: Int? = null,
         ): ExecutionHistoryEntry {
             val successCount = actions.count { it.success }
             val failureCount = actions.count { !it.success }
@@ -177,6 +180,7 @@ data class ExecutionHistoryEntry(
                 timestamp = timestamp,
                 status = status,
                 actions = actions,
+                triggerSourceIndex = triggerSourceIndex,
             )
             return entry.sanitized()
         }

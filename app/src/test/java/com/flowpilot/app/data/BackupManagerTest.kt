@@ -8,7 +8,12 @@ import com.flowpilot.app.data.backup.FlowPilotEncryptedBackup
 import com.flowpilot.app.data.backup.ImportStrategy
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.ConditionCombinator
+import com.flowpilot.app.data.model.ConditionNode
+import com.flowpilot.app.data.model.ConditionType
+import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.data.model.flattenConditions
 import com.flowpilot.app.data.security.SecretCipher
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
@@ -150,6 +155,132 @@ class BackupManagerTest {
         assertThat(parsed.isSuccess).isTrue()
         assertThat(parsed.getOrNull()).hasSize(1)
         assertThat(parsed.getOrNull()!!.first().name).isEqualTo("Raw List Rule")
+    }
+
+    private fun nestedGroups(depth: Int, leaf: ConditionNode): ConditionNode =
+        if (depth == 0) leaf else ConditionNode.Group(children = listOf(nestedGroups(depth - 1, leaf)))
+
+    @Test
+    fun exportToString_omitsNullConditionTree() {
+        val rule = createSampleRule("r-flat", "Flat Rule").copy(
+            conditions = listOf(RuleCondition(ConditionType.CHARGER_CONNECTED)),
+        )
+
+        val exported = BackupManager.exportToString(listOf(rule))
+
+        assertThat(exported).doesNotContain("conditionTree")
+    }
+
+    @Test
+    fun exportImport_roundTripPreservesConditionTree() {
+        val tree = ConditionNode.Group(
+            combinator = ConditionCombinator.AND,
+            children = listOf(
+                ConditionNode.Leaf(RuleCondition(ConditionType.BATTERY_BELOW, batteryLevel = 30)),
+                ConditionNode.Group(
+                    combinator = ConditionCombinator.OR,
+                    negate = true,
+                    children = listOf(
+                        ConditionNode.Leaf(RuleCondition(ConditionType.CHARGER_CONNECTED)),
+                        ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_ON)),
+                    ),
+                ),
+            ),
+        )
+        val rule = createSampleRule("r-tree", "Tree Rule").copy(
+            conditions = tree.flattenConditions(),
+            conditionTree = tree,
+        )
+
+        val parsed = BackupManager.parseImport(BackupManager.exportToString(listOf(rule))).getOrThrow().single()
+
+        assertThat(parsed.conditionTree).isEqualTo(tree)
+        assertThat(parsed.conditions).containsExactly(
+            RuleCondition(ConditionType.BATTERY_BELOW, batteryLevel = 30),
+            RuleCondition(ConditionType.CHARGER_CONNECTED),
+            RuleCondition(ConditionType.SCREEN_ON),
+        ).inOrder()
+    }
+
+    @Test
+    fun parseImport_acceptsLegacyPayloadWithoutConditionTree() {
+        val flatCondition = RuleCondition(ConditionType.CHARGER_CONNECTED)
+        val rule = createSampleRule("r-legacy", "Legacy Rule").copy(conditions = listOf(flatCondition))
+        val legacyJson = kotlinx.serialization.json.Json { encodeDefaults = false }
+            .encodeToString(Automation.serializer(), rule)
+        assertThat(legacyJson).doesNotContain("conditionTree")
+
+        val parsed = BackupManager.parseImport(legacyJson).getOrThrow().single()
+
+        assertThat(parsed.conditionTree).isNull()
+        assertThat(parsed.conditions).containsExactly(flatCondition)
+    }
+
+    @Test
+    fun parseImport_acceptsConditionTreeAtMaximumDepth() {
+        val rule = createSampleRule("r-depth-ok", "Depth OK").copy(
+            conditionTree = nestedGroups(4, ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_ON))),
+        )
+
+        val parsed = BackupManager.parseImport(BackupManager.exportToString(listOf(rule)))
+
+        assertThat(parsed.isSuccess).isTrue()
+    }
+
+    @Test
+    fun parseImport_rejectsConditionTreeDeeperThanMaximum() {
+        val rule = createSampleRule("r-depth-bad", "Depth Bad").copy(
+            conditionTree = nestedGroups(5, ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_ON))),
+        )
+
+        val parsed = BackupManager.parseImport(BackupManager.exportToString(listOf(rule)))
+
+        assertThat(parsed.isFailure).isTrue()
+        assertThat(parsed.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
+        assertThat(parsed.exceptionOrNull()?.message).contains("Condition tree too deep")
+    }
+
+    @Test
+    fun parseImport_rejectsConditionTreeWithTooManyLeaves() {
+        val leaf = ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_ON))
+        val tooMany = createSampleRule("r-leaves-bad", "Leaves Bad").copy(
+            conditionTree = ConditionNode.Group(children = List(33) { leaf }),
+        )
+
+        val result = BackupManager.parseImport(BackupManager.exportToString(listOf(tooMany)))
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
+        assertThat(result.exceptionOrNull()?.message).contains("Too many condition leaves")
+    }
+
+    @Test
+    fun parseImport_rejectsInvalidLeafConditionInsideTree() {
+        val invalidTimeLeaf = ConditionNode.Leaf(
+            RuleCondition(ConditionType.TIME_BETWEEN, startMinute = 2000, endMinute = 60),
+        )
+        val rule = createSampleRule("r-leaf-bad", "Leaf Bad").copy(
+            conditionTree = ConditionNode.Group(children = listOf(invalidTimeLeaf)),
+        )
+
+        val result = BackupManager.parseImport(BackupManager.exportToString(listOf(rule)))
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
+        assertThat(result.exceptionOrNull()?.message).contains("Invalid time condition")
+    }
+
+    @Test
+    fun parseImport_rejectsEmptyConditionGroup() {
+        val rule = createSampleRule("r-empty-group", "Empty Group").copy(
+            conditionTree = ConditionNode.Group(children = emptyList()),
+        )
+
+        val result = BackupManager.parseImport(BackupManager.exportToString(listOf(rule)))
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
+        assertThat(result.exceptionOrNull()?.message).contains("Empty condition group")
     }
 
     @Test
@@ -796,5 +927,65 @@ class BackupManagerTest {
         )
         assertThat(BackupManager.isEncryptedBackup(encryptedJson)).isTrue()
         assertThat(BackupManager.isEncryptedBackup("not json")).isFalse()
+    }
+
+    private fun multiTriggerRule() = createSampleRule("multi", "App or Wi-Fi").copy(
+        triggerDefinitions = com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(
+            com.flowpilot.app.data.model.TriggerDefinition.AppOpened("com.example", "Example"),
+            com.flowpilot.app.data.model.TriggerDefinition.WifiConnected("Home"),
+        )),
+        actions = listOf(ActionType.SOUND_PROFILE_NORMAL, ActionType.VIBRATE),
+        actionDelays = listOf(0, 2),
+    )
+
+    @Test fun multiTrigger_normalExportShareAndEncryptedRestore_preserveDefinitionsAndActionOrder() = runTest {
+        val original = multiTriggerRule()
+        val normal = BackupManager.parseImport(BackupManager.exportToString(listOf(original))).getOrThrow().single()
+        val shared = BackupManager.parseImport(BackupManager.exportSingleToString(original)).getOrThrow().single()
+        val encrypted = BackupManager.exportEncryptedToString(listOf(original), "ValidPass123")
+        val restored = BackupManager.parseEncryptedImport(encrypted, "ValidPass123").getOrThrow().single()
+        listOf(normal, shared, restored).forEach { parsed ->
+            assertThat(parsed.triggerDefinitions).isEqualTo(original.triggerDefinitions)
+            assertThat(parsed.effectiveActions).containsExactlyElementsIn(original.effectiveActions).inOrder()
+            assertThat(parsed.effectiveActionDelays).containsExactly(0, 2).inOrder()
+            assertThat(parsed.triggerEvent).isEqualTo(TriggerEvent.APP_OPENED)
+            assertThat(parsed.appPackage).isEqualTo("com.example")
+        }
+        assertThat(normal.enabled).isFalse()
+        assertThat(shared.enabled).isFalse()
+        assertThat(restored.enabled).isTrue()
+        repository.importAutomations(listOf(restored), ImportStrategy.REPLACE_ALL)
+        val loaded = repository.automations.first().single()
+        assertThat(loaded.id).isNotEqualTo(original.id)
+        assertThat(loaded.triggerDefinitions).isEqualTo(original.triggerDefinitions)
+        assertThat(loaded.enabled).isTrue()
+        assertThat(loaded.effectiveActionDelays).containsExactly(0, 2).inOrder()
+    }
+
+    @Test fun invalidMultiTriggerImports_areRejectedBeforeRepositoryMutation() = runTest {
+        val valid = multiTriggerRule()
+        repository.replaceAll(listOf(createSampleRule("existing", "Existing")))
+        val before = repository.automations.first()
+        val invalidLists = listOf(
+            com.flowpilot.app.data.model.TriggerDefinitions(items = emptyList()),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = List(6) { com.flowpilot.app.data.model.TriggerDefinition.ScreenOn }),
+            com.flowpilot.app.data.model.TriggerDefinitions(version = 2, items = valid.triggerDefinitions!!.items),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.AppOpened(""))),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.WifiConnected("Home"), com.flowpilot.app.data.model.TriggerDefinition.BatteryBelow(101))),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.Schedule(1440))),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.Shake(Float.NaN))),
+            com.flowpilot.app.data.model.TriggerDefinitions(items = listOf(com.flowpilot.app.data.model.TriggerDefinition.GeofenceEnter(geofenceLatitude = 91.0))),
+        )
+        invalidLists.forEach { definitions ->
+            val bad = valid.copy(triggerDefinitions = definitions)
+            if (definitions.items.none { it is com.flowpilot.app.data.model.TriggerDefinition.Shake && !it.shakeThreshold.isFinite() }) {
+                assertThat(BackupManager.parseImport(BackupManager.exportSingleToString(bad)).isFailure).isTrue()
+            }
+            var rejected = false
+            try { repository.importAutomations(listOf(bad), ImportStrategy.REPLACE_ALL) }
+            catch (_: IllegalArgumentException) { rejected = true }
+            assertThat(rejected).isTrue()
+            assertThat(repository.automations.first()).isEqualTo(before)
+        }
     }
 }

@@ -249,7 +249,9 @@ class AutomationService : Service() {
             body: String,
             timestamp: Long,
         ): Boolean = enqueueIfEngineEnabled(context) {
-            SmsEventTracker.enqueueIfEnabled(true, sender, body, timestamp)
+            val demand = TriggerListenerDemand.from(AutomationRepository(context.applicationContext).automations.first())
+            demand.needs(com.flowpilot.app.data.model.TriggerEvent.SMS_RECEIVED) &&
+                SmsEventTracker.enqueueIfEnabled(true, sender, body, timestamp)
         }
 
         /** Serializes event intake with enabled-state changes, preventing disabled-state queue replay. */
@@ -257,12 +259,14 @@ class AutomationService : Service() {
             context: Context,
             event: TransientNotificationEvent,
         ): Boolean = enqueueIfEngineEnabled(context) {
-            FlowPilotNotificationListener.enqueueIfEnabled(true, event)
+            val demand = TriggerListenerDemand.from(AutomationRepository(context.applicationContext).automations.first())
+            demand.needs(com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED) &&
+                FlowPilotNotificationListener.enqueueIfEnabled(true, event)
         }
 
         private suspend fun enqueueIfEngineEnabled(
             context: Context,
-            enqueue: () -> Boolean,
+            enqueue: suspend () -> Boolean,
         ): Boolean = controlMutex.withLock {
             if (!AutomationRepository(context.applicationContext).isEngineEnabled.first()) return@withLock false
             enqueue()

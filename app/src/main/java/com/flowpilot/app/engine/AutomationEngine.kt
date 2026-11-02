@@ -7,6 +7,8 @@ import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.data.model.triggerViews
+import com.flowpilot.app.data.model.hasTrigger
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
@@ -60,6 +62,7 @@ class AutomationEngine(
     @Volatile
     private var state: ForegroundState = ForegroundState()
     private val scheduleWindow = ScheduleWindow()
+    private val triggerDeduplicator = TriggerExecutionDeduplicator()
 
     @Synchronized
     fun start() {
@@ -90,12 +93,7 @@ class AutomationEngine(
         scheduleWindow.advance(LocalDateTime.now())
         tracker.reset()
         state = ForegroundState()
-        chargerTracker.start()
-        batteryTracker.start()
-        screenTracker.start()
-        wifiTracker.start()
-        bluetoothTracker.start()
-        callTracker.start()
+        reconcileListeners(repository.automations.first())
         onRunningChanged(true)
         Log.i(TAG, "Starting FlowPilot Automation Engine")
         // Policy stays responsive while action execution suspends (including long action delays).
@@ -104,10 +102,12 @@ class AutomationEngine(
                 while (isActive) {
                     val pm = appContext.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
                     val liveState = LiveSystemState(isScreenOn = pm?.isInteractive)
+                    reconcileListeners(rules)
                     updateFlipListeningPolicy(rules, liveState)
                     updateShakeListeningPolicy(rules, liveState)
                     updateLightListeningPolicy(rules, liveState)
                     geofenceTracker.updateListeningPolicy(rules)
+                    // Geofence request IDs identify both parent rule and definition.
                     delay(POLL_INTERVAL_MS)
                 }
             }
@@ -162,6 +162,17 @@ class AutomationEngine(
         }
     }
 
+
+    private fun reconcileListeners(rules: List<com.flowpilot.app.data.model.Automation>) {
+        val demand = TriggerListenerDemand.from(rules)
+        if (demand.needsBattery) batteryTracker.start() else batteryTracker.stop()
+        if (demand.needsCharger) chargerTracker.start() else chargerTracker.stop()
+        if (demand.needsScreen) screenTracker.start() else screenTracker.stop()
+        if (demand.needsWifi) wifiTracker.start() else wifiTracker.stop()
+        if (demand.needs(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED)) bluetoothTracker.start() else bluetoothTracker.stop()
+        if (demand.needs(TriggerEvent.CALL_RINGING, TriggerEvent.CALL_ANSWERED, TriggerEvent.CALL_OUTGOING, TriggerEvent.CALL_ENDED)) callTracker.start() else callTracker.stop()
+        tracker.updatePackages(demand.appPackages)
+    }
     private fun getLiveSystemState(): LiveSystemState {
         val batteryPercent = batteryTracker.currentLevel
         val isChargerConnected = batteryTracker.isChargerConnected
@@ -181,7 +192,7 @@ class AutomationEngine(
 
     suspend fun poll(liveState: LiveSystemState = getLiveSystemState()) {
         val rules = repository.automations.first()
-        if (rules.none { it.enabled && (it.triggerEvent == TriggerEvent.APP_OPENED || it.triggerEvent == TriggerEvent.APP_CLOSED) }) {
+        if (rules.none { it.enabled && it.hasTrigger(TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED) }) {
             tracker.reset()
             state = ForegroundState()
             return
@@ -209,7 +220,7 @@ class AutomationEngine(
             val result = RuleEvaluator.evaluate(rules, AppEvent.CLOSED, pkg, heldOpenLock = false, liveState = liveState)
             if (result.toExecute.isNotEmpty()) {
                 Log.i(TAG, "Executing CLOSED rules for $pkg (${result.toExecute.size} rule(s))")
-                executeAll(result.toExecute, trigger = TriggerEvent.APP_CLOSED, liveState = liveState)
+                executeAll(result.toExecute, liveState = liveState, eventId = domainTransitions.lastOrNull { it.packageName == pkg }?.timestamp?.toString())
             }
         }
 
@@ -217,17 +228,21 @@ class AutomationEngine(
             val result = RuleEvaluator.evaluate(rules, AppEvent.OPENED, pkg, heldOpenLock = false, liveState = liveState)
             if (result.toExecute.isNotEmpty()) {
                 Log.i(TAG, "Executing OPENED rules for $pkg (${result.toExecute.size} rule(s))")
-                executeAll(result.toExecute, trigger = TriggerEvent.APP_OPENED, liveState = liveState)
+                executeAll(result.toExecute, liveState = liveState, eventId = domainTransitions.lastOrNull { it.packageName == pkg }?.timestamp?.toString())
             }
         }
     }
 
     private suspend fun pollSchedules(liveState: LiveSystemState) {
+        if (!TriggerListenerDemand.from(repository.automations.first()).needs(TriggerEvent.TIME_SCHEDULE)) {
+            scheduleWindow.advance(LocalDateTime.now())
+            return
+        }
         for (minute in scheduleWindow.advance(LocalDateTime.now())) {
             currentCoroutineContext().ensureActive()
             val matches = ScheduleEvaluator.matchingRules(repository.automations.first(), minute, liveState)
             if (matches.isNotEmpty()) {
-                executeAll(matches, trigger = TriggerEvent.TIME_SCHEDULE, liveState = liveState)
+                executeAll(matches, liveState = liveState, eventId = minute.toString())
             }
         }
     }
@@ -240,11 +255,7 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateCharger(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $event charger rules (${matches.size} rule(s))")
-                val trigger = when (event) {
-                    ChargerEvent.CONNECTED -> TriggerEvent.CHARGER_CONNECTED
-                    ChargerEvent.DISCONNECTED -> TriggerEvent.CHARGER_DISCONNECTED
-                }
-                executeAll(matches, trigger = trigger, liveState = liveState.copy(isChargerConnected = (event == ChargerEvent.CONNECTED)))
+                executeAll(matches, liveState = liveState.copy(isChargerConnected = (event == ChargerEvent.CONNECTED)))
             }
         }
     }
@@ -259,7 +270,7 @@ class AutomationEngine(
                 Log.i(TAG, "Executing battery threshold rules for ${transition.previous}% -> ${transition.current}% (${matches.size} rule(s))")
                 val effectiveState = liveState.copy(batteryPercent = transition.current)
                 for (rule in matches) {
-                    executeAll(listOf(rule), trigger = rule.triggerEvent, liveState = effectiveState)
+                    executeAll(listOf(rule), liveState = effectiveState)
                 }
             }
         }
@@ -273,12 +284,7 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateScreen(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $event screen rules (${matches.size} rule(s))")
-                val trigger = when (event) {
-                    ScreenEvent.ON -> TriggerEvent.SCREEN_ON
-                    ScreenEvent.OFF -> TriggerEvent.SCREEN_OFF
-                    ScreenEvent.UNLOCKED -> TriggerEvent.DEVICE_UNLOCKED
-                }
-                executeAll(matches, trigger = trigger, liveState = liveState.copy(isScreenOn = (event != ScreenEvent.OFF)))
+                executeAll(matches, liveState = liveState.copy(isScreenOn = (event != ScreenEvent.OFF)))
             }
         }
     }
@@ -291,14 +297,10 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateWifi(rules, transition, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing Wi-Fi rules for ${transition.event} (${matches.size} rule(s))")
-                val trigger = when (transition.event) {
-                    WifiStateEvent.CONNECTED -> TriggerEvent.WIFI_CONNECTED
-                    WifiStateEvent.DISCONNECTED -> TriggerEvent.WIFI_DISCONNECTED
-                }
                 val effectiveState = liveState.copy(
                     connectedWifiSsid = if (transition.event == WifiStateEvent.CONNECTED) transition.ssid else null
                 )
-                executeAll(matches, trigger = trigger, liveState = effectiveState)
+                executeAll(matches, liveState = effectiveState)
             }
         }
     }
@@ -314,9 +316,9 @@ class AutomationEngine(
                 Log.i(TAG, "Executing notification rules for ${event.packageName} (${matches.size} rule(s))")
                 executeAll(
                     matches,
-                    trigger = TriggerEvent.NOTIFICATION_RECEIVED,
                     liveState = liveState,
                     eventAuthorization = authorization,
+                    eventId = "${event.key}:${event.postTime}",
                 )
             }
         }
@@ -330,7 +332,7 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateNfcTag(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing NFC tag scanned rules for tag ID [REDACTED_LEN_${event.tagId.length}] (${matches.size} rule(s))")
-                executeAll(matches, trigger = TriggerEvent.NFC_TAG_SCANNED, liveState = liveState)
+                executeAll(matches, liveState = liveState, eventId = "${event.tagId}:${event.timestamp / 1000}")
             }
         }
     }
@@ -339,7 +341,7 @@ class AutomationEngine(
         rules: List<com.flowpilot.app.data.model.Automation>,
         liveState: LiveSystemState,
     ) {
-        val flipRules = rules.filter {
+        val flipRules = rules.triggerViews().filter {
             it.enabled && (it.triggerEvent == TriggerEvent.DEVICE_FLIPPED_DOWN || it.triggerEvent == TriggerEvent.DEVICE_FLIPPED_UP)
         }
         flipTracker.updateListeningPolicy(
@@ -357,11 +359,7 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateFlip(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing device flip rules for $event (${matches.size} rule(s))")
-                val trigger = when (event) {
-                    FlipEvent.FLIPPED_DOWN -> TriggerEvent.DEVICE_FLIPPED_DOWN
-                    FlipEvent.FLIPPED_UP -> TriggerEvent.DEVICE_FLIPPED_UP
-                }
-                executeAll(matches, trigger = trigger, liveState = liveState)
+                executeAll(matches, liveState = liveState)
             }
         }
     }
@@ -370,7 +368,7 @@ class AutomationEngine(
         rules: List<com.flowpilot.app.data.model.Automation>,
         liveState: LiveSystemState,
     ) {
-        val shakeThresholds = rules
+        val shakeThresholds = rules.triggerViews()
             .filter { it.enabled && it.triggerEvent == TriggerEvent.DEVICE_SHAKE }
             .map { it.shakeThreshold }
         val minThreshold = ShakeReducer.minimumThreshold(shakeThresholds)
@@ -388,7 +386,7 @@ class AutomationEngine(
         rules: List<com.flowpilot.app.data.model.Automation>,
         liveState: LiveSystemState,
     ) {
-        val hasLight = rules.any {
+        val hasLight = rules.triggerViews().any {
             it.enabled && (it.triggerEvent == TriggerEvent.LIGHT_BELOW || it.triggerEvent == TriggerEvent.LIGHT_ABOVE)
         }
         lightTracker.updateListeningPolicy(
@@ -410,7 +408,7 @@ class AutomationEngine(
             )
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing shake rules (${matches.size} rule(s))")
-                executeAll(matches, trigger = TriggerEvent.DEVICE_SHAKE, liveState = liveState)
+                executeAll(matches, liveState = liveState, eventId = event.timestampMs.toString())
             }
         }
     }
@@ -424,7 +422,7 @@ class AutomationEngine(
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing ambient light rules (${matches.size} rule(s)) for ${transition.previousLux} -> ${transition.currentLux} lx")
                 for (rule in matches) {
-                    executeAll(listOf(rule), trigger = rule.triggerEvent, liveState = liveState)
+                    executeAll(listOf(rule), liveState = liveState)
                 }
             }
         }
@@ -432,7 +430,7 @@ class AutomationEngine(
 
     private suspend fun pollBluetoothTransitions(liveState: LiveSystemState) {
         // Permission may be granted while service stays alive; begin listening without restarting engine.
-        bluetoothTracker.start()
+        // Listener lifecycle is reconciled from enabled trigger demand.
         val transitions = bluetoothTracker.drainTransitions()
         if (transitions.isEmpty()) return
         val rules = repository.automations.first()
@@ -442,17 +440,17 @@ class AutomationEngine(
                 BluetoothDeviceEvent.CONNECTED -> TriggerEvent.BLUETOOTH_CONNECTED
                 BluetoothDeviceEvent.DISCONNECTED -> TriggerEvent.BLUETOOTH_DISCONNECTED
             }
-            val unmatchedRules = rules.count { it.enabled && it.triggerEvent == trigger } - matches.size
+            val unmatchedRules = rules.count { it.enabled && it.hasTrigger(trigger) } - matches.size
             Log.i(BLUETOOTH_TAG, "Unmatched transition rules=$unmatchedRules")
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $trigger Bluetooth rules (${matches.size} rule(s))")
-                executeAll(matches, trigger = trigger, liveState = liveState)
+                executeAll(matches, liveState = liveState)
             }
         }
     }
 
     private suspend fun pollCallTransitions(liveState: LiveSystemState) {
-        callTracker.start()
+        // Listener lifecycle is reconciled from enabled trigger demand.
         val transitions = callTracker.drainTransitions()
         if (transitions.isEmpty()) return
         val rules = repository.automations.first()
@@ -460,7 +458,7 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateCall(rules, transition, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing ${transition.triggerEvent.name} call rules (${matches.size} rule(s))")
-                executeAll(matches, trigger = transition.triggerEvent, liveState = liveState)
+                executeAll(matches, liveState = liveState)
             }
         }
     }
@@ -477,10 +475,10 @@ class AutomationEngine(
                 Log.i(TAG, "Executing SMS received rules for $masked (${matches.size} rule(s))")
                 executeAll(
                     rules = matches,
-                    trigger = TriggerEvent.SMS_RECEIVED,
                     liveState = liveState,
                     smsSender = event.sender,
                     smsBody = event.body,
+                    eventId = event.timestamp.toString(),
                     eventAuthorization = authorization,
                 )
             }
@@ -491,8 +489,11 @@ class AutomationEngine(
         val transitions = geofenceTracker.drainTransitions()
         if (transitions.isEmpty()) return
         val rules = repository.automations.first()
+        val matchedCallbacks = mutableSetOf<Triple<String, GeofenceEvent, Long>>()
         for (transition in transitions) {
-            val matches = RuleEvaluator.evaluateGeofence(rules, transition, liveState)
+            val matches = RuleEvaluator.evaluateGeofence(rules, transition, liveState).filter {
+                matchedCallbacks.add(Triple(it.id, transition.event, transition.timestamp))
+            }
             if (matches.isNotEmpty()) {
                 val trigger = when (transition.event) {
                     GeofenceEvent.ENTER -> TriggerEvent.GEOFENCE_ENTER
@@ -501,9 +502,9 @@ class AutomationEngine(
                 Log.i(TAG, "Executing geofence rules for $trigger (${matches.size} rule(s))")
                 executeAll(
                     rules = matches,
-                    trigger = trigger,
                     liveState = liveState,
                     geofenceTransition = transition,
+                    eventId = "${transition.automationId}:${transition.event}:${transition.timestamp}",
                 )
             }
         }
@@ -511,14 +512,15 @@ class AutomationEngine(
 
     private suspend fun executeAll(
         rules: List<com.flowpilot.app.data.model.Automation>,
-        trigger: TriggerEvent? = null,
         liveState: LiveSystemState = LiveSystemState(),
         smsSender: String? = null,
         smsBody: String? = null,
         geofenceTransition: GeofenceTransition? = null,
         eventAuthorization: EventExecutionAuthorization.Token? = null,
+        eventId: String? = null,
     ) {
         for (candidate in rules.distinctBy { it.id }) {
+            if (!triggerDeduplicator.accept(candidate.id, candidate.executionRevision, candidate.triggerEvent, candidate.matchedTriggerIndex, eventId)) continue
             if (!reservePendingExecution(candidate.id)) continue
             try {
                 val reservation = repository.reserveExecution(
@@ -531,7 +533,8 @@ class AutomationEngine(
                 var actionRecords = mutableListOf<ActionExecutionRecord>()
                 try {
                     val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
-                        trigger = trigger?.name ?: "",
+                        trigger = candidate.triggerEvent.name,
+                        triggerSourceIndex = candidate.matchedTriggerIndex + 1,
                         timestamp = System.currentTimeMillis(),
                         batteryPercent = liveState.batteryPercent,
                         isCharging = liveState.isChargerConnected,
@@ -637,7 +640,8 @@ class AutomationEngine(
                             ExecutionHistoryEntry.create(
                                 ruleId = rule.id,
                                 ruleName = rule.normalizedName,
-                                trigger = trigger?.name ?: rule.triggerEvent.name,
+                                trigger = candidate.triggerEvent.name,
+                                triggerSourceIndex = candidate.matchedTriggerIndex + 1,
                                 timestamp = System.currentTimeMillis(),
                                 actions = actionRecords.ifEmpty {
                                     listOf(

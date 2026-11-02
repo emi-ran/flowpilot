@@ -5,6 +5,7 @@ import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.data.model.triggerViews
 import com.flowpilot.app.engine.TriggerTargetMatcher
 
 enum class ConflictConfidence { CERTAIN, POSSIBLE }
@@ -24,7 +25,11 @@ data class AutomationConflict(
 object AutomationConflictAnalyzer {
     const val OPPOSING_STATE_ACTIONS = "opposing-state-actions"
 
-    fun analyze(candidate: Automation, rules: List<Automation>): List<AutomationConflict> = rules.asSequence()
+    fun analyze(candidate: Automation, rules: List<Automation>): List<AutomationConflict> =
+        listOf(candidate).triggerViews().flatMap { source -> analyzeSingle(source, rules.triggerViews()) }
+            .distinctBy { listOf(it.conflictingRuleId, it.candidateAction, it.conflictingAction) }
+
+    private fun analyzeSingle(candidate: Automation, rules: List<Automation>): List<AutomationConflict> = rules.asSequence()
         .filter { it.enabled && it.id != candidate.id }
         .filter { sameTriggerTarget(candidate, it) }
         .filterNot { conditionsAreDisjoint(candidate.conditions, it.conditions) }

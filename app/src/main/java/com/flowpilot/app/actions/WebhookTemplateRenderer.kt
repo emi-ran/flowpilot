@@ -25,6 +25,7 @@ data class WebhookTemplateContext(
     val smsOtp: String? = null,
     val locationLat: Double? = null,
     val locationLng: Double? = null,
+    val triggerSourceIndex: Int? = null,
 )
 
 /**
@@ -60,6 +61,7 @@ object WebhookTemplateRenderer {
                 "isCharging" -> context.isCharging?.toString() ?: ""
                 "wifiSsid" -> context.wifiSsid ?: ""
                 "trigger" -> context.trigger
+                "trigger.index" -> context.triggerSourceIndex?.toString() ?: ""
                 "smsSender", "sms.sender" -> context.smsSender ?: ""
                 "smsBody", "sms.body" -> context.smsBody ?: ""
                 "smsOtp", "sms.otp" -> context.smsOtp ?: (extractOtp(context.smsBody) ?: "")

@@ -1,5 +1,8 @@
 package com.flowpilot.app.data.model
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.flowpilot.app.data.security.SecretCipher
 
@@ -151,6 +154,48 @@ data class RuleCondition(
 )
 
 @Serializable
+enum class ConditionCombinator { AND, OR }
+
+/**
+ * Optional condition tree for nested AND / OR / NOT logic.
+ *
+ * Rules without a tree keep the legacy flat-AND [Automation.conditions] behavior.
+ */
+@Serializable
+sealed interface ConditionNode {
+    /** A single condition, evaluated with the same semantics as the legacy flat list. */
+    @Serializable
+    @SerialName("leaf")
+    data class Leaf(val condition: RuleCondition) : ConditionNode
+
+    /**
+     * A boolean group. An empty AND group matches, an empty OR group does not;
+     * [negate] flips the combined result afterwards.
+     */
+    @Serializable
+    @SerialName("group")
+    data class Group(
+        val combinator: ConditionCombinator = ConditionCombinator.AND,
+        val negate: Boolean = false,
+        val children: List<ConditionNode> = emptyList(),
+    ) : ConditionNode
+
+    companion object {
+        /** Maximum supported group nesting; deeper imported trees are rejected. */
+        const val MAX_DEPTH = 4
+
+        /** Maximum number of leaves accepted in an imported tree. */
+        const val MAX_LEAVES = 32
+    }
+}
+
+/** Every leaf in document order, used to keep [Automation.conditions] in sync with a tree. */
+fun ConditionNode.flattenConditions(): List<RuleCondition> = when (this) {
+    is ConditionNode.Leaf -> listOf(condition)
+    is ConditionNode.Group -> children.flatMap { it.flattenConditions() }
+}
+
+@Serializable
 enum class VibrationPattern(val label: String) {
     PULSE("Pulse"),
     DOUBLE_TAP("Double tap"),
@@ -241,6 +286,13 @@ data class Automation(
     val name: String,
     val enabled: Boolean = true,
     val triggerEvent: TriggerEvent = TriggerEvent.APP_OPENED,
+    /** Non-null versioned OR list supersedes every legacy trigger field. */
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val triggerDefinitions: TriggerDefinitions? = null,
+    /** Runtime-only source index; never written to exports, backups or storage. */
+    @kotlinx.serialization.Transient
+    val matchedTriggerIndex: Int = 0,
     val appPackage: String = "",
     val appName: String = "",
     val scheduledMinute: Int = 0,
@@ -256,7 +308,16 @@ data class Automation(
     val notificationAppPackage: String = "",
     val notificationAppName: String = "",
     val notificationKeyword: String = "",
+    /** Legacy flat-AND condition list; still authoritative when [conditionTree] is null. */
     val conditions: List<RuleCondition> = emptyList(),
+    /**
+     * Optional nested AND / OR / NOT tree. When present it supersedes [conditions] for evaluation;
+     * [conditions] is kept as a flattened leaf list for backward-compatible readers and exports.
+     * Null is never encoded so rules without a tree keep the exact legacy JSON shape.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val conditionTree: ConditionNode? = null,
     val notificationTitle: String = "FlowPilot",
     val notificationBody: String = "Automation ran",
     val vibrationPattern: VibrationPattern = VibrationPattern.PULSE,
