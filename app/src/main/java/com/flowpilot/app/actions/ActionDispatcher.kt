@@ -60,7 +60,7 @@ class ActionDispatcher private constructor(
         fun get(context: Context): ActionDispatcher =
             instance ?: synchronized(this) {
                 instance ?: ActionDispatcher(
-                    NfcExecutor(ShizukuShell.instance),
+                    NfcExecutor(context.applicationContext, ShizukuShell.instance),
                     BluetoothExecutor(context.applicationContext, ShizukuShell.instance),
                     PowerSaverExecutor(context.applicationContext, ShizukuShell.instance),
                     DarkThemeExecutor(context.applicationContext, ShizukuShell.instance),
@@ -81,7 +81,7 @@ class ActionDispatcher private constructor(
                     AirplaneModeExecutor(context.applicationContext, ShizukuShell.instance),
                     TorchExecutor(context.applicationContext),
                     BrightnessExecutor(context.applicationContext),
-                    LockScreenExecutor(ShizukuShell.instance),
+                    LockScreenExecutor(context.applicationContext, ShizukuShell.instance),
                     ForceStopExecutor(ShizukuShell.instance),
                     LocationExecutor(context.applicationContext, ShizukuShell.instance),
                     SmsExecutor(context.applicationContext),
