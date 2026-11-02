@@ -4,6 +4,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 MAIN = Path(__file__).resolve().parents[1] / "app/src/main"
+DEBUG = Path(__file__).resolve().parents[1] / "app/src/debug"
 ANDROID = "{http://schemas.android.com/apk/res/android}"
 
 
@@ -31,6 +32,12 @@ class LintResourceContractsTest(unittest.TestCase):
     def test_turkish_has_all_translatable_strings(self):
         def names(locale):
             return {node.attrib["name"] for node in ET.parse(MAIN / f"res/{locale}/strings.xml").getroot()
+                    if node.tag == "string" and node.get("translatable") != "false"}
+        self.assertEqual(names("values") - names("values-tr"), set())
+
+    def test_debug_turkish_has_all_translatable_strings(self):
+        def names(locale):
+            return {node.attrib["name"] for node in ET.parse(DEBUG / f"res/{locale}/strings.xml").getroot()
                     if node.tag == "string" and node.get("translatable") != "false"}
         self.assertEqual(names("values") - names("values-tr"), set())
 
