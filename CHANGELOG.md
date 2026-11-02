@@ -16,6 +16,8 @@ All notable FlowPilot changes are documented here.
 ### Changed
 
 - Preserve normal-import disabled states and encrypted-restore enabled states. When device-local TTS audio is unavailable, import the rule and prompt the user to regenerate its audio; available verified audio is copied to the new rule ID.
+- Redesigned the preset sheet: cards are neutral with a per-category accent limited to the icon tile and dot, category filters wrap instead of scrolling off-screen, each card keeps one filled "Use" action, and the drag handle and header now clear the status bar and camera cutout.
+- Trigger cards reuse the trigger picker's per-trigger accent colours (icon tile, schedule picker icon, ambient-light controls) instead of a blue primary container, and the create-screen presets banner is now a neutral card with an amber sparkle instead of a blue fill.
 - Shake force is now configured per rule: selecting the "Device shaken" trigger reveals a strength slider (6–32 m/s² above gravity, default 20) so each automation can require a light or a firm shake. A hysteresis re-arm keeps one continuous shake from firing multiple times, so a single shake now toggles the flashlight once.
 
 ## [1.1.0] - 2026-09-15

@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.permission.CapabilityStatus
@@ -103,6 +105,11 @@ fun FollowSwitch(
 }
 
 /** Small pill label for capability state (Available / Permission required / Shizuku required / Unsupported). */
+/** Muted success accent that stays readable in both themes (green instead of the blue primary). */
+@Composable
+fun successAccent(): Color =
+    if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color(0xFF7FC59A) else Color(0xFF2E7D52)
+
 @Composable
 fun CapabilityPill(
     status: CapabilityStatus,
@@ -110,12 +117,12 @@ fun CapabilityPill(
     onClick: (() -> Unit)? = null,
 ) {
     val bg = when (status) {
-        CapabilityStatus.AVAILABLE -> MaterialTheme.colorScheme.primaryContainer
+        CapabilityStatus.AVAILABLE -> successAccent().copy(alpha = 0.16f)
         CapabilityStatus.UNSUPPORTED -> MaterialTheme.colorScheme.errorContainer
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
     val fg = when (status) {
-        CapabilityStatus.AVAILABLE -> MaterialTheme.colorScheme.onPrimaryContainer
+        CapabilityStatus.AVAILABLE -> successAccent()
         CapabilityStatus.UNSUPPORTED -> MaterialTheme.colorScheme.onErrorContainer
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -143,12 +150,12 @@ fun CapabilityPill(
     onClick: (() -> Unit)? = null,
 ) {
     val bg = when {
-        isSuccess -> MaterialTheme.colorScheme.primaryContainer
+        isSuccess -> successAccent().copy(alpha = 0.16f)
         isError -> MaterialTheme.colorScheme.errorContainer
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
     val fg = when {
-        isSuccess -> MaterialTheme.colorScheme.onPrimaryContainer
+        isSuccess -> successAccent()
         isError -> MaterialTheme.colorScheme.onErrorContainer
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }

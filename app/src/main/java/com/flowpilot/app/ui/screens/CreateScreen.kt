@@ -8,6 +8,7 @@ package com.flowpilot.app.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -522,8 +523,9 @@ fun CreateScreen(
                     .padding(bottom = 16.dp)
                     .clickable { showPresets = true },
                 shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 ),
             ) {
                 Row(
@@ -535,14 +537,14 @@ fun CreateScreen(
                     Box(
                         modifier = Modifier
                             .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             Icons.Default.AutoAwesome,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                            tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(20.dp),
                         )
                     }
