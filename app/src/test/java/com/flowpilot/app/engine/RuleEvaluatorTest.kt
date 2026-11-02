@@ -2,6 +2,10 @@ package com.flowpilot.app.engine
 
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.ConditionCombinator
+import com.flowpilot.app.data.model.ConditionNode
+import com.flowpilot.app.data.model.ConditionType
+import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -477,6 +481,165 @@ class RuleEvaluatorTest {
 
         val result = RuleEvaluator.evaluateScreen(listOf(unlocked, on, off), ScreenEvent.UNLOCKED)
         assertThat(result).containsExactly(unlocked)
+    }
+
+    @Test fun condition_tree_and_or_not_combine_children() {
+        val batteryLow = ConditionNode.Leaf(RuleCondition(ConditionType.BATTERY_BELOW, batteryLevel = 30))
+        val screenOn = ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_ON))
+
+        val orTree = ConditionNode.Group(
+            combinator = ConditionCombinator.OR,
+            children = listOf(batteryLow, screenOn),
+        )
+        val orRule = rule().copy(conditionTree = orTree)
+        assertThat(RuleEvaluator.matchesRuleConditions(orRule, LiveSystemState(batteryPercent = 80, isScreenOn = true))).isTrue()
+        assertThat(RuleEvaluator.matchesRuleConditions(orRule, LiveSystemState(batteryPercent = 80, isScreenOn = false))).isFalse()
+
+        val andTree = ConditionNode.Group(
+            combinator = ConditionCombinator.AND,
+            children = listOf(batteryLow, screenOn),
+        )
+        val andRule = rule().copy(conditionTree = andTree)
+        assertThat(RuleEvaluator.matchesRuleConditions(andRule, LiveSystemState(batteryPercent = 20, isScreenOn = true))).isTrue()
+        assertThat(RuleEvaluator.matchesRuleConditions(andRule, LiveSystemState(batteryPercent = 80, isScreenOn = true))).isFalse()
+
+        val negatedBattery = ConditionNode.Group(
+            children = listOf(batteryLow),
+            negate = true,
+        )
+        val negatedRule = rule().copy(conditionTree = negatedBattery)
+        assertThat(RuleEvaluator.matchesRuleConditions(negatedRule, LiveSystemState(batteryPercent = 20))).isFalse()
+        assertThat(RuleEvaluator.matchesRuleConditions(negatedRule, LiveSystemState(batteryPercent = 80))).isTrue()
+    }
+
+    @Test fun condition_tree_nested_group_combines_with_parent() {
+        val tree = ConditionNode.Group(
+            children = listOf(
+                ConditionNode.Leaf(RuleCondition(ConditionType.CHARGER_CONNECTED)),
+                ConditionNode.Group(
+                    combinator = ConditionCombinator.OR,
+                    children = listOf(
+                        ConditionNode.Leaf(RuleCondition(ConditionType.WIFI_CONNECTED, wifiSsid = "Home")),
+                        ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_ON)),
+                    ),
+                ),
+            ),
+        )
+        val nestedRule = rule().copy(conditionTree = tree)
+
+        assertThat(
+            RuleEvaluator.matchesRuleConditions(
+                nestedRule,
+                LiveSystemState(isChargerConnected = true, connectedWifiSsid = "Office", isScreenOn = true),
+            ),
+        ).isTrue()
+        assertThat(
+            RuleEvaluator.matchesRuleConditions(
+                nestedRule,
+                LiveSystemState(isChargerConnected = false, connectedWifiSsid = "Home", isScreenOn = false),
+            ),
+        ).isFalse()
+        assertThat(
+            RuleEvaluator.matchesRuleConditions(
+                nestedRule,
+                LiveSystemState(isChargerConnected = true, connectedWifiSsid = null, isScreenOn = false),
+            ),
+        ).isFalse()
+    }
+
+    @Test fun empty_groups_follow_and_or_semantics_and_can_be_negated() {
+        val emptyAnd = rule().copy(conditionTree = ConditionNode.Group(children = emptyList()))
+        val emptyOr = rule().copy(
+            conditionTree = ConditionNode.Group(
+                combinator = ConditionCombinator.OR,
+                children = emptyList(),
+            ),
+        )
+        val negatedEmptyOr = rule().copy(
+            conditionTree = ConditionNode.Group(
+                combinator = ConditionCombinator.OR,
+                children = emptyList(),
+                negate = true,
+            ),
+        )
+
+        assertThat(RuleEvaluator.matchesRuleConditions(emptyAnd, LiveSystemState())).isTrue()
+        assertThat(RuleEvaluator.matchesRuleConditions(emptyOr, LiveSystemState())).isFalse()
+        assertThat(RuleEvaluator.matchesRuleConditions(negatedEmptyOr, LiveSystemState())).isTrue()
+    }
+
+    @Test fun condition_tree_absent_keeps_legacy_flat_and_semantics() {
+        val conditions = listOf(
+            RuleCondition(ConditionType.SCREEN_ON),
+            RuleCondition(ConditionType.CHARGER_CONNECTED),
+        )
+        val legacyRule = rule().copy(conditions = conditions, conditionTree = null)
+
+        assertThat(
+            RuleEvaluator.matchesRuleConditions(
+                legacyRule,
+                LiveSystemState(isScreenOn = true, isChargerConnected = true),
+            ),
+        ).isTrue()
+        assertThat(
+            RuleEvaluator.matchesRuleConditions(
+                legacyRule,
+                LiveSystemState(isScreenOn = true, isChargerConnected = false),
+            ),
+        ).isFalse()
+    }
+
+    @Test fun condition_tree_supersedes_legacy_flat_list() {
+        val failingFlatCondition = RuleCondition(ConditionType.CHARGER_DISCONNECTED)
+        val passingTree = ConditionNode.Group(
+            combinator = ConditionCombinator.OR,
+            children = listOf(
+                ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_OFF)),
+                ConditionNode.Leaf(RuleCondition(ConditionType.CHARGER_CONNECTED)),
+            ),
+        )
+        val treeRule = rule().copy(conditions = listOf(failingFlatCondition), conditionTree = passingTree)
+        val flatRule = rule().copy(conditions = listOf(failingFlatCondition), conditionTree = null)
+        val state = LiveSystemState(isChargerConnected = true, isScreenOn = true)
+
+        assertThat(RuleEvaluator.matchesRuleConditions(treeRule, state)).isTrue()
+        assertThat(RuleEvaluator.matchesRuleConditions(flatRule, state)).isFalse()
+    }
+
+    @Test fun condition_tree_depth_guard_rejects_too_deep_groups() {
+        fun nestedGroups(depth: Int, leaf: ConditionNode): ConditionNode =
+            if (depth == 0) leaf else ConditionNode.Group(children = listOf(nestedGroups(depth - 1, leaf)))
+
+        val allowed = rule().copy(
+            conditionTree = nestedGroups(4, ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_ON))),
+        )
+        val tooDeep = rule().copy(
+            conditionTree = nestedGroups(5, ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_ON))),
+        )
+
+        assertThat(RuleEvaluator.matchesRuleConditions(allowed, LiveSystemState(isScreenOn = true))).isTrue()
+        assertThat(RuleEvaluator.matchesRuleConditions(tooDeep, LiveSystemState(isScreenOn = true))).isFalse()
+    }
+
+    @Test fun evaluateScreen_reads_tree_instead_of_flat_conditions() {
+        val tree = ConditionNode.Group(
+            combinator = ConditionCombinator.OR,
+            children = listOf(
+                ConditionNode.Leaf(RuleCondition(ConditionType.SCREEN_OFF)),
+                ConditionNode.Leaf(RuleCondition(ConditionType.CHARGER_CONNECTED)),
+            ),
+        )
+        val treeRule = rule(TriggerEvent.SCREEN_ON).copy(
+            conditions = listOf(RuleCondition(ConditionType.CHARGER_DISCONNECTED)),
+            conditionTree = tree,
+        )
+
+        val result = RuleEvaluator.evaluateScreen(
+            listOf(treeRule),
+            ScreenEvent.ON,
+            LiveSystemState(isChargerConnected = true),
+        )
+        assertThat(result).containsExactly(treeRule)
     }
 
     @Test fun light_rules_match_only_when_threshold_crossed() {

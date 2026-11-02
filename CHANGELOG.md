@@ -6,15 +6,18 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 
+- Nested AND / OR / NOT condition groups: `Automation.conditionTree` adds recursive groups with per-group combinators, negation, empty-group semantics, and a 4-level depth guard. Rules without a tree keep the existing flat-AND `conditions` behavior, and the editor keeps `conditions` as a flattened leaf list for older readers.
 - Flashlight toggle action (`TORCH_TOGGLE`): turns the torch on when it is off and off when it is on, resolved from camera torch state callbacks so changes made by the system flashlight tile are respected. The "Shake for Flashlight" preset now switches the light instead of only turning it on.
 
 ### Security
 
+- Reject imported condition trees deeper than 4 group levels, with more than 32 leaves, or containing empty groups before any DataStore mutation; existing flat-only payloads still import unchanged.
 - Keep geofence event retention separate from location freshness: reuse coordinates only for fixes under 60 seconds old at action dispatch, otherwise fetch a fresh location or omit location template values.
 - Validate normal and encrypted imports before changing stored rules, rejecting invalid rule IDs, unsafe references, invalid active settings, and oversized documents or fields. Imported rules receive new IDs; failed imports preserve existing rules.
 
 ### Changed
 
+- Condition editing now opens in the legacy flat list with a Match AND/OR selector; choosing OR or adding a nested group converts it into a tree editor with per-group AND/OR segmented controls, a NOT toggle, add-condition/add-group actions, remove actions, and a compact summary when a group is collapsed. Add actions disable at the 32-leaf import limit, and the section hint now reads "optional · combine with AND / OR".
 - Preserve normal-import disabled states and encrypted-restore enabled states. When device-local TTS audio is unavailable, import the rule and prompt the user to regenerate its audio; available verified audio is copied to the new rule ID.
 - Redesigned the preset sheet: cards are neutral with a per-category accent limited to the icon tile and dot, category filters wrap instead of scrolling off-screen, each card keeps one filled "Use" action, and the drag handle and header now clear the status bar and camera cutout.
 - Trigger cards reuse the trigger picker's per-trigger accent colours (icon tile, schedule picker icon, ambient-light controls) instead of a blue primary container, and the create-screen presets banner is now a neutral card with an amber sparkle instead of a blue fill.

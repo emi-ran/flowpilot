@@ -2,6 +2,8 @@ package com.flowpilot.app.data.backup
 
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.data.model.ConditionNode
+import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.engine.NfcTagUtils
@@ -30,6 +32,43 @@ internal object ImportValidator {
         uri.scheme?.lowercase() in (if (httpsOnly) setOf("https") else setOf("http", "https")) &&
             !uri.host.isNullOrBlank() && uri.userInfo == null
     } catch (_: Exception) { false }
+
+    private fun validateCondition(condition: RuleCondition) {
+        when (condition.type) {
+            com.flowpilot.app.data.model.ConditionType.BATTERY_BELOW,
+            com.flowpilot.app.data.model.ConditionType.BATTERY_ABOVE ->
+                require(condition.batteryLevel in 0..100) { "Invalid battery condition" }
+            com.flowpilot.app.data.model.ConditionType.TIME_BETWEEN ->
+                require(condition.startMinute in 0..1439 && condition.endMinute in 0..1439) { "Invalid time condition" }
+            com.flowpilot.app.data.model.ConditionType.DAYS_OF_WEEK ->
+                require(condition.days.all { it in 1..7 }) { "Invalid days condition" }
+            else -> Unit
+        }
+    }
+
+    /**
+     * Rejects imported trees that the evaluator or UI cannot represent safely:
+     * nesting beyond [ConditionNode.MAX_DEPTH], more than [ConditionNode.MAX_LEAVES] leaves,
+     * and empty groups (which would silently change a rule's meaning).
+     */
+    private fun validateConditionTree(node: ConditionNode) {
+        var leaves = 0
+        fun walk(current: ConditionNode, depth: Int) {
+            when (current) {
+                is ConditionNode.Leaf -> {
+                    leaves += 1
+                    require(leaves <= ConditionNode.MAX_LEAVES) { "Too many condition leaves" }
+                    validateCondition(current.condition)
+                }
+                is ConditionNode.Group -> {
+                    require(depth <= ConditionNode.MAX_DEPTH) { "Condition tree too deep" }
+                    require(current.children.isNotEmpty()) { "Empty condition group" }
+                    current.children.forEach { child -> walk(child, depth + 1) }
+                }
+            }
+        }
+        walk(node, 1)
+    }
 
     fun validate(rules: List<Automation>) {
         require(rules.size <= MAX_RULES) { "Too many rules" }
@@ -60,14 +99,8 @@ internal object ImportValidator {
                 TriggerEvent.GEOFENCE_ENTER, TriggerEvent.GEOFENCE_EXIT -> require(r.geofenceLatitude.isFinite() && r.geofenceLatitude in -90.0..90.0 && r.geofenceLongitude.isFinite() && r.geofenceLongitude in -180.0..180.0 && r.geofenceRadiusMeters in 50..1000) { "Invalid location range" }
                 else -> Unit
             }
-            r.conditions.forEach { condition ->
-                when (condition.type) {
-                    com.flowpilot.app.data.model.ConditionType.BATTERY_BELOW, com.flowpilot.app.data.model.ConditionType.BATTERY_ABOVE -> require(condition.batteryLevel in 0..100) { "Invalid battery condition" }
-                    com.flowpilot.app.data.model.ConditionType.TIME_BETWEEN -> require(condition.startMinute in 0..1439 && condition.endMinute in 0..1439) { "Invalid time condition" }
-                    com.flowpilot.app.data.model.ConditionType.DAYS_OF_WEEK -> require(condition.days.all { it in 1..7 }) { "Invalid days condition" }
-                    else -> Unit
-                }
-            }
+            r.conditions.forEach { condition -> validateCondition(condition) }
+            r.conditionTree?.let { validateConditionTree(it) }
             val actions = r.effectiveActions
             if (ActionType.VIBRATE in actions) require(r.vibrationDurationMs in 1..60000 && r.vibrationAmplitude in 1..255) { "Invalid vibration" }
             if (ActionType.SET_MEDIA_VOLUME in actions) require(r.mediaVolumePercent in 0..100) { "Invalid volume" }

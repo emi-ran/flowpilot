@@ -1,6 +1,8 @@
 package com.flowpilot.app.engine
 
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.ConditionCombinator
+import com.flowpilot.app.data.model.ConditionNode
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
@@ -44,54 +46,102 @@ object RuleEvaluator {
     ): Boolean {
         if (conditions.isEmpty()) return true
         return conditions.all { condition ->
-            when (condition.type) {
-                ConditionType.BATTERY_BELOW -> {
-                    state.batteryPercent != null && state.batteryPercent <= condition.batteryLevel
+            matchesCondition(condition, state, nowMs, zoneId)
+        }
+    }
+
+    /**
+     * Evaluates a rule's optional condition tree, falling back to the legacy flat-AND list.
+     * Trees with a leaf list that is out of sync still evaluate from the tree.
+     */
+    fun matchesRuleConditions(
+        rule: Automation,
+        state: LiveSystemState,
+        nowMs: Long = System.currentTimeMillis(),
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
+    ): Boolean = rule.conditionTree?.let { matchesNode(it, state, nowMs, zoneId) }
+        ?: matchesConditions(rule.conditions, state, nowMs, zoneId)
+
+    /** Evaluates one leaf condition; kept separate so tree leaves share flat-list semantics. */
+    private fun matchesCondition(
+        condition: RuleCondition,
+        state: LiveSystemState,
+        nowMs: Long,
+        zoneId: java.time.ZoneId,
+    ): Boolean = when (condition.type) {
+        ConditionType.BATTERY_BELOW -> {
+            state.batteryPercent != null && state.batteryPercent <= condition.batteryLevel
+        }
+        ConditionType.BATTERY_ABOVE -> {
+            state.batteryPercent != null && state.batteryPercent >= condition.batteryLevel
+        }
+        ConditionType.CHARGER_CONNECTED -> {
+            state.isChargerConnected == true
+        }
+        ConditionType.CHARGER_DISCONNECTED -> {
+            state.isChargerConnected == false
+        }
+        ConditionType.SCREEN_ON -> {
+            state.isScreenOn == true
+        }
+        ConditionType.SCREEN_OFF -> {
+            state.isScreenOn == false
+        }
+        ConditionType.WIFI_CONNECTED -> {
+            if (state.connectedWifiSsid == null) false
+            else if (condition.wifiSsid.isBlank()) true
+            else state.connectedWifiSsid.trim().equals(condition.wifiSsid.trim(), ignoreCase = true)
+        }
+        ConditionType.WIFI_DISCONNECTED -> {
+            if (state.connectedWifiSsid == null) true
+            else if (condition.wifiSsid.isBlank()) false
+            else !state.connectedWifiSsid.trim().equals(condition.wifiSsid.trim(), ignoreCase = true)
+        }
+        ConditionType.TIME_BETWEEN -> {
+            val zdt = java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId)
+            val currentMinute = zdt.hour * 60 + zdt.minute
+            if (condition.startMinute <= condition.endMinute) {
+                currentMinute in condition.startMinute..condition.endMinute
+            } else {
+                // Overnight span (e.g. 23:00 to 07:00)
+                currentMinute >= condition.startMinute || currentMinute <= condition.endMinute
+            }
+        }
+        ConditionType.DAYS_OF_WEEK -> {
+            if (condition.days.isEmpty()) {
+                true
+            } else {
+                val zdt = java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId)
+                val dayOfWeek = zdt.dayOfWeek.value // 1 (Mon) .. 7 (Sun)
+                dayOfWeek in condition.days
+            }
+        }
+    }
+
+    /**
+     * [depth] is the nesting level of the current group (root group = 1). Groups deeper than
+     * [ConditionNode.MAX_DEPTH] evaluate to false so malformed data cannot overflow the stack.
+     */
+    private fun matchesNode(
+        node: ConditionNode,
+        state: LiveSystemState,
+        nowMs: Long,
+        zoneId: java.time.ZoneId,
+        depth: Int = 0,
+    ): Boolean = when (node) {
+        is ConditionNode.Leaf -> matchesCondition(node.condition, state, nowMs, zoneId)
+        is ConditionNode.Group -> {
+            val groupDepth = depth + 1
+            if (groupDepth > ConditionNode.MAX_DEPTH) {
+                false
+            } else {
+                val combined = when (node.combinator) {
+                    ConditionCombinator.AND ->
+                        node.children.all { matchesNode(it, state, nowMs, zoneId, groupDepth) }
+                    ConditionCombinator.OR ->
+                        node.children.any { matchesNode(it, state, nowMs, zoneId, groupDepth) }
                 }
-                ConditionType.BATTERY_ABOVE -> {
-                    state.batteryPercent != null && state.batteryPercent >= condition.batteryLevel
-                }
-                ConditionType.CHARGER_CONNECTED -> {
-                    state.isChargerConnected == true
-                }
-                ConditionType.CHARGER_DISCONNECTED -> {
-                    state.isChargerConnected == false
-                }
-                ConditionType.SCREEN_ON -> {
-                    state.isScreenOn == true
-                }
-                ConditionType.SCREEN_OFF -> {
-                    state.isScreenOn == false
-                }
-                ConditionType.WIFI_CONNECTED -> {
-                    if (state.connectedWifiSsid == null) false
-                    else if (condition.wifiSsid.isBlank()) true
-                    else state.connectedWifiSsid.trim().equals(condition.wifiSsid.trim(), ignoreCase = true)
-                }
-                ConditionType.WIFI_DISCONNECTED -> {
-                    if (state.connectedWifiSsid == null) true
-                    else if (condition.wifiSsid.isBlank()) false
-                    else !state.connectedWifiSsid.trim().equals(condition.wifiSsid.trim(), ignoreCase = true)
-                }
-                ConditionType.TIME_BETWEEN -> {
-                    val zdt = java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId)
-                    val currentMinute = zdt.hour * 60 + zdt.minute
-                    if (condition.startMinute <= condition.endMinute) {
-                        currentMinute in condition.startMinute..condition.endMinute
-                    } else {
-                        // Overnight span (e.g. 23:00 to 07:00)
-                        currentMinute >= condition.startMinute || currentMinute <= condition.endMinute
-                    }
-                }
-                ConditionType.DAYS_OF_WEEK -> {
-                    if (condition.days.isEmpty()) {
-                        true
-                    } else {
-                        val zdt = java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId)
-                        val dayOfWeek = zdt.dayOfWeek.value // 1 (Mon) .. 7 (Sun)
-                        dayOfWeek in condition.days
-                    }
-                }
+                if (node.negate) !combined else combined
             }
         }
     }
@@ -111,7 +161,7 @@ object RuleEvaluator {
             it.enabled &&
                 it.triggerEvent == triggerEvent &&
                 !it.isCoolingDown(nowMs) &&
-                matchesConditions(it.conditions, effectiveState, nowMs)
+                matchesRuleConditions(it, effectiveState, nowMs)
         }
     }
 
@@ -129,7 +179,7 @@ object RuleEvaluator {
                 TriggerEvent.BATTERY_ABOVE -> transition.previous < rule.batteryLevel && transition.current >= rule.batteryLevel
                 else -> false
             }
-            triggerMatches && matchesConditions(rule.conditions, effectiveState, nowMs)
+            triggerMatches && matchesRuleConditions(rule, effectiveState, nowMs)
         }
     }
 
@@ -149,7 +199,7 @@ object RuleEvaluator {
             it.enabled &&
                 it.triggerEvent == trigger &&
                 !it.isCoolingDown(nowMs) &&
-                matchesConditions(it.conditions, effectiveState, nowMs)
+                matchesRuleConditions(it, effectiveState, nowMs)
         }
     }
 
@@ -165,7 +215,7 @@ object RuleEvaluator {
                 rule.triggerEvent == TriggerEvent.DEVICE_SHAKE &&
                 shakeMagnitude >= ShakeReducer.clampThreshold(rule.shakeThreshold) &&
                 !rule.isCoolingDown(nowMs) &&
-                matchesConditions(rule.conditions, liveState, nowMs)
+                matchesRuleConditions(rule, liveState, nowMs)
         }
     }
 
@@ -182,7 +232,7 @@ object RuleEvaluator {
                 TriggerEvent.LIGHT_ABOVE -> transition.previousLux < rule.lightLux && transition.currentLux >= rule.lightLux
                 else -> false
             }
-            triggerMatches && matchesConditions(rule.conditions, liveState, nowMs)
+            triggerMatches && matchesRuleConditions(rule, liveState, nowMs)
         }
     }
 
@@ -202,7 +252,7 @@ object RuleEvaluator {
         return rules.filter { rule ->
             if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@filter false
             val ssidMatches = TriggerTargetMatcher.wifiTargetMatches(rule.wifiSsid, transition.ssid)
-            ssidMatches && matchesConditions(rule.conditions, effectiveState, nowMs)
+            ssidMatches && matchesRuleConditions(rule, effectiveState, nowMs)
         }
     }
 
@@ -221,7 +271,7 @@ object RuleEvaluator {
                 rule.triggerEvent == trigger &&
                 !rule.isCoolingDown(nowMs) &&
                 TriggerTargetMatcher.bluetoothTargetsMatch(rule.bluetoothDeviceAddress, transition.address) &&
-                matchesConditions(rule.conditions, liveState, nowMs)
+                matchesRuleConditions(rule, liveState, nowMs)
         }
     }
 
@@ -239,7 +289,7 @@ object RuleEvaluator {
             if (!TriggerTargetMatcher.notificationKeywordMatches(rule.notificationKeyword, event.title, event.text)) {
                 return@filter false
             }
-            matchesConditions(rule.conditions, liveState, nowMs)
+            matchesRuleConditions(rule, liveState, nowMs)
         }
     }
 
@@ -256,7 +306,7 @@ object RuleEvaluator {
                 rule.triggerEvent == TriggerEvent.NFC_TAG_SCANNED &&
                 !rule.isCoolingDown(nowMs) &&
                 TriggerTargetMatcher.nfcTargetsMatch(rule.nfcTagId, normalizedEventId) &&
-                matchesConditions(rule.conditions, liveState, nowMs)
+                matchesRuleConditions(rule, liveState, nowMs)
         }
     }
 
@@ -270,7 +320,7 @@ object RuleEvaluator {
             rule.enabled &&
                 rule.triggerEvent == transition.triggerEvent &&
                 !rule.isCoolingDown(nowMs) &&
-                matchesConditions(rule.conditions, liveState, nowMs)
+                matchesRuleConditions(rule, liveState, nowMs)
         }
     }
 
@@ -318,7 +368,7 @@ object RuleEvaluator {
             if (!contentMatches) return@filter false
 
             // 3. Environmental conditions
-            matchesConditions(rule.conditions, liveState, nowMs)
+            matchesRuleConditions(rule, liveState, nowMs)
         }
     }
 
@@ -340,7 +390,7 @@ object RuleEvaluator {
                 r.triggerEvent == triggerEvent &&
                 r.appPackage == pkg &&
                 !r.isCoolingDown(nowMs) &&
-                matchesConditions(r.conditions, liveState, nowMs)
+                matchesRuleConditions(r, liveState, nowMs)
         }
 
         val toExecute = when (event) {
@@ -365,7 +415,7 @@ object RuleEvaluator {
             if (!rule.enabled || rule.triggerEvent != trigger || rule.isCoolingDown(nowMs)) return@filter false
             // If screen is off and rule does not permit screen-off evaluation, filter out
             if (liveState.isScreenOn == false && !rule.flipScreenOffDetection) return@filter false
-            matchesConditions(rule.conditions, liveState, nowMs)
+            matchesRuleConditions(rule, liveState, nowMs)
         }
     }
 
@@ -384,7 +434,7 @@ object RuleEvaluator {
                 rule.id == transition.automationId &&
                 rule.triggerEvent == trigger &&
                 !rule.isCoolingDown(nowMs) &&
-                matchesConditions(rule.conditions, liveState, nowMs)
+                matchesRuleConditions(rule, liveState, nowMs)
         }
     }
 }

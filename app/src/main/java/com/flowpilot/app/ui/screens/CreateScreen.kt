@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
@@ -57,8 +58,11 @@ import androidx.compose.material.icons.filled.Tune
 import kotlinx.coroutines.launch
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.AutomationPreset
+import com.flowpilot.app.data.model.ConditionCombinator
+import com.flowpilot.app.data.model.ConditionNode
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
+import com.flowpilot.app.data.model.flattenConditions
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.engine.isValidGeofenceConfig
@@ -124,6 +128,7 @@ fun CreateScreen(
     var phoneNumber by remember { mutableStateOf("") }
     var flipScreenOffDetection by remember { mutableStateOf(false) }
     var conditions by remember { mutableStateOf(emptyList<RuleCondition>()) }
+    var conditionTree by remember { mutableStateOf<ConditionNode?>(null) }
     var showConditionPicker by remember { mutableStateOf(false) }
     var notificationTitle by remember { mutableStateOf("FlowPilot") }
     var notificationBody by remember { mutableStateOf("Automation ran") }
@@ -256,6 +261,7 @@ fun CreateScreen(
         geofenceLongitude = t.geofenceLongitude
         geofenceRadiusMeters = t.geofenceRadiusMeters
         conditions = t.conditions
+        conditionTree = t.conditionTree
         actions = t.effectiveActions
         actionDelays = t.effectiveActionDelays
         cooldownMinutes = t.cooldownMinutes
@@ -421,6 +427,7 @@ fun CreateScreen(
                         notificationAppName = notificationAppName,
                         notificationKeyword = notificationKeyword,
                         conditions = conditions,
+                        conditionTree = conditionTree,
                         notificationTitle = notificationTitle,
                         notificationBody = notificationBody,
                         vibrationPattern = vibrationPattern,
@@ -646,12 +653,18 @@ fun CreateScreen(
 
             ConditionsSection(
                 conditions = conditions,
+                conditionTree = conditionTree,
                 onAddCondition = { showConditionPicker = true },
                 onRemoveCondition = { index ->
                     conditions = conditions.filterIndexed { i, _ -> i != index }
                 },
                 onUpdateCondition = { index, updated ->
                     conditions = conditions.mapIndexed { i, c -> if (i == index) updated else c }
+                },
+                onTreeChange = { tree ->
+                    conditionTree = tree
+                    // Legacy readers/exports keep a flat list; the tree stays authoritative when present.
+                    conditions = tree?.flattenConditions().orEmpty()
                 },
             )
 
@@ -947,6 +960,7 @@ fun CreateScreen(
                             notificationAppPackage = notificationAppPackage,
                             notificationKeyword = notificationKeyword,
                             conditions = conditions,
+                            conditionTree = conditionTree,
                             lightLux = lightLux,
                             shakeThreshold = shakeThreshold,
                             smsSenderFilter = smsSenderFilter.trim(),
@@ -980,6 +994,7 @@ fun CreateScreen(
                                 notificationAppName = notificationAppName,
                                 notificationKeyword = notificationKeyword,
                                 conditions = conditions,
+                                conditionTree = conditionTree,
                                 notificationTitle = notificationTitle,
                                 notificationBody = notificationBody,
                                 vibrationPattern = vibrationPattern,
@@ -1423,27 +1438,23 @@ private fun WebhookVariableRow(token: String, example: String, description: Stri
 }
 
 @Composable
-fun ConditionsSection(
-    conditions: List<RuleCondition>,
-    onAddCondition: () -> Unit,
-    onRemoveCondition: (Int) -> Unit,
-    onUpdateCondition: (Int, RuleCondition) -> Unit,
+private fun ConditionEditorCard(
+    condition: RuleCondition,
+    onUpdate: (RuleCondition) -> Unit,
+    onRemove: () -> Unit,
 ) {
-    var timePickerTarget by remember { mutableStateOf<Triple<Int, Boolean, Int>?>(null) } // (index, isStart, initialMinute)
+    val cond = condition
+    var timePickerTarget by remember { mutableStateOf<Pair<Boolean, Int>?>(null) }
 
     if (timePickerTarget != null) {
-        val (condIdx, isStart, initialMin) = timePickerTarget!!
-        val pickerState = rememberTimePickerState(initialMin / 60, initialMin % 60, is24Hour = true)
+        val (isStart, initialMinute) = timePickerTarget!!
+        val pickerState = rememberTimePickerState(initialMinute / 60, initialMinute % 60, is24Hour = true)
         AlertDialog(
             onDismissRequest = { timePickerTarget = null },
             confirmButton = {
                 TextButton({
-                    val selectedMin = pickerState.hour * 60 + pickerState.minute
-                    val cond = conditions.getOrNull(condIdx)
-                    if (cond != null) {
-                        val updated = if (isStart) cond.copy(startMinute = selectedMin) else cond.copy(endMinute = selectedMin)
-                        onUpdateCondition(condIdx, updated)
-                    }
+                    val selectedMinute = pickerState.hour * 60 + pickerState.minute
+                    onUpdate(if (isStart) cond.copy(startMinute = selectedMinute) else cond.copy(endMinute = selectedMinute))
                     timePickerTarget = null
                 }) { Text("OK") }
             },
@@ -1454,19 +1465,17 @@ fun ConditionsSection(
         )
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        conditions.forEachIndexed { index, cond ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
-            ) {
-                Column(Modifier.padding(14.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(cond.type.localizedLabel(), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         IconButton(
-                            onClick = { onRemoveCondition(index) },
+                            onClick = { onRemove() },
                             modifier = Modifier.size(28.dp),
                         ) {
                             Icon(Icons.Default.Close, stringResource(R.string.btn_remove_condition), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
@@ -1477,7 +1486,7 @@ fun ConditionsSection(
                             Text("${cond.batteryLevel}%", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(44.dp))
                             Slider(
                                 value = cond.batteryLevel.toFloat(),
-                                onValueChange = { onUpdateCondition(index, cond.copy(batteryLevel = it.toInt())) },
+                                onValueChange = { onUpdate(cond.copy(batteryLevel = it.toInt())) },
                                 valueRange = 1f..100f,
                                 modifier = Modifier.weight(1f),
                             )
@@ -1485,7 +1494,7 @@ fun ConditionsSection(
                     } else if (cond.type == ConditionType.WIFI_CONNECTED || cond.type == ConditionType.WIFI_DISCONNECTED) {
                         WifiSsidPickerField(
                             ssid = cond.wifiSsid,
-                            onSsidChange = { onUpdateCondition(index, cond.copy(wifiSsid = it)) },
+                            onSsidChange = { onUpdate(cond.copy(wifiSsid = it)) },
                             label = stringResource(R.string.wifi_ssid_label),
                         )
                     } else if (cond.type == ConditionType.TIME_BETWEEN) {
@@ -1501,7 +1510,7 @@ fun ConditionsSection(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Card(
-                                    onClick = { timePickerTarget = Triple(index, true, cond.startMinute) },
+                                    onClick = { timePickerTarget = true to cond.startMinute },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -1512,7 +1521,7 @@ fun ConditionsSection(
                                     }
                                 }
                                 Card(
-                                    onClick = { timePickerTarget = Triple(index, false, cond.endMinute) },
+                                    onClick = { timePickerTarget = false to cond.endMinute },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -1537,17 +1546,17 @@ fun ConditionsSection(
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(
                                     selected = cond.days.isEmpty(),
-                                    onClick = { onUpdateCondition(index, cond.copy(days = emptySet())) },
+                                    onClick = { onUpdate(cond.copy(days = emptySet())) },
                                     label = { Text(stringResource(R.string.schedule_daily)) },
                                 )
                                 FilterChip(
                                     selected = cond.days == setOf(1, 2, 3, 4, 5),
-                                    onClick = { onUpdateCondition(index, cond.copy(days = setOf(1, 2, 3, 4, 5))) },
+                                    onClick = { onUpdate(cond.copy(days = setOf(1, 2, 3, 4, 5))) },
                                     label = { Text(stringResource(R.string.schedule_weekdays)) },
                                 )
                                 FilterChip(
                                     selected = cond.days == setOf(6, 7),
-                                    onClick = { onUpdateCondition(index, cond.copy(days = setOf(6, 7))) },
+                                    onClick = { onUpdate(cond.copy(days = setOf(6, 7))) },
                                     label = { Text(stringResource(R.string.schedule_weekends)) },
                                 )
                             }
@@ -1565,7 +1574,7 @@ fun ConditionsSection(
                                         selected = cond.days.isNotEmpty() && day in cond.days,
                                         onClick = {
                                             val next = if (day in cond.days) cond.days - day else cond.days + day
-                                            onUpdateCondition(index, cond.copy(days = next))
+                                            onUpdate(cond.copy(days = next))
                                         },
                                         label = { Text(stringResource(labelRes)) },
                                     )
@@ -1573,21 +1582,420 @@ fun ConditionsSection(
                             }
                         }
                     }
+        }
+    }
+}
+
+private sealed interface PendingConditionAdd {
+    data class InGroup(val path: List<Int>) : PendingConditionAdd
+    data class NestedGroup(val path: List<Int>) : PendingConditionAdd
+    data object FlatRootGroup : PendingConditionAdd
+    data object RootLeaf : PendingConditionAdd
+}
+
+private fun updateNodeAt(
+    node: ConditionNode,
+    path: List<Int>,
+    transform: (ConditionNode) -> ConditionNode,
+): ConditionNode {
+    if (path.isEmpty()) return transform(node)
+    val group = node as? ConditionNode.Group ?: return node
+    val index = path.first()
+    if (index !in group.children.indices) return node
+    return group.copy(
+        children = group.children.mapIndexed { childIndex, child ->
+            if (childIndex == index) updateNodeAt(child, path.drop(1), transform) else child
+        },
+    )
+}
+
+private fun removeNodeAt(root: ConditionNode, path: List<Int>): ConditionNode? {
+    if (path.isEmpty()) return null
+    val parentPath = path.dropLast(1)
+    val index = path.last()
+    return pruneEmptyGroups(
+        updateNodeAt(root, parentPath) { parent ->
+            if (parent is ConditionNode.Group && index in parent.children.indices) {
+                parent.copy(children = parent.children.filterIndexed { i, _ -> i != index })
+            } else {
+                parent
+            }
+        },
+    )
+}
+
+/** Drops groups left without children so locally saved trees stay importable. */
+private fun pruneEmptyGroups(node: ConditionNode?): ConditionNode? = when (node) {
+    null -> null
+    is ConditionNode.Leaf -> node
+    is ConditionNode.Group -> {
+        val children = node.children.mapNotNull { child -> pruneEmptyGroups(child) }
+        if (children.isEmpty()) null else node.copy(children = children)
+    }
+}
+
+@Composable
+fun ConditionsSection(
+    conditions: List<RuleCondition>,
+    conditionTree: ConditionNode?,
+    onAddCondition: () -> Unit,
+    onRemoveCondition: (Int) -> Unit,
+    onUpdateCondition: (Int, RuleCondition) -> Unit,
+    onTreeChange: (ConditionNode?) -> Unit,
+) {
+    var pendingAdd by remember { mutableStateOf<PendingConditionAdd?>(null) }
+    val leafCount = conditionTree?.flattenConditions()?.size ?: conditions.size
+    val canAddLeaf = leafCount < ConditionNode.MAX_LEAVES
+
+    val requestRemove: (List<Int>) -> Unit = { path ->
+        conditionTree?.let { root ->
+            onTreeChange(if (path.isEmpty()) null else removeNodeAt(root, path))
+        }
+    }
+    val requestUpdate: (List<Int>, (ConditionNode) -> ConditionNode) -> Unit = { path, transform ->
+        conditionTree?.let { root -> onTreeChange(updateNodeAt(root, path, transform)) }
+    }
+
+    pendingAdd?.let { request ->
+        ConditionPickerDialog(
+            onAdd = { condition ->
+                when (request) {
+                    is PendingConditionAdd.InGroup -> conditionTree?.let { root ->
+                        onTreeChange(
+                            updateNodeAt(root, request.path) { group ->
+                                if (group is ConditionNode.Group) {
+                                    group.copy(children = group.children + ConditionNode.Leaf(condition))
+                                } else {
+                                    group
+                                }
+                            },
+                        )
+                    }
+                    is PendingConditionAdd.NestedGroup -> conditionTree?.let { root ->
+                        onTreeChange(
+                            updateNodeAt(root, request.path) { group ->
+                                if (group is ConditionNode.Group) {
+                                    group.copy(
+                                        children = group.children + ConditionNode.Group(
+                                            children = listOf(ConditionNode.Leaf(condition)),
+                                        ),
+                                    )
+                                } else {
+                                    group
+                                }
+                            },
+                        )
+                    }
+                    PendingConditionAdd.FlatRootGroup -> onTreeChange(
+                        ConditionNode.Group(
+                            children = conditions.map { ConditionNode.Leaf(it) } +
+                                ConditionNode.Group(children = listOf(ConditionNode.Leaf(condition))),
+                        ),
+                    )
+                    PendingConditionAdd.RootLeaf -> conditionTree?.let { root ->
+                        if (root is ConditionNode.Leaf) {
+                            onTreeChange(
+                                ConditionNode.Group(
+                                    children = listOf(root, ConditionNode.Leaf(condition)),
+                                ),
+                            )
+                        }
+                    }
+                }
+                pendingAdd = null
+            },
+            onDismiss = { pendingAdd = null },
+        )
+    }
+
+    if (conditionTree == null) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            conditions.forEachIndexed { index, condition ->
+                key(index) {
+                    ConditionEditorCard(
+                        condition = condition,
+                        onUpdate = { updated -> onUpdateCondition(index, updated) },
+                        onRemove = { onRemoveCondition(index) },
+                    )
                 }
             }
         }
+
+        if (conditions.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.condition_match_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(10.dp))
+                CombinatorSelector(
+                    selected = ConditionCombinator.AND,
+                    onSelect = { selected ->
+                        if (selected == ConditionCombinator.OR) {
+                            onTreeChange(
+                                ConditionNode.Group(
+                                    combinator = ConditionCombinator.OR,
+                                    children = conditions.map { ConditionNode.Leaf(it) },
+                                ),
+                            )
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = conditions.size <= ConditionNode.MAX_LEAVES,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = onAddCondition,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Icon(Icons.Default.Add, null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.btn_add_condition))
+        }
+        TextButton(
+            onClick = { pendingAdd = PendingConditionAdd.FlatRootGroup },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = canAddLeaf,
+        ) {
+            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.btn_add_condition_group))
+        }
+    } else {
+        if (conditionTree is ConditionNode.Leaf) {
+            ConditionEditorCard(
+                condition = conditionTree.condition,
+                onUpdate = { updated -> onTreeChange(ConditionNode.Leaf(updated)) },
+                onRemove = { onTreeChange(null) },
+            )
+            TextButton(
+                onClick = { pendingAdd = PendingConditionAdd.RootLeaf },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = canAddLeaf,
+            ) {
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.btn_add_condition))
+            }
+        } else {
+            ConditionNodeEditor(
+                node = conditionTree,
+                path = emptyList(),
+                depth = 1,
+                canAddLeaves = canAddLeaf,
+                onUpdateNode = requestUpdate,
+                onRemoveNode = requestRemove,
+                onRequestAdd = { path, nested ->
+                    pendingAdd = if (nested) {
+                        PendingConditionAdd.NestedGroup(path)
+                    } else {
+                        PendingConditionAdd.InGroup(path)
+                    }
+                },
+            )
+        }
     }
+}
 
-    Spacer(Modifier.height(8.dp))
+@Composable
+private fun CombinatorSelector(
+    selected: ConditionCombinator,
+    onSelect: (ConditionCombinator) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    SingleChoiceSegmentedButtonRow(modifier) {
+        ConditionCombinator.entries.forEachIndexed { index, combinator ->
+            SegmentedButton(
+                selected = selected == combinator,
+                onClick = { onSelect(combinator) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = ConditionCombinator.entries.size),
+                enabled = enabled,
+                label = {
+                    Text(
+                        stringResource(
+                            if (combinator == ConditionCombinator.AND) {
+                                R.string.condition_combinator_and
+                            } else {
+                                R.string.condition_combinator_or
+                            },
+                        ),
+                        maxLines = 1,
+                    )
+                },
+            )
+        }
+    }
+}
 
-    OutlinedButton(
-        onClick = onAddCondition,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-    ) {
-        Icon(Icons.Default.Add, null)
-        Spacer(Modifier.width(8.dp))
-        Text(stringResource(R.string.btn_add_condition))
+@Composable
+private fun conditionGroupSummary(group: ConditionNode.Group): String {
+    val combinatorLabel = stringResource(
+        if (group.combinator == ConditionCombinator.AND) {
+            R.string.condition_combinator_and
+        } else {
+            R.string.condition_combinator_or
+        },
+    )
+    if (group.children.isEmpty()) {
+        return stringResource(
+            if (group.negate) R.string.condition_group_empty_negated else R.string.condition_group_empty,
+        )
+    }
+    return pluralStringResource(
+        if (group.negate) R.plurals.condition_group_summary_negated else R.plurals.condition_group_summary,
+        group.children.size,
+        combinatorLabel,
+        group.children.size,
+    )
+}
+
+@Composable
+private fun ConditionNodeEditor(
+    node: ConditionNode,
+    path: List<Int>,
+    depth: Int,
+    canAddLeaves: Boolean,
+    onUpdateNode: (List<Int>, (ConditionNode) -> ConditionNode) -> Unit,
+    onRemoveNode: (List<Int>) -> Unit,
+    onRequestAdd: (List<Int>, Boolean) -> Unit,
+) {
+    when (node) {
+        is ConditionNode.Leaf -> ConditionEditorCard(
+            condition = node.condition,
+            onUpdate = { updated -> onUpdateNode(path) { ConditionNode.Leaf(updated) } },
+            onRemove = { onRemoveNode(path) },
+        )
+        is ConditionNode.Group -> {
+            var expanded by remember(path) { mutableStateOf(true) }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = { expanded = !expanded },
+                        ) {
+                            Icon(
+                                if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = stringResource(
+                                    if (expanded) {
+                                        R.string.btn_collapse_condition_group
+                                    } else {
+                                        R.string.btn_expand_condition_group
+                                    },
+                                ),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CombinatorSelector(
+                                    selected = node.combinator,
+                                    onSelect = { combinator ->
+                                        onUpdateNode(path) { current ->
+                                            if (current is ConditionNode.Group) {
+                                                current.copy(combinator = combinator)
+                                            } else {
+                                                current
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                FilterChip(
+                                    selected = node.negate,
+                                    onClick = {
+                                        onUpdateNode(path) { current ->
+                                            if (current is ConditionNode.Group) {
+                                                current.copy(negate = !current.negate)
+                                            } else {
+                                                current
+                                            }
+                                        }
+                                    },
+                                    label = {
+                                        Text(stringResource(R.string.condition_not), maxLines = 1)
+                                    },
+                                )
+                            }
+                            if (!expanded) {
+                                Text(
+                                    conditionGroupSummary(node),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 2.dp),
+                                )
+                            }
+                        }
+                        if (path.isNotEmpty()) {
+                            IconButton(
+                                onClick = { onRemoveNode(path) },
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    stringResource(R.string.btn_remove_condition_group),
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                    }
+                    if (expanded) {
+                        Column(
+                            modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            node.children.forEachIndexed { index, child ->
+                                key(index) {
+                                    ConditionNodeEditor(
+                                        node = child,
+                                        path = path + index,
+                                        depth = depth + 1,
+                                        canAddLeaves = canAddLeaves,
+                                        onUpdateNode = onUpdateNode,
+                                        onRemoveNode = onRemoveNode,
+                                        onRequestAdd = onRequestAdd,
+                                    )
+                                }
+                            }
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                TextButton(
+                                    onClick = { onRequestAdd(path, false) },
+                                    enabled = canAddLeaves,
+                                ) {
+                                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(stringResource(R.string.btn_add_condition), maxLines = 1)
+                                }
+                                TextButton(
+                                    onClick = { onRequestAdd(path, true) },
+                                    enabled = depth < 2 && canAddLeaves,
+                                ) {
+                                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(stringResource(R.string.btn_add_condition_group), maxLines = 1)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

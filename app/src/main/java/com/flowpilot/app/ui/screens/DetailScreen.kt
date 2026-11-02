@@ -48,6 +48,7 @@ import com.flowpilot.app.ui.components.SecondaryActionButton
 import com.flowpilot.app.ui.components.SectionHeader
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
+import com.flowpilot.app.data.model.flattenConditions
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
@@ -120,6 +121,7 @@ fun DetailScreen(
     var phoneNumber by remember(initialRule.id) { mutableStateOf(initialRule.phoneNumber) }
     var flipScreenOffDetection by remember(initialRule.id) { mutableStateOf(initialRule.flipScreenOffDetection) }
     var conditions by remember(initialRule.id) { mutableStateOf(initialRule.conditions) }
+    var conditionTree by remember(initialRule.id) { mutableStateOf(initialRule.conditionTree) }
     var showConditionPicker by remember { mutableStateOf(false) }
     var notificationTitle by remember(initialRule.id) { mutableStateOf(initialRule.notificationTitle) }
     var notificationBody by remember(initialRule.id) { mutableStateOf(initialRule.notificationBody) }
@@ -338,6 +340,7 @@ fun DetailScreen(
                         notificationAppName = notificationAppName,
                         notificationKeyword = notificationKeyword,
                         conditions = conditions,
+                        conditionTree = conditionTree,
                         notificationTitle = notificationTitle,
                         notificationBody = notificationBody,
                         vibrationPattern = vibrationPattern,
@@ -454,6 +457,7 @@ fun DetailScreen(
                                 notificationAppName = notificationAppName,
                                 notificationKeyword = notificationKeyword,
                                 conditions = conditions,
+                                conditionTree = conditionTree,
                                 notificationTitle = notificationTitle,
                                 notificationBody = notificationBody,
                                 vibrationPattern = vibrationPattern,
@@ -617,12 +621,18 @@ fun DetailScreen(
 
             ConditionsSection(
                 conditions = conditions,
+                conditionTree = conditionTree,
                 onAddCondition = { showConditionPicker = true },
                 onRemoveCondition = { index ->
                     conditions = conditions.filterIndexed { i, _ -> i != index }
                 },
                 onUpdateCondition = { index, updated ->
                     conditions = conditions.mapIndexed { i, c -> if (i == index) updated else c }
+                },
+                onTreeChange = { tree ->
+                    conditionTree = tree
+                    // Legacy readers/exports keep a flat list; the tree stays authoritative when present.
+                    conditions = tree?.flattenConditions().orEmpty()
                 },
             )
 
@@ -923,6 +933,7 @@ fun DetailScreen(
                                 notificationAppName = notificationAppName,
                                 notificationKeyword = notificationKeyword,
                                 conditions = conditions,
+                                conditionTree = conditionTree,
                                 notificationTitle = notificationTitle,
                                 notificationBody = notificationBody,
                                 vibrationPattern = vibrationPattern,
