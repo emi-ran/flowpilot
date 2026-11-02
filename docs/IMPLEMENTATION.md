@@ -34,6 +34,10 @@ On engine process restart, geofence reconciliation removes the PendingIntent reg
 Unit tests cover legacy normalization and omitted-null JSON, heterogeneous matching and source labels, shared cooldown/deduplication, listener union, import bounds and portable backup round trips. No build, test or physical-device result is claimed here. Xiaomi app-opened + Wi-Fi smoke tests, including engine restart and disabled-rule paths, remain required.
 
 
+## Presets
+
+`AutomationPresets.all` holds the ready-to-use templates rendered by `PresetsBottomSheet`. Each template is a normal `Automation` the editor copies on selection, so multi-trigger templates carry `TriggerDefinitions` and nested logic carries `conditionTree` with `conditions` kept as the flattened leaf list. Battery Saver Emergency intentionally leaves flat conditions empty and expresses "not charging" as a negated group, so a reader that ignores the tree keeps the older unguarded behaviour instead of inverting it. Cards summarize templates from `normalizedTriggers()`, showing the first trigger, a `+N` count, an AND/OR marker when a tree is present, and the action count. Preset titles and descriptions are localized through `titleRes`/`descriptionRes`; every new preset ships EN and TR strings.
+
 ## Capability matrix (verified against Android 16 / HyperOS constraints)
 
 | Action            | Plain app           | ADB (WRITE_SECURE_SETTINGS) | Shizuku             | Root    |

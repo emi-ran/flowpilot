@@ -252,7 +252,7 @@ fun CreateScreen(
         geofenceLongitude = t.geofenceLongitude
         geofenceRadiusMeters = t.geofenceRadiusMeters
         conditions = t.conditions
-        conditionTree = t.conditionTree
+        conditionTree = t.conditionTree?.let { simplifyConditionTree(it) }
         actions = t.effectiveActions
         actionDelays = t.effectiveActionDelays
         cooldownMinutes = t.cooldownMinutes
@@ -1546,7 +1546,6 @@ private fun ConditionEditorCard(
 private sealed interface PendingConditionAdd {
     data class InGroup(val path: List<Int>) : PendingConditionAdd
     data class NestedGroup(val path: List<Int>) : PendingConditionAdd
-    data object FlatRootGroup : PendingConditionAdd
     data object RootLeaf : PendingConditionAdd
 }
 
@@ -1588,6 +1587,23 @@ private fun pruneEmptyGroups(node: ConditionNode?): ConditionNode? = when (node)
     is ConditionNode.Group -> {
         val children = node.children.mapNotNull { child -> pruneEmptyGroups(child) }
         if (children.isEmpty()) null else node.copy(children = children)
+    }
+}
+
+/**
+ * Collapses single-child groups that add no meaning (no negation), so the editor never shows
+ * a wrapper layer the user did not ask for. Logic is unchanged: one child AND/OR is that child.
+ */
+private fun simplifyConditionTree(node: ConditionNode): ConditionNode = when (node) {
+    is ConditionNode.Leaf -> node
+    is ConditionNode.Group -> {
+        val children = node.children.map { simplifyConditionTree(it) }
+        val group = node.copy(children = children)
+        if (!group.negate && group.children.size == 1) {
+            simplifyConditionTree(group.children.single())
+        } else {
+            group
+        }
     }
 }
 
@@ -1643,12 +1659,6 @@ fun ConditionsSection(
                             },
                         )
                     }
-                    PendingConditionAdd.FlatRootGroup -> onTreeChange(
-                        ConditionNode.Group(
-                            children = conditions.map { ConditionNode.Leaf(it) } +
-                                ConditionNode.Group(children = listOf(ConditionNode.Leaf(condition))),
-                        ),
-                    )
                     PendingConditionAdd.RootLeaf -> conditionTree?.let { root ->
                         if (root is ConditionNode.Leaf) {
                             onTreeChange(
@@ -1719,14 +1729,17 @@ fun ConditionsSection(
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.btn_add_condition))
         }
-        TextButton(
-            onClick = { pendingAdd = PendingConditionAdd.FlatRootGroup },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = canAddLeaf,
-        ) {
-            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(stringResource(R.string.btn_add_condition_group))
+        if (conditions.isNotEmpty() && canAddLeaf) {
+            TextButton(
+                onClick = {
+                    onTreeChange(
+                        ConditionNode.Group(children = conditions.map { ConditionNode.Leaf(it) }),
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.condition_nested_groups), style = MaterialTheme.typography.labelLarge)
+            }
         }
     } else {
         if (conditionTree is ConditionNode.Leaf) {
@@ -1796,6 +1809,55 @@ private fun CombinatorSelector(
 }
 
 @Composable
+private fun GroupMatchSelector(
+    combinator: ConditionCombinator,
+    onSelect: (ConditionCombinator) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier) {
+        AssistChip(
+            onClick = { expanded = true },
+            label = {
+                Text(
+                    stringResource(
+                        if (combinator == ConditionCombinator.AND) {
+                            R.string.condition_all_of
+                        } else {
+                            R.string.condition_any_of
+                        },
+                    ),
+                )
+            },
+            trailingIcon = {
+                Icon(Icons.Default.KeyboardArrowDown, null, modifier = Modifier.size(16.dp))
+            },
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            ConditionCombinator.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            stringResource(
+                                if (option == ConditionCombinator.AND) {
+                                    R.string.condition_all_of
+                                } else {
+                                    R.string.condition_any_of
+                                },
+                            ),
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelect(option)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun conditionGroupSummary(group: ConditionNode.Group): String {
     val combinatorLabel = stringResource(
         if (group.combinator == ConditionCombinator.AND) {
@@ -1843,61 +1905,62 @@ private fun ConditionNodeEditor(
             ) {
                 Column(Modifier.padding(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = { expanded = !expanded },
-                        ) {
-                            Icon(
-                                if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = stringResource(
-                                    if (expanded) {
-                                        R.string.btn_collapse_condition_group
-                                    } else {
-                                        R.string.btn_expand_condition_group
-                                    },
-                                ),
-                                modifier = Modifier.size(20.dp),
-                            )
+                        if (path.isNotEmpty()) {
+                            IconButton(
+                                onClick = { expanded = !expanded },
+                            ) {
+                                Icon(
+                                    if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = stringResource(
+                                        if (expanded) {
+                                            R.string.btn_collapse_condition_group
+                                        } else {
+                                            R.string.btn_expand_condition_group
+                                        },
+                                    ),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                         }
-                        Column(Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CombinatorSelector(
-                                    selected = node.combinator,
-                                    onSelect = { combinator ->
-                                        onUpdateNode(path) { current ->
-                                            if (current is ConditionNode.Group) {
-                                                current.copy(combinator = combinator)
-                                            } else {
-                                                current
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                FilterChip(
-                                    selected = node.negate,
-                                    onClick = {
-                                        onUpdateNode(path) { current ->
-                                            if (current is ConditionNode.Group) {
-                                                current.copy(negate = !current.negate)
-                                            } else {
-                                                current
-                                            }
-                                        }
-                                    },
-                                    label = {
-                                        Text(stringResource(R.string.condition_not), maxLines = 1)
-                                    },
-                                )
-                            }
-                            if (!expanded) {
-                                Text(
-                                    conditionGroupSummary(node),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 2.dp),
-                                )
-                            }
+                        GroupMatchSelector(
+                            combinator = node.combinator,
+                            onSelect = { combinator ->
+                                onUpdateNode(path) { current ->
+                                    if (current is ConditionNode.Group) {
+                                        current.copy(combinator = combinator)
+                                    } else {
+                                        current
+                                    }
+                                }
+                            },
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        FilterChip(
+                            selected = node.negate,
+                            onClick = {
+                                onUpdateNode(path) { current ->
+                                    if (current is ConditionNode.Group) {
+                                        current.copy(negate = !current.negate)
+                                    } else {
+                                        current
+                                    }
+                                }
+                            },
+                            label = {
+                                Text(stringResource(R.string.condition_not), maxLines = 1)
+                            },
+                        )
+                        if (!expanded) {
+                            Text(
+                                conditionGroupSummary(node),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .padding(start = 8.dp)
+                                    .weight(1f),
+                            )
+                        } else {
+                            Spacer(Modifier.weight(1f))
                         }
                         if (path.isNotEmpty()) {
                             IconButton(
@@ -1939,13 +2002,14 @@ private fun ConditionNodeEditor(
                                     Spacer(Modifier.width(4.dp))
                                     Text(stringResource(R.string.btn_add_condition), maxLines = 1)
                                 }
-                                TextButton(
-                                    onClick = { onRequestAdd(path, true) },
-                                    enabled = depth < 2 && canAddLeaves,
-                                ) {
-                                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(stringResource(R.string.btn_add_condition_group), maxLines = 1)
+                                if (depth < 2 && canAddLeaves) {
+                                    TextButton(
+                                        onClick = { onRequestAdd(path, true) },
+                                    ) {
+                                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(stringResource(R.string.btn_add_condition_group), maxLines = 1)
+                                    }
                                 }
                             }
                         }

@@ -141,7 +141,12 @@ Günlük yaşamınızı anında kolaylaştıracak yerleşik şablonlarla hemen b
 | :--- | :--- | :--- |
 | 🌙 **Gece Rutini** | Saat 23:30 olduğunda | Koyu Temayı açar, Sessiz profile geçer, DND modunu açar, parlaklığı %10 yapar |
 | 🔋 **Tam Pil Koruması** | Pil %100'e ulaştığında | Çevrimdışı sesli şarjdan çıkarma uyarısı seslendirir ve bildirim gönderir |
-| ⚡ **Acil Pil Tasarrufu** | Pil %15 altına düştüğünde | Pil Tasarrufunu açar, Bluetooth'u kapatır, parlaklığı %15 yapar, Koyu Temaya geçer |
+| ⚡ **Acil Pil Tasarrufu** | Pil şarjda değilken %15 altına düştüğünde | Pil Tasarrufunu açar, Bluetooth'u kapatır, parlaklığı %15 yapar, Koyu Temaya geçer |
+| ☀️ **Sabah Uyanışı** | Şarjdan çekilince VEYA ekran açılınca (hafta içi 05:00–10:00) | DND'yi kapatır, sesi normale alır, parlaklığı %70 yapar |
+| 🌙 **Gece Sessizliği** | 23:00 zamanlaması VEYA ekran kapanınca (22:00–08:00) | DND'yi açar, ses profilini sessize alır, medya sesini %20'ye indirir |
+| 🚗 **Sabah Yola Çıkış** | Ev Wi-Fi'si kaybolunca VEYA şarjdan çekilince (06:00–10:00) | Mobil Veriyi açar, sesi normale alır, medya sesini %80 yapar |
+| 🎯 **Odak / Çalışma Modu** | Hafta içi 09:00, ev Wi-Fi'sinde değilken | DND'yi açar ve sesi titreşime alır |
+| 🌃 **Gece Ekran Kısma** | 00:00–06:00 arası ekran açılınca ve pil %60 altındaysa | Parlaklığı %10'a düşürür, Koyu Temayı açar |
 | 🔕 **Ters Çevir ve Sustur** | Telefon yüzüstü konulduğunda | Çift sensör doğrulamasıyla (Yakınlık + Yerçekimi Z-ekseni) DND modunu titreşimle açar |
 | 🔦 **Sallayarak Fener Aç/Kapat** | Cihaz sağlam sallandığında | Kamera flaşını dokunsal geri bildirimle açar veya kapatır |
 | 🎬 **Sinema / Gece Okuma** | Ortam ışığı < 5 lüks olduğunda | Parlaklığı minimuma indirir ve sistemi Koyu Temaya geçirir |
@@ -175,7 +180,7 @@ Bir kural en fazla beş bağımsız tetikleyiciyi VEYA mantığıyla birleştire
 ---
 
 ### 2. Koşullar (Mantıksal Filtreler)
-Kurallar yalnızca tüm koşullar aynı anda sağlandığında (VE mantığı) çalıştırılır:
+Kurallar yalnızca koşulları sağlandığında çalışır. Koşulları VE veya VEYA ile birleştir, grupları iç içe kur ve herhangi bir grubu DEĞİL (NOT) ile tersine çevir:
 
 - ⏳ **Zaman Aralığı:** Yalnızca belirlenen saatler arasında çalış (örn: 23:00 - 07:00, gece yarısını geçen aralıklar tam desteklenir).
 - 📅 **Haftanın Günleri:** Hafta içi, hafta sonu veya özel seçili günler.
@@ -183,6 +188,7 @@ Kurallar yalnızca tüm koşullar aynı anda sağlandığında (VE mantığı) �
 - ⚡ **Şarj Durumu:** Cihazın şarjda veya pilde olması koşulu.
 - 📲 **Ekran Durumu:** Ekranın açık veya kilitli olması koşulu.
 - 📶 **Wi-Fi Ağı:** Yalnızca belirli bir Wi-Fi ağına (SSID) bağlıyken çalış.
+- 🧩 **İç İçe Mantık:** Koşulları grup başına VE/VEYA ile birleştir, bir grubu tersine çevir ve dört seviyeye kadar iç içe kur.
 
 ---
 

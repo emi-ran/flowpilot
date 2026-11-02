@@ -124,7 +124,7 @@
     <string name="preset_full_battery_notif_body" formatted="false">Pil %100 seviyesine ulaştı. Cihazınızı şarjdan çıkarabilirsiniz.</string>
 
     <string name="preset_battery_emergency_title">Acil Pil Tasarrufu</string>
-    <string name="preset_battery_emergency_desc" formatted="false">Pil %15 altına düştüğünde Pil Tasarrufunu açar, ekran parlaklığını %15 yapar, Bluetooth\'u kapatır ve koyu temaya geçer.</string>
+    <string name="preset_battery_emergency_desc" formatted="false">Pil %15 altına düştüğünde ve şarjda değilken Pil Tasarrufunu açar, ekran parlaklığını %15 yapar, Bluetooth\'u kapatır ve koyu temaya geçer.</string>
 
     <string name="preset_flip_silence_title">Yüzüstü Sessize Al</string>
     <string name="preset_flip_silence_desc">Telefon yüzüstü masaya bırakıldığında Rahatsız Etmeyin modunu açar ve hafif bir onay titreşimi verir.</string>
@@ -144,6 +144,24 @@
     <string name="preset_sms_location_title">SMS Acil Konum Yanıtı</string>
     <string name="preset_sms_location_desc">\'NEREDESIN\' SMS\'i geldiğinde önce GPS\'i açar, 5 saniye uydu kilidini bekler ve anlık Google Haritalar konumunu SMS ile geri yollar.</string>
     <string name="preset_sms_location_message" formatted="false">Şu anki konumum: ${location.maps_url} (Pil: %${batteryPercent})</string>
+
+    <string name="preset_wake_up_title">Sabah Uyanışı</string>
+    <string name="preset_wake_up_desc" formatted="false">Hafta içi 05:00-10:00 arasında şarjdan çekince veya ekranı açınca Rahatsız Etmeyin\'i kapatır, sesi normale alır ve parlaklığı %70 yapar.</string>
+
+    <string name="preset_night_quiet_title">Gece Sessizliği</string>
+    <string name="preset_night_quiet_desc" formatted="false">Saat 23:00\'te veya gece ekranı kapatınca Rahatsız Etmeyin\'i açar, ses profilini sessize alır ve medya sesini %20\'ye indirir.</string>
+
+    <string name="preset_commute_title">Sabah Yola Çıkış</string>
+    <string name="preset_commute_desc" formatted="false">06:00-10:00 arasında ev Wi-Fi\'sinden ayrılınca veya şarjdan çekince mobil veriyi açar, sesi normale alır ve medya sesini %80 yapar.</string>
+
+    <string name="preset_focus_title">Odak / Çalışma Modu</string>
+    <string name="preset_focus_desc" formatted="false">Hafta içi 09:00\'da, 09:00-18:00 aralığındaysanız ve ev Wi-Fi\'sinde değilseniz Rahatsız Etmeyin\'i açar ve sesi titreşime alır.</string>
+
+    <string name="preset_night_dim_title">Gece Ekran Kısma</string>
+    <string name="preset_night_dim_desc" formatted="false">00:00-06:00 arasında ekranı açınca ve pil %60\'ın altındaysa parlaklığı %10\'a düşürür ve koyu temayı açar.</string>
+
+    <string name="preset_more_triggers">+%1$d</string>
+    <string name="preset_logic_and_or">VE/VEYA</string>
 
     <!-- TriggerEvent Labels -->
     <string name="trigger_app_opened">Uygulama açıldı</string>
@@ -532,6 +550,9 @@
     <string name="condition_combinator_and">VE</string>
     <string name="condition_combinator_or">VEYA</string>
     <string name="condition_not">DEĞİL</string>
+    <string name="condition_all_of">Tümü</string>
+    <string name="condition_any_of">Herhangi biri</string>
+    <string name="condition_nested_groups">İç içe gruplar</string>
     <string name="btn_add_condition_group">Grup ekle</string>
     <string name="btn_remove_condition_group">Grubu kaldır</string>
     <string name="btn_collapse_condition_group">Grubu daralt</string>

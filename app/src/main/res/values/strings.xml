@@ -124,7 +124,7 @@
     <string name="preset_full_battery_notif_body" formatted="false">Battery has reached 100%. You can disconnect your charger.</string>
 
     <string name="preset_battery_emergency_title">Battery Saver Emergency</string>
-    <string name="preset_battery_emergency_desc" formatted="false">When battery drops below 15%, turns on Battery Saver, sets brightness to 15%, turns off Bluetooth, and enables dark theme.</string>
+    <string name="preset_battery_emergency_desc" formatted="false">When battery drops below 15% while unplugged, turns on Battery Saver, sets brightness to 15%, turns off Bluetooth, and enables dark theme.</string>
 
     <string name="preset_flip_silence_title">Flip to Silence</string>
     <string name="preset_flip_silence_desc">When placed face down on a surface, turns on Do Not Disturb and gives a subtle confirmation pulse.</string>
@@ -144,6 +144,24 @@
     <string name="preset_sms_location_title">SMS Emergency Location Responder</string>
     <string name="preset_sms_location_desc">When incoming SMS matches keyword, turns on GPS, waits 5 seconds for satellite lock, and replies with live Google Maps coordinates.</string>
     <string name="preset_sms_location_message" formatted="false">My current location: ${location.maps_url} (Battery: %${batteryPercent})</string>
+
+    <string name="preset_wake_up_title">Morning Wake Up</string>
+    <string name="preset_wake_up_desc" formatted="false">On weekdays between 05:00 and 10:00, unplugging the charger or turning the screen on turns off Do Not Disturb, restores normal sound, and sets brightness to 70%.</string>
+
+    <string name="preset_night_quiet_title">Night Quiet</string>
+    <string name="preset_night_quiet_desc" formatted="false">At 23:00 or when the screen turns off at night, turns on Do Not Disturb, silences the sound profile, and drops media volume to 20%.</string>
+
+    <string name="preset_commute_title">Morning Commute</string>
+    <string name="preset_commute_desc" formatted="false">Between 06:00 and 10:00, leaving home Wi-Fi or unplugging the charger turns on mobile data, restores normal sound, and sets media volume to 80%.</string>
+
+    <string name="preset_focus_title">Focus / Work Mode</string>
+    <string name="preset_focus_desc" formatted="false">On weekdays at 09:00, when it is between 09:00 and 18:00 and you are not on home Wi-Fi, turns on Do Not Disturb and switches sound to vibrate.</string>
+
+    <string name="preset_night_dim_title">Night Screen Dimming</string>
+    <string name="preset_night_dim_desc" formatted="false">When the screen turns on between 00:00 and 06:00 and the battery is below 60%, lowers brightness to 10% and enables dark theme.</string>
+
+    <string name="preset_more_triggers">+%1$d</string>
+    <string name="preset_logic_and_or">AND/OR</string>
 
     <!-- TriggerEvent Labels -->
     <string name="trigger_app_opened">App opened</string>
@@ -532,6 +550,9 @@
     <string name="condition_combinator_and">AND</string>
     <string name="condition_combinator_or">OR</string>
     <string name="condition_not">NOT</string>
+    <string name="condition_all_of">All of</string>
+    <string name="condition_any_of">Any of</string>
+    <string name="condition_nested_groups">Nested groups</string>
     <string name="btn_add_condition_group">Add group</string>
     <string name="btn_remove_condition_group">Remove group</string>
     <string name="btn_collapse_condition_group">Collapse group</string>
