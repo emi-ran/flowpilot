@@ -7,8 +7,12 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.os.ParcelFileDescriptor
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import moe.shizuku.server.IShizukuService
 import rikka.shizuku.Shizuku
 
 /** Shizuku wrapper. UserService executes commands under shell/root identity. */
@@ -16,10 +20,13 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
     companion object {
         val instance = ShizukuShell()
         const val REQUEST_PERMISSION_CODE = 1000
+        private const val USER_SERVICE_RETRY_MS = 60_000L
+        private const val COMMAND_TIMEOUT_SECONDS = 10L
     }
 
     @Volatile private var appContext: Context? = null
     @Volatile private var commandService: ICommandService? = null
+    @Volatile private var userServiceUnavailableUntilMs = 0L
     private val bindLock = Any()
     @Volatile private var bindLatch: CountDownLatch? = null
 
@@ -45,6 +52,7 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
         try {
             Shizuku.addBinderReceivedListenerSticky {
                 try {
+                    userServiceUnavailableUntilMs = 0L
                     if (hasPermission()) {
                         ensureBound()
                     }
@@ -93,7 +101,11 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
             android.util.Log.w("ShizukuShell", "run: Shizuku permission not granted")
             return -1 to "Shizuku permission not granted"
         }
-        val service = commandService ?: bindAndGetService() ?: return -1 to "Shizuku UserService unavailable"
+        val service = commandService ?: bindAndGetService()
+        if (service == null) {
+            android.util.Log.w("ShizukuShell", "run: UserService unavailable, trying newProcess")
+            return runViaNewProcess(command)
+        }
         return try {
             val result = service.run(command)
             val newline = result.indexOf('\n')
@@ -108,6 +120,55 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
                 bindLatch = null
             }
             -1 to "Shizuku command execution failed"
+        }
+    }
+
+    /**
+     * Runs an allowlisted shell command through Shizuku's remote process API when the
+     * UserService cannot start (e.g. Android 16 LoadedApk crash in Shizuku 13.6.0).
+     */
+    private fun runViaNewProcess(command: String): Pair<Int, String> {
+        if (!CommandUserService.isCommandAllowed(command)) {
+            return 126 to "command not allowed"
+        }
+        return try {
+            val binder = Shizuku.getBinder() ?: return -1 to "Shizuku not running"
+            val process = IShizukuService.Stub.asInterface(binder)
+                .newProcess(arrayOf("sh", "-c", command), null, null)
+            val output = StringBuilder()
+            val outThread = Thread { readStream(process.inputStream, output) }
+            val errThread = Thread { readStream(process.errorStream, output) }
+            outThread.start()
+            errThread.start()
+
+            val finished = process.waitForTimeout(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS.name)
+            outThread.join(1000)
+            errThread.join(1000)
+
+            if (!finished) {
+                process.destroy()
+                return 124 to "command timed out"
+            }
+            val exitCode = process.exitValue()
+            android.util.Log.i("ShizukuShell", "Fallback command completed: exitCode=$exitCode")
+            exitCode to synchronized(output) { output.toString().trim() }
+        } catch (_: Throwable) {
+            android.util.Log.e("ShizukuShell", "Fallback command execution failed")
+            -1 to "Shizuku command execution failed"
+        }
+    }
+
+    private fun readStream(descriptor: ParcelFileDescriptor, output: StringBuilder) {
+        try {
+            BufferedReader(
+                InputStreamReader(ParcelFileDescriptor.AutoCloseInputStream(descriptor)),
+            ).use { reader ->
+                reader.forEachLine { line ->
+                    synchronized(output) { output.appendLine(line) }
+                }
+            }
+        } catch (_: Throwable) {
+            // Output is best-effort; the exit code remains authoritative.
         }
     }
 
@@ -132,11 +193,16 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
                 }
             }
         }
-        return commandService
+        return commandService.also {
+            if (it == null) {
+                userServiceUnavailableUntilMs = System.currentTimeMillis() + USER_SERVICE_RETRY_MS
+            }
+        }
     }
 
     private fun bindIfNeeded(): CountDownLatch? = synchronized(bindLock) {
         if (!isShizukuRunning() || !hasPermission()) return@synchronized null
+        if (System.currentTimeMillis() < userServiceUnavailableUntilMs) return@synchronized null
         commandService?.let { return@synchronized CountDownLatch(0) }
         bindLatch?.let { return@synchronized it }
         val latch = CountDownLatch(1)
