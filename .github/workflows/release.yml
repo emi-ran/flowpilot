@@ -122,6 +122,8 @@ jobs:
     environment: release-signing
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     env:
       RELEASE_COMMIT: ${{ needs.validate.outputs.release_commit }}
 
@@ -263,6 +265,11 @@ jobs:
             echo "notes_path=$release_notes_path"
             echo "release_title=$release_title"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Generate build provenance attestation
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.release_assets.outputs.apk_path }}
 
       - name: Create GitHub Release & Upload APK
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2

@@ -245,6 +245,24 @@ FlowPilot hassas izinleri yalnızca açık otomasyon özelliklerini yerine getir
 
 ---
 
+## 🔐 Sürüm APK'sını Doğrulama
+
+GitHub Actions tarafından derlenen sürümler, imzalı APK için derleme kaynak kanıtı (build provenance) yayımlar. İndirdiğiniz dosyayı bu depoya karşı doğrulayın:
+
+```bash
+gh attestation verify FlowPilot-vX.Y.Z.apk --repo emi-ran/flowpilot
+apksigner verify --print-certs FlowPilot-vX.Y.Z.apk
+sha256sum FlowPilot-vX.Y.Z.apk
+```
+
+- `gh attestation verify` (GitHub CLI 2.49+) APK özetinin bu deponun release iş akışı tarafından kanıtlandığını doğrular ve kaynak commit'i yazdırır. Kanıt adımı eklenmeden önce yayımlanan sürümlerde kanıt bulunmaz.
+- `apksigner verify --print-certs` çıktısında `Signer #1 certificate SHA-256 digest: f1e45d3a669954ddfb858d5d3a964a2fa7ba3d00bcb0e65b5ced1ca6d5a79f2b` görünmelidir.
+- `sha256sum` sonucu yayımlanan `.sha256` dosyası ve sürüm notlarındaki özetle eşleşmelidir.
+
+Herhangi bir kontrol başarısız olursa APK'yı yüklemeyin. Gradle bağımlılık sağlama toplamları, depo filtreleri ve tüm doğrulama adımları [`docs/SUPPLY_CHAIN.md`](docs/SUPPLY_CHAIN.md) dosyasında belgelenmiştir.
+
+---
+
 ## 📦 Yedekleme ve Kurtarma
 
 | Mod | Biçim | Güvenlik | Ne Zaman Kullanılır? |
