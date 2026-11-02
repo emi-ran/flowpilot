@@ -15,3 +15,6 @@
 -keepclassmembers class * {
     @androidx.annotation.Keep *;
 }
+
+# Launched by class name via app_process under Shizuku; names and main() must survive R8.
+-keep class com.flowpilot.app.actions.HotspotBridge { *; }

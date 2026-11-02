@@ -228,6 +228,8 @@
     <string name="action_mobile_data_off">Mobil Veriyi kapat</string>
     <string name="action_wifi_on">Wi-Fi\'yi aç</string>
     <string name="action_wifi_off">Wi-Fi\'yi kapat</string>
+    <string name="action_hotspot_on">Hotspot\'u aç</string>
+    <string name="action_hotspot_off">Hotspot\'u kapat</string>
     <string name="action_airplane_mode_on">Uçak Modunu aç</string>
     <string name="action_airplane_mode_off">Uçak Modunu kapat</string>
     <string name="action_torch_on">El Fenerini aç</string>
@@ -415,6 +417,8 @@
     <string name="action_bluetooth_off_desc">Bluetooth\'u kapatır (Shizuku gerekir)</string>
     <string name="action_wifi_on_desc">Wi-Fi\'ı açar (Shizuku gerekir)</string>
     <string name="action_wifi_off_desc">Wi-Fi\'ı kapatır (Shizuku gerekir)</string>
+    <string name="action_hotspot_on_desc">Taşınabilir hotspot\'u açar (Android 16+ ve Shizuku gerekir)</string>
+    <string name="action_hotspot_off_desc">Taşınabilir hotspot\'u kapatır (Android 16+ ve Shizuku gerekir)</string>
     <string name="action_mobile_data_on_desc">Mobil veriyi açar (Shizuku gerekir)</string>
     <string name="action_mobile_data_off_desc">Mobil veriyi kapatır (Shizuku gerekir)</string>
     <string name="action_airplane_mode_on_desc">Uçak modunu açar (Shizuku gerekir)</string>

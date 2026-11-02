@@ -8,7 +8,7 @@ minSdk 26, JDK 17.
 
 Automation rules: WHEN [app opened | app closed | charger connected | charger disconnected | battery below |
 battery above | screen on | screen off | scheduled time | Wi-Fi connected | Wi-Fi disconnected | Bluetooth device connected | Bluetooth device disconnected | NFC tag scanned | notification received | SMS received | phone call ringing | phone call answered | phone call outgoing | phone call ended | device flipped face down | device flipped face up | device shaken | ambient light below | ambient light above | geofence enter | geofence exit] (optional conditions: flat AND list or nested AND/OR/NOT tree over battery, charger, screen, Wi-Fi, time window, days of week) DO one or more [Bluetooth on | Bluetooth off | NFC on | NFC off | Battery Saver on |
-Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | Wi-Fi on/off | Mobile data on/off | Airplane mode on/off | Location on/off | Flashlight on/off/toggle | set screen brightness | auto-brightness on/off | lock screen | force stop app | Open dialer | Dial number | Call number | send SMS | prepare SMS draft | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
+Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotate off | Do Not Disturb on | Do Not Disturb off | Sound profile normal/vibrate/silent | Wi-Fi on/off | Mobile data on/off | Airplane mode on/off | Wi-Fi hotspot on/off (Android 16+) | Location on/off | Flashlight on/off/toggle | set screen brightness | auto-brightness on/off | lock screen | force stop app | Open dialer | Dial number | Call number | send SMS | prepare SMS draft | create alarm | start timer | Send HTTP webhook | show notification | vibrate | play sound | set media volume | launch app | open URL | Speak text (offline TTS)] actions. Rules may also be manually test-run from Edit automation; this bypasses trigger and conditions without changing rule state. Schedules support daily, weekdays, or selected days. Engine detects foreground apps via
 UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, phone call transitions via TelephonyCallback / PhoneStateListener, device orientation transitions via Proximity and Accelerometer/Gravity sensors, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
@@ -59,6 +59,7 @@ Unit tests cover legacy normalization and omitted-null JSON, heterogeneous match
 | Wi-Fi on/off      | NO (modern Android restriction) | NO | YES: Shizuku `svc wifi enable\|disable` + bounded `WifiManager.isWifiEnabled` readback | YES |
 | Mobile Data on/off| NO (modern Android restriction) | NO | YES: Shizuku `svc data enable\|disable` + `Settings.Global.mobile_data` readback | YES |
 | Airplane mode     | NO (modern Android restriction) | NO | YES: Shizuku `cmd connectivity airplane-mode enable\|disable` + `Settings.Global` readback | YES |
+| Wi-Fi hotspot     | NO | NO | YES (Android 16+ only): Shizuku `newProcess` + `app_process` `HotspotBridge` registers as `com.android.shell` and calls public `TetheringManager.startTethering`/`stopTethering`; exit code 0 after `onTetheringStarted`/`onTetheringStopped` | NOT VERIFIED (bridge registers as shell) |
 
 - Do Not Disturb and Sound Profile toggling require user-grantable Notification Policy Access
   special access checked via `NotificationManager.isNotificationPolicyAccessGranted` and opened with
@@ -138,6 +139,8 @@ app/src/main/java/com/flowpilot/app/
     WifiExecutor.kt                  Shizuku `svc wifi enable|disable` + WifiManager readback
     MobileDataExecutor.kt            Shizuku `svc data enable|disable` + Telephony/Global readback
     AirplaneModeExecutor.kt          Shizuku `cmd connectivity airplane-mode` + Settings.Global readback
+    HotspotExecutor.kt               Android 16+ Shizuku `newProcess` -> `HotspotBridge` (public TetheringManager)
+    HotspotBridge.java               shell-UID app_process entry point; `TetheringManager` start/stop with completion callback
     TorchExecutor.kt                 CameraManager.setTorchMode native camera flash toggle
     DarkThemeExecutor.kt             Shizuku `cmd uimode night yes|no`
     PowerSaverExecutor.kt            WRITE_SECURE_SETTINGS direct OR Shizuku `cmd power set-mode`
@@ -154,7 +157,7 @@ app/src/main/java/com/flowpilot/app/
     WebhookTemplateRenderer.kt        pure one-pass header/body substitution for known webhook variables
     TtsManager.kt                     offline voice discovery and pre-synthesized cache management
     TtsExecutor.kt                    offline cached TTS playback
-    ShizukuShell.kt                  Shizuku connection, safe permission check, non-daemon UserService, and allowlisted `newProcess` fallback when the UserService cannot start
+    ShizukuShell.kt                  Shizuku connection, safe permission check, non-daemon UserService, allowlisted `newProcess` fallback when the UserService cannot start, and the fixed-argument `HotspotBridge` process launch
   permission/
     CapabilityManager.kt             per-action and setup checks
 tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foreground reduction, encrypted persistence, webhook templates, manual execution summaries, action executors, geofence queue persistence, diff calculation, config validation, prerequisites evaluation, and evaluator.

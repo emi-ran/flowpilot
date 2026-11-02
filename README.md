@@ -195,7 +195,7 @@ Rules execute only when their conditions pass. Combine them with AND or OR, nest
 ### 3. Actions (Executors)
 Chain multiple actions in any custom sequence with drag-and-drop ordering and individual delays (0–300s):
 
-- 🌐 **Connectivity (via Shizuku):** Toggle Wi-Fi, Mobile Data, Airplane Mode, Bluetooth, and GPS Location.
+- 🌐 **Connectivity (via Shizuku):** Toggle Wi-Fi, Mobile Data, Airplane Mode, Bluetooth, GPS Location, and Wi-Fi Hotspot (Android 16+).
 - 🖥️ **Display & Device:** Toggle Flashlight (Torch), Dark Theme (Shizuku), Auto-rotate, Brightness level, Lock Screen (Shizuku), and Force Stop App (Shizuku).
 - 🔊 **Sound & Alerts:** Do Not Disturb (DND) toggle, Sound Profiles (Normal / Vibrate / Silent), Media Volume (0–100%), Custom Audio playback (1–60s duration), Haptic Patterns (Pulse, Double Tap, Alert, Heartbeat, Triple Tap, SOS), and Rich Notifications.
 - 🗣️ **Offline Speech (TTS):** Speak custom voice alerts using Android's on-device TTS engine with speech rate control.

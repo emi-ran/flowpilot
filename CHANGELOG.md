@@ -4,6 +4,10 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Wi-Fi hotspot on/off actions (`HOTSPOT_ON`, `HOTSPOT_OFF`) for Android 16+: FlowPilot runs a shell-side `HotspotBridge` through Shizuku's `newProcess` as `app_process` against its own APK, registers the call as the tethering owner (`com.android.shell`), and toggles tethering through the public `TetheringManager` API. Requires Shizuku and Wi-Fi hardware; Android 15 and older report the action as unsupported. Verified on Xiaomi 15T Pro (Android 16): the shell bridge toggled tethering off and on with the screen off, and a targeted instrumentation run toggled it through the full app → Shizuku → bridge path. The R8-minified release APK retains `HotspotBridge`.
+
 ### Fixed
 
 - Shizuku-backed actions no longer fail permanently when the Shizuku `UserService` cannot start on Android 16 (`LoadedApk.makeApplicationInner` crash, Shizuku issue #2541). `ShizukuShell` falls back to Shizuku's allowlisted `newProcess` shell execution with the same 10-second timeout, and retries the UserService after 60 seconds or a binder restart.

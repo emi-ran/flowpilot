@@ -96,6 +96,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     WIFI_OFF("Turn Wi-Fi off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
     AIRPLANE_MODE_ON("Turn Airplane mode on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
     AIRPLANE_MODE_OFF("Turn Airplane mode off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    HOTSPOT_ON("Turn hotspot on", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
+    HOTSPOT_OFF("Turn hotspot off", ActionCategory.CONNECTIVITY, CapabilityRequirement.SHIZUKU),
     TORCH_ON("Turn Flashlight on", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
     TORCH_OFF("Turn Flashlight off", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
     TORCH_TOGGLE("Toggle Flashlight", ActionCategory.DISPLAY, CapabilityRequirement.NONE),
