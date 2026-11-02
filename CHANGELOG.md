@@ -14,7 +14,7 @@ All notable FlowPilot changes are documented here.
 
 ### Changed
 
-- Android CI now restores/saves the Gradle cache via `gradle/actions/setup-gradle` v4.4.4 instead of the retired v1 cache client, uses the Gradle build cache (`org.gradle.caching=true`), and runs tests, lint, debug assembly, and release validation in a single Gradle invocation. The Android-change detector now fails open (builds when the base commit is unresolved) and only pull-request runs cancel in progress, so main push runs used by release validation are not cancelled by a newer push.
+- Android CI and the tag-release workflow now restore/save the Gradle cache via `gradle/actions/setup-gradle` v4.4.4 instead of the retired v1 cache client, use the Gradle build cache (`org.gradle.caching=true`), and run tests, lint, debug assembly, and release validation in a single Gradle invocation on CI. The Android-change detector now fails open (builds when the base commit is unresolved) and only pull-request runs cancel in progress, so main push runs used by release validation are not cancelled by a newer push.
 
 ## [2.0.0] - 2026-11-02
 
