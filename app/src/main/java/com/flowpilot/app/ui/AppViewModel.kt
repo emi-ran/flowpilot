@@ -29,9 +29,12 @@ import com.flowpilot.app.engine.requiresLocation
 import com.flowpilot.app.permission.CapabilityManager
 import com.flowpilot.app.permission.CapabilityStatus
 import com.flowpilot.app.permission.ShizukuState
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -131,6 +134,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _updateStatus = MutableStateFlow(UpdateCheckStatus.IDLE)
     val updateStatus: StateFlow<UpdateCheckStatus> = _updateStatus.asStateFlow()
+
+    private val _tutorialVisible = MutableStateFlow(false)
+    val tutorialVisible: StateFlow<Boolean> = _tutorialVisible.asStateFlow()
+
+    private val _tutorialPresetsRequested = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val tutorialPresetsRequested: SharedFlow<Unit> = _tutorialPresetsRequested.asSharedFlow()
+
+    fun startTutorial() {
+        _tutorialVisible.value = true
+    }
+
+    fun finishTutorial() {
+        _tutorialVisible.value = false
+        viewModelScope.launch {
+            repository.setTutorialCompleted(true)
+        }
+    }
+
+    fun requestTutorialPresets() {
+        finishTutorial()
+        _tutorialPresetsRequested.tryEmit(Unit)
+    }
 
     fun setUpdateAutoCheck(enabled: Boolean) {
         viewModelScope.launch {
@@ -242,6 +267,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         } catch (_: Throwable) {}
+        viewModelScope.launch {
+            if (!repository.tutorialCompleted.first()) _tutorialVisible.value = true
+        }
     }
 
     private fun autoCheckForUpdatesIfDue() {

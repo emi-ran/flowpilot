@@ -70,6 +70,8 @@ class AutomationRepository(private val context: Context) {
     private val updateLastCheckKey = longPreferencesKey("update_last_check")
     private val updateSkippedVersionKey = stringPreferencesKey("update_skipped_version")
     private val updateRemindAfterKey = longPreferencesKey("update_remind_after")
+    private val tutorialCompletedKey =
+        androidx.datastore.preferences.core.booleanPreferencesKey("tutorial_completed")
 
     val appLanguage: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[languageKey] ?: "system"
@@ -159,6 +161,16 @@ class AutomationRepository(private val context: Context) {
             prefs[engineKey] = enabled
         }
         notifyWidgets()
+    }
+
+    val tutorialCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[tutorialCompletedKey] ?: false
+    }
+
+    suspend fun setTutorialCompleted(value: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[tutorialCompletedKey] = value
+        }
     }
 
     suspend fun toggleEngineEnabled(): Boolean {

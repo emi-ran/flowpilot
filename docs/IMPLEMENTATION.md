@@ -38,6 +38,18 @@ Unit tests cover legacy normalization and omitted-null JSON, heterogeneous match
 
 `AutomationPresets.all` holds the ready-to-use templates rendered by `PresetsBottomSheet`. Each template is a normal `Automation` the editor copies on selection, so multi-trigger templates carry `TriggerDefinitions` and nested logic carries `conditionTree` with `conditions` kept as the flattened leaf list. Battery Saver Emergency intentionally leaves flat conditions empty and expresses "not charging" as a negated group, so a reader that ignores the tree keeps the older unguarded behaviour instead of inverting it. Cards summarize templates from `normalizedTriggers()`, showing the first trigger, a `+N` count, an AND/OR marker when a tree is present, and the action count. Preset titles and descriptions are localized through `titleRes`/`descriptionRes`; every new preset ships EN and TR strings.
 
+## Tutorial
+
+First launch opens a six-step interactive tour over Home. `TutorialOverlay` is mounted once from `App.kt` at the root `Box` level, above the page crossfade and bottom bar, and renders only while `tutorialVisible && page == HOME`. The steps are a private enum: `WELCOME` and `DONE` carry no anchor; `PRESETS`, `CREATE`, `STATUS`, and `SETTINGS` point at `home_presets`, `home_empty_create`, `home_status_card`, and `home_bottom_settings`.
+
+Anchors live in `ui/tutorial/TutorialAnchors.kt`. `TutorialAnchors` owns a `SnapshotStateMap<String, Rect>`; `App.kt` creates one instance, provides it through `LocalTutorialAnchors` around the page content, and Home composables tag their controls with `Modifier.tutorialAnchor(key)`. The modifier is `composed`, reads the nearest provider (nullable outside it) and records `onGloballyPositioned` `boundsInRoot()`, so stored rects are already in root coordinates. No provider means no work.
+
+`TutorialOverlay` measures its container and the card with `onSizeChanged` and draws a full-screen `Canvas` using `CompositingStrategy.Offscreen`. The canvas paints `Color.Black.copy(alpha = 0.62f)`, clears an 8 dp-inset, 16 dp-rounded rect over the active anchor with `BlendMode.Clear`, then strokes that hole with a 2 dp primary outline. The card is a `Surface` (surfaceContainerHigh, 24 dp side margins, at most 360 dp wide) animated 200 ms toward a target offset: centered horizontally on the anchor and clamped to a 24 dp edge margin, placed 16 dp below the anchor when its center is in the top half of the screen and above it otherwise. Without a registered rect the card is centered.
+
+Steps whose anchor is not registered are skipped by Next and Back and excluded from the progress count, while the active step still renders its card centered. This is how `CREATE` disappears once the rule list is non-empty: the empty-state button is not composed, so `home_empty_create` never reports bounds. A `BackHandler` enabled while visible steps back and finishes on the first step; tapping the scrim or card advances one step except on `DONE`. Skip, Back from the first step, and Finish all call `finishTutorial`, which hides the overlay and writes `tutorial_completed = true` via `AutomationRepository.setTutorialCompleted`. The `DONE` primary action calls `requestTutorialPresets`, which finishes the tour and emits on `tutorialPresetsRequested`; `HomeScreen` collects that flow and opens `PresetsBottomSheet`.
+
+`AutomationRepository` stores the flag as `booleanPreferencesKey("tutorial_completed")` and exposes `tutorialCompleted: Flow<Boolean>` defaulting to false. `AppViewModel.init` reads the first value and shows the overlay only when it is false, so the tour opens automatically once. `startTutorial()` shows it again from Settings (Replay tutorial); `App.kt` returns the active page to `HOME` whenever the overlay becomes visible, so replay always starts from Home. The step index is `rememberSaveable`, so a restored process can compose the saved step for one frame before the visible effect resets it to `WELCOME`.
+
 ## Capability matrix (verified against Android 16 / HyperOS constraints)
 
 | Action            | Plain app           | ADB (WRITE_SECURE_SETTINGS) | Shizuku             | Root    |
@@ -90,6 +102,11 @@ app/src/main/java/com/flowpilot/app/
   FlowPilotApp.kt                    Application class, notification channel
   MainActivity.kt                    Edge-to-edge Compose host
   ui/
+    App.kt                          Compose root: page crossfade, bottom bar, tutorial anchors and overlay host
+    AppViewModel.kt                 repository-backed UI state, update checks, and tutorial visibility
+    tutorial/
+      TutorialAnchors.kt            root-coordinate Rect registry, LocalTutorialAnchors, Modifier.tutorialAnchor
+      TutorialOverlay.kt            offscreen scrim with cleared spotlight hole, card placement, steps, BackHandler
     theme/                          Color/Theme (dark-first, neutral M3)
     screens/
       HomeScreen.kt                  list + FAB

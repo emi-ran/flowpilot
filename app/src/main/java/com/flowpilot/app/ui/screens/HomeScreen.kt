@@ -60,6 +60,7 @@ import com.flowpilot.app.analysis.AutomationConflict
 import com.flowpilot.app.analysis.AutomationConflictAnalyzer
 import com.flowpilot.app.ui.components.ConflictWarningDialog
 import com.flowpilot.app.ui.components.UpdateBanner
+import com.flowpilot.app.ui.tutorial.tutorialAnchor
 
 @Composable
 fun HomeScreen(
@@ -90,6 +91,9 @@ fun HomeScreen(
     var pendingShare by remember { mutableStateOf<List<Automation>?>(null) }
     var pendingEnable by remember { mutableStateOf<Automation?>(null) }
     var pendingEnableConflicts by remember { mutableStateOf<List<AutomationConflict>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        vm.tutorialPresetsRequested.collect { showPresetsSheet = true }
+    }
     pendingShare?.let { selected ->
         BackupDisclosureDialog(
             onConfirm = { pendingShare = null; vm.shareBackup(selected) },
@@ -182,7 +186,10 @@ fun HomeScreen(
                             Icon(Icons.Default.Delete, stringResource(R.string.btn_delete_selected), tint = MaterialTheme.colorScheme.error)
                         }
                     } else {
-                        IconButton({ showPresetsSheet = true }) {
+                        IconButton(
+                            modifier = Modifier.tutorialAnchor("home_presets"),
+                            onClick = { showPresetsSheet = true },
+                        ) {
                             Icon(
                                 Icons.Default.AutoAwesome,
                                 contentDescription = stringResource(R.string.home_explore_presets),
@@ -229,6 +236,7 @@ fun HomeScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .tutorialAnchor("home_status_card")
                     .padding(bottom = 16.dp),
                 shape = RoundedCornerShape(22.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
@@ -400,6 +408,7 @@ private fun EmptyState(
         Spacer(Modifier.height(16.dp))
         Button(
             onClick = create,
+            modifier = Modifier.tutorialAnchor("home_empty_create"),
             shape = RoundedCornerShape(16.dp),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
         ) {

@@ -71,6 +71,28 @@
     <string name="settings_update_check_failed">Güncellemeler kontrol edilemedi</string>
     <string name="settings_update_available">v%1$s mevcut</string>
 
+    <!-- Tutorial -->
+    <string name="tutorial_welcome_title">FlowPilot\'a hoş geldiniz</string>
+    <string name="tutorial_welcome_desc">En sık kullanacağınız kontrolleri kısaca tanıyalım. Her adım, anlattığı bölümü ekranda vurgular.</string>
+    <string name="tutorial_presets_title">Hazır şablonlar</string>
+    <string name="tutorial_presets_desc">Sağ üstteki ✨ düğmesi tek dokunuşla kullanabileceğiniz hazır otomasyonları açar.</string>
+    <string name="tutorial_create_title">İlk otomasyonunuzu oluşturun</string>
+    <string name="tutorial_create_desc">Tetikleyici, koşul ve eylemleri tek bir kuralda birleştirmek için bu düğmeye dokunun.</string>
+    <string name="tutorial_status_title">Motor durumu</string>
+    <string name="tutorial_status_desc">Bu kart motorun çalışıp çalışmadığını gösterir. Tüm otomasyonları duraklatmak için istediğiniz zaman kapatabilirsiniz.</string>
+    <string name="tutorial_settings_title">Tüm ayarlarınız</string>
+    <string name="tutorial_settings_desc">İzinler, yedekleme, dil ve tema Ayarlar\'da tek dokunuş uzaklıkta.</string>
+    <string name="tutorial_done_title">Hazırsınız</string>
+    <string name="tutorial_done_desc">Bu turu Ayarlar\'dan istediğiniz zaman yeniden başlatabilirsiniz.</string>
+    <string name="tutorial_btn_next">İleri</string>
+    <string name="tutorial_btn_back">Geri</string>
+    <string name="tutorial_btn_skip">Atla</string>
+    <string name="tutorial_btn_finish">Bitir</string>
+    <string name="tutorial_btn_open_presets">Şablonları göster</string>
+    <string name="tutorial_progress">%1$d / %2$d</string>
+    <string name="tutorial_settings_replay">Turu yeniden başlat</string>
+    <string name="tutorial_settings_replay_desc">Kılavuzlu turu yeniden göster</string>
+
     <!-- Update dialog and notifications -->
     <string name="update_banner_title">FlowPilot v%1$s mevcut</string>
     <string name="update_banner_action">Güncelle</string>
