@@ -594,9 +594,7 @@
     <string name="phone_number_label">Telefon numarası</string>
     <string name="phone_direct_call_warning">⚠️ Doğrudan arama: Tetiklendiğinde derhal gerçek bir telefon araması başlatır.</string>
     <string name="sms_recipient_label">Alıcı telefon numarası</string>
-    <string name="sms_reply_sender_chip" formatted="false">Gönderene yanıtla (${sms.sender})</string>
     <string name="sms_message_text_label">SMS mesaj metni</string>
-    <string name="sms_quick_variables">Hızlı değişkenler:</string>
     <string name="sms_direct_send_warning">⚠️ Doğrudan SMS: Arka planda derhal SMS gönderir. Operatör tarifesi geçerli olabilir.</string>
     <string name="action_force_stop_prompt">Zorla durdurulacak uygulamayı seçin</string>
     <string name="time_start">Başlangıç saati</string>
@@ -729,14 +727,6 @@
     <string name="day_sa">C</string>
     <string name="day_su">P</string>
 
-    <!-- Quick Variables -->
-    <string name="quick_var_sender">Gönderen</string>
-    <string name="quick_var_full_sms">Tam SMS</string>
-    <string name="quick_var_otp">Doğrulama Kodu</string>
-    <string name="quick_var_gps">GPS Konumu</string>
-    <string name="quick_var_battery">Pil %</string>
-    <string name="quick_var_time">Zaman</string>
-
     <!-- Webhook variables desc -->
     <string name="webhook_var_trigger_desc">Bu kuralı tetikleyen olay</string>
     <string name="webhook_var_battery_desc">Mevcut pil yüzdesi</string>
@@ -761,6 +751,8 @@
     <string name="settings_backup_subtitle">Otomasyon kurallarınızı yedekleyin, içe aktarın veya paylaşın</string>
     <string name="backup_btn_export">Yedekle (Dışa Aktar)</string>
     <string name="backup_btn_import">Geri Yükle (İçe Aktar)</string>
+    <string name="settings_tts_cache_clear">TTS önbelleğini temizle</string>
+    <string name="settings_tts_cache_cleared">%1$d önbellek ses dosyası silindi</string>
     <string name="backup_btn_share_all">Tüm kuralları paylaş</string>
     <string name="backup_export_success">%1$d otomasyon dışa aktarıldı</string>
     <string name="backup_import_dialog_title">Otomasyonları İçe Aktar</string>
@@ -770,8 +762,8 @@
     <string name="backup_import_strategy_replace">Tüm kuralları değiştir (Sıfırla)</string>
     <string name="backup_import_strategy_replace_desc">Mevcut kuralları siler ve yalnızca içe aktarılanları geri yükler</string>
     <string name="backup_import_success">%1$d otomasyon başarıyla içe aktarıldı</string>
-    <string name="backup_import_tts_missing_title">Konuşma sesi yeniden oluşturulmalı</string>
-    <string name="backup_import_tts_missing_message">İçe aktarma tamamlandı. %1$d konuşma kuralının ses dosyası eksik. Konuşabilmeleri için her konuşma kuralını açıp sesini yeniden oluşturun.</string>
+    <string name="backup_import_tts_missing_title">Eski konuşma sesi içe aktarılmadı</string>
+    <string name="backup_import_tts_missing_message">İçe aktarma tamamlandı. %1$d konuşma kuralı için eski ses dosyası bulunamadı. Bu kuralların her biri için bir mesaj yazın.</string>
     <string name="backup_import_empty">Dosyada geçerli otomasyon kuralı bulunamadı</string>
     <string name="backup_import_error">İçe aktarılamadı: %1$s</string>
     <string name="backup_share_rule_title">Otomasyonu paylaş</string>
@@ -817,17 +809,21 @@
     <string name="tts_open_settings">TTS Ayarlarını Aç</string>
     <string name="tts_offline_voice_title">Çevrimdışı Ses</string>
     <string name="tts_system_default">Sistem varsayılanı</string>
+    <string name="tts_system_default_desc">Telefonun TTS dilini ve sesini kullanır</string>
     <string name="tts_speech_rate_label">Konuşma Hızı (%1$s)</string>
-    <string name="tts_cached_ready">Çevrimdışı ses önbelleğe alındı &amp; hazır</string>
-    <string name="tts_needs_synthesis">Kural kaydedilmeden önce ses oluşturulmalıdır</string>
+    <string name="tts_cached_ready">Önizleme için önbellekte</string>
+    <string name="tts_needs_synthesis">İlk oynatmada oluşturulacak</string>
     <string name="tts_synthesizing">Çevrimdışı ses oluşturuluyor…</string>
-    <string name="tts_synthesis_complete">Ses oluşturuldu</string>
     <string name="tts_synthesis_failed">Ses oluşturulamadı. TTS motorunu kontrol edin.</string>
-    <string name="tts_invalid_cache_file">Geçersiz önbellek hedef dosya adı.</string>
-    <string name="tts_btn_regenerate">Yeniden Oluştur &amp; Dinle</string>
-    <string name="tts_btn_generate">Oluştur &amp; Dinle</string>
+    <string name="tts_playback_failed">Ses oynatılamadı.</string>
+    <string name="tts_legacy_file_available">Eski ses dosyası mevcut</string>
+    <string name="variable_picker_insert">Değişken ekle</string>
     <string name="tts_btn_preview">Dinle</string>
     <string name="tts_btn_stop">Durdur</string>
+    <string name="tts_preview_empty_error">Önizlemek için bir mesaj girin.</string>
+    <string name="tts_preview_invalid_template">Önizlemeden önce bilinmeyen değişkeni veya geçersiz ifadeyi düzeltin.</string>
+    <string name="tts_preview_renders_empty">Bu mesaj örnek verilerle boş kalıyor.</string>
+    <string name="tts_preview_sample_data">Örnek veriler kullanılıyor</string>
     <string name="tts_dialog_title">Çevrimdışı Ses Seçin</string>
     <string name="tts_dialog_tts_settings_desc">Sistem TTS Ayarları</string>
     <string name="tts_dialog_search_label">Dil veya ses ara</string>
@@ -836,6 +832,60 @@
     <string name="tts_dialog_no_matches">\"%1$s\" ile eşleşen çevrimdışı ses bulunamadı</string>
     <string name="tts_hold_to_preview">Dinlemek için basılı tutun</string>
     <string name="tts_hint_enter_text_first">Önce seslendirilecek mesajı yazın, ardından sesi dinlemek için basılı tutun.</string>
+
+    <!-- Template variables -->
+    <string name="variable_picker_title">Değişken ekle</string>
+    <string name="variable_picker_close">Değişken seçiciyi kapat</string>
+    <string name="variable_picker_search_label">Değişken ara</string>
+    <string name="variable_picker_search_placeholder">bildirim, sms, pil</string>
+    <string name="variable_picker_empty">Eşleşen değişken yok</string>
+    <string name="variable_group_always">Her zaman kullanılabilir</string>
+    <string name="variable_group_only_when">Yalnızca %1$s tetiklendiğinde dolar</string>
+    <string name="variable_group_global">Kural ve cihaz</string>
+    <string name="variable_group_notification">Bildirim</string>
+    <string name="variable_group_sms">SMS</string>
+    <string name="variable_group_call">Arama</string>
+    <string name="variable_group_app">Uygulama</string>
+    <string name="variable_group_wifi">Wi-Fi</string>
+    <string name="variable_group_bluetooth">Bluetooth</string>
+    <string name="variable_group_nfc">NFC</string>
+    <string name="variable_group_motion">Hareket</string>
+    <string name="variable_group_light">Işık</string>
+    <string name="variable_group_location">Konum</string>
+    <string name="variable_group_screen">Ekran</string>
+    <string name="variable_group_power">Güç</string>
+    <string name="variable_desc_trigger">Tetikleyici olay adı</string>
+    <string name="variable_desc_trigger_index">Eşleşen tetikleyicinin 1 tabanlı sırası</string>
+    <string name="variable_desc_time">Olay zamanı (ISO-8601)</string>
+    <string name="variable_desc_timestamp">Olay zamanı (milisaniye)</string>
+    <string name="variable_desc_battery_percent">Pil düzeyi (0–100)</string>
+    <string name="variable_desc_is_charging">Cihaz şarj oluyor mu</string>
+    <string name="variable_desc_wifi_ssid">Geçerli Wi-Fi ağ adı</string>
+    <string name="variable_desc_rule_name">Kural adı</string>
+    <string name="variable_desc_notification_title">Bildirim başlığı</string>
+    <string name="variable_desc_notification_text">Bildirim metni veya son mesaj</string>
+    <string name="variable_desc_notification_big_text">Genişletilmiş bildirim metni</string>
+    <string name="variable_desc_notification_package">Bildirim uygulama paketi</string>
+    <string name="variable_desc_notification_app">Bildirim uygulama adı</string>
+    <string name="variable_desc_sms_sender">SMS gönderen</string>
+    <string name="variable_desc_sms_body">SMS mesaj gövdesi</string>
+    <string name="variable_desc_sms_otp">SMS içindeki ilk 4–8 haneli kod</string>
+    <string name="variable_desc_call_number">Arayan veya aranan numara</string>
+    <string name="variable_desc_call_state">Arama durumu (RINGING, ANSWERED, OUTGOING, ENDED)</string>
+    <string name="variable_desc_app_package">Uygulama paketi</string>
+    <string name="variable_desc_app_name">Uygulama adı</string>
+    <string name="variable_desc_wifi_group_ssid">Tetikleyicideki Wi-Fi ağ adı</string>
+    <string name="variable_desc_bluetooth_name">Bluetooth cihaz adı</string>
+    <string name="variable_desc_bluetooth_address">Bluetooth cihaz adresi</string>
+    <string name="variable_desc_nfc_tag">NFC etiket kimliği</string>
+    <string name="variable_desc_shake_magnitude">Yer çekimi üstü sarsıntı gücü</string>
+    <string name="variable_desc_light_lux">Ortam ışığı (lüks)</string>
+    <string name="variable_desc_geofence_name">Konum alanı adı</string>
+    <string name="variable_desc_location_lat">Enlem</string>
+    <string name="variable_desc_location_lng">Boylam</string>
+    <string name="variable_desc_location_maps_url">Google Maps bağlantısı</string>
+    <string name="variable_desc_screen_on">Ekran açıldı mı</string>
+    <string name="variable_desc_charger_connected">Şarj cihazı bağlı mı</string>
 
     <!-- Trigger Extra Settings -->
     <string name="trigger_phone_number_label">Telefon numarası</string>

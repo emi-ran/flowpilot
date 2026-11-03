@@ -80,7 +80,7 @@ Geleneksel Android otomasyon uygulamaları genelde karmaşık arayüzler, sürek
   <tr>
     <td width="50%">
       <h3>🔊 Çevrimdışı Metin Okuma (TTS)</h3>
-      <p>Cihaz içi ses sentezleme motoru sayesinde internete ihtiyaç duymadan telefonunuzun sizinle konuşmasını sağlayın. Şarj uyarısı veya gece rutini için özel sesli anonslar oluşturun.</p>
+      <p>Bildirim metnini, SMS kodunu, arayan bilgisini, pil seviyesini ve diğer tetikleyici verilerini cihaz içi TTS ile seslendirin. Mesajlar ihtiyaç anında sentezlenir ve çevrimdışı önbelleğe alınır; internet gerekmez.</p>
     </td>
     <td width="50%">
       <h3>🔐 Güvenli Paylaşım &amp; Şifreli Yedek</h3>
@@ -198,12 +198,12 @@ Tek bir kuralda birden çok eylemi sürükle-bırak yöntemiyle dilediğiniz sı
 - 🌐 **Bağlantı Kontrolü (Shizuku ile):** Wi-Fi, Mobil Veri, Uçak Modu, Bluetooth, GPS Konum ve Wi-Fi Erişim Noktası (Android 16+) açma/kapatma.
 - 🖥️ **Ekran & Sistem:** El Feneri açma/kapatma, Koyu Tema (Shizuku), Ekranı Otomatik Döndürme, Parlaklık seviyesi, Ekranı Kilitleme (Shizuku), Uygulamayı Zorla Durdurma (Shizuku).
 - 🔊 **Ses & Uyarılar:** Rahatsız Etmeyin (DND) açma/kapatma, Ses Profilleri (Normal / Titreşim / Sessiz), Medya Sesi (%0–100), Özel Ses Çalma (1–60 sn), Titreşim Şablonları (Tek darbe, Çift dokunuş, Uyarı, Kalp atışı, Üçlü dokunuş, SOS) ve Bildirim Gösterme.
-- 🗣️ **Çevrimdışı Seslendirme (TTS):** Cihazın yerleşik TTS motoruyla metinleri sesli olarak okuma (konuşma hızı ayarlı).
+- 🗣️ **Çevrimdışı Seslendirme (TTS):** Cihazın yerleşik TTS motoruyla metinleri sesli olarak okuyun (konuşma hızı ayarlı). Ses seçicide **Sistem varsayılanı** (telefonun çevrimdışı TTS sesi veya en iyi çevrimdışı yedek) bulunur ve örnek metin seçili sesin dilinde önizlenir. Şablonlarda `${notification.text|stripPrefix:"tts"|trim}`, `${sms.otp}`, `${call.state}` ve `${batteryPercent}` gibi tetikleyici verileri kullanılabilir; ses ihtiyaç anında sentezlenir ve önbelleğe alınır.
 - ⏱️ **Saat & Sayaç:** Sistem alarmı kurma veya arka planda sessiz zamanlayıcı başlatma (1 sn – 24 saat).
 - 🚀 **Uygulama & Web:** Cihazdaki bir uygulamayı açma veya web bağlantısına yönlendirme.
 - 💬 **Telefon & SMS:** Arama ekranını açma, doğrudan telefon araması başlatma, doğrudan arka planda SMS gönderme veya SMS taslağı hazırlama.
-- 🔗 **HTTPS Webhook:** Canlı şablon değişkenleriyle dış sunuculara güvenli HTTP istekleri (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) gönderme; başlıklar ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir:
-  - `${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`
+- 🔗 **HTTPS Webhook:** Canlı şablon değişkenleriyle dış sunuculara güvenli HTTP istekleri (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) gönderin; başlıklar ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir.
+- 🧩 **Şablon Değişkenleri:** Seslendirme, bildirim, webhook, SMS, telefon, URL, alarm ve zamanlayıcı metinlerinde `${...}` kullanın. Şablon destekleyen her eylem alanı, kuralın tetikleyicilerine göre filtrelenmiş aynı aranabilir seçiciyi ve `trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape` filtrelerini sunar. Global değerler: `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}` ve `${rule.name}`.
 
 ---
 
@@ -283,7 +283,7 @@ Herhangi bir kontrol başarısız olursa APK'yı yüklemeyin. Gradle bağımlıl
 
 Geri yükleme çok kolaydır: Dosyanızı seçin, parolanızı girin ve **Birleştir** veya **Üzerine Yaz** tercihinizi yapın. İçe aktarılan sırlar hedef cihazın yerel Android Keystore'u ile anında yeniden şifrelenir.
 
-Normal JSON ile içe aktarılan kurallar devre dışı bırakılır; şifreli geri yüklemede etkinlik durumları korunur. TTS ses dosyaları yedeğe dahil edilmez: hedef cihazda bulunmuyorsa içe aktarmadan sonra sesi yeniden oluşturun.
+Normal JSON ile içe aktarılan kurallar devre dışı bırakılır; şifreli geri yüklemede etkinlik durumları korunur. TTS ses dosyaları yedeğe dahil edilmez. Ses şablonları taşınabilir ve ilk oynatmada sentezlenir; metni olmayan eski kurallar için içe aktarma sonrası yeni bir mesaj gerekir.
 
 ---
 

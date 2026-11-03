@@ -80,7 +80,7 @@ Most Android automation tools force you to choose between steep complexity, heav
   <tr>
     <td width="50%">
       <h3>🔊 Offline Text-to-Speech (TTS)</h3>
-      <p>Let your phone talk to you with on-device synthesized voice caching. Create custom spoken alerts for battery events, bedtime reminders, or location changes—zero internet required.</p>
+      <p>Let your phone speak notification text, SMS codes, caller names, battery levels, and other trigger data with on-device TTS. Messages synthesize on demand and are cached offline—zero internet required.</p>
     </td>
     <td width="50%">
       <h3>🔐 Safe Sharing &amp; Encrypted Backups</h3>
@@ -198,12 +198,12 @@ Chain multiple actions in any custom sequence with drag-and-drop ordering and in
 - 🌐 **Connectivity (via Shizuku):** Toggle Wi-Fi, Mobile Data, Airplane Mode, Bluetooth, GPS Location, and Wi-Fi Hotspot (Android 16+).
 - 🖥️ **Display & Device:** Toggle Flashlight (Torch), Dark Theme (Shizuku), Auto-rotate, Brightness level, Lock Screen (Shizuku), and Force Stop App (Shizuku).
 - 🔊 **Sound & Alerts:** Do Not Disturb (DND) toggle, Sound Profiles (Normal / Vibrate / Silent), Media Volume (0–100%), Custom Audio playback (1–60s duration), Haptic Patterns (Pulse, Double Tap, Alert, Heartbeat, Triple Tap, SOS), and Rich Notifications.
-- 🗣️ **Offline Speech (TTS):** Speak custom voice alerts using Android's on-device TTS engine with speech rate control.
+- 🗣️ **Offline Speech (TTS):** Speak custom messages using Android's on-device TTS engine with speech rate control. The voice picker includes **System default** (the phone's offline TTS voice, or the best offline fallback) and previews sample text in the selected voice's language. Templates can include trigger data such as `${notification.text|stripPrefix:"tts"|trim}`, `${sms.otp}`, `${call.state}`, and `${batteryPercent}`; audio is synthesized on demand and cached.
 - ⏱️ **Clock & Timers:** Set system alarm or start a background timer (1s–24h).
 - 🚀 **Apps & Web:** Launch installed app or open web URL.
 - 💬 **Phone & SMS:** Open dialer, place direct phone call, send automated background SMS, or prepare SMS draft.
-- 🔗 **HTTPS Webhook:** Send outbound HTTP requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, JSON body, AES-256-GCM Keystore encrypted secrets, and dynamic template variables:
-  - `${trigger}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, `${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`
+- 🔗 **HTTPS Webhook:** Send outbound HTTP requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, JSON body, AES-256-GCM Keystore encrypted secrets, and dynamic template variables.
+- 🧩 **Template Variables:** Use `${...}` in speech, notification, webhook, SMS, phone, URL, alarm, and timer text. Every template-capable action field opens the same trigger-aware picker with filters (`trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape`). Global values include `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, and `${rule.name}`.
 
 ---
 
@@ -283,7 +283,7 @@ If any check fails, do not install the APK. Gradle dependency checksums, reposit
 
 Restoring is effortless: choose your file, enter your password, and select **Merge** or **Replace**. Secrets are automatically re-encrypted with your new device's local Android Keystore.
 
-Imported plain JSON rules are disabled; encrypted restores retain their enabled state. TTS audio is not included in backups: if it is unavailable on the target device, regenerate it after import.
+Imported plain JSON rules are disabled; encrypted restores retain their enabled state. TTS audio is not included in backups. Speech templates are portable and synthesize on first play; legacy rules with no text need a new message after import.
 
 ---
 

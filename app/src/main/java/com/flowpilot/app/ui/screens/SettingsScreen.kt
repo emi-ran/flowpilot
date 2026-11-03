@@ -223,6 +223,23 @@ fun SettingsScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
                 SettingRow(stringResource(R.string.settings_history), Icons.Default.History, null) { history() }
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+                SettingRow(
+                    label = stringResource(R.string.settings_tts_cache_clear),
+                    icon = Icons.Default.Delete,
+                    checked = null,
+                ) {
+                    scope.launch(Dispatchers.IO) {
+                        val deleted = com.flowpilot.app.actions.TtsManager(context).clearCache()
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.settings_tts_cache_cleared, deleted),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
                 SettingRow(stringResource(R.string.settings_about), Icons.Default.Info, null) {
                     showAboutDialog = true
                 }

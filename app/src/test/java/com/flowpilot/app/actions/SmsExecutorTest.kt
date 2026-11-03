@@ -108,7 +108,7 @@ class SmsExecutorTest {
     }
 
     @Test
-    fun sendSms_interpolatesTemplateVariables() {
+    fun sendSms_usesPreRenderedRecipientAndMessage() {
         shadowOf(app).grantPermissions(Manifest.permission.SEND_SMS)
         var capturedRecipient: String? = null
         var capturedMessage: String? = null
@@ -121,17 +121,11 @@ class SmsExecutorTest {
             }
         )
 
-        val templateContext = WebhookTemplateContext(
-            smsSender = "+905559876543",
-            smsOtp = "123456",
-        )
-
         val result = executor.execute(
             ActionType.SEND_SMS,
             ActionParameters(
-                smsRecipient = "\${sms.sender}",
-                smsMessage = "Your OTP code is \${sms.otp}",
-                webhookTemplateContext = templateContext
+                smsRecipient = "+905559876543",
+                smsMessage = "Your OTP code is 123456",
             )
         )
 

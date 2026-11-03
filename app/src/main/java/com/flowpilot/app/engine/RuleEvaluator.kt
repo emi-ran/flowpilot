@@ -291,7 +291,7 @@ object RuleEvaluator {
             if (!TriggerTargetMatcher.notificationPackageTargetMatches(rule.notificationAppPackage, event.packageName)) {
                 return@matchingTriggerViews false
             }
-            if (!TriggerTargetMatcher.notificationKeywordMatches(rule.notificationKeyword, event.title, event.text)) {
+            if (!TriggerTargetMatcher.notificationKeywordMatches(rule.notificationKeyword, event.title, "${event.text} ${event.bigText}")) {
                 return@matchingTriggerViews false
             }
             matchesRuleConditions(rule, liveState, nowMs)

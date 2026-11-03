@@ -230,11 +230,11 @@ class AutomationRepositoryCryptoTest {
     }
 
     @Test
-    fun duplicate_ttsRule_copiesCacheToCloneOwnedFile() = runTest {
+    fun duplicate_legacyTtsRule_copiesCacheToCloneOwnedFile() = runTest {
         val manager = TtsManager(context)
         val sourceId = "source-id"
         val cloneId = "clone-id"
-        val text = "Independent speech"
+        val text = ""
         val voice = "default"
         val rate = 1.0f
         val sourceFileName = manager.computeCacheFileName(sourceId, text, voice, rate)
@@ -263,33 +263,32 @@ class AutomationRepositoryCryptoTest {
     }
 
     @Test
-    fun duplicate_ttsRuleWithMissingCache_failsWithoutMutatingSource() = runTest {
+    fun duplicate_ttsRuleWithMissingCache_clearsReferenceWithoutThrowing() = runTest {
         val source = repository.add(
             name = "Speak",
             triggerEvent = TriggerEvent.CHARGER_CONNECTED,
             appPackage = "",
             appName = "",
             actions = listOf(ActionType.SPEAK_TEXT),
-            ttsText = "Missing speech",
+            ttsText = "",
             ttsVoiceName = "default",
             ttsAudioFileName = "tts_source-id_0123456789abcdef.wav",
             id = "source-id",
         )
 
-        val error = runCatching {
-            repository.duplicate(source.id, "Speak (copy)", newId = "clone-id")
-        }.exceptionOrNull()
+        val clone = requireNotNull(repository.duplicate(source.id, "Speak (copy)", newId = "clone-id"))
 
-        assertThat(error).isInstanceOf(java.io.IOException::class.java)
-        assertThat(repository.automations.first()).containsExactly(source)
+        assertThat(clone.ttsText).isEmpty()
+        assertThat(clone.ttsAudioFileName).isEmpty()
+        assertThat(repository.automations.first()).contains(source)
     }
 
     @Test
-    fun duplicate_ttsRuleWhenTargetExists_failsWithoutDeletingFilesOrPersistingClone() = runTest {
+    fun duplicate_legacyTtsRuleWhenTargetExists_failsWithoutDeletingFilesOrPersistingClone() = runTest {
         val manager = TtsManager(context)
         val sourceId = "source-id"
         val cloneId = "clone-id"
-        val text = "Independent speech"
+        val text = ""
         val voice = "default"
         val rate = 1.0f
         val sourceFileName = manager.computeCacheFileName(sourceId, text, voice, rate)

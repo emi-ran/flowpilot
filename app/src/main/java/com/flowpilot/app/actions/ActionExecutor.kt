@@ -41,6 +41,11 @@ data class ActionParameters(
     val ttsVoiceName: String = "",
     val ttsSpeechRate: Float = 1.0f,
     val ttsAudioFileName: String = "",
+    /**
+     * Set by [ActionParametersFactory] when the TTS template cannot produce speakable text.
+     * The message is intentionally generic and never contains rendered template content.
+     */
+    val ttsTemplateError: String? = null,
     val alarmHour: Int = 7,
     val alarmMinute: Int = 0,
     val alarmMessage: String = "",
@@ -51,7 +56,6 @@ data class ActionParameters(
     val webhookHeaders: String = "",
     val webhookBody: String = "",
     val webhookTimeoutSeconds: Int = 10,
-    val webhookTemplateContext: WebhookTemplateContext? = null,
     val phoneNumber: String = "",
     val screenBrightnessPercent: Int = 50,
     val forceStopPackage: String = "",
@@ -63,4 +67,8 @@ data class ActionParameters(
 interface ActionExecutor {
     val supportedTypes: Set<ActionType>
     fun execute(action: ActionType, parameters: ActionParameters = ActionParameters()): ActionResult
+
+    /** Executors that need to suspend (synthesis, IO) override this; the default stays synchronous. */
+    suspend fun executeAsync(action: ActionType, parameters: ActionParameters): ActionResult =
+        execute(action, parameters)
 }

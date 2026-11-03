@@ -531,28 +531,33 @@ class AutomationRepository(private val context: Context) {
                 val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
                 val source = current.firstOrNull { it.id == sourceId }?.withDecryptedSecrets() ?: return@edit
                 val ttsManager = com.flowpilot.app.actions.TtsManager(context)
-                val cloneTtsFileName = source.ttsAudioFileName.takeIf { it.isNotBlank() }?.let { sourceFileName ->
-                    val sourceFile = ttsManager.getCacheFile(sourceFileName)
-                    val targetFileName = ttsManager.computeCacheFileName(
-                        newId,
-                        source.ttsText,
-                        source.ttsVoiceName,
-                        source.ttsSpeechRate,
-                    )
-                    val targetFile = ttsManager.getCacheFile(targetFileName)
-                    if (sourceFile?.isFile != true || sourceFile.length() <= 0L || targetFile == null) {
-                        throw java.io.IOException("Source TTS cache file is missing")
-                    }
-                    val targetExisted = targetFile.exists()
-                    try {
-                        sourceFile.copyTo(targetFile, overwrite = false)
-                        createdCloneTtsFile = targetFile
-                        targetFileName
-                    } catch (error: java.io.IOException) {
-                        if (!targetExisted) targetFile.delete()
-                        throw error
-                    }
-                }.orEmpty()
+                val cloneTtsFileName = if (source.ttsText.isNotBlank()) {
+                    // Dynamic rules synthesize on demand; never duplicate audio.
+                    ""
+                } else {
+                    source.ttsAudioFileName.takeIf { it.isNotBlank() }?.let { sourceFileName ->
+                        val sourceFile = ttsManager.getCacheFile(sourceFileName)
+                        if (sourceFile?.isFile != true || sourceFile.length() <= 0L) {
+                            return@let ""
+                        }
+                        val targetFileName = ttsManager.computeCacheFileName(
+                            newId,
+                            source.ttsText,
+                            source.ttsVoiceName,
+                            source.ttsSpeechRate,
+                        )
+                        val targetFile = ttsManager.getCacheFile(targetFileName) ?: return@let ""
+                        val targetExisted = targetFile.exists()
+                        try {
+                            sourceFile.copyTo(targetFile, overwrite = false)
+                            createdCloneTtsFile = targetFile
+                            targetFileName
+                        } catch (error: java.io.IOException) {
+                            if (!targetExisted) targetFile.delete()
+                            throw error
+                        }
+                    }.orEmpty()
+                }
                 clone = source.copy(
                 id = newId,
                     name = copyName,
@@ -768,19 +773,25 @@ class AutomationRepository(private val context: Context) {
         val createdTtsFiles = mutableListOf<java.io.File>()
         val tts = com.flowpilot.app.actions.TtsManager(context)
         fun remapTts(rule: Automation, id: String): String {
+            val hasSpeech = com.flowpilot.app.data.model.ActionType.SPEAK_TEXT in rule.effectiveActions
+            if (rule.ttsText.isNotBlank()) {
+                // Dynamic rules synthesize on demand; imported audio is never copied.
+                return ""
+            }
             if (rule.ttsAudioFileName.isEmpty()) {
-                if (com.flowpilot.app.data.model.ActionType.SPEAK_TEXT in rule.effectiveActions) missingTtsCount++
+                if (hasSpeech) missingTtsCount++
                 return ""
             }
-            val expected = tts.computeCacheFileName(rule.id, rule.ttsText.trim(), rule.ttsVoiceName, rule.ttsSpeechRate)
-            require(rule.ttsAudioFileName == expected) { "Invalid TTS cache reference" }
-            val source = tts.getCacheFile(expected)
+            val source = tts.getCacheFile(rule.ttsAudioFileName)
             if (source?.isFile != true || source.length() == 0L) {
-                if (com.flowpilot.app.data.model.ActionType.SPEAK_TEXT in rule.effectiveActions) missingTtsCount++
+                if (hasSpeech) missingTtsCount++
                 return ""
             }
-            val name = tts.computeCacheFileName(id, rule.ttsText.trim(), rule.ttsVoiceName, rule.ttsSpeechRate)
-            val target = requireNotNull(tts.getCacheFile(name))
+            val name = tts.computeCacheFileName(id, rule.ttsText, rule.ttsVoiceName, rule.ttsSpeechRate)
+            val target = tts.getCacheFile(name) ?: run {
+                if (hasSpeech) missingTtsCount++
+                return ""
+            }
             // createNewFile prevents deleting a pre-existing file on copy failure.
             check(target.createNewFile()) { "TTS cache target already exists" }
             createdTtsFiles.add(target)
@@ -995,7 +1006,7 @@ class AutomationRepository(private val context: Context) {
         try {
             val rules = automations.first()
             val usedFiles = rules.mapNotNull { it.ttsAudioFileName.takeIf { f -> f.isNotBlank() } }.toSet()
-            com.flowpilot.app.actions.TtsManager(context).cleanStaleFiles(usedFiles)
+            com.flowpilot.app.actions.TtsManager(context).cleanup(activeFileNames = usedFiles)
         } catch (_: Throwable) {}
     }
 }

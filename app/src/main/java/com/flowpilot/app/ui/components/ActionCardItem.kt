@@ -37,6 +37,7 @@ import com.flowpilot.app.actions.ActionParameters
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.SoundPreset
+import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.ui.util.localizedLabel
 
@@ -80,6 +81,7 @@ fun ActionCardItem(
     action: ActionType,
     delaySeconds: Int,
     totalActions: Int,
+    triggerEvents: List<TriggerEvent> = emptyList(),
     onDelayChange: (Int) -> Unit,
     onChangeAction: () -> Unit,
     onRemoveAction: () -> Unit,
@@ -345,23 +347,21 @@ fun ActionCardItem(
             when (action) {
                 ActionType.SHOW_NOTIFICATION -> {
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = notificationTitle,
                         onValueChange = onNotificationTitleChange,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .bringIntoViewOnFocusOrChange(notificationTitle),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.action_notif_title_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = notificationBody,
                         onValueChange = onNotificationBodyChange,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .bringIntoViewOnFocusOrChange(notificationBody),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.action_notif_body_label)) },
                         shape = RoundedCornerShape(12.dp),
                         minLines = 2,
@@ -520,12 +520,11 @@ fun ActionCardItem(
                 }
                 ActionType.OPEN_URL -> {
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = url,
                         onValueChange = onUrlChange,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .bringIntoViewOnFocusOrChange(url),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.action_url_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -546,10 +545,11 @@ fun ActionCardItem(
                         }
                     }
                     Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = alarmMessage,
                         onValueChange = onAlarmMessageChange,
-                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(alarmMessage),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.alarm_label_optional)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -586,37 +586,17 @@ fun ActionCardItem(
                         )
                     }
                     Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = timerMessage,
                         onValueChange = onTimerMessageChange,
-                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(timerMessage),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.timer_label_optional)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
                 }
                 ActionType.HTTP_WEBHOOK -> {
-                    var showVariablesDialog by remember { mutableStateOf(false) }
-
-                    if (showVariablesDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showVariablesDialog = false },
-                            title = { Text(stringResource(R.string.webhook_vars_title)) },
-                            text = {
-                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text("\${trigger} - ${stringResource(R.string.webhook_var_trigger_desc)}", style = MaterialTheme.typography.bodySmall)
-                                    Text("\${batteryPercent} - ${stringResource(R.string.webhook_var_battery_desc)}", style = MaterialTheme.typography.bodySmall)
-                                    Text("\${isCharging} - ${stringResource(R.string.webhook_var_charging_desc)}", style = MaterialTheme.typography.bodySmall)
-                                    Text("\${wifiSsid} - ${stringResource(R.string.webhook_var_wifi_desc)}", style = MaterialTheme.typography.bodySmall)
-                                    Text("\${timestamp} - ${stringResource(R.string.webhook_var_timestamp_desc)}", style = MaterialTheme.typography.bodySmall)
-                                }
-                            },
-                            confirmButton = {
-                                TextButton(onClick = { showVariablesDialog = false }) { Text(stringResource(R.string.btn_ok)) }
-                            },
-                        )
-                    }
-
                     Spacer(Modifier.height(8.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("POST", "GET", "PUT", "PATCH", "DELETE").forEach { method ->
@@ -628,20 +608,22 @@ fun ActionCardItem(
                         }
                     }
                     Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = webhookUrl,
                         onValueChange = onWebhookUrlChange,
-                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(webhookUrl),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.webhook_url_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
                     Spacer(Modifier.height(6.dp))
                     val headerError = WebhookExecutor.validateHeaders(webhookHeaders)
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = webhookHeaders,
                         onValueChange = onWebhookHeadersChange,
-                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(webhookHeaders),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.webhook_headers_label)) },
                         shape = RoundedCornerShape(12.dp),
                         isError = headerError != null,
@@ -650,10 +632,11 @@ fun ActionCardItem(
                     )
                     if (webhookMethod.uppercase() in listOf("POST", "PUT", "PATCH")) {
                         Spacer(Modifier.height(6.dp))
-                        OutlinedTextField(
+                        TemplateTextField(
                             value = webhookBody,
                             onValueChange = onWebhookBodyChange,
-                            modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(webhookBody),
+                            triggers = triggerEvents,
+                            modifier = Modifier.fillMaxWidth(),
                             label = { Text(stringResource(R.string.webhook_body_label)) },
                             placeholder = { Text("{\"event\": \"\${trigger}\"}") },
                             shape = RoundedCornerShape(12.dp),
@@ -673,12 +656,6 @@ fun ActionCardItem(
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    TextButton(
-                        onClick = { showVariablesDialog = true },
-                        modifier = Modifier.padding(top = 2.dp),
-                    ) {
-                        Text(stringResource(R.string.webhook_view_vars), style = MaterialTheme.typography.labelSmall)
-                    }
                 }
                 ActionType.SPEAK_TEXT -> {
                     Spacer(Modifier.height(8.dp))
@@ -686,10 +663,11 @@ fun ActionCardItem(
                 }
                 ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> {
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = phoneNumber,
                         onValueChange = onPhoneNumberChange,
-                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(phoneNumber),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.phone_number_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -705,71 +683,30 @@ fun ActionCardItem(
                 }
                 ActionType.SEND_SMS, ActionType.DRAFT_SMS -> {
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = smsRecipient,
                         onValueChange = onSmsRecipientChange,
-                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(smsRecipient),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.sms_recipient_label)) },
                         placeholder = { Text("e.g. +90555... or \${sms.sender}") },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         leadingIcon = { Icon(Icons.Default.Phone, null) },
                     )
-                    Spacer(Modifier.height(6.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        SuggestionChip(
-                            onClick = { onSmsRecipientChange("\${sms.sender}") },
-                            label = { Text(stringResource(R.string.sms_reply_sender_chip), style = MaterialTheme.typography.bodySmall) },
-                            shape = RoundedCornerShape(8.dp),
-                        )
-                    }
 
                     Spacer(Modifier.height(10.dp))
-                    OutlinedTextField(
+                    TemplateTextField(
                         value = smsMessage,
                         onValueChange = onSmsMessageChange,
-                        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocusOrChange(smsMessage),
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.sms_message_text_label)) },
                         placeholder = { Text("e.g. Received code: \${sms.otp}") },
                         shape = RoundedCornerShape(12.dp),
                         minLines = 2,
                         maxLines = 4,
                     )
-
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        stringResource(R.string.sms_quick_variables),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        listOf(
-                            "\${sms.sender}" to R.string.quick_var_sender,
-                            "\${sms.body}" to R.string.quick_var_full_sms,
-                            "\${sms.otp}" to R.string.quick_var_otp,
-                            "\${location.lat},\${location.lng}" to R.string.quick_var_gps,
-                            "\${battery.percent}%" to R.string.quick_var_battery,
-                            "\${time}" to R.string.quick_var_time,
-                        ).forEach { (variable, labelRes) ->
-                            val label = stringResource(labelRes)
-                            AssistChip(
-                                onClick = {
-                                    val newMsg = if (smsMessage.isBlank()) variable else "$smsMessage $variable"
-                                    onSmsMessageChange(newMsg)
-                                },
-                                label = { Text("$label ($variable)", style = MaterialTheme.typography.labelSmall) },
-                                shape = RoundedCornerShape(8.dp),
-                            )
-                        }
-                    }
 
                     if (action == ActionType.SEND_SMS) {
                         Spacer(Modifier.height(8.dp))

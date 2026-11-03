@@ -54,6 +54,20 @@ class ActionDispatcher private constructor(
         }
     }
 
+    suspend fun executeAsync(
+        action: ActionType,
+        parameters: ActionParameters = ActionParameters(),
+    ): ActionResult {
+        val executor = map[action] ?: return ActionResult(false, "No executor for ${action.label}")
+        return try {
+            executor.executeAsync(action, parameters)
+        } catch (ce: java.util.concurrent.CancellationException) {
+            throw ce
+        } catch (_: Throwable) {
+            ActionResult(false, "Execution failed")
+        }
+    }
+
     companion object {
         @Volatile
         private var instance: ActionDispatcher? = null

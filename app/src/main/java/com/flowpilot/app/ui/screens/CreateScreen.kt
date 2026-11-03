@@ -85,6 +85,7 @@ import com.flowpilot.app.ui.components.SelectionRow
 import com.flowpilot.app.ui.components.TriggerCardItem
 import com.flowpilot.app.ui.components.TriggerPicker
 import com.flowpilot.app.ui.components.TtsSettings
+import com.flowpilot.app.ui.components.canSaveTtsConfiguration
 import com.flowpilot.app.ui.components.WifiSsidPickerField
 import com.flowpilot.app.ui.components.bringIntoViewOnFocusOrChange
 import com.flowpilot.app.ui.components.rememberActionsReorderState
@@ -663,6 +664,7 @@ fun CreateScreen(
                             action = act,
                             delaySeconds = actionDelays.getOrElse(index) { 0 },
                             totalActions = actions.size,
+                            triggerEvents = triggerItems.map { it.event },
                             cardModifier = Modifier.actionDragTarget(index, reorderState),
                             dragModifier = Modifier.actionDragHandle({ index }, reorderState),
                             isDragging = reorderState.draggedIndex == index,
@@ -758,11 +760,10 @@ fun CreateScreen(
                                     voiceName = ttsVoiceName,
                                     speechRate = ttsSpeechRate,
                                     audioFileName = ttsAudioFileName,
-                                    ruleId = "",
+                                    triggerEvents = triggerItems.map { it.event },
                                     setText = { ttsText = it },
                                     setVoiceName = { ttsVoiceName = it },
                                     setSpeechRate = { ttsSpeechRate = it },
-                                    setAudioFileName = { ttsAudioFileName = it },
                                     ttsManager = ttsManager,
                                     ttsExecutor = previewTts,
                                 )
@@ -1019,7 +1020,7 @@ fun CreateScreen(
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
-                            (ActionType.SPEAK_TEXT !in actions || (ttsAudioFileName.isNotEmpty() && ttsManager.getCacheFile(ttsAudioFileName)?.exists() == true && ttsAudioFileName == ttsManager.computeCacheFileName(newRuleId, ttsText.trim(), ttsVoiceName, ttsSpeechRate))) &&
+                            (ActionType.SPEAK_TEXT !in actions || canSaveTtsConfiguration(ttsText, ttsSpeechRate, ttsAudioFileName, triggerItems.map { it.event }, ttsManager)) &&
                             (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
                             (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
                             (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
