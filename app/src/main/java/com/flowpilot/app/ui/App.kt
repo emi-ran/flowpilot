@@ -17,6 +17,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +36,10 @@ import com.flowpilot.app.ui.screens.HistoryScreen
 import com.flowpilot.app.ui.screens.HomeScreen
 import com.flowpilot.app.ui.screens.PermissionsScreen
 import com.flowpilot.app.ui.screens.SettingsScreen
+import com.flowpilot.app.ui.tutorial.LocalTutorialAnchors
+import com.flowpilot.app.ui.tutorial.TutorialAnchors
+import com.flowpilot.app.ui.tutorial.TutorialOverlay
+import com.flowpilot.app.ui.tutorial.tutorialAnchor
 import com.flowpilot.app.update.UpdateDownloadResult
 import com.flowpilot.app.update.UpdateDownloader
 
@@ -50,6 +56,12 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     val context = LocalContext.current
     val updateAvailable by vm.updateAvailable.collectAsState()
     val updateDialogVisible by vm.updateDialogVisible.collectAsState()
+    val anchors = remember { TutorialAnchors() }
+    val tutorialVisible by vm.tutorialVisible.collectAsState()
+
+    LaunchedEffect(tutorialVisible) {
+        if (tutorialVisible && page != Page.HOME) page = Page.HOME
+    }
 
     BackHandler(enabled = page != Page.HOME) {
         if (page == Page.DETAIL && inspectedRule != null) {
@@ -61,81 +73,89 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
     }
 
     Box(Modifier.fillMaxSize()) {
-        Crossfade(
-            targetState = if (inspectedRule != null) inspectReturnPage else page,
-            animationSpec = tween(180),
-            label = "pageCrossfade",
-        ) { targetPage ->
-            when (targetPage) {
-                Page.HOME -> HomeScreen(
-                    vm = vm,
-                    detail = { selectedRule = it; page = Page.DETAIL },
-                    inspectRule = { rule ->
-                        inspectedRule = rule
-                        inspectReturnPage = Page.HOME
-                        page = Page.DETAIL
-                    },
-                    showConflictWarning = inspectedRule == null,
-                    create = { initialPreset = null; page = Page.CREATE },
-                    createWithPreset = { preset ->
-                        initialPreset = preset
-                        page = Page.CREATE
-                    },
-                    settings = { page = Page.SETTINGS },
-                    permissions = { permissionsReturnPage = Page.HOME; page = Page.PERMISSIONS },
-                    bottomBar = { BottomBar(Page.HOME) { page = it } },
-                )
-                Page.SETTINGS -> SettingsScreen(
-                    vm = vm,
-                    permissions = {
-                        permissionsReturnPage = Page.SETTINGS
-                        page = Page.PERMISSIONS
-                    },
-                    history = { page = Page.HISTORY },
-                    bottomBar = { BottomBar(Page.SETTINGS) { page = it } },
-                )
-                Page.CREATE -> CreateScreen(
-                    vm = vm,
-                    initialPreset = initialPreset,
-                    inspectRule = { rule ->
-                        inspectedRule = rule
-                        inspectReturnPage = Page.CREATE
-                        page = Page.DETAIL
-                    },
-                    showConflictWarning = inspectedRule == null,
-                ) {
-                    initialPreset = null
-                    page = Page.HOME
-                }
-                Page.PERMISSIONS -> PermissionsScreen(vm) { page = permissionsReturnPage }
-                Page.HISTORY -> HistoryScreen(vm) { page = Page.SETTINGS }
-                Page.DETAIL -> {
-                    selectedRule?.let { rule ->
-                        DetailScreen(
-                            vm = vm,
-                            initialRule = rule,
-                            inspectRule = {
-                                inspectedRule = it
-                                inspectReturnPage = Page.DETAIL
-                            },
-                            showConflictWarning = inspectedRule == null,
-                        ) { page = Page.HOME }
-                    } ?: run {
+        CompositionLocalProvider(LocalTutorialAnchors provides anchors) {
+            Crossfade(
+                targetState = if (inspectedRule != null) inspectReturnPage else page,
+                animationSpec = tween(180),
+                label = "pageCrossfade",
+            ) { targetPage ->
+                when (targetPage) {
+                    Page.HOME -> HomeScreen(
+                        vm = vm,
+                        detail = { selectedRule = it; page = Page.DETAIL },
+                        inspectRule = { rule ->
+                            inspectedRule = rule
+                            inspectReturnPage = Page.HOME
+                            page = Page.DETAIL
+                        },
+                        showConflictWarning = inspectedRule == null,
+                        create = { initialPreset = null; page = Page.CREATE },
+                        createWithPreset = { preset ->
+                            initialPreset = preset
+                            page = Page.CREATE
+                        },
+                        settings = { page = Page.SETTINGS },
+                        permissions = { permissionsReturnPage = Page.HOME; page = Page.PERMISSIONS },
+                        bottomBar = { BottomBar(Page.HOME) { page = it } },
+                    )
+                    Page.SETTINGS -> SettingsScreen(
+                        vm = vm,
+                        permissions = {
+                            permissionsReturnPage = Page.SETTINGS
+                            page = Page.PERMISSIONS
+                        },
+                        history = { page = Page.HISTORY },
+                        bottomBar = { BottomBar(Page.SETTINGS) { page = it } },
+                    )
+                    Page.CREATE -> CreateScreen(
+                        vm = vm,
+                        initialPreset = initialPreset,
+                        inspectRule = { rule ->
+                            inspectedRule = rule
+                            inspectReturnPage = Page.CREATE
+                            page = Page.DETAIL
+                        },
+                        showConflictWarning = inspectedRule == null,
+                    ) {
+                        initialPreset = null
                         page = Page.HOME
+                    }
+                    Page.PERMISSIONS -> PermissionsScreen(vm) { page = permissionsReturnPage }
+                    Page.HISTORY -> HistoryScreen(vm) { page = Page.SETTINGS }
+                    Page.DETAIL -> {
+                        selectedRule?.let { rule ->
+                            DetailScreen(
+                                vm = vm,
+                                initialRule = rule,
+                                inspectRule = {
+                                    inspectedRule = it
+                                    inspectReturnPage = Page.DETAIL
+                                },
+                                showConflictWarning = inspectedRule == null,
+                            ) { page = Page.HOME }
+                        } ?: run {
+                            page = Page.HOME
+                        }
                     }
                 }
             }
-        }
-        if (page == Page.DETAIL && inspectedRule != null) {
-            DetailScreen(
-                vm = vm,
-                initialRule = inspectedRule!!,
-                inspectRule = { inspectedRule = it },
-            ) {
-                inspectedRule = null
-                page = inspectReturnPage
+            if (page == Page.DETAIL && inspectedRule != null) {
+                DetailScreen(
+                    vm = vm,
+                    initialRule = inspectedRule!!,
+                    inspectRule = { inspectedRule = it },
+                ) {
+                    inspectedRule = null
+                    page = inspectReturnPage
+                }
             }
         }
+        TutorialOverlay(
+            visible = tutorialVisible && page == Page.HOME,
+            anchors = anchors,
+            onFinish = vm::finishTutorial,
+            onOpenPresets = vm::requestTutorialPresets,
+        )
     }
 
     val update = updateAvailable
@@ -184,12 +204,14 @@ private fun BottomBar(current: Page, onSelect: (Page) -> Unit) {
         windowInsets = WindowInsets.navigationBars,
     ) {
         NavigationBarItem(
+            modifier = Modifier.tutorialAnchor("home_bottom_home"),
             selected = current == Page.HOME,
             onClick = { onSelect(Page.HOME) },
             icon = { Icon(Icons.Default.Bolt, null) },
             label = { Text(androidx.compose.ui.res.stringResource(com.flowpilot.app.R.string.nav_home)) },
         )
         NavigationBarItem(
+            modifier = Modifier.tutorialAnchor("home_bottom_settings"),
             selected = current == Page.SETTINGS,
             onClick = { onSelect(Page.SETTINGS) },
             icon = { Icon(Icons.Default.Settings, null) },

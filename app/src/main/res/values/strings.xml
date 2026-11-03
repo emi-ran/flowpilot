@@ -71,6 +71,28 @@
     <string name="settings_update_check_failed">Couldn\'t check for updates</string>
     <string name="settings_update_available">v%1$s is available</string>
 
+    <!-- Tutorial -->
+    <string name="tutorial_welcome_title">Welcome to FlowPilot</string>
+    <string name="tutorial_welcome_desc">A quick tour of the controls you will use most. Each step spotlights the part of the screen it explains.</string>
+    <string name="tutorial_presets_title">Ready-made templates</string>
+    <string name="tutorial_presets_desc">The ✨ button at the top right opens ready-made automations you can use in one tap.</string>
+    <string name="tutorial_create_title">Create your first automation</string>
+    <string name="tutorial_create_desc">Use this button to combine a trigger, conditions, and actions into a single rule.</string>
+    <string name="tutorial_status_title">Engine status</string>
+    <string name="tutorial_status_desc">This card shows whether the engine is running. Turn it off any time to pause every automation.</string>
+    <string name="tutorial_settings_title">All your settings</string>
+    <string name="tutorial_settings_desc">Permissions, backup, language, and theme are one tap away in Settings.</string>
+    <string name="tutorial_done_title">You\'re ready</string>
+    <string name="tutorial_done_desc">Replay this tour whenever you like from Settings.</string>
+    <string name="tutorial_btn_next">Next</string>
+    <string name="tutorial_btn_back">Back</string>
+    <string name="tutorial_btn_skip">Skip</string>
+    <string name="tutorial_btn_finish">Finish</string>
+    <string name="tutorial_btn_open_presets">Show presets</string>
+    <string name="tutorial_progress">%1$d / %2$d</string>
+    <string name="tutorial_settings_replay">Replay tutorial</string>
+    <string name="tutorial_settings_replay_desc">Show the guided tour again</string>
+
     <!-- Update dialog and notifications -->
     <string name="update_banner_title">FlowPilot v%1$s is available</string>
     <string name="update_banner_action">Update</string>
