@@ -214,6 +214,7 @@ Chain multiple actions in any custom sequence with drag-and-drop ordering and in
 - **Safe Rule Duplication:** Clone any rule into an immediately editable disabled copy with freshly encrypted webhook credentials.
 - **Execution Run History:** Local persistent audit trail of the last 100 executions with masked sensitive details. Raw provider errors, private URIs, local paths, credentials, and phone numbers are not persisted.
 - **Conflict Warnings:** Automatic non-blocking analysis warning you when opposite state actions target the same trigger.
+- **First-Launch Guided Tour:** A six-step spotlight walkthrough (welcome, presets, create, engine status, settings, done) highlights each area on first launch and skips the create step when rules already exist. Skip it at any time; completion is remembered on the device and the tour can be replayed from Settings → Replay tutorial.
 
 ---
 

@@ -214,6 +214,7 @@ Tek bir kuralda birden çok eylemi sürükle-bırak yöntemiyle dilediğiniz sı
 - **Güvenli Kural Çoğaltma:** Mevcut bir kuralı tek tıkla çoğaltma; webhook şifreleri hedef kopya için Keystore ile yeniden şifrelenir.
 - **Çalışma Geçmişi:** Son 100 kural tetiklenmesini, eylem bazında sonuçları ve maskelenmiş güvenli detaylarıyla yerel günlükte saklama. Ham sağlayıcı hataları, özel URI'ler, yerel dosya yolları, kimlik bilgileri ve telefon numaraları kalıcı olarak saklanmaz.
 - **Çakışma Uyarıları:** Birbirine zıt durum eylemleri içeren kurallarda otomatik, engelleyici olmayan akıllı uyarı sistemi.
+- **İlk Açılış Turu:** Altı adımlı spotlight turu (karşılama, şablonlar, oluştur, motor durumu, ayarlar, bitiş) ilk açılışta ilgili alanları vurgular; kural listeniz doluysa oluşturma adımı atlanır. Turu dilediğiniz an atlayabilirsiniz; tamamlandığı cihazda hatırlanır ve Ayarlar → Turu yeniden başlat ile tekrar açılır.
 
 ---
 
