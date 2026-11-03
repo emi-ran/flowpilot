@@ -211,8 +211,8 @@ jobs:
 
           package_line=$("$aapt2" dump badging "$release_apk_path" | sed -n '1p')
           [[ "$package_line" == *"name='com.flowpilot.app'"* ]] || { echo 'ERROR: APK package ID mismatch'; exit 1; }
-          [[ "$package_line" == *"versionCode='6'"* ]] || { echo 'ERROR: APK versionCode mismatch'; exit 1; }
-          [[ "$package_line" == *"versionName='2.1.0'"* ]] || { echo 'ERROR: APK versionName mismatch'; exit 1; }
+          [[ "$package_line" == *"versionCode='7'"* ]] || { echo 'ERROR: APK versionCode mismatch'; exit 1; }
+          [[ "$package_line" == *"versionName='2.2.0'"* ]] || { echo 'ERROR: APK versionName mismatch'; exit 1; }
           "$apksigner" verify --verbose "$release_apk_path"
           signer_digest=$("$apksigner" verify --print-certs "$release_apk_path" | sed -nE 's/^Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)$/\1/p' | tr '[:upper:]' '[:lower:]')
           expected_signer_digest='f1e45d3a669954ddfb858d5d3a964a2fa7ba3d00bcb0e65b5ced1ca6d5a79f2b'
@@ -226,7 +226,7 @@ jobs:
           )
           release_sha256=$(awk '{print $1}' "$release_checksum_path")
 
-          release_title="FlowPilot ${GITHUB_REF_NAME} — In-App Updates, Hotspot Actions & Developer Builds"
+          release_title="FlowPilot ${GITHUB_REF_NAME} — Dynamic Templates, Guided Onboarding & Rule Shortcuts"
           release_notes_path="$RUNNER_TEMP/release-notes.md"
           notes_source="docs/RELEASE_NOTES_${GITHUB_REF_NAME#v}.md"
           [[ -s "$notes_source" ]] || { echo "ERROR: missing prepared release notes: $notes_source"; exit 1; }
@@ -250,7 +250,7 @@ jobs:
           Path(target).write_text(notes, encoding="utf-8")
           PY
 
-          for heading in '## 🔄 In-App Updates' '## 📶 Hotspot & Shizuku Reliability' '## 🧑‍💻 Developer Build Separation' '## ⚙️ Build & CI' '## 🧪 Verification' '## 📥 Installation' '### SHA-256 Checksum' '## 📱 Compatibility' '## 🇹🇷 Türkçe Özet'; do
+          for heading in '## 🗣️ Dynamic Speech & Templates' '## 🧭 Guided First Launch' '## 🏠 Per-Rule Home Shortcuts' '## 🔒 Privacy & Reliability' '## 🧪 Verification' '## 📥 Installation' '### SHA-256 Checksum' '## 📱 Compatibility' '## 🇹🇷 Türkçe Özet'; do
             grep --fixed-strings --quiet "$heading" "$release_notes_path" || { echo "ERROR: release notes missing $heading"; exit 1; }
           done
           grep --fixed-strings --quiet "SHA256 (${release_apk_name}) = ${release_sha256}" "$release_notes_path" || { echo 'ERROR: release notes checksum mismatch'; exit 1; }
