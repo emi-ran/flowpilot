@@ -12,20 +12,18 @@ import androidx.lifecycle.viewModelScope
 import com.flowpilot.app.BuildConfig
 import com.flowpilot.app.R
 import com.flowpilot.app.actions.ShizukuShell
-import com.flowpilot.app.actions.ActionResultCode
 import com.flowpilot.app.ui.util.labelRes
 import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.update.AppVersion
 import com.flowpilot.app.update.GitHubReleaseClient
 import com.flowpilot.app.update.UpdatePolicy
 import com.flowpilot.app.update.UpdateRelease
-import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
-import com.flowpilot.app.ui.util.localizedForAppLanguage
+import com.flowpilot.app.engine.ManualRuleRunner
+import com.flowpilot.app.engine.ManualRunResult
 import com.flowpilot.app.engine.AutomationService
 import com.flowpilot.app.engine.GeofenceDiagnostic
-import com.flowpilot.app.engine.requiresLocation
 import com.flowpilot.app.permission.CapabilityManager
 import com.flowpilot.app.permission.CapabilityStatus
 import com.flowpilot.app.permission.ShizukuState
@@ -41,7 +39,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -50,13 +47,6 @@ data class AutomationUI(
     val rule: Automation,
     val capability: CapabilityStatus,
     val geofenceDiagnostic: GeofenceDiagnostic? = null,
-)
-
-data class ManualRunResult(
-    val totalActions: Int,
-    val successCount: Int,
-    val failureCount: Int,
-    val failureMessages: List<String>,
 )
 
 enum class UpdateCheckStatus {
@@ -78,6 +68,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = AutomationRepository(app)
     private val capabilities = CapabilityManager(app)
+    private val manualRunner = ManualRuleRunner(app, repository)
 
     val automations = MutableStateFlow<List<AutomationUI>>(emptyList())
     val executionHistory: StateFlow<List<ExecutionHistoryEntry>> = repository.executionHistory
@@ -697,132 +688,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * Runs off the main dispatcher and invokes callback with overall result.
      */
     fun runRuleNow(rule: Automation, callback: (ManualRunResult) -> Unit) {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val liveState = getLiveSystemState()
-            val coords = if (rule.requiresLocation()) {
-                com.flowpilot.app.engine.LocationFetcher.getCoordinates(app)
-            } else {
-                null
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = manualRunner.run(rule, appLanguage.value)
+            withContext(Dispatchers.Main) {
+                callback(result)
             }
-            val templateContext = com.flowpilot.app.actions.TemplateContext(
-                trigger = "MANUAL",
-                timestamp = System.currentTimeMillis(),
-                batteryPercent = liveState.batteryPercent,
-                isCharging = liveState.isChargerConnected,
-                wifiSsid = liveState.connectedWifiSsid,
-                locationLat = coords?.first,
-                locationLng = coords?.second,
-                values = mapOf("rule.name" to rule.normalizedName),
-            )
-            val actionParams = com.flowpilot.app.actions.ActionParametersFactory.create(rule, templateContext)
-            val dispatcher = com.flowpilot.app.actions.ActionDispatcher.get(app)
-            val localizedContext = app.localizedForAppLanguage(appLanguage.value)
-            var successCount = 0
-            var failureCount = 0
-            val failureMessages = mutableListOf<String>()
-            val actionRecords = mutableListOf<ActionExecutionRecord>()
-
-            val actions = rule.effectiveActions
-            val delays = rule.effectiveActionDelays
-
-            var cancellation: CancellationException? = null
-            try {
-                for (i in actions.indices) {
-                    val action = actions[i]
-                    val delaySec = delays.getOrElse(i) { 0 }
-
-                    if (delaySec > 0) {
-                        try {
-                            kotlinx.coroutines.delay(delaySec * 1000L)
-                        } catch (ce: CancellationException) {
-                            failureCount++
-                            val msg = "Execution cancelled during ${delaySec}s delay"
-                            failureMessages.add("${localizedContext.getString(action.labelRes)}: $msg")
-                            actionRecords.add(
-                            ActionExecutionRecord.create(
-                                actionType = action,
-                                success = false,
-                                message = msg,
-                                resultCode = ActionResultCode.EXECUTION_CANCELLED,
-                            )
-                            )
-                            throw ce
-                        }
-                    }
-
-                    val result = dispatcher.executeAsync(action, actionParams)
-                    if (result.success) {
-                        successCount++
-                    } else {
-                        failureCount++
-                        val redacted = com.flowpilot.app.actions.WebhookExecutor.redactSensitiveText(result.message)
-                        failureMessages.add("${localizedContext.getString(action.labelRes)}: $redacted")
-                    }
-                    actionRecords.add(ActionExecutionRecord.create(action, result))
-                }
-            } catch (ce: CancellationException) {
-                cancellation = ce
-            } finally {
-                val historyEntry = ExecutionHistoryEntry.create(
-                    ruleId = rule.id,
-                    ruleName = rule.normalizedName,
-                    trigger = "MANUAL",
-                    timestamp = System.currentTimeMillis(),
-                    actions = actionRecords,
-                )
-                withContext(NonCancellable) {
-                    repository.appendHistory(historyEntry)
-                }
-            }
-
-            val summary = ManualRunResult(
-                totalActions = rule.effectiveActions.size,
-                successCount = successCount,
-                failureCount = failureCount,
-                failureMessages = failureMessages,
-            )
-            if (cancellation != null) {
-                withContext(NonCancellable + kotlinx.coroutines.Dispatchers.Main) {
-                    callback(summary)
-                }
-            } else {
-                withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    callback(summary)
-                }
-            }
-            cancellation?.let { throw it }
         }
-    }
-
-    private fun getLiveSystemState(): com.flowpilot.app.engine.LiveSystemState {
-        val batteryIntent = try {
-            app.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
-        } catch (_: Throwable) {
-            null
-        }
-        val level = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
-        val batteryPercent = if (level >= 0 && scale > 0) (level * 100) / scale else null
-
-        val plugged = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
-        val isChargerConnected = plugged != 0
-
-        val pm = app.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
-        val isScreenOn = pm?.isInteractive
-
-        val wifiSsid = try {
-            val cm = app.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
-            val wm = app.applicationContext.getSystemService(android.content.Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
-            com.flowpilot.app.engine.WifiStateTracker.queryCurrentSsid(cm, wm)
-        } catch (_: Throwable) {
-            null
-        }
-
-        return com.flowpilot.app.engine.LiveSystemState(
-            batteryPercent = batteryPercent,
-            isChargerConnected = isChargerConnected,
-            isScreenOn = isScreenOn,
-            connectedWifiSsid = wifiSsid,
-        )
     }
 }

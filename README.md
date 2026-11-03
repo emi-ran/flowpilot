@@ -211,6 +211,7 @@ Chain multiple actions in any custom sequence with drag-and-drop ordering and in
 - **Quick Settings Tile & Engine Notification:** Toggle the automation engine or inspect live status directly from Android's notification shade. Engine status and startup-failure notifications follow FlowPilot's English, Turkish, or system-language setting even after a background restart.
 - **Material 3 Home Screen Widget:** Glance-powered widget displaying active rule counts with a one-tap pause/resume button.
 - **In-App Live Test Run:** Test any rule action directly inside the editor before saving to verify parameters.
+- **Per-Rule Home-Screen Shortcuts:** Pin a launcher shortcut from Edit → Advanced. Tapping it reloads the rule and asks before running, with disabled or deleted rules blocked; no silent execution. On HyperOS, FlowPilot opens the Home screen shortcuts permission page when that permission is denied.
 - **Safe Rule Duplication:** Clone any rule into an immediately editable disabled copy with freshly encrypted webhook credentials.
 - **Execution Run History:** Local persistent audit trail of the last 100 executions with masked sensitive details. Raw provider errors, private URIs, local paths, credentials, and phone numbers are not persisted.
 - **Conflict Warnings:** Automatic non-blocking analysis warning you when opposite state actions target the same trigger.

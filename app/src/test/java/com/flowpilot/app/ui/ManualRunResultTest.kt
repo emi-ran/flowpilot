@@ -3,6 +3,7 @@ package com.flowpilot.app.ui
 import com.flowpilot.app.actions.ActionResult
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.engine.ManualRunResult
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 

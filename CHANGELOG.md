@@ -12,6 +12,7 @@ All notable FlowPilot changes are documented here.
 - Content-addressed TTS cache shared across rules, with atomic writes, a 7-day TTL, a 50 MB cap, LRU eviction, periodic cleanup, and a manual Settings clear action.
 - The trigger-aware variable picker is available from every template-capable action field: notification, URL, alarm, timer, webhook, phone, SMS, and speech. SMS now uses the same searchable picker instead of a fixed quick-variable chip row.
 - First-launch interactive spotlight tutorial: a six-step guided tour (welcome, ready-made presets, create, engine status, settings, done) dims the screen, highlights the real anchor for each step, and can be skipped at any point. Completion is persisted in DataStore so the tour runs once, and Settings gains a Replay tutorial row to run it again on demand.
+- Per-rule home-screen shortcuts: Edit → Advanced can pin or remove a launcher shortcut for one automation. The shortcut carries only the rule id; `RuleShortcutActivity` reloads the current rule and always asks for confirmation. Missing or disabled rules never run, and an enabled run bypasses trigger, conditions, cooldown, and the engine pause state without changing the rule's enabled state or last-trigger time. On HyperOS, a denied Home screen shortcuts app-op is detected before the request and the editor opens the MIUI permission page instead of failing silently.
 
 ### Changed
 

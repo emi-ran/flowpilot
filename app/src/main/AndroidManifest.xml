@@ -129,6 +129,20 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".shortcut.RuleShortcutActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:theme="@style/Theme.FlowPilot.Shortcut">
+            <intent-filter>
+                <action android:name="com.flowpilot.app.action.RUN_RULE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- Automation engine foreground service (special use and location). -->
         <service
             android:name=".engine.AutomationService"

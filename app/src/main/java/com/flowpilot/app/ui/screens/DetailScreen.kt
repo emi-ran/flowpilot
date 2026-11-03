@@ -83,6 +83,7 @@ import com.flowpilot.app.engine.NfcTagUtils
 import com.flowpilot.app.analysis.AutomationConflict
 import com.flowpilot.app.analysis.AutomationConflictAnalyzer
 import com.flowpilot.app.ui.components.ConflictWarningDialog
+import com.flowpilot.app.shortcut.RuleShortcutManager
 import kotlinx.coroutines.launch
 
 @Composable
@@ -211,11 +212,82 @@ fun DetailScreen(
     var showActions by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showRunConfirm by remember { mutableStateOf(false) }
+    var showShortcutPermissionDialog by remember { mutableStateOf(false) }
+    var shortcutRequested by remember(initialRule.id) {
+        mutableStateOf(RuleShortcutManager.isPinned(context, initialRule.id))
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     var triggerItems by remember(initialRule.id) { mutableStateOf(initialRule.normalizedTriggers()) }
     val triggerDefinitions = if (triggerItems.size > 1) TriggerDefinitions(items = triggerItems) else null
+
+    fun draftRule(ruleName: String = name.ifBlank { initialRule.name }): Automation = initialRule.copy(
+        name = ruleName,
+        triggerEvent = event,
+        triggerDefinitions = triggerDefinitions,
+        appPackage = pkg,
+        appName = appName,
+        action = actions.firstOrNull() ?: initialRule.action,
+        actions = actions,
+        actionDelays = actions.indices.map { actionDelays.getOrElse(it) { 0 } },
+        scheduledMinute = scheduledMinute,
+        scheduledDays = scheduledDays,
+        batteryLevel = batteryLevel,
+        wifiSsid = wifiSsid,
+        bluetoothDeviceAddress = bluetoothDeviceAddress,
+        bluetoothDeviceName = bluetoothDeviceName,
+        nfcTagId = nfcTagId.trim(),
+        flipScreenOffDetection = flipScreenOffDetection,
+        notificationAppPackage = notificationAppPackage,
+        notificationAppName = notificationAppName,
+        notificationKeyword = notificationKeyword,
+        conditions = conditions,
+        conditionTree = conditionTree,
+        notificationTitle = notificationTitle,
+        notificationBody = notificationBody,
+        vibrationPattern = vibrationPattern,
+        vibrationDurationMs = vibrationDurationMs,
+        vibrationAmplitude = vibrationAmplitude,
+        mediaVolumePercent = mediaVolumePercent,
+        soundPreset = soundPreset,
+        soundUri = soundUri,
+        soundName = soundName,
+        soundDurationMs = soundDurationMs,
+        launchPackage = launchPackage,
+        launchAppName = launchAppName,
+        url = url,
+        alarmHour = alarmHour,
+        alarmMinute = alarmMinute,
+        alarmMessage = alarmMessage,
+        timerDurationSeconds = timerDurationSeconds,
+        timerMessage = timerMessage,
+        cooldownMinutes = cooldownMinutes,
+        webhookMethod = webhookMethod,
+        webhookUrl = webhookUrl,
+        webhookHeaders = webhookHeaders,
+        webhookBody = webhookBody,
+        webhookTimeoutSeconds = webhookTimeoutSeconds,
+        ttsText = ttsText,
+        ttsVoiceName = ttsVoiceName,
+        ttsSpeechRate = ttsSpeechRate,
+        ttsAudioFileName = ttsAudioFileName,
+        phoneNumber = phoneNumber.trim(),
+        smsSenderFilter = smsSenderFilter.trim(),
+        smsMatchMode = smsMatchMode,
+        smsKeyword = smsKeyword.trim(),
+        smsRecipient = smsRecipient.trim(),
+        smsMessage = smsMessage,
+        lightLux = lightLux,
+        shakeThreshold = shakeThreshold,
+        screenBrightnessPercent = screenBrightnessPercent,
+        forceStopPackage = forceStopPackage,
+        forceStopAppName = forceStopAppName,
+        geofenceName = geofenceName,
+        geofenceLatitude = geofenceLatitude,
+        geofenceLongitude = geofenceLongitude,
+        geofenceRadiusMeters = geofenceRadiusMeters,
+    )
 
     if (showLaunchApps) AppPicker(select = { p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }, selectedPackage = launchPackage, onDismiss = { showLaunchApps = false })
     if (showForceStopApps) AppPicker(select = { p, n -> forceStopPackage = p; forceStopAppName = n; showForceStopApps = false }, selectedPackage = forceStopPackage, onDismiss = { showForceStopApps = false })
@@ -299,72 +371,7 @@ fun DetailScreen(
             confirmButton = {
                 TextButton({
                     showRunConfirm = false
-                    val currentFormRule = initialRule.copy(
-                        name = name.ifBlank { initialRule.name },
-                        triggerEvent = event,
-                        triggerDefinitions = triggerDefinitions,
-                        appPackage = pkg,
-                        appName = appName,
-                        action = actions.firstOrNull() ?: initialRule.action,
-                        actions = actions,
-                        actionDelays = actions.indices.map { actionDelays.getOrElse(it) { 0 } },
-                        scheduledMinute = scheduledMinute,
-                        scheduledDays = scheduledDays,
-                        batteryLevel = batteryLevel,
-                        wifiSsid = wifiSsid,
-                        bluetoothDeviceAddress = bluetoothDeviceAddress,
-                        bluetoothDeviceName = bluetoothDeviceName,
-                        nfcTagId = nfcTagId.trim(),
-                        flipScreenOffDetection = flipScreenOffDetection,
-                        notificationAppPackage = notificationAppPackage,
-                        notificationAppName = notificationAppName,
-                        notificationKeyword = notificationKeyword,
-                        conditions = conditions,
-                        conditionTree = conditionTree,
-                        notificationTitle = notificationTitle,
-                        notificationBody = notificationBody,
-                        vibrationPattern = vibrationPattern,
-                        vibrationDurationMs = vibrationDurationMs,
-                        vibrationAmplitude = vibrationAmplitude,
-                        mediaVolumePercent = mediaVolumePercent,
-                        soundPreset = soundPreset,
-                        soundUri = soundUri,
-                        soundName = soundName,
-                        soundDurationMs = soundDurationMs,
-                        launchPackage = launchPackage,
-                        launchAppName = launchAppName,
-                        url = url,
-                        alarmHour = alarmHour,
-                        alarmMinute = alarmMinute,
-                        alarmMessage = alarmMessage,
-                        timerDurationSeconds = timerDurationSeconds,
-                        timerMessage = timerMessage,
-                        cooldownMinutes = cooldownMinutes,
-                        webhookMethod = webhookMethod,
-                        webhookUrl = webhookUrl,
-                        webhookHeaders = webhookHeaders,
-                        webhookBody = webhookBody,
-                        webhookTimeoutSeconds = webhookTimeoutSeconds,
-                        ttsText = ttsText,
-                        ttsVoiceName = ttsVoiceName,
-                        ttsSpeechRate = ttsSpeechRate,
-                        ttsAudioFileName = ttsAudioFileName,
-                        phoneNumber = phoneNumber.trim(),
-                        smsSenderFilter = smsSenderFilter.trim(),
-                        smsMatchMode = smsMatchMode,
-                        smsKeyword = smsKeyword.trim(),
-                        smsRecipient = smsRecipient.trim(),
-                        smsMessage = smsMessage,
-                        lightLux = lightLux,
-                        shakeThreshold = shakeThreshold,
-                        screenBrightnessPercent = screenBrightnessPercent,
-                        forceStopPackage = forceStopPackage,
-                        forceStopAppName = forceStopAppName,
-                        geofenceName = geofenceName,
-                        geofenceLatitude = geofenceLatitude,
-                        geofenceLongitude = geofenceLongitude,
-                        geofenceRadiusMeters = geofenceRadiusMeters,
-                    )
+                    val currentFormRule = draftRule()
                     vm.runRuleNow(currentFormRule) { result ->
                         scope.launch {
                             val msg = if (result.failureCount == 0) {
@@ -381,6 +388,25 @@ fun DetailScreen(
             },
             dismissButton = {
                 TextButton({ showRunConfirm = false }) { Text(stringResource(R.string.btn_cancel)) }
+            },
+        )
+    }
+
+    if (showShortcutPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showShortcutPermissionDialog = false },
+            title = { Text(stringResource(R.string.shortcut_permission_title)) },
+            text = { Text(stringResource(R.string.shortcut_permission_desc)) },
+            confirmButton = {
+                TextButton({
+                    showShortcutPermissionDialog = false
+                    RuleShortcutManager.openPermissionSettings(context)
+                }) {
+                    Text(stringResource(R.string.shortcut_permission_open_settings))
+                }
+            },
+            dismissButton = {
+                TextButton({ showShortcutPermissionDialog = false }) { Text(stringResource(R.string.btn_cancel)) }
             },
         )
     }
@@ -420,73 +446,7 @@ fun DetailScreen(
                 actions = {
                     IconButton(
                         onClick = {
-                            val currentFormRule = initialRule.copy(
-                                name = name.ifBlank { initialRule.name },
-                                triggerEvent = event,
-                        triggerDefinitions = triggerDefinitions,
-                                appPackage = pkg,
-                                appName = appName,
-                                scheduledMinute = scheduledMinute,
-                                scheduledDays = scheduledDays,
-                                batteryLevel = batteryLevel,
-                                wifiSsid = wifiSsid,
-                                bluetoothDeviceAddress = bluetoothDeviceAddress,
-                                bluetoothDeviceName = bluetoothDeviceName,
-                                nfcTagId = nfcTagId.trim(),
-                                flipScreenOffDetection = flipScreenOffDetection,
-                                notificationAppPackage = notificationAppPackage,
-                                notificationAppName = notificationAppName,
-                                notificationKeyword = notificationKeyword,
-                                conditions = conditions,
-                                conditionTree = conditionTree,
-                                notificationTitle = notificationTitle,
-                                notificationBody = notificationBody,
-                                vibrationPattern = vibrationPattern,
-                                vibrationDurationMs = vibrationDurationMs,
-                                vibrationAmplitude = vibrationAmplitude,
-                                mediaVolumePercent = mediaVolumePercent,
-                                soundPreset = soundPreset,
-                                soundUri = soundUri,
-                                soundName = soundName,
-                                soundDurationMs = soundDurationMs,
-                                launchPackage = launchPackage,
-                                launchAppName = launchAppName,
-                                url = url,
-                                alarmHour = alarmHour,
-                                alarmMinute = alarmMinute,
-                                alarmMessage = alarmMessage,
-                                timerDurationSeconds = timerDurationSeconds,
-                                timerMessage = timerMessage,
-                                cooldownMinutes = cooldownMinutes,
-                                webhookMethod = webhookMethod,
-                                webhookUrl = webhookUrl,
-                                webhookHeaders = webhookHeaders,
-                                webhookBody = webhookBody,
-                                webhookTimeoutSeconds = webhookTimeoutSeconds,
-                                ttsText = ttsText,
-                                ttsVoiceName = ttsVoiceName,
-                                ttsSpeechRate = ttsSpeechRate,
-                                ttsAudioFileName = ttsAudioFileName,
-                                phoneNumber = phoneNumber.trim(),
-                                smsSenderFilter = smsSenderFilter.trim(),
-                                smsMatchMode = smsMatchMode,
-                                smsKeyword = smsKeyword.trim(),
-                                smsRecipient = smsRecipient.trim(),
-                                smsMessage = smsMessage,
-                                lightLux = lightLux,
-                                shakeThreshold = shakeThreshold,
-                                screenBrightnessPercent = screenBrightnessPercent,
-                                forceStopPackage = forceStopPackage,
-                                forceStopAppName = forceStopAppName,
-                                geofenceName = geofenceName,
-                                geofenceLatitude = geofenceLatitude,
-                                geofenceLongitude = geofenceLongitude,
-                                geofenceRadiusMeters = geofenceRadiusMeters,
-                                action = actions.firstOrNull() ?: initialRule.action,
-                                actions = actions,
-                                actionDelays = actions.indices.map { actionDelays.getOrElse(it) { 0 } },
-                            )
-                            pendingShare = currentFormRule
+                            pendingShare = draftRule()
                         }
                     ) {
                         Icon(
@@ -844,6 +804,55 @@ fun DetailScreen(
                             Text(stringResource(R.string.execution_cooldown), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(6.dp))
                             RuleCooldownSettings(cooldownMinutes) { cooldownMinutes = it }
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                stringResource(R.string.shortcut_section_title),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                stringResource(R.string.shortcut_section_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    if (shortcutRequested) {
+                                        RuleShortcutManager.remove(context, initialRule.id)
+                                        shortcutRequested = false
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(context.getString(R.string.shortcut_removed))
+                                        }
+                                    } else {
+                                        when (RuleShortcutManager.requestPin(context, draftRule())) {
+                                            RuleShortcutManager.PinResult.Requested -> {
+                                                shortcutRequested = true
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar(context.getString(R.string.shortcut_request_sent))
+                                                }
+                                            }
+                                            RuleShortcutManager.PinResult.PermissionDenied -> {
+                                                showShortcutPermissionDialog = true
+                                            }
+                                            RuleShortcutManager.PinResult.Unsupported -> {
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar(context.getString(R.string.shortcut_unsupported))
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Text(
+                                    stringResource(
+                                        if (shortcutRequested) R.string.shortcut_remove else R.string.shortcut_add,
+                                    ),
+                                )
+                            }
                         }
                     }
                 }
@@ -876,72 +885,7 @@ fun DetailScreen(
                                 geofenceRadiusMeters = geofenceRadiusMeters,
                             )
                         }
-                        val updatedRule = initialRule.copy(
-                                name = finalName,
-                                triggerEvent = event,
-                        triggerDefinitions = triggerDefinitions,
-                                appPackage = pkg,
-                                appName = appName,
-                                scheduledMinute = scheduledMinute,
-                                scheduledDays = scheduledDays,
-                                batteryLevel = batteryLevel,
-                                wifiSsid = wifiSsid,
-                                bluetoothDeviceAddress = bluetoothDeviceAddress,
-                                bluetoothDeviceName = bluetoothDeviceName,
-                                nfcTagId = nfcTagId.trim(),
-                                flipScreenOffDetection = flipScreenOffDetection,
-                                notificationAppPackage = notificationAppPackage,
-                                notificationAppName = notificationAppName,
-                                notificationKeyword = notificationKeyword,
-                                conditions = conditions,
-                                conditionTree = conditionTree,
-                                notificationTitle = notificationTitle,
-                                notificationBody = notificationBody,
-                                vibrationPattern = vibrationPattern,
-                                vibrationDurationMs = vibrationDurationMs,
-                                vibrationAmplitude = vibrationAmplitude,
-                                mediaVolumePercent = mediaVolumePercent,
-                                soundPreset = soundPreset,
-                                soundUri = soundUri,
-                                soundName = soundName,
-                                soundDurationMs = soundDurationMs,
-                                launchPackage = launchPackage,
-                                launchAppName = launchAppName,
-                                url = url,
-                                ttsText = ttsText,
-                                ttsVoiceName = ttsVoiceName,
-                                ttsSpeechRate = ttsSpeechRate,
-                                ttsAudioFileName = ttsAudioFileName,
-                                alarmHour = alarmHour,
-                                alarmMinute = alarmMinute,
-                                alarmMessage = alarmMessage,
-                                timerDurationSeconds = timerDurationSeconds,
-                                timerMessage = timerMessage,
-                                webhookMethod = webhookMethod,
-                                webhookUrl = webhookUrl,
-                                webhookHeaders = webhookHeaders,
-                                webhookBody = webhookBody,
-                                webhookTimeoutSeconds = webhookTimeoutSeconds,
-                                phoneNumber = phoneNumber.trim(),
-                                smsSenderFilter = smsSenderFilter.trim(),
-                                smsMatchMode = smsMatchMode,
-                                smsKeyword = smsKeyword.trim(),
-                                smsRecipient = smsRecipient.trim(),
-                                smsMessage = smsMessage,
-                                lightLux = lightLux,
-                                shakeThreshold = shakeThreshold,
-                                screenBrightnessPercent = screenBrightnessPercent,
-                                forceStopPackage = forceStopPackage,
-                                forceStopAppName = forceStopAppName,
-                                geofenceName = geofenceName,
-                                geofenceLatitude = geofenceLatitude,
-                                geofenceLongitude = geofenceLongitude,
-                                geofenceRadiusMeters = geofenceRadiusMeters,
-                                action = actions.firstOrNull() ?: ActionType.NFC_ON,
-                                actions = actions,
-                                actionDelays = actionDelays,
-                                cooldownMinutes = cooldownMinutes,
-                            )
+                        val updatedRule = draftRule(finalName)
                         val conflicts = AutomationConflictAnalyzer.analyze(updatedRule, existingRules.map { it.rule })
                         if (conflicts.isNotEmpty()) {
                             pendingSave = updatedRule
