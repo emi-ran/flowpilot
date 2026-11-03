@@ -301,7 +301,7 @@ FlowPilot
 │   ├── glance/           # Jetpack Glance Ana Ekran Widget'ı
 │   ├── quicksettings/    # Hızlı Ayarlar Servisi (TileService)
 │   ├── shizuku/          # Shizuku AIDL IPC köprüsü
-│   └── ui/               # Jetpack Compose Arayüzü (Material 3 Tema, Ekranlar, Bileşenler)
+│   └── ui/               # Jetpack Compose Arayüzü (Material 3 Tema, Ekranlar, Bileşenler, Tanıtım Turu)
 └── app/src/test/         # Deterministik JUnit birim testleri
 ```
 

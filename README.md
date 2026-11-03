@@ -301,7 +301,7 @@ FlowPilot
 │   ├── glance/           # Jetpack Glance Home Screen Widget
 │   ├── quicksettings/    # System Quick Settings Tile Service
 │   ├── shizuku/          # Shizuku AIDL IPC client bridge
-│   └── ui/               # Jetpack Compose UI (Material 3 Theme, Screens, Components)
+│   └── ui/               # Jetpack Compose UI (Material 3 Theme, Screens, Components, Tutorial Overlay)
 └── app/src/test/         # Deterministic JUnit unit test suites
 ```
 
