@@ -391,9 +391,9 @@ class BackupManagerTest {
     }
 
     @Test
-    fun importTtsCopiesLocalCacheAndReportsMissing() = runTest {
+    fun importLegacyTtsCopiesLocalCacheAndReportsMissing() = runTest {
         val tts = com.flowpilot.app.actions.TtsManager(context)
-        val base = createSampleRule("tts-source", "Speech").copy(actions = listOf(ActionType.SPEAK_TEXT), ttsText = "Hello", ttsVoiceName = "voice")
+        val base = createSampleRule("tts-source", "Speech").copy(actions = listOf(ActionType.SPEAK_TEXT), ttsText = "", ttsVoiceName = "voice")
         val fileName = tts.computeCacheFileName(base.id, base.ttsText, base.ttsVoiceName, base.ttsSpeechRate)
         val source = requireNotNull(tts.getCacheFile(fileName))
         source.writeBytes(byteArrayOf(1, 2, 3))
@@ -411,9 +411,26 @@ class BackupManagerTest {
     }
 
     @Test
+    fun importDynamicTtsKeepsTemplateAndDropsAudioReference() = runTest {
+        val rule = createSampleRule("dynamic-source", "Dynamic speech").copy(
+            triggerEvent = TriggerEvent.NOTIFICATION_RECEIVED,
+            actions = listOf(ActionType.SPEAK_TEXT),
+            ttsText = "\${notification.text}",
+            ttsVoiceName = "voice",
+            ttsAudioFileName = "tts_0123456789abcdef0123456789abcdef.wav",
+        )
+
+        repository.importAutomations(listOf(rule), ImportStrategy.REPLACE_ALL)
+
+        val imported = repository.automations.first().single()
+        assertThat(imported.ttsText).isEqualTo("\${notification.text}")
+        assertThat(imported.ttsAudioFileName).isEmpty()
+    }
+
+    @Test
     fun missingTtsIsReportedForBothBackupFormatsAndStrategies() = runTest {
         val tts = com.flowpilot.app.actions.TtsManager(context)
-        val rule = createSampleRule("portable", "Speech").copy(actions = listOf(ActionType.SPEAK_TEXT), ttsText = "Hello")
+        val rule = createSampleRule("portable", "Speech").copy(actions = listOf(ActionType.SPEAK_TEXT), ttsText = "")
         val original = rule.copy(ttsAudioFileName = tts.computeCacheFileName(rule.id, rule.ttsText, rule.ttsVoiceName, rule.ttsSpeechRate))
         val normal = BackupManager.parseImport(BackupManager.exportToString(listOf(original))).getOrThrow()
         val encrypted = BackupManager.parseEncryptedImport(BackupManager.exportEncryptedToString(listOf(original), "password"), "password").getOrThrow()
@@ -431,7 +448,7 @@ class BackupManagerTest {
     @Test
     fun failedImportRemovesTtsCopiesAndPreservesRules() = runTest {
         val tts = com.flowpilot.app.actions.TtsManager(context)
-        val base = createSampleRule("source", "Speech").copy(actions = listOf(ActionType.SPEAK_TEXT), ttsText = "Hello")
+        val base = createSampleRule("source", "Speech").copy(actions = listOf(ActionType.SPEAK_TEXT), ttsText = "")
         val fileName = tts.computeCacheFileName(base.id, base.ttsText, base.ttsVoiceName, base.ttsSpeechRate)
         val source = requireNotNull(tts.getCacheFile(fileName))
         source.writeBytes(byteArrayOf(1, 2, 3))
@@ -439,7 +456,7 @@ class BackupManagerTest {
             val before = repository.automations.first()
             val directory = source.parentFile!!
             val filesBefore = directory.listFiles()!!.map { it.name }.toSet()
-            val invalid = base.copy(id = "other", ttsAudioFileName = fileName)
+            val invalid = base.copy(id = "other", ttsAudioFileName = "../evil.wav")
             assertThat(runCatching { repository.importAutomations(listOf(base.copy(ttsAudioFileName = fileName), invalid), ImportStrategy.REPLACE_ALL) }.isFailure).isTrue()
             assertThat(repository.automations.first()).isEqualTo(before)
             assertThat(directory.listFiles()!!.map { it.name }.toSet()).isEqualTo(filesBefore)

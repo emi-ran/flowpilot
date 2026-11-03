@@ -1,97 +1,116 @@
 package com.flowpilot.app.actions
 
 import android.content.Context
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
-import android.speech.tts.Voice
 import com.flowpilot.app.data.model.TtsVoiceOption
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
-import java.util.Locale
 
 /** Offline-first TTS synthesis manager and audio cache resolver. */
-class TtsManager(private val context: Context) {
+class TtsManager(
+    context: Context,
+    private val engine: TtsEngine = AndroidTtsEngine(context),
+    private val clock: () -> Long = System::currentTimeMillis,
+) {
 
     private val ttsDir: File by lazy {
         File(context.filesDir, "tts_cache").apply { if (!exists()) mkdirs() }
     }
 
-    suspend fun getAvailableOfflineVoices(): List<TtsVoiceOption> = withContext(Dispatchers.IO) {
-        val ttsDeferred = CompletableDeferred<TextToSpeech?>()
-        var ttsInstance: TextToSpeech? = null
-        try {
-            ttsInstance = TextToSpeech(context) { status ->
-                if (status == TextToSpeech.SUCCESS) {
-                    ttsDeferred.complete(ttsInstance)
-                } else {
-                    ttsDeferred.complete(null)
+    /** Synthesis is serialized: the platform TTS service is expensive and not reentrant. */
+    private val synthesisMutex = Mutex()
+
+    /** Cleanup is cheap enough to run periodically, but not after every synthesis. */
+    private var successfulSyntheses = 0
+
+    suspend fun getAvailableOfflineVoices(): List<TtsVoiceOption> = engine.availableVoices()
+
+    /**
+     * Returns a cached file for [text], synthesizing it when missing.
+     *
+     * @return the cached file, or null when the text is invalid or synthesis failed.
+     */
+    suspend fun ensureSpeech(text: String, voiceName: String, rate: Float): File? {
+        if (text.isBlank() || text.length > MAX_TTS_TEXT_LENGTH) return null
+
+        return withContext(Dispatchers.IO) {
+            val fileName = contentCacheFileName(text, voiceName, rate)
+            val cached = getCacheFile(fileName)
+            if (cached != null && cached.isFile && cached.length() > 0L) {
+                touch(cached)
+                return@withContext cached
+            }
+
+            synthesisMutex.withLock {
+                // Another coroutine may have produced the file while this one waited for the lock.
+                val target = getCacheFile(fileName) ?: return@withLock null
+                if (target.isFile && target.length() > 0L) {
+                    touch(target)
+                    return@withLock target
+                }
+
+                val temp = File(ttsDir, "${target.name}.${java.util.UUID.randomUUID()}$TEMP_SUFFIX")
+                try {
+                    if (temp.exists()) temp.delete()
+                    val synthesized = engine.synthesize(text, voiceName, rate, temp)
+                    if (!synthesized || !temp.isFile || temp.length() <= 0L) {
+                        temp.delete()
+                        return@withLock null
+                    }
+                    // The target is only replaced after a complete temporary file exists.
+                    if (!replaceFile(temp, target)) {
+                        temp.delete()
+                        return@withLock null
+                    }
+                    touch(target)
+                    successfulSyntheses++
+                    if (successfulSyntheses % CLEANUP_INTERVAL == 0) cleanup()
+                    target.takeIf { it.isFile && it.length() > 0L }
+                } catch (ce: CancellationException) {
+                    temp.delete()
+                    throw ce
+                } catch (_: Throwable) {
+                    temp.delete()
+                    null
                 }
             }
-            val tts = withTimeoutOrNull(TTS_INIT_TIMEOUT_MS) { ttsDeferred.await() }
-            if (tts == null) return@withContext emptyList<TtsVoiceOption>()
-
-            val voices = try {
-                tts.voices
-            } catch (_: Throwable) {
-                null
-            }
-
-            if (voices.isNullOrEmpty()) {
-                return@withContext emptyList<TtsVoiceOption>()
-            }
-
-            val offlineVoices = voices
-                .filter { voice -> !voice.isNetworkConnectionRequired }
-                .map { voice ->
-                    val loc = voice.locale ?: Locale.getDefault()
-                    val quality = when (voice.quality) {
-                        Voice.QUALITY_VERY_HIGH -> "Very High Quality"
-                        Voice.QUALITY_HIGH -> "High Quality"
-                        Voice.QUALITY_NORMAL -> "Normal Quality"
-                        Voice.QUALITY_LOW -> "Low Quality"
-                        Voice.QUALITY_VERY_LOW -> "Very Low Quality"
-                        else -> ""
-                    }
-                    val label = buildString {
-                        append(loc.displayName.ifBlank { voice.name })
-                        if (quality.isNotBlank()) append(" · ").append(quality)
-                        if (voice.name.isNotBlank()) append(" (${voice.name})")
-                    }
-                    TtsVoiceOption(
-                        name = voice.name,
-                        locale = loc.toLanguageTag(),
-                        displayName = label,
-                    )
-                }
-                .sortedBy { it.displayName.lowercase() }
-
-            offlineVoices
-        } catch (_: Throwable) {
-            emptyList()
-        } finally {
-            try {
-                ttsInstance?.shutdown()
-            } catch (_: Throwable) {}
         }
     }
 
+    /** Content-addressed cache key for runtime speech; independent of rule identity. */
+    fun contentCacheFileName(text: String, voiceName: String, rate: Float): String {
+        val payload = buildString {
+            append(normalizeText(text))
+            append('\u0000')
+            append(voiceName)
+            append('\u0000')
+            append(rate)
+            append('\u0000')
+            append(engine.enginePackageName)
+        }
+        return "tts_${sha256Hex(payload).take(CONTENT_HASH_LENGTH)}$WAV_SUFFIX"
+    }
+
+    /**
+     * Legacy rule-owned cache name. Kept byte-for-byte compatible with persisted rule references
+     * and backup/import validation.
+     */
     fun computeCacheFileName(ruleId: String, text: String, voiceName: String, rate: Float): String {
         val input = "$ruleId|$text|$voiceName|$rate"
-        val md = MessageDigest.getInstance("SHA-256")
-        val hash = md.digest(input.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }.take(16)
+        val hash = sha256Hex(input).take(16)
         val safeRule = ruleId.filter { it.isLetterOrDigit() || it == '-' }.take(20).ifBlank { "preview" }
-        return "tts_${safeRule}_${hash}.wav"
+        return "tts_${safeRule}_${hash}$WAV_SUFFIX"
     }
 
-    private val cacheFileNameRegex = Regex("^tts_[A-Za-z0-9-]+_[0-9a-f]{16}\\.wav$")
-
-    fun isValidCacheFileName(fileName: String): Boolean {
-        return cacheFileNameRegex.matches(fileName)
-    }
+    fun isValidCacheFileName(fileName: String): Boolean =
+        legacyCacheFileNameRegex.matches(fileName) || contentCacheFileNameRegex.matches(fileName)
 
     fun getCacheFile(fileName: String): File? {
         if (!isValidCacheFileName(fileName)) return null
@@ -103,114 +122,117 @@ class TtsManager(private val context: Context) {
         return file
     }
 
-    suspend fun synthesizeToFile(
-        text: String,
-        voiceName: String,
-        rate: Float,
-        targetFile: File,
-    ): Boolean = withContext(Dispatchers.IO) {
-        if (text.isBlank()) return@withContext false
-        if (!isValidCacheFileName(targetFile.name)) return@withContext false
-        val cacheFile = getCacheFile(targetFile.name) ?: return@withContext false
-        if (cacheFile.canonicalFile != targetFile.canonicalFile) return@withContext false
-
-        val tempFile = File(ttsDir, "${targetFile.name}.tmp")
-        if (tempFile.exists()) tempFile.delete()
-
-        val ttsDeferred = CompletableDeferred<TextToSpeech?>()
-        var ttsInstance: TextToSpeech? = null
+    /** Marks [file] as recently used so both TTL and LRU cleanup leave it alone. */
+    fun touch(file: File) {
         try {
-            ttsInstance = TextToSpeech(context) { status ->
-                if (status == TextToSpeech.SUCCESS) {
-                    ttsDeferred.complete(ttsInstance)
-                } else {
-                    ttsDeferred.complete(null)
-                }
-            }
-
-            val tts = withTimeoutOrNull(TTS_INIT_TIMEOUT_MS) { ttsDeferred.await() } ?: return@withContext false
-
-            if (voiceName.isNotBlank() && voiceName != "default") {
-                val matchedVoice = try {
-                    tts.voices?.firstOrNull { it.name == voiceName }
-                } catch (_: Throwable) { null }
-
-                // Non-default voice requested: must exist and must not require network
-                if (matchedVoice == null || matchedVoice.isNetworkConnectionRequired) {
-                    return@withContext false
-                }
-                tts.voice = matchedVoice
-            } else {
-                // Default voice requested: check that default voice exists and is offline
-                val defVoice = try { tts.defaultVoice } catch (_: Throwable) { null }
-                    ?: return@withContext false
-                if (defVoice.isNetworkConnectionRequired) {
-                    return@withContext false
-                }
-                tts.voice = defVoice
-            }
-
-            tts.setSpeechRate(rate.coerceIn(0.5f, 2.0f))
-
-            val utteranceId = "tts_${System.currentTimeMillis()}"
-            val synthDeferred = CompletableDeferred<Boolean>()
-
-            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(id: String?) {}
-
-                override fun onDone(id: String?) {
-                    if (id == utteranceId) synthDeferred.complete(true)
-                }
-
-                @Deprecated("Deprecated in Java")
-                override fun onError(id: String?) {
-                    if (id == utteranceId) synthDeferred.complete(false)
-                }
-
-                override fun onError(id: String?, errorCode: Int) {
-                    if (id == utteranceId) synthDeferred.complete(false)
-                }
-            })
-
-            val synthResult = tts.synthesizeToFile(text, null, tempFile, utteranceId)
-            if (synthResult != TextToSpeech.SUCCESS) {
-                if (tempFile.exists()) tempFile.delete()
-                return@withContext false
-            }
-
-            val completed = withTimeoutOrNull(SYNTHESIS_TIMEOUT_MS) { synthDeferred.await() } ?: false
-            if (completed && tempFile.exists() && tempFile.length() > 0) {
-                if (targetFile.exists()) targetFile.delete()
-                tempFile.renameTo(targetFile)
-                true
-            } else {
-                if (tempFile.exists()) tempFile.delete()
-                false
-            }
+            file.setLastModified(clock())
         } catch (_: Throwable) {
-            if (tempFile.exists()) tempFile.delete()
-            false
-        } finally {
-            try {
-                ttsInstance?.stop()
-                ttsInstance?.shutdown()
-            } catch (_: Throwable) {}
         }
     }
 
-    fun cleanStaleFiles(activeFileNames: Set<String>) {
+    /**
+     * Prunes the cache: deletes files older than [RETENTION_MS], then evicts least-recently-used
+     * files until the cache fits in [MAX_CACHE_BYTES]. Active, temporary, and recently touched
+     * files are never removed. Never throws.
+     */
+    fun cleanup(activeFileNames: Set<String> = emptySet()) {
         try {
-            val files = ttsDir.listFiles() ?: return
-            for (file in files) {
-                if (file.isFile && !activeFileNames.contains(file.name)) {
+            val now = clock()
+            val files = ttsDir.listFiles()?.filter { it.isFile } ?: return
+            val candidates = files.filter { file ->
+                !isProtected(file.name, activeFileNames) &&
+                    now - file.lastModified() >= RECENT_WINDOW_MS
+            }
+
+            for (file in candidates) {
+                if (now - file.lastModified() > RETENTION_MS) {
                     file.delete()
                 }
             }
-        } catch (_: Throwable) {}
+
+            val surviving = ttsDir.listFiles()?.filter { it.isFile } ?: return
+            var totalBytes = surviving.sumOf { it.length() }
+            if (totalBytes <= MAX_CACHE_BYTES) return
+
+            val evictable = surviving
+                .filter { file ->
+                    !isProtected(file.name, activeFileNames) &&
+                        now - file.lastModified() >= RECENT_WINDOW_MS
+                }
+                .sortedBy { it.lastModified() }
+
+            for (file in evictable) {
+                if (totalBytes <= MAX_CACHE_BYTES) break
+                val size = file.length()
+                if (file.delete()) totalBytes -= size
+            }
+        } catch (_: Throwable) {
+        }
     }
 
-    companion object {
-        private const val TTS_INIT_TIMEOUT_MS = 6_000L
-        private const val SYNTHESIS_TIMEOUT_MS = 15_000L
+    /** Deletes every cache file after an explicit user request; playback is not protected. */
+    fun clearCache(): Int {
+        var deleted = 0
+        try {
+            ttsDir.listFiles()?.forEach { file ->
+                if (file.isFile && file.delete()) deleted++
+            }
+        } catch (_: Throwable) {
+        }
+        return deleted
+    }
+
+    private fun isProtected(fileName: String, activeFileNames: Set<String>): Boolean =
+        fileName in activeFileNames || fileName.endsWith(TEMP_SUFFIX)
+
+    /** Moves [source] onto [target] without deleting a valid target before the move succeeds. */
+    private fun replaceFile(source: File, target: File): Boolean {
+        val sourcePath = source.toPath()
+        val targetPath = target.toPath()
+        return try {
+            try {
+                Files.move(
+                    sourcePath,
+                    targetPath,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING)
+            }
+            true
+        } catch (_: Throwable) {
+            // Some filesystems report atomic moves as unsupported with other exception types.
+            try {
+                Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING)
+                true
+            } catch (_: Throwable) {
+                false
+            }
+        }
+    }
+
+    private fun normalizeText(text: String): String = text.trim().replace(WHITESPACE_REGEX, " ")
+
+    private fun sha256Hex(value: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))
+        return buildString(digest.size * 2) {
+            for (byte in digest) append("%02x".format(byte))
+        }
+    }
+
+    private val legacyCacheFileNameRegex = Regex("^tts_[A-Za-z0-9-]+_[0-9a-f]{16}\\.wav$")
+    private val contentCacheFileNameRegex = Regex("^tts_[0-9a-f]{32}\\.wav$")
+
+    private companion object {
+        const val WAV_SUFFIX = ".wav"
+        const val TEMP_SUFFIX = ".tmp"
+        const val CONTENT_HASH_LENGTH = 32
+        const val MAX_TTS_TEXT_LENGTH = 2_000
+        const val RECENT_WINDOW_MS = 10 * 60 * 1_000L
+        const val RETENTION_MS = 7 * 24 * 60 * 60 * 1_000L
+        const val MAX_CACHE_BYTES = 50L * 1024 * 1024
+        const val CLEANUP_INTERVAL = 10
+        val WHITESPACE_REGEX = Regex("\\s+")
     }
 }

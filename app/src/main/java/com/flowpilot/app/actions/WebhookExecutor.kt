@@ -164,11 +164,11 @@ class WebhookExecutor internal constructor(
         val method = parameters.webhookMethod.trim().uppercase()
         val timeoutMs = parameters.webhookTimeoutSeconds.coerceIn(MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS) * 1000
         val headers = try {
-            renderHeaders(parameters.webhookHeaders, parameters.webhookTemplateContext)
+            renderHeaders(parameters.webhookHeaders)
         } catch (_: IllegalArgumentException) {
             return ActionResult(false, "Invalid rendered webhook headers")
         }
-        val body = WebhookTemplateRenderer.render(parameters.webhookBody, parameters.webhookTemplateContext)
+        val body = parameters.webhookBody
 
         Log.i(TAG, "Dispatching HTTP Webhook: method=$method")
 
@@ -366,32 +366,11 @@ class WebhookExecutor internal constructor(
             return result
         }
 
-        /** Renders configured header lines independently; replacements may not add header lines. */
-        fun renderHeaders(rawHeaders: String, context: WebhookTemplateContext?): Map<String, String> {
+        /** Parses already-rendered header lines after validation; replacements never add lines. */
+        fun renderHeaders(rawHeaders: String): Map<String, String> {
             val validationError = validateHeaders(rawHeaders)
             require(validationError == null) { validationError ?: "Invalid webhook headers" }
-            if (rawHeaders.isBlank()) return emptyMap()
-
-            return buildMap {
-                rawHeaders.split("\r\n", "\n", "\r").forEachIndexed { index, line ->
-                    val configuredLine = line.trim()
-                    if (configuredLine.isEmpty() || configuredLine.startsWith("#")) return@forEachIndexed
-                    val renderedLine = WebhookTemplateRenderer.render(configuredLine, context)
-                    if (renderedLine.any { it == '\r' || it == '\n' || it.isISOControl() }) {
-                        throw IllegalArgumentException("Invalid rendered header on line ${index + 1}: header cannot contain control characters")
-                    }
-                    val colonIndex = renderedLine.indexOf(':')
-                    val name = renderedLine.substring(0, colonIndex).trim()
-                    val value = renderedLine.substring(colonIndex + 1).trim()
-                    if (!name.all { it in HEADER_NAME_CHARS }) {
-                        throw IllegalArgumentException("Invalid rendered header name on line ${index + 1}")
-                    }
-                    if (name.lowercase() in FORBIDDEN_REQUEST_HEADERS) {
-                        throw IllegalArgumentException("Forbidden rendered header name on line ${index + 1}")
-                    }
-                    put(name, value)
-                }
-            }
+            return parseHeaders(rawHeaders)
         }
 
         private const val HEADER_NAME_CHARS = "!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

@@ -4,6 +4,30 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Dynamic speech and general action templates: `${variable}` placeholders now render from the actual notification, SMS, call, app, Wi-Fi, Bluetooth, NFC, shake, light, geofence, screen, and power events. The speech editor's trigger-aware searchable picker inserts only variables that apply to the rule's configured triggers and shows filter examples.
+- Safe template filters (`trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape`), quote-aware parsing, one-pass rendering, and `$${` escaping.
+- Offline TTS now synthesizes on demand instead of requiring a separate Generate step. Speech is strict: unknown variables, malformed expressions, or empty rendered text fail with a generic result, while other action fields keep unknown tokens unchanged.
+- Content-addressed TTS cache shared across rules, with atomic writes, a 7-day TTL, a 50 MB cap, LRU eviction, periodic cleanup, and a manual Settings clear action.
+
+### Changed
+
+- Rule save no longer requires a pre-generated TTS file. Existing rules with blank speech text and a valid legacy cache file still play as before; dynamic rules ignore stale audio.
+- Import/export carries speech templates instead of audio. Missing legacy audio is reported after import, and dynamic rules synthesize on first play.
+- Notification matching keeps primary text and expanded text separate for `${notification.text}` and `${notification.bigText}` while still matching both.
+- Variable rendering moved into `ActionParametersFactory`; webhook and SMS executors now receive already-rendered values and do not apply templates a second time.
+
+### Security
+
+- Notification, SMS, call, app, Wi-Fi, Bluetooth, NFC, shake, light, geofence, screen, and power values enter only a transient template context; they are not written to rule fields, execution history, logs, or exports.
+- Rendered TTS audio remains in the app-private cache (excluded from backups), and rendered text is never logged.
+
+### Fixed
+
+- FlowPilot's own engine/status notifications, including those from a side-by-side debug build, are ignored by the notification listener. A rule with no app filter can no longer trigger on FlowPilot's ongoing notification and repeatedly speak its own status.
+- New TTS actions no longer adopt the alphabetically first offline voice when none was chosen. An unset voice now uses the phone's default TTS voice, shows as **System default**, and can be restored from the voice picker. The editor preview also uses a demo sentence in the selected voice's language instead of always using the Turkish sample.
+
 ## [2.1.0] - 2026-11-03
 
 ### Added

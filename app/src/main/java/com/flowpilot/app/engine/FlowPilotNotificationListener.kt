@@ -20,7 +20,11 @@ data class TransientNotificationEvent(
     val postTime: Long,
     val key: String,
     val title: String,
+    /** Primary notification text; does not include [bigText]. */
     val text: String,
+    val bigText: String = "",
+    /** Resolved application label, falling back to [packageName]. */
+    val appLabel: String = "",
 )
 
 /**
@@ -65,6 +69,16 @@ class NotificationDeduplicator(private val ttlMs: Long = 60_000L, private val ma
 }
 
 /**
+ * Pure helper: FlowPilot release and debug builds can run side by side and each posts an
+ * ongoing engine notification. A listener must ignore both so a rule with no app filter cannot
+ * speak its own status notification (or the sibling build's) back to the user.
+ */
+internal fun isFlowPilotNotificationPackage(candidate: String, listenerPackage: String): Boolean {
+    val base = listenerPackage.removeSuffix(".debug")
+    return candidate == listenerPackage || candidate == base || candidate == "$base.debug"
+}
+
+/**
  * Listens for posted notifications to trigger rules matching user-configured app & keyword.
  * Never persists or logs sensitive notification content.
  */
@@ -78,8 +92,8 @@ class FlowPilotNotificationListener : NotificationListenerService() {
         if (!isConnected) return
         sbn ?: return
         val pkg = sbn.packageName ?: return
-        // Ignore own notifications to prevent loops
-        if (pkg == packageName) return
+        // Ignore own and sibling-build notifications to prevent trigger loops.
+        if (isFlowPilotNotificationPackage(pkg, packageName)) return
 
         val key = sbn.key ?: "${pkg}_${sbn.id}_${sbn.postTime}"
         val postTime = sbn.postTime
@@ -88,17 +102,18 @@ class FlowPilotNotificationListener : NotificationListenerService() {
         val title = extras?.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = extras?.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
         val bigText = extras?.getCharSequence(android.app.Notification.EXTRA_BIG_TEXT)?.toString().orEmpty()
-        val combinedText = if (bigText.isNotBlank()) "$text $bigText" else text
-
-        val event = TransientNotificationEvent(
-            packageName = pkg,
-            postTime = postTime,
-            key = key,
-            title = title,
-            text = combinedText,
-        )
 
         intakeScope.launch {
+            // Label lookup is a binder call; keep it off the notification callback thread.
+            val event = TransientNotificationEvent(
+                packageName = pkg,
+                postTime = postTime,
+                key = key,
+                title = title,
+                text = text,
+                bigText = bigText,
+                appLabel = resolveAppLabel(pkg),
+            )
             try {
                 if (AutomationService.enqueueNotificationIfEngineEnabled(applicationContext, event)) {
                     AutomationService.reconcileEnabled(applicationContext)
@@ -108,6 +123,13 @@ class FlowPilotNotificationListener : NotificationListenerService() {
             } catch (_: Throwable) {
             }
         }
+    }
+
+    private fun resolveAppLabel(packageName: String): String = try {
+        val info = packageManager.getApplicationInfo(packageName, 0)
+        packageManager.getApplicationLabel(info).toString()
+    } catch (_: Throwable) {
+        packageName
     }
 
     override fun onListenerConnected() {

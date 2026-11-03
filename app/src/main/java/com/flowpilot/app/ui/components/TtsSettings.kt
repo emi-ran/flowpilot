@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
@@ -25,16 +26,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.flowpilot.app.R
 import com.flowpilot.app.actions.TtsExecutor
 import com.flowpilot.app.actions.TtsManager
+import com.flowpilot.app.actions.VariableCatalog
+import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.TtsVoiceOption
 import kotlinx.coroutines.launch
 import java.util.Locale
+
+/**
+ * Editor save gate for SPEAK_TEXT: dynamic templates must render strictly with the rule's
+ * available sample variables, and legacy rules must still point at an existing cached file.
+ * Dynamic text is authoritative whenever it is nonblank.
+ */
+fun canSaveTtsConfiguration(
+    text: String,
+    speechRate: Float,
+    audioFileName: String,
+    triggerEvents: List<TriggerEvent>,
+    ttsManager: TtsManager,
+): Boolean {
+    if (!speechRate.isFinite() || speechRate !in 0.5f..2.0f) return false
+    if (!VariableCatalog.isTemplateValid(text, triggerEvents)) return false
+    if (text.isNotBlank()) return true
+    val file = audioFileName.takeIf { it.isNotBlank() }?.let(ttsManager::getCacheFile) ?: return false
+    return file.isFile && file.length() > 0L
+}
 
 @Composable
 fun TtsSettings(
@@ -42,11 +66,10 @@ fun TtsSettings(
     voiceName: String,
     speechRate: Float,
     audioFileName: String,
-    ruleId: String,
+    triggerEvents: List<TriggerEvent>,
     setText: (String) -> Unit,
     setVoiceName: (String) -> Unit,
     setSpeechRate: (Float) -> Unit,
-    setAudioFileName: (String) -> Unit,
     ttsManager: TtsManager,
     ttsExecutor: TtsExecutor,
 ) {
@@ -57,7 +80,55 @@ fun TtsSettings(
     var isLoadingVoices by remember { mutableStateOf(true) }
     var isSynthesizing by remember { mutableStateOf(false) }
     var showVoicePicker by remember { mutableStateOf(false) }
+    var showVariablePicker by remember { mutableStateOf(false) }
     var synthesisStatusMessage by remember { mutableStateOf<String?>(null) }
+    var cacheGeneration by remember { mutableIntStateOf(0) }
+
+    var fieldValue by remember { mutableStateOf(TextFieldValue(text)) }
+    LaunchedEffect(text) {
+        if (text != fieldValue.text) {
+            fieldValue = TextFieldValue(text, selection = TextRange(text.length))
+        }
+    }
+
+    val previewLanguageTag = voices.firstOrNull { it.name == voiceName }?.locale
+        ?: Locale.getDefault().toLanguageTag()
+    val previewSampleText = remember(previewLanguageTag) {
+        TtsPreviewSample.forLanguageTag(previewLanguageTag)
+    }
+    val previewResult = remember(text, triggerEvents, previewSampleText) {
+        if (text.isBlank()) null else VariableCatalog.renderSample(text, triggerEvents, previewSampleText)
+    }
+    val previewText = previewResult
+        ?.takeIf { it.unknownVariables.isEmpty() && it.parseErrors.isEmpty() }
+        ?.text
+        ?.takeIf { it.isNotBlank() }
+    val contentFileName = remember(previewText, voiceName, speechRate) {
+        previewText?.let { ttsManager.contentCacheFileName(it, voiceName, speechRate) }
+    }
+    val hasCachedPreview = remember(contentFileName, cacheGeneration) {
+        contentFileName?.let { name ->
+            ttsManager.getCacheFile(name)?.let { file -> file.isFile && file.length() > 0L }
+        } == true
+    }
+    val hasLegacyFile = remember(audioFileName) {
+        if (audioFileName.isBlank()) {
+            false
+        } else {
+            ttsManager.getCacheFile(audioFileName)?.let { it.isFile && it.length() > 0L } == true
+        }
+    }
+    val usesSampleData = text.contains("\${")
+
+    fun insertToken(token: String) {
+        val current = fieldValue
+        val start = current.selection.min.coerceIn(0, current.text.length)
+        val end = current.selection.max.coerceIn(start, current.text.length)
+        val updated = current.text.replaceRange(start, end, token)
+        fieldValue = TextFieldValue(updated, selection = TextRange(start + token.length))
+        setText(updated)
+        synthesisStatusMessage = null
+    }
 
     DisposableEffect(ttsExecutor) {
         onDispose {
@@ -69,17 +140,14 @@ fun TtsSettings(
         isLoadingVoices = true
         voices = ttsManager.getAvailableOfflineVoices()
         isLoadingVoices = false
-        if (voiceName.isBlank() && voices.isNotEmpty()) {
-            setVoiceName(voices.first().name)
-        }
     }
 
-    val cacheFile = remember(audioFileName) {
-        if (audioFileName.isNotBlank()) ttsManager.getCacheFile(audioFileName) else null
-    }
-    val hasValidCache = remember(cacheFile, text, voiceName, speechRate, audioFileName) {
-        cacheFile != null && cacheFile.exists() && cacheFile.length() > 0 &&
-                audioFileName == ttsManager.computeCacheFileName(ruleId, text.trim(), voiceName, speechRate)
+    if (showVariablePicker) {
+        VariablePickerDialog(
+            triggers = triggerEvents,
+            onInsert = ::insertToken,
+            onDismiss = { showVariablePicker = false },
+        )
     }
 
     if (showVoicePicker) {
@@ -90,23 +158,32 @@ fun TtsSettings(
                 setVoiceName(it.name)
                 showVoicePicker = false
             },
+            onSelectDefault = {
+                setVoiceName("")
+                showVoicePicker = false
+            },
             onPreview = { previewVoice ->
-                val trimmed = text.trim()
-                if (trimmed.isBlank()) {
+                val sampleText = TtsPreviewSample.forLanguageTag(previewVoice.locale)
+                val rendered = VariableCatalog.renderSample(text, triggerEvents, sampleText)
+                    .takeIf { it.unknownVariables.isEmpty() && it.parseErrors.isEmpty() }
+                    ?.text
+                    ?.takeIf { it.isNotBlank() }
+                if (rendered == null) {
+                    synthesisStatusMessage = context.getString(
+                        if (text.isBlank()) R.string.tts_preview_empty_error else R.string.tts_preview_invalid_template
+                    )
                     return@VoicePickerDialog
                 }
                 scope.launch {
                     isSynthesizing = true
-                    synthesisStatusMessage = "Preparing ${previewVoice.displayName}..."
-                    val fileName = ttsManager.computeCacheFileName(ruleId, trimmed, previewVoice.name, speechRate)
-                    val targetFile = ttsManager.getCacheFile(fileName)
-                    val success = targetFile != null && ttsManager.synthesizeToFile(trimmed, previewVoice.name, speechRate, targetFile)
+                    synthesisStatusMessage = context.getString(R.string.tts_synthesizing)
+                    val file = ttsManager.ensureSpeech(rendered, previewVoice.name, speechRate)
                     isSynthesizing = false
-                    synthesisStatusMessage = if (success) {
-                        ttsExecutor.playCacheFile(requireNotNull(targetFile))
-                        "Previewing ${previewVoice.displayName}"
+                    if (file != null && ttsExecutor.playCacheFile(file)) {
+                        cacheGeneration++
+                        synthesisStatusMessage = null
                     } else {
-                        "Voice preview failed. Check offline TTS data."
+                        synthesisStatusMessage = context.getString(R.string.tts_synthesis_failed)
                     }
                 }
             },
@@ -130,19 +207,39 @@ fun TtsSettings(
         Text(stringResource(R.string.tts_section_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         OutlinedTextField(
-            value = text,
+            value = fieldValue,
             onValueChange = {
-                setText(it)
+                fieldValue = it
+                setText(it.text)
                 synthesisStatusMessage = null
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp)
-                .bringIntoViewOnFocusOrChange(text),
+                .bringIntoViewOnFocusOrChange(fieldValue.text),
             label = { Text(stringResource(R.string.tts_spoken_message_label)) },
             placeholder = { Text(stringResource(R.string.tts_spoken_message_placeholder)) },
             minLines = 2,
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            TextButton(onClick = { showVariablePicker = true }) {
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.tts_btn_insert_variable))
+            }
+            if (usesSampleData) {
+                Text(
+                    stringResource(R.string.tts_preview_sample_data),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
 
         Spacer(Modifier.height(10.dp))
 
@@ -182,10 +279,10 @@ fun TtsSettings(
                 }
             }
         } else {
-            val selectedOption = voices.firstOrNull { it.name == voiceName } ?: voices.firstOrNull()
+            val selectedOption = voices.firstOrNull { it.name == voiceName }
             SelectionRow(
                 title = stringResource(R.string.tts_offline_voice_title),
-                sub = selectedOption?.displayName ?: voiceName.ifBlank { stringResource(R.string.tts_system_default) },
+                sub = selectedOption?.displayName ?: stringResource(R.string.tts_system_default),
                 click = { showVoicePicker = true }
             )
         }
@@ -205,10 +302,17 @@ fun TtsSettings(
 
         Spacer(Modifier.height(6.dp))
 
-        if (hasValidCache) {
-            Text(stringResource(R.string.tts_cached_ready), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-        } else {
-            Text(stringResource(R.string.tts_needs_synthesis), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        when {
+            text.isBlank() && hasLegacyFile -> {
+                Text(stringResource(R.string.tts_legacy_file_available), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            }
+            text.isBlank() -> Unit
+            hasCachedPreview -> {
+                Text(stringResource(R.string.tts_cached_ready), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            }
+            else -> {
+                Text(stringResource(R.string.tts_needs_synthesis), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
 
         synthesisStatusMessage?.let { msg ->
@@ -220,30 +324,38 @@ fun TtsSettings(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             Button(
                 onClick = {
-                    val trimmed = text.trim()
-                    if (trimmed.isBlank()) return@Button
-                    scope.launch {
-                        isSynthesizing = true
-                        synthesisStatusMessage = context.getString(R.string.tts_synthesizing)
-                        val fileName = ttsManager.computeCacheFileName(ruleId, trimmed, voiceName, speechRate)
-                        val targetFile = ttsManager.getCacheFile(fileName)
-                        if (targetFile == null) {
-                            isSynthesizing = false
-                            synthesisStatusMessage = context.getString(R.string.tts_invalid_cache_file)
-                            return@launch
+                    val result = previewResult
+                    when {
+                        text.isBlank() -> {
+                            synthesisStatusMessage = context.getString(R.string.tts_preview_empty_error)
                         }
-                        val success = ttsManager.synthesizeToFile(trimmed, voiceName, speechRate, targetFile)
-                        isSynthesizing = false
-                        if (success) {
-                            setAudioFileName(fileName)
-                            synthesisStatusMessage = context.getString(R.string.tts_synthesis_complete)
-                            ttsExecutor.playCacheFile(targetFile)
-                        } else {
-                            synthesisStatusMessage = context.getString(R.string.tts_synthesis_failed)
+                        result == null || result.unknownVariables.isNotEmpty() || result.parseErrors.isNotEmpty() -> {
+                            synthesisStatusMessage = context.getString(R.string.tts_preview_invalid_template)
+                        }
+                        result.text.isBlank() -> {
+                            synthesisStatusMessage = context.getString(R.string.tts_preview_renders_empty)
+                        }
+                        else -> {
+                            scope.launch {
+                                isSynthesizing = true
+                                synthesisStatusMessage = context.getString(R.string.tts_synthesizing)
+                                val file = ttsManager.ensureSpeech(result.text, voiceName, speechRate)
+                                isSynthesizing = false
+                                if (file == null) {
+                                    synthesisStatusMessage = context.getString(R.string.tts_synthesis_failed)
+                                } else {
+                                    cacheGeneration++
+                                    synthesisStatusMessage = if (ttsExecutor.playCacheFile(file)) {
+                                        null
+                                    } else {
+                                        context.getString(R.string.tts_playback_failed)
+                                    }
+                                }
+                            }
                         }
                     }
                 },
-                enabled = !isSynthesizing && text.isNotBlank() && voices.isNotEmpty(),
+                enabled = !isSynthesizing,
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -251,20 +363,7 @@ fun TtsSettings(
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                     Spacer(Modifier.width(6.dp))
                 }
-                Text(if (hasValidCache) stringResource(R.string.tts_btn_regenerate) else stringResource(R.string.tts_btn_generate))
-            }
-
-            if (hasValidCache) {
-                OutlinedButton(
-                    onClick = {
-                        val file = cacheFile ?: return@OutlinedButton
-                        ttsExecutor.playCacheFile(file)
-                    },
-                    modifier = Modifier.weight(0.7f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(stringResource(R.string.tts_btn_preview))
-                }
+                Text(stringResource(R.string.tts_btn_preview))
             }
 
             OutlinedButton(
@@ -283,6 +382,7 @@ private fun VoicePickerDialog(
     voices: List<TtsVoiceOption>,
     selectedVoiceName: String,
     onSelect: (TtsVoiceOption) -> Unit,
+    onSelectDefault: () -> Unit,
     onPreview: (TtsVoiceOption) -> Unit,
     hasPreviewText: Boolean,
     onDismiss: () -> Unit,
@@ -312,9 +412,13 @@ private fun VoicePickerDialog(
     }
     LaunchedEffect(filteredVoices, selectedVoiceName, query) {
         if (query.isBlank()) {
-            filteredVoices.indexOfFirst { it.name == selectedVoiceName }
-                .takeIf { it >= 0 }
-                ?.let { listState.scrollToItem(it + 1) }
+            if (selectedVoiceName.isBlank()) {
+                listState.scrollToItem(1)
+            } else {
+                filteredVoices.indexOfFirst { it.name == selectedVoiceName }
+                    .takeIf { it >= 0 }
+                    ?.let { listState.scrollToItem(it + 2) }
+            }
         }
     }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)) {
@@ -357,6 +461,30 @@ private fun VoicePickerDialog(
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(vertical = 12.dp)
                         )
+                    }
+                    item {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelectDefault() }
+                                .padding(vertical = 14.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.tts_system_default),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                Text(
+                                    stringResource(R.string.tts_system_default_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            if (selectedVoiceName.isBlank()) {
+                                Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
                     }
                     if (filteredVoices.isEmpty()) {
                         item {

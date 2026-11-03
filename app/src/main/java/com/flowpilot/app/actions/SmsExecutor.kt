@@ -15,7 +15,7 @@ import com.flowpilot.app.engine.PhoneNumberUtils
  * Handles SMS actions: directly sending SMS via SmsManager when SEND_SMS permission is held,
  * and preparing SMS drafts in the default SMS application.
  *
- * Supports dynamic template variables in recipient and message (${sms.sender}, ${sms.body}, ${location.lat}, etc.).
+ * Recipient and message arrive already rendered by [ActionParametersFactory].
  * Enforces privacy: raw phone numbers are never included in logcat or user notifications.
  */
 class SmsExecutor(
@@ -55,15 +55,11 @@ class SmsExecutor(
     }
 
     private fun resolveRecipient(parameters: ActionParameters): String {
-        var recipient = WebhookTemplateRenderer.render(parameters.smsRecipient, parameters.webhookTemplateContext).trim()
-        if (recipient.isBlank()) {
-            recipient = parameters.webhookTemplateContext?.smsSender.orEmpty().trim()
-        }
-        return recipient
+        return parameters.smsRecipient.trim()
     }
 
     private fun resolveMessage(parameters: ActionParameters): String {
-        return WebhookTemplateRenderer.render(parameters.smsMessage, parameters.webhookTemplateContext)
+        return parameters.smsMessage
     }
 
     private fun sendSms(parameters: ActionParameters): ActionResult {

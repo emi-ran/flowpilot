@@ -233,13 +233,14 @@ class AutomationService : Service() {
 
         /**
          * Serializes each sensitive event action with disabling. The action begins while this lock is held,
-         * so disable cannot complete between authorization and dispatch.
+         * so disable cannot complete between authorization and dispatch. The action may suspend; the lock
+         * intentionally stays held until it finishes, matching the previous synchronous contract.
          */
         internal suspend fun <T> executeIfEventAuthorized(
             authorization: EventExecutionAuthorization.Token,
-            execute: () -> T,
+            execute: suspend () -> T,
         ): T? = controlMutex.withLock {
-            eventExecutionAuthorization.executeIfAuthorized(authorization, execute)
+            if (eventExecutionAuthorization.isAuthorized(authorization)) execute() else null
         }
 
         /** Serializes event intake with enabled-state changes, preventing disabled-state queue replay. */

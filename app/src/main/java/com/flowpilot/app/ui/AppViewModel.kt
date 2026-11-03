@@ -676,7 +676,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             } else {
                 null
             }
-            val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
+            val templateContext = com.flowpilot.app.actions.TemplateContext(
                 trigger = "MANUAL",
                 timestamp = System.currentTimeMillis(),
                 batteryPercent = liveState.batteryPercent,
@@ -684,40 +684,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 wifiSsid = liveState.connectedWifiSsid,
                 locationLat = coords?.first,
                 locationLng = coords?.second,
+                values = mapOf("rule.name" to rule.normalizedName),
             )
-            val actionParams = com.flowpilot.app.actions.ActionParameters(
-                notificationTitle = rule.notificationTitle,
-                notificationBody = rule.notificationBody,
-                vibrationPattern = rule.vibrationPattern,
-                vibrationDurationMs = rule.vibrationDurationMs,
-                vibrationAmplitude = rule.vibrationAmplitude,
-                mediaVolumePercent = rule.mediaVolumePercent,
-                soundPreset = rule.soundPreset,
-                soundUri = rule.soundUri,
-                soundDurationMs = rule.soundDurationMs,
-                launchPackage = rule.launchPackage,
-                url = rule.url,
-                ttsText = rule.ttsText,
-                ttsVoiceName = rule.ttsVoiceName,
-                ttsSpeechRate = rule.ttsSpeechRate,
-                ttsAudioFileName = rule.ttsAudioFileName,
-                alarmHour = rule.alarmHour,
-                alarmMinute = rule.alarmMinute,
-                alarmMessage = rule.alarmMessage,
-                timerDurationSeconds = rule.timerDurationSeconds,
-                timerMessage = rule.timerMessage,
-                webhookMethod = rule.webhookMethod,
-                webhookUrl = rule.webhookUrl,
-                webhookHeaders = rule.webhookHeaders,
-                webhookBody = rule.webhookBody,
-                webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
-                webhookTemplateContext = templateContext,
-                phoneNumber = rule.phoneNumber,
-                screenBrightnessPercent = rule.screenBrightnessPercent,
-                forceStopPackage = rule.forceStopPackage,
-                smsRecipient = rule.smsRecipient,
-                smsMessage = rule.smsMessage,
-            )
+            val actionParams = com.flowpilot.app.actions.ActionParametersFactory.create(rule, templateContext)
             val dispatcher = com.flowpilot.app.actions.ActionDispatcher.get(app)
             val localizedContext = app.localizedForAppLanguage(appLanguage.value)
             var successCount = 0
@@ -753,7 +722,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     }
 
-                    val result = dispatcher.execute(action, actionParams)
+                    val result = dispatcher.executeAsync(action, actionParams)
                     if (result.success) {
                         successCount++
                     } else {

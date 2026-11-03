@@ -101,7 +101,7 @@ Do not bundle unrelated features. One feature family at a time.
    - ntfy
    - Discord webhook
    - Custom HTTP endpoint
-   - Dynamic template variables for headers & body: `${time}`, `${timestamp}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${trigger}`
+   - Dynamic template variables and filters for headers and body, including trigger payloads and location aliases.
    - Requirements: method, headers, body, timeout, redacted secrets, explicit success/failure result
 2. **Show notification** (complete)
     - Per-rule title and message
@@ -109,11 +109,13 @@ Do not bundle unrelated features. One feature family at a time.
 3. **Play sound** (complete; Xiaomi device smoke test passed)
    - Current notification, alarm, ringtone, or selected custom audio URI
    - Metadata duration display, 1-60 second playback limit, preview, and Stop preview
-4. **Speak text / TTS** (complete; Xiaomi device smoke test passed)
+4. **Speak text / TTS** (dynamic rendering complete; notification speech, voice picker, System default, and language-aware preview verified on Xiaomi; SMS speech pending)
    - Offline voice filter (`isNetworkConnectionRequired = false`)
-   - Pre-synthesis during configuration to app-private cache
-   - Zero-network, zero-synthesis execution at trigger time via MediaPlayer
-   - Automatic orphan cache cleanup
+   - System default follows the phone's TTS voice; explicit offline voices preview sample text in their own language
+   - Strict `${...}` speech templates from the accepted trigger payload plus live state
+   - Trigger-aware searchable variable picker with safe filters
+   - On-demand synthesis to a content-addressed app-private cache with atomic writes, 7-day TTL, 50 MB LRU cap, and periodic cleanup
+   - Legacy pre-synthesized rules with blank text remain playable
 5. **Vibrate** (complete; Xiaomi device smoke test passed)
 6. **Launch app** (complete)
     - Selected launchable app, separate from app trigger picker

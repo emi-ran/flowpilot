@@ -1,8 +1,8 @@
 package com.flowpilot.app.engine
 
 import com.flowpilot.app.data.model.*
-import com.flowpilot.app.actions.WebhookTemplateContext
-import com.flowpilot.app.actions.WebhookTemplateRenderer
+import com.flowpilot.app.actions.TemplateContext
+import com.flowpilot.app.actions.TemplateRenderer
 import com.google.common.truth.Truth.assertThat
 import kotlinx.serialization.json.Json
 import org.junit.Test
@@ -65,8 +65,8 @@ class MultipleTriggersTest {
         assertThat(wifi.effectiveActionDelays).containsExactly(0, 2).inOrder()
         assertThat(RuleEvaluator.evaluateWifi(listOf(r), WifiTransition(WifiStateEvent.CONNECTED, "Office"))).isEmpty()
         assertThat(RuleEvaluator.evaluate(listOf(r), AppEvent.OPENED, "legacy.ignored", false).toExecute).isEmpty()
-        assertThat(WebhookTemplateRenderer.render("${'$'}{trigger}:${'$'}{trigger.index}",
-            WebhookTemplateContext(trigger = wifi.triggerEvent.name, triggerSourceIndex = wifi.matchedTriggerIndex + 1)))
+        assertThat(TemplateRenderer.render("${'$'}{trigger}:${'$'}{trigger.index}",
+            TemplateContext(trigger = wifi.triggerEvent.name, triggerSourceIndex = wifi.matchedTriggerIndex + 1)))
             .isEqualTo("WIFI_CONNECTED:2")
     }
     @Test fun overlappingDefinitions_matchOnlyOnce_firstMatchingSourceWins() {

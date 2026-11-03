@@ -43,7 +43,7 @@ class WebhookExecutorTest {
     }
 
     @Test
-    fun execute_rejectsNonPublicAddressAndRenderedHeaderInjection_beforeTransport() {
+    fun execute_rejectsNonPublicAddressAndRenderedHeaderControlCharacters_beforeTransport() {
         var opened = false
         val privateTarget = WebhookExecutor(
             transportFactory = { _, _ -> opened = true; error("must not connect") },
@@ -57,8 +57,7 @@ class WebhookExecutorTest {
             addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
         ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(
             webhookUrl = "https://target.example/hook",
-            webhookHeaders = "X-Trigger: \${trigger}",
-            webhookTemplateContext = WebhookTemplateContext(trigger = "safe\r\nAuthorization: attacker"),
+            webhookHeaders = "X-Trigger: safe\u0000Authorization: attacker",
         ))
         assertThat(injected.success).isFalse()
         assertThat(injected.message).doesNotContain("attacker")
@@ -91,10 +90,9 @@ class WebhookExecutorTest {
         ).execute(ActionType.HTTP_WEBHOOK, ActionParameters(
             webhookUrl = "https://target.example/hook",
             webhookMethod = "POST",
-            webhookHeaders = "Content-Type: application/json\nX-Event: \${trigger}",
-            webhookBody = "{\"event\":\"\${trigger}\"}",
+            webhookHeaders = "Content-Type: application/json\nX-Event: CHARGER_CONNECTED",
+            webhookBody = "{\"event\":\"CHARGER_CONNECTED\"}",
             webhookTimeoutSeconds = 5,
-            webhookTemplateContext = WebhookTemplateContext(trigger = "CHARGER_CONNECTED"),
         ))
 
         assertThat(result.success).isTrue()

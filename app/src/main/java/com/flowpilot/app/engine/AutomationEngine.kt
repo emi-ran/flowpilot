@@ -3,6 +3,9 @@ package com.flowpilot.app.engine
 import android.content.Context
 import android.util.Log
 import com.flowpilot.app.actions.ActionDispatcher
+import com.flowpilot.app.actions.ActionParametersFactory
+import com.flowpilot.app.actions.TemplateContext
+import com.flowpilot.app.actions.TemplateRenderer
 import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
@@ -28,6 +31,241 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
+import java.util.Locale
+
+/**
+ * Builds the transient [TemplateContext] for one engine event.
+ *
+ * Event-specific values live only in this in-memory object; they are never persisted in rule
+ * fields, history, or logs. [forRule] adds per-candidate values (rule name, geofence name, app label).
+ */
+internal object EventTemplateContext {
+
+    fun notification(event: TransientNotificationEvent, liveState: LiveSystemState): TemplateContext =
+        base(
+            trigger = TriggerEvent.NOTIFICATION_RECEIVED.name,
+            timestamp = event.postTime,
+            liveState = liveState,
+            values = linkedMapOf(
+                "notification.title" to event.title,
+                "notification.text" to event.text,
+                "notification.bigText" to event.bigText,
+                "notification.package" to event.packageName,
+                "notification.app" to event.appLabel.ifBlank { event.packageName },
+            ),
+        )
+
+    fun sms(event: SmsReceivedEvent, liveState: LiveSystemState): TemplateContext {
+        val otp = TemplateRenderer.extractOtp(event.body)
+        return base(
+            trigger = TriggerEvent.SMS_RECEIVED.name,
+            timestamp = event.timestamp,
+            liveState = liveState,
+            values = buildMap<String, String> {
+                put("sms.sender", event.sender)
+                put("sms.body", event.body)
+                if (otp != null) put("sms.otp", otp)
+            },
+        ).copy(smsSender = event.sender, smsBody = event.body, smsOtp = otp)
+    }
+
+    fun call(
+        transition: CallTransition,
+        liveState: LiveSystemState,
+        timestampMs: Long = System.currentTimeMillis(),
+    ): TemplateContext = base(
+        trigger = transition.triggerEvent.name,
+        timestamp = timestampMs,
+        liveState = liveState,
+        values = buildMap<String, String> {
+            put("call.state", callState(transition.triggerEvent))
+            // Known-empty on Android 12+ where the number may be withheld; strict TTS must not
+            // confuse that with an unknown variable.
+            put("call.number", transition.phoneNumber?.takeIf { it.isNotBlank() }.orEmpty())
+        },
+    )
+
+    fun app(
+        trigger: TriggerEvent,
+        packageName: String,
+        label: String?,
+        liveState: LiveSystemState,
+        timestampMs: Long = System.currentTimeMillis(),
+    ): TemplateContext = base(
+        trigger = trigger.name,
+        timestamp = timestampMs,
+        liveState = liveState,
+        values = mapOf(
+            "app.package" to packageName,
+            "app.name" to (label?.takeIf { it.isNotBlank() } ?: packageName),
+        ),
+    )
+
+    fun wifi(
+        transition: WifiTransition,
+        liveState: LiveSystemState,
+        timestampMs: Long = System.currentTimeMillis(),
+    ): TemplateContext {
+        val trigger = when (transition.event) {
+            WifiStateEvent.CONNECTED -> TriggerEvent.WIFI_CONNECTED
+            WifiStateEvent.DISCONNECTED -> TriggerEvent.WIFI_DISCONNECTED
+        }
+        return base(trigger.name, timestampMs, liveState, mapOf("wifi.ssid" to transition.ssid))
+            .copy(wifiSsid = transition.ssid)
+    }
+
+    fun bluetooth(
+        transition: BluetoothDeviceTransition,
+        liveState: LiveSystemState,
+        timestampMs: Long = System.currentTimeMillis(),
+    ): TemplateContext {
+        val trigger = when (transition.event) {
+            BluetoothDeviceEvent.CONNECTED -> TriggerEvent.BLUETOOTH_CONNECTED
+            BluetoothDeviceEvent.DISCONNECTED -> TriggerEvent.BLUETOOTH_DISCONNECTED
+        }
+        return base(
+            trigger.name,
+            timestampMs,
+            liveState,
+            mapOf(
+                "bluetooth.name" to transition.name.orEmpty(),
+                "bluetooth.address" to transition.address,
+            ),
+        )
+    }
+
+    fun nfc(event: NfcTagScannedEvent, liveState: LiveSystemState): TemplateContext =
+        base(
+            trigger = TriggerEvent.NFC_TAG_SCANNED.name,
+            timestamp = event.timestamp,
+            liveState = liveState,
+            values = mapOf("nfc.tag" to NfcTagUtils.normalizeTagId(event.tagId)),
+        )
+
+    fun shake(event: ShakeEvent, liveState: LiveSystemState): TemplateContext =
+        base(
+            trigger = TriggerEvent.DEVICE_SHAKE.name,
+            timestamp = event.timestampMs,
+            liveState = liveState,
+            values = mapOf("shake.magnitude" to String.format(Locale.US, "%.1f", event.magnitude)),
+        )
+
+    fun light(
+        transition: LightTransition,
+        trigger: TriggerEvent,
+        liveState: LiveSystemState,
+        timestampMs: Long = System.currentTimeMillis(),
+    ): TemplateContext =
+        base(
+            trigger = trigger.name,
+            timestamp = timestampMs,
+            liveState = liveState,
+            values = mapOf("light.lux" to formatLux(transition.currentLux)),
+        )
+
+    fun geofence(
+        transition: GeofenceTransition,
+        geofenceName: String,
+        liveState: LiveSystemState,
+    ): TemplateContext {
+        val trigger = when (transition.event) {
+            GeofenceEvent.ENTER -> TriggerEvent.GEOFENCE_ENTER
+            GeofenceEvent.EXIT -> TriggerEvent.GEOFENCE_EXIT
+        }
+        val coordinates = transition.coordinates
+        return base(
+            trigger = trigger.name,
+            timestamp = transition.timestamp,
+            liveState = liveState,
+            values = mapOf("geofence.name" to geofenceName),
+        ).copy(locationLat = coordinates?.first, locationLng = coordinates?.second)
+    }
+
+    fun screen(event: ScreenEvent, liveState: LiveSystemState): TemplateContext {
+        val trigger = when (event) {
+            ScreenEvent.ON -> TriggerEvent.SCREEN_ON
+            ScreenEvent.OFF -> TriggerEvent.SCREEN_OFF
+            ScreenEvent.UNLOCKED -> TriggerEvent.DEVICE_UNLOCKED
+        }
+        return base(
+            trigger.name,
+            System.currentTimeMillis(),
+            liveState,
+            mapOf("screen.on" to (event != ScreenEvent.OFF).toString()),
+        )
+    }
+
+    fun charger(event: ChargerEvent, liveState: LiveSystemState): TemplateContext {
+        val trigger = when (event) {
+            ChargerEvent.CONNECTED -> TriggerEvent.CHARGER_CONNECTED
+            ChargerEvent.DISCONNECTED -> TriggerEvent.CHARGER_DISCONNECTED
+        }
+        return base(trigger.name, System.currentTimeMillis(), liveState)
+            .copy(isCharging = event == ChargerEvent.CONNECTED)
+    }
+
+    /** Events without event-specific values; the trigger itself comes from [forRule]. */
+    fun live(
+        liveState: LiveSystemState,
+        timestampMs: Long = System.currentTimeMillis(),
+    ): TemplateContext = base("", timestampMs, liveState)
+
+    fun manual(
+        liveState: LiveSystemState,
+        locationLat: Double? = null,
+        locationLng: Double? = null,
+        timestampMs: Long = System.currentTimeMillis(),
+    ): TemplateContext = base("MANUAL", timestampMs, liveState)
+        .copy(locationLat = locationLat, locationLng = locationLng)
+
+    /** Adds candidate-scoped values; a literal `${trigger}` always names the matched trigger. */
+    fun forRule(
+        base: TemplateContext,
+        rule: com.flowpilot.app.data.model.Automation,
+    ): TemplateContext {
+        val extra = buildMap<String, String> {
+            put("rule.name", rule.normalizedName)
+            when (rule.triggerEvent) {
+                TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED -> {
+                    val packageName = base.values["app.package"].orEmpty()
+                    put("app.name", rule.appName.ifBlank { packageName })
+                }
+                TriggerEvent.GEOFENCE_ENTER, TriggerEvent.GEOFENCE_EXIT ->
+                    put("geofence.name", rule.geofenceName)
+                else -> Unit
+            }
+        }
+        return base.copy(
+            trigger = rule.triggerEvent.name,
+            triggerSourceIndex = rule.matchedTriggerIndex + 1,
+            values = base.values + extra,
+        )
+    }
+
+    private fun base(
+        trigger: String,
+        timestamp: Long,
+        liveState: LiveSystemState,
+        values: Map<String, String> = emptyMap(),
+    ): TemplateContext = TemplateContext(
+        trigger = trigger,
+        timestamp = timestamp,
+        batteryPercent = liveState.batteryPercent,
+        isCharging = liveState.isChargerConnected,
+        wifiSsid = liveState.connectedWifiSsid,
+        values = values,
+    )
+
+    private fun callState(trigger: TriggerEvent): String = when (trigger) {
+        TriggerEvent.CALL_RINGING -> "RINGING"
+        TriggerEvent.CALL_ANSWERED -> "ANSWERED"
+        TriggerEvent.CALL_OUTGOING -> "OUTGOING"
+        else -> "ENDED"
+    }
+
+    private fun formatLux(value: Float): String =
+        if (value.isFinite()) String.format(Locale.US, "%.1f", value) else ""
+}
 
 /**
  * The automation engine: polls the foreground app transitions, reduces batch to final state,
@@ -220,7 +458,19 @@ class AutomationEngine(
             val result = RuleEvaluator.evaluate(rules, AppEvent.CLOSED, pkg, heldOpenLock = false, liveState = liveState)
             if (result.toExecute.isNotEmpty()) {
                 Log.i(TAG, "Executing CLOSED rules for $pkg (${result.toExecute.size} rule(s))")
-                executeAll(result.toExecute, liveState = liveState, eventId = domainTransitions.lastOrNull { it.packageName == pkg }?.timestamp?.toString())
+                val timestamp = domainTransitions.lastOrNull { it.packageName == pkg }?.timestamp
+                executeAll(
+                    result.toExecute,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.app(
+                        trigger = TriggerEvent.APP_CLOSED,
+                        packageName = pkg,
+                        label = null,
+                        liveState = liveState,
+                        timestampMs = timestamp ?: System.currentTimeMillis(),
+                    ),
+                    eventId = timestamp?.toString(),
+                )
             }
         }
 
@@ -228,7 +478,19 @@ class AutomationEngine(
             val result = RuleEvaluator.evaluate(rules, AppEvent.OPENED, pkg, heldOpenLock = false, liveState = liveState)
             if (result.toExecute.isNotEmpty()) {
                 Log.i(TAG, "Executing OPENED rules for $pkg (${result.toExecute.size} rule(s))")
-                executeAll(result.toExecute, liveState = liveState, eventId = domainTransitions.lastOrNull { it.packageName == pkg }?.timestamp?.toString())
+                val timestamp = domainTransitions.lastOrNull { it.packageName == pkg }?.timestamp
+                executeAll(
+                    result.toExecute,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.app(
+                        trigger = TriggerEvent.APP_OPENED,
+                        packageName = pkg,
+                        label = null,
+                        liveState = liveState,
+                        timestampMs = timestamp ?: System.currentTimeMillis(),
+                    ),
+                    eventId = timestamp?.toString(),
+                )
             }
         }
     }
@@ -242,7 +504,12 @@ class AutomationEngine(
             currentCoroutineContext().ensureActive()
             val matches = ScheduleEvaluator.matchingRules(repository.automations.first(), minute, liveState)
             if (matches.isNotEmpty()) {
-                executeAll(matches, liveState = liveState, eventId = minute.toString())
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.live(liveState),
+                    eventId = minute.toString(),
+                )
             }
         }
     }
@@ -255,7 +522,12 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateCharger(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $event charger rules (${matches.size} rule(s))")
-                executeAll(matches, liveState = liveState.copy(isChargerConnected = (event == ChargerEvent.CONNECTED)))
+                val effectiveState = liveState.copy(isChargerConnected = (event == ChargerEvent.CONNECTED))
+                executeAll(
+                    matches,
+                    liveState = effectiveState,
+                    eventContext = EventTemplateContext.charger(event, effectiveState),
+                )
             }
         }
     }
@@ -269,9 +541,11 @@ class AutomationEngine(
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing battery threshold rules for ${transition.previous}% -> ${transition.current}% (${matches.size} rule(s))")
                 val effectiveState = liveState.copy(batteryPercent = transition.current)
-                for (rule in matches) {
-                    executeAll(listOf(rule), liveState = effectiveState)
-                }
+                executeAll(
+                    matches,
+                    liveState = effectiveState,
+                    eventContext = EventTemplateContext.live(effectiveState),
+                )
             }
         }
     }
@@ -284,7 +558,12 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateScreen(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $event screen rules (${matches.size} rule(s))")
-                executeAll(matches, liveState = liveState.copy(isScreenOn = (event != ScreenEvent.OFF)))
+                val effectiveState = liveState.copy(isScreenOn = (event != ScreenEvent.OFF))
+                executeAll(
+                    matches,
+                    liveState = effectiveState,
+                    eventContext = EventTemplateContext.screen(event, effectiveState),
+                )
             }
         }
     }
@@ -300,7 +579,11 @@ class AutomationEngine(
                 val effectiveState = liveState.copy(
                     connectedWifiSsid = if (transition.event == WifiStateEvent.CONNECTED) transition.ssid else null
                 )
-                executeAll(matches, liveState = effectiveState)
+                executeAll(
+                    matches,
+                    liveState = effectiveState,
+                    eventContext = EventTemplateContext.wifi(transition, effectiveState),
+                )
             }
         }
     }
@@ -317,6 +600,7 @@ class AutomationEngine(
                 executeAll(
                     matches,
                     liveState = liveState,
+                    eventContext = EventTemplateContext.notification(event, liveState),
                     eventAuthorization = authorization,
                     eventId = "${event.key}:${event.postTime}",
                 )
@@ -332,7 +616,12 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateNfcTag(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing NFC tag scanned rules for tag ID [REDACTED_LEN_${event.tagId.length}] (${matches.size} rule(s))")
-                executeAll(matches, liveState = liveState, eventId = "${event.tagId}:${event.timestamp / 1000}")
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.nfc(event, liveState),
+                    eventId = "${event.tagId}:${event.timestamp / 1000}",
+                )
             }
         }
     }
@@ -359,7 +648,11 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateFlip(rules, event, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing device flip rules for $event (${matches.size} rule(s))")
-                executeAll(matches, liveState = liveState)
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.live(liveState),
+                )
             }
         }
     }
@@ -408,7 +701,12 @@ class AutomationEngine(
             )
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing shake rules (${matches.size} rule(s))")
-                executeAll(matches, liveState = liveState, eventId = event.timestampMs.toString())
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.shake(event, liveState),
+                    eventId = event.timestampMs.toString(),
+                )
             }
         }
     }
@@ -421,9 +719,11 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateLight(rules, transition, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing ambient light rules (${matches.size} rule(s)) for ${transition.previousLux} -> ${transition.currentLux} lx")
-                for (rule in matches) {
-                    executeAll(listOf(rule), liveState = liveState)
-                }
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.light(transition, TriggerEvent.LIGHT_BELOW, liveState),
+                )
             }
         }
     }
@@ -444,7 +744,11 @@ class AutomationEngine(
             Log.i(BLUETOOTH_TAG, "Unmatched transition rules=$unmatchedRules")
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing $trigger Bluetooth rules (${matches.size} rule(s))")
-                executeAll(matches, liveState = liveState)
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.bluetooth(transition, liveState),
+                )
             }
         }
     }
@@ -458,7 +762,11 @@ class AutomationEngine(
             val matches = RuleEvaluator.evaluateCall(rules, transition, liveState)
             if (matches.isNotEmpty()) {
                 Log.i(TAG, "Executing ${transition.triggerEvent.name} call rules (${matches.size} rule(s))")
-                executeAll(matches, liveState = liveState)
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.call(transition, liveState),
+                )
             }
         }
     }
@@ -476,8 +784,7 @@ class AutomationEngine(
                 executeAll(
                     rules = matches,
                     liveState = liveState,
-                    smsSender = event.sender,
-                    smsBody = event.body,
+                    eventContext = EventTemplateContext.sms(event, liveState),
                     eventId = event.timestamp.toString(),
                     eventAuthorization = authorization,
                 )
@@ -503,6 +810,11 @@ class AutomationEngine(
                 executeAll(
                     rules = matches,
                     liveState = liveState,
+                    eventContext = EventTemplateContext.geofence(
+                        transition = transition,
+                        geofenceName = matches.first().geofenceName,
+                        liveState = liveState,
+                    ),
                     geofenceTransition = transition,
                     eventId = "${transition.automationId}:${transition.event}:${transition.timestamp}",
                 )
@@ -513,8 +825,7 @@ class AutomationEngine(
     private suspend fun executeAll(
         rules: List<com.flowpilot.app.data.model.Automation>,
         liveState: LiveSystemState = LiveSystemState(),
-        smsSender: String? = null,
-        smsBody: String? = null,
+        eventContext: TemplateContext = TemplateContext(),
         geofenceTransition: GeofenceTransition? = null,
         eventAuthorization: EventExecutionAuthorization.Token? = null,
         eventId: String? = null,
@@ -532,17 +843,8 @@ class AutomationEngine(
                 var cancelled = false
                 var actionRecords = mutableListOf<ActionExecutionRecord>()
                 try {
-                    val templateContext = com.flowpilot.app.actions.WebhookTemplateContext(
-                        trigger = candidate.triggerEvent.name,
-                        triggerSourceIndex = candidate.matchedTriggerIndex + 1,
-                        timestamp = System.currentTimeMillis(),
-                        batteryPercent = liveState.batteryPercent,
-                        isCharging = liveState.isChargerConnected,
-                        wifiSsid = liveState.connectedWifiSsid,
-                        smsSender = smsSender,
-                        smsBody = smsBody,
-                    )
                     withContext(Dispatchers.IO) {
+                        val templateContext = EventTemplateContext.forRule(eventContext, candidate)
                         actionRecords = mutableListOf()
                         val actions = rule.effectiveActions
                         val delays = rule.effectiveActionDelays
@@ -583,12 +885,17 @@ class AutomationEngine(
                                             },
                                             eventLocationAllowed = needsLocation && LocationFetcher.isLocationAvailable(appContext, isBackgroundExecution = true),
                                         )
-                                        val actionContext = templateContext.copy(locationLat = coords?.first, locationLng = coords?.second)
-                                        eventAuthorization?.let { authorization ->
-                                            AutomationService.executeIfEventAuthorized(authorization) {
-                                                dispatcher.execute(action, actionParameters(rule, actionContext))
+                                        val actionContext = if (coords != null) {
+                                            templateContext.copy(locationLat = coords.first, locationLng = coords.second)
+                                        } else {
+                                            templateContext
+                                        }
+                                        val parameters = ActionParametersFactory.create(rule, actionContext)
+                                        eventAuthorization?.let { token ->
+                                            AutomationService.executeIfEventAuthorized(token) {
+                                                dispatcher.executeAsync(action, parameters)
                                             }
-                                        } ?: dispatcher.execute(action, actionParameters(rule, actionContext))
+                                        } ?: dispatcher.executeAsync(action, parameters)
                                     }
                                 } catch (ce: CancellationException) {
                                     throw ce
@@ -673,43 +980,6 @@ class AutomationEngine(
             }
         }
     }
-
-    private fun actionParameters(
-        rule: com.flowpilot.app.data.model.Automation,
-        templateContext: com.flowpilot.app.actions.WebhookTemplateContext,
-    ) = com.flowpilot.app.actions.ActionParameters(
-        notificationTitle = rule.notificationTitle,
-        notificationBody = rule.notificationBody,
-        vibrationPattern = rule.vibrationPattern,
-        vibrationDurationMs = rule.vibrationDurationMs,
-        vibrationAmplitude = rule.vibrationAmplitude,
-        mediaVolumePercent = rule.mediaVolumePercent,
-        soundPreset = rule.soundPreset,
-        soundUri = rule.soundUri,
-        soundDurationMs = rule.soundDurationMs,
-        launchPackage = rule.launchPackage,
-        url = rule.url,
-        ttsText = rule.ttsText,
-        ttsVoiceName = rule.ttsVoiceName,
-        ttsSpeechRate = rule.ttsSpeechRate,
-        ttsAudioFileName = rule.ttsAudioFileName,
-        alarmHour = rule.alarmHour,
-        alarmMinute = rule.alarmMinute,
-        alarmMessage = rule.alarmMessage,
-        timerDurationSeconds = rule.timerDurationSeconds,
-        timerMessage = rule.timerMessage,
-        webhookMethod = rule.webhookMethod,
-        webhookUrl = rule.webhookUrl,
-        webhookHeaders = rule.webhookHeaders,
-        webhookBody = rule.webhookBody,
-        webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
-        webhookTemplateContext = templateContext,
-        phoneNumber = rule.phoneNumber,
-        screenBrightnessPercent = rule.screenBrightnessPercent,
-        forceStopPackage = rule.forceStopPackage,
-        smsRecipient = rule.smsRecipient,
-        smsMessage = rule.smsMessage,
-    )
 
     private suspend fun reservePendingExecution(id: String): Boolean = pendingExecutionMutex.withLock {
         pendingRuleIds.add(id)

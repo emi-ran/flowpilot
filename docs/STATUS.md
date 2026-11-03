@@ -50,6 +50,7 @@ Last updated: 2026-11-03
 
 ## Implemented; device validation pending
 
+- Dynamic TTS and general templates: `${...}` rendering for supported action text fields, strict speech rendering, trigger-aware variable picker with filters, on-demand synthesis, and a content-addressed cache with TTL/LRU cleanup and a manual Settings clear action. Unit tests, `lintDebug`, `assembleDebug`, `assembleRelease`, and EN/TR string parity pass locally. On Xiaomi 15T Pro / HyperOS 3, notification speech, the voice picker, System default, and language-aware preview were verified; SMS speech remains pending.
 - Preset library expansion and the simplified condition editor: five presets use OR triggers and nested/NOT conditions, preset cards show trigger counts plus an AND/OR marker, and flat rules keep a single add row while single-child groups flatten on open. Unit tests, `lintDebug` and `assembleRelease` pass locally; the sheet and hands-on editing were not verified on a device because the wireless ADB target stayed offline.
 - Multiple OR triggers (#5): up to five independently configured, reorderable triggers per rule; typed versioned lists, legacy single-trigger JSON preservation, actual source enum/index in history/templates, one shared cooldown, callback dedupe and enabled-trigger listener union. Unit tests, `lintDebug` and `assembleDebug` pass locally; Xiaomi app + Wi-Fi, engine-restart and disabled-rule device smoke verification remains pending.
 - Time Window (`TIME_BETWEEN`) and Days of the Week (`DAYS_OF_WEEK`) conditions (unit tests passed; device smoke tests pending):
@@ -78,7 +79,7 @@ Last updated: 2026-11-03
   - Multi-tier `LocationFetcher`: fresh cache (<60s, <50m) -> 5s active GPS fix timeout -> best cached fallback.
   - Background location permission flow (`ACCESS_BACKGROUND_LOCATION`) with system app settings guidance for "Allow all the time".
   - Foreground service location type (`FOREGROUND_SERVICE_LOCATION`) attached to `AutomationService`.
-  - Dynamic template variables: `${location.lat}`, `${location.lng}`, `${location.coords}`, and `${location.maps_url}` in `WebhookTemplateRenderer` and manual run context.
+  - Dynamic template variables: general `${...}` context (notification, SMS, call, app, Wi-Fi, Bluetooth, NFC, shake, light, geofence, screen, power), with location aliases preserved.
 - Location Geofencing triggers (`GEOFENCE_ENTER`, `GEOFENCE_EXIT`) (unit tests passed; device smoke test pending):
   - Hardware-assisted geofencing via Google Play Services `GeofencingClient` with event-driven battery behavior and zero CPU wake-locks while idle.
   - Persistent DataStore event queue (`geofence_event_queue`, max 50 events) with `GeofenceBroadcastReceiver` and `AutomationService` reconciliation.
@@ -125,4 +126,4 @@ See `ROADMAP.md` for exact device smoke-test scenarios.
 
 ### Import validation
 
-Normal imports remain disabled and encrypted restores preserve enabled states. Both import strategies generate new IDs and copy verified device-local TTS audio when available. Missing audio is cleared and reported for regeneration; mismatched cache references reject import. Validation rejects invalid inputs before mutation; limits are 8 MiB document, 3 MiB encrypted plaintext, 1,000 rules, 100 actions/conditions/delays per rule, 32 condition-tree leaves and 4 group nesting levels, and 64 Ki UTF-16 units per string. Empty condition groups are rejected on import.
+Normal imports remain disabled and encrypted restores preserve enabled states. Both import strategies generate new IDs. Dynamic speech rules keep their template and synthesize on first play; legacy rules copy verified device-local audio when available, and missing legacy audio is cleared and reported without blocking the import. Validation rejects invalid inputs before mutation; limits are 8 MiB document, 3 MiB encrypted plaintext, 1,000 rules, 100 actions/conditions/delays per rule, 32 condition-tree leaves and 4 group nesting levels, and 64 Ki UTF-16 units per string. Empty condition groups are rejected on import.

@@ -7,10 +7,13 @@ import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.data.model.TriggerDefinitions
+import com.flowpilot.app.data.model.normalizedTriggers
 import com.flowpilot.app.data.model.triggerViews
 import com.flowpilot.app.engine.NfcTagUtils
+import com.flowpilot.app.actions.TemplateRenderer
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.security.SecretCipher
+import com.flowpilot.app.actions.VariableCatalog
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -25,7 +28,10 @@ internal object ImportValidator {
     const val MAX_STRING = 64 * 1024
 
     private val json = Json { encodeDefaults = true }
-    private val safeCacheName = Regex("^tts_[A-Za-z0-9-]+_[0-9a-f]{16}\\.wav$")
+    private val safeLegacyCacheName = Regex("^tts_[A-Za-z0-9-]+_[0-9a-f]{16}\\.wav$")
+    private val safeContentCacheName = Regex("^tts_[0-9a-f]{32}\\.wav$")
+    private const val MIN_TTS_RATE = 0.5f
+    private const val MAX_TTS_RATE = 2.0f
     private val packageName = Regex("^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+$")
     private val bluetoothAddress = Regex("(?i)^[0-9a-f]{2}(:[0-9a-f]{2}){5}$")
 
@@ -72,7 +78,35 @@ internal object ImportValidator {
         walk(node, 1)
     }
 
-    fun validate(rules: List<Automation>) {
+    /**
+     * Validates the TTS fields at the import trust boundary. Availability uses the whole rule's
+     * trigger union so multi-trigger rules may reference any of their event variables.
+     */
+    private fun validateTts(rule: Automation) {
+        val hasSpeech = ActionType.SPEAK_TEXT in rule.effectiveActions
+        require(rule.ttsText.length <= TemplateRenderer.MAX_TEMPLATE_LENGTH) { "TTS template too long" }
+        require(
+            rule.ttsAudioFileName.isEmpty() ||
+                safeLegacyCacheName.matches(rule.ttsAudioFileName) ||
+                safeContentCacheName.matches(rule.ttsAudioFileName),
+        ) { "Unsafe cache reference" }
+        if (hasSpeech || rule.ttsAudioFileName.isNotEmpty()) {
+            require(rule.ttsSpeechRate.isFinite() && rule.ttsSpeechRate in MIN_TTS_RATE..MAX_TTS_RATE) {
+                "Invalid speech rate"
+            }
+        }
+        if (hasSpeech) {
+            require(rule.ttsText.isNotBlank() || safeLegacyCacheName.matches(rule.ttsAudioFileName)) {
+                "Missing TTS text or legacy audio"
+            }
+        }
+        if (rule.ttsText.isNotBlank()) {
+            val triggers = rule.normalizedTriggers().map { it.event }
+            require(VariableCatalog.isTemplateValid(rule.ttsText, triggers)) { "Invalid TTS template" }
+        }
+    }
+
+    fun validate(rules: List<Automation>, validateTtsFields: Boolean = true) {
         require(rules.size <= MAX_RULES) { "Too many rules" }
         require(rules.all { it.id.isNotBlank() } && rules.map { it.id }.toSet().size == rules.size) {
             "Blank or duplicate rule ID"
@@ -86,11 +120,12 @@ internal object ImportValidator {
         }
         rules.forEach { r ->
             checkStrings(json.encodeToJsonElement(Automation.serializer(), r))
+            if (validateTtsFields) validateTts(r)
             r.triggerDefinitions?.let { definitions ->
                 require(definitions.version == 1) { "Unsupported trigger version" }
                 require(definitions.items.size in 1..TriggerDefinitions.MAX_TRIGGERS) { "Invalid trigger count" }
                 // Validate each isolated payload using exactly the legacy trigger contracts.
-                listOf(r).triggerViews().forEach { validate(listOf(it)) }
+                listOf(r).triggerViews().forEach { validate(listOf(it), validateTtsFields = false) }
                 return@forEach
             }
             require(r.actions.size <= MAX_ITEMS && r.actionDelays.size <= MAX_ITEMS && r.conditions.size <= MAX_ITEMS) { "Too many rule items" }
@@ -114,12 +149,10 @@ internal object ImportValidator {
             if (ActionType.VIBRATE in actions) require(r.vibrationDurationMs in 1..60000 && r.vibrationAmplitude in 1..255) { "Invalid vibration" }
             if (ActionType.SET_MEDIA_VOLUME in actions) require(r.mediaVolumePercent in 0..100) { "Invalid volume" }
             if (ActionType.PLAY_SOUND in actions) require(r.soundDurationMs in 1..60000) { "Invalid sound duration" }
-            if (ActionType.SPEAK_TEXT in actions || r.ttsAudioFileName.isNotEmpty()) require(r.ttsSpeechRate.isFinite() && r.ttsSpeechRate in 0.1f..4f) { "Invalid speech rate" }
             if (ActionType.CREATE_ALARM in actions) require(r.alarmHour in 0..23 && r.alarmMinute in 0..59) { "Invalid alarm" }
             if (ActionType.START_TIMER in actions) require(r.timerDurationSeconds in 1..86400) { "Invalid timer" }
             if (ActionType.SET_SCREEN_BRIGHTNESS in actions) require(r.screenBrightnessPercent in 0..100) { "Invalid brightness" }
             require(r.cooldownMinutes in 0..1440) { "Invalid cooldown" }
-            require(r.ttsAudioFileName.isEmpty() || safeCacheName.matches(r.ttsAudioFileName)) { "Unsafe cache reference" }
             require(listOf(r.webhookUrl, r.webhookHeaders, r.webhookBody).none { SecretCipher.isEncrypted(it) }) { "Device-local secret references are not portable" }
             when (r.triggerEvent) {
                 TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED -> require(packageName.matches(r.appPackage)) { "Invalid trigger package" }
