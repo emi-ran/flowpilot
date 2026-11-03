@@ -203,7 +203,7 @@ Tek bir kuralda birden çok eylemi sürükle-bırak yöntemiyle dilediğiniz sı
 - 🚀 **Uygulama & Web:** Cihazdaki bir uygulamayı açma veya web bağlantısına yönlendirme.
 - 💬 **Telefon & SMS:** Arama ekranını açma, doğrudan telefon araması başlatma, doğrudan arka planda SMS gönderme veya SMS taslağı hazırlama.
 - 🔗 **HTTPS Webhook:** Canlı şablon değişkenleriyle dış sunuculara güvenli HTTP istekleri (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) gönderin; başlıklar ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir.
-- 🧩 **Şablon Değişkenleri:** Seslendirme, bildirim, webhook, SMS, telefon, URL, alarm ve zamanlayıcı metinlerinde `${...}` kullanın. Seslendirme düzenleyicisi, kuralın tetikleyicilerine göre filtrelenmiş aranabilir bir seçici ve `trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape` filtrelerini sunar. Global değerler: `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}` ve `${rule.name}`.
+- 🧩 **Şablon Değişkenleri:** Seslendirme, bildirim, webhook, SMS, telefon, URL, alarm ve zamanlayıcı metinlerinde `${...}` kullanın. Şablon destekleyen her eylem alanı, kuralın tetikleyicilerine göre filtrelenmiş aynı aranabilir seçiciyi ve `trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape` filtrelerini sunar. Global değerler: `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}` ve `${rule.name}`.
 
 ---
 

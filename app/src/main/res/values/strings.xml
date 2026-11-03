@@ -594,9 +594,7 @@
     <string name="phone_number_label">Phone number</string>
     <string name="phone_direct_call_warning">⚠️ Direct call: Places a real phone call immediately when triggered.</string>
     <string name="sms_recipient_label">Recipient phone number</string>
-    <string name="sms_reply_sender_chip" formatted="false">Reply to sender (${sms.sender})</string>
     <string name="sms_message_text_label">SMS message text</string>
-    <string name="sms_quick_variables">Quick variables:</string>
     <string name="sms_direct_send_warning">⚠️ Direct SMS: Sends a background text message immediately. Standard carrier rates may apply.</string>
     <string name="action_force_stop_prompt">Tap to choose app to force stop</string>
     <string name="time_start">Start time</string>
@@ -729,14 +727,6 @@
     <string name="day_sa">S</string>
     <string name="day_su">S</string>
 
-    <!-- Quick Variables -->
-    <string name="quick_var_sender">Sender</string>
-    <string name="quick_var_full_sms">Full SMS</string>
-    <string name="quick_var_otp">OTP Code</string>
-    <string name="quick_var_gps">GPS Location</string>
-    <string name="quick_var_battery">Battery %</string>
-    <string name="quick_var_time">Time</string>
-
     <!-- Webhook variables desc -->
     <string name="webhook_var_trigger_desc">Event that ran this rule</string>
     <string name="webhook_var_battery_desc">Current battery percentage</string>
@@ -827,7 +817,7 @@
     <string name="tts_synthesis_failed">Synthesis failed. Check TTS engine.</string>
     <string name="tts_playback_failed">Audio playback failed.</string>
     <string name="tts_legacy_file_available">Legacy audio file available</string>
-    <string name="tts_btn_insert_variable">Insert variable</string>
+    <string name="variable_picker_insert">Insert variable</string>
     <string name="tts_btn_preview">Preview</string>
     <string name="tts_btn_stop">Stop</string>
     <string name="tts_preview_empty_error">Enter a message to preview.</string>

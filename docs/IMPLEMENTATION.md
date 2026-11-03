@@ -115,6 +115,7 @@ app/src/main/java/com/flowpilot/app/
       PermissionsScreen.kt           setup wizard and background location guide
       SettingsScreen.kt
     components/                      toggle, cards, picker controls, action reordering, conflict warning dialog, focus-gated bring-into-view modifier
+      TemplateTextField.kt           shared template action field backed by the trigger-aware variable picker
   analysis/
     AutomationConflictAnalyzer.kt    opposing-action analysis aligned with runtime trigger matching
   data/
@@ -268,6 +269,12 @@ SoundExecutor plays the device's current notification, alarm, ringtone, or a per
 document-picker audio URI. Create and edit screens show source duration when metadata is available,
 then preview and execute only the configured first 1-60 seconds. Preview owns one active player: a new
 preview stops the old one, Stop preview releases it, and Compose disposal stops it when leaving the screen.
+
+The action editor renders notification, URL, alarm, timer, webhook, phone, and SMS text through
+`TemplateTextField`, which opens the same trigger-aware picker as the speech editor and inserts the
+chosen token at the cursor. The picker groups come from `VariableCatalog.availableFor`, so only global
+variables and the rule's actual trigger payloads are offered; no per-action shortcut list diverges from
+the runtime rendering contract.
 
 TtsManager filters TextToSpeech voice inventory for offline-ready voices (`isNetworkConnectionRequired = false`). During rule creation/editing, the user writes a speech template, chooses an offline voice, and sets the rate. An unset voice follows the phone's default TTS voice when it is offline, falling back to the best offline voice for the same language; the picker exposes **System default** to restore it. The editor preview renders a demo sentence in the selected voice's language (with an English fallback for unsupported demo languages), matching Android's accessibility TTS preview behavior. At execution, `ActionParametersFactory` creates a transient context from the accepted trigger payload and live state; `TemplateRenderer` renders speech strictly, failing on unknown variables, malformed expressions, or empty text while other action fields preserve unknown tokens. Rendered speech is synthesized on demand into a content-addressed WAV under the app-private `files/tts_cache` directory and reused across rules. Writes use a unique temporary file plus atomic replacement; playback touches the file so cleanup cannot evict active audio. Cache entries expire after 7 days or 50 MB (LRU eviction), skip files modified in the last 10 minutes, and are cleaned when rules change and periodically after synthesis. Settings exposes an explicit "Clear TTS cache" action. Legacy rules with blank speech text keep their previously generated cache file and play it directly. The picker filters by voice name, BCP-47 locale, and localized language name; reopening scrolls to the selected voice. A preview action synthesizes and plays the rendered text with the selected voice without changing the selected voice, and disposal stops preview playback.
 

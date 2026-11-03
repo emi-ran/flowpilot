@@ -32,6 +32,14 @@ class VariableCatalogTest {
     }
 
     @Test
+    fun smsTriggerShowsSmsAndGlobalVariables() {
+        val groups = VariableCatalog.availableFor(listOf(TriggerEvent.SMS_RECEIVED))
+        assertThat(groups.map { it.id }).containsAtLeast("global", "sms")
+        assertThat(VariableCatalog.specsFor(listOf(TriggerEvent.SMS_RECEIVED)).map { it.name })
+            .containsAtLeast("trigger", "sms.sender", "sms.body", "sms.otp")
+    }
+
+    @Test
     fun multiTriggerRuleShowsTheUnionOfEventGroups() {
         val union = VariableCatalog.availableFor(
             listOf(TriggerEvent.NOTIFICATION_RECEIVED, TriggerEvent.WIFI_CONNECTED),

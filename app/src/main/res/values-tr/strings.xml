@@ -594,9 +594,7 @@
     <string name="phone_number_label">Telefon numarası</string>
     <string name="phone_direct_call_warning">⚠️ Doğrudan arama: Tetiklendiğinde derhal gerçek bir telefon araması başlatır.</string>
     <string name="sms_recipient_label">Alıcı telefon numarası</string>
-    <string name="sms_reply_sender_chip" formatted="false">Gönderene yanıtla (${sms.sender})</string>
     <string name="sms_message_text_label">SMS mesaj metni</string>
-    <string name="sms_quick_variables">Hızlı değişkenler:</string>
     <string name="sms_direct_send_warning">⚠️ Doğrudan SMS: Arka planda derhal SMS gönderir. Operatör tarifesi geçerli olabilir.</string>
     <string name="action_force_stop_prompt">Zorla durdurulacak uygulamayı seçin</string>
     <string name="time_start">Başlangıç saati</string>
@@ -729,14 +727,6 @@
     <string name="day_sa">C</string>
     <string name="day_su">P</string>
 
-    <!-- Quick Variables -->
-    <string name="quick_var_sender">Gönderen</string>
-    <string name="quick_var_full_sms">Tam SMS</string>
-    <string name="quick_var_otp">Doğrulama Kodu</string>
-    <string name="quick_var_gps">GPS Konumu</string>
-    <string name="quick_var_battery">Pil %</string>
-    <string name="quick_var_time">Zaman</string>
-
     <!-- Webhook variables desc -->
     <string name="webhook_var_trigger_desc">Bu kuralı tetikleyen olay</string>
     <string name="webhook_var_battery_desc">Mevcut pil yüzdesi</string>
@@ -827,7 +817,7 @@
     <string name="tts_synthesis_failed">Ses oluşturulamadı. TTS motorunu kontrol edin.</string>
     <string name="tts_playback_failed">Ses oynatılamadı.</string>
     <string name="tts_legacy_file_available">Eski ses dosyası mevcut</string>
-    <string name="tts_btn_insert_variable">Değişken ekle</string>
+    <string name="variable_picker_insert">Değişken ekle</string>
     <string name="tts_btn_preview">Dinle</string>
     <string name="tts_btn_stop">Durdur</string>
     <string name="tts_preview_empty_error">Önizlemek için bir mesaj girin.</string>

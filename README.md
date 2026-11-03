@@ -203,7 +203,7 @@ Chain multiple actions in any custom sequence with drag-and-drop ordering and in
 - 🚀 **Apps & Web:** Launch installed app or open web URL.
 - 💬 **Phone & SMS:** Open dialer, place direct phone call, send automated background SMS, or prepare SMS draft.
 - 🔗 **HTTPS Webhook:** Send outbound HTTP requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, JSON body, AES-256-GCM Keystore encrypted secrets, and dynamic template variables.
-- 🧩 **Template Variables:** Use `${...}` in speech, notification, webhook, SMS, phone, URL, alarm, and timer text. The speech editor offers a trigger-aware picker with filters (`trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape`). Global values include `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, and `${rule.name}`.
+- 🧩 **Template Variables:** Use `${...}` in speech, notification, webhook, SMS, phone, URL, alarm, and timer text. Every template-capable action field opens the same trigger-aware picker with filters (`trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape`). Global values include `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, and `${rule.name}`.
 
 ---
 

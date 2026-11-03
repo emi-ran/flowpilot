@@ -230,7 +230,7 @@ fun TtsSettings(
             TextButton(onClick = { showVariablePicker = true }) {
                 Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.tts_btn_insert_variable))
+                Text(stringResource(R.string.variable_picker_insert))
             }
             if (usesSampleData) {
                 Text(

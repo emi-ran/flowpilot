@@ -632,6 +632,7 @@ fun DetailScreen(
                             action = act,
                             delaySeconds = actionDelays.getOrElse(index) { 0 },
                             totalActions = actions.size,
+                            triggerEvents = triggerItems.map { it.event },
                             cardModifier = Modifier.actionDragTarget(index, reorderState),
                             dragModifier = Modifier.actionDragHandle({ index }, reorderState),
                             isDragging = reorderState.draggedIndex == index,

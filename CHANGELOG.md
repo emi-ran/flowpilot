@@ -10,6 +10,7 @@ All notable FlowPilot changes are documented here.
 - Safe template filters (`trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape`), quote-aware parsing, one-pass rendering, and `$${` escaping.
 - Offline TTS now synthesizes on demand instead of requiring a separate Generate step. Speech is strict: unknown variables, malformed expressions, or empty rendered text fail with a generic result, while other action fields keep unknown tokens unchanged.
 - Content-addressed TTS cache shared across rules, with atomic writes, a 7-day TTL, a 50 MB cap, LRU eviction, periodic cleanup, and a manual Settings clear action.
+- The trigger-aware variable picker is available from every template-capable action field: notification, URL, alarm, timer, webhook, phone, SMS, and speech. SMS now uses the same searchable picker instead of a fixed quick-variable chip row.
 - First-launch interactive spotlight tutorial: a six-step guided tour (welcome, ready-made presets, create, engine status, settings, done) dims the screen, highlights the real anchor for each step, and can be skipped at any point. Completion is persisted in DataStore so the tour runs once, and Settings gains a Replay tutorial row to run it again on demand.
 
 ### Changed
