@@ -4,6 +4,10 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- First-launch interactive spotlight tutorial: a six-step guided tour (welcome, ready-made presets, create, engine status, settings, done) dims the screen, highlights the real anchor for each step, and can be skipped at any point. Completion is persisted in DataStore so the tour runs once, and Settings gains a Replay tutorial row to run it again on demand.
+
 ## [2.1.0] - 2026-11-03
 
 ### Added

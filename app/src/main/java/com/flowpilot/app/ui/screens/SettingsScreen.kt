@@ -226,6 +226,13 @@ fun SettingsScreen(
                 SettingRow(stringResource(R.string.settings_about), Icons.Default.Info, null) {
                     showAboutDialog = true
                 }
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+                SettingRowWithSubtitle(
+                    label = stringResource(R.string.tutorial_settings_replay),
+                    subtitle = stringResource(R.string.tutorial_settings_replay_desc),
+                    icon = Icons.Default.TouchApp,
+                    onClick = { vm.startTutorial() },
+                )
             }
 
             // Updates Card (release builds only: debug APKs cannot replace a signed release)
