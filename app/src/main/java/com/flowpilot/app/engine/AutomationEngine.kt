@@ -410,6 +410,7 @@ class AutomationEngine(
         if (demand.needs(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED)) bluetoothTracker.start() else bluetoothTracker.stop()
         if (demand.needs(TriggerEvent.CALL_RINGING, TriggerEvent.CALL_ANSWERED, TriggerEvent.CALL_OUTGOING, TriggerEvent.CALL_ENDED)) callTracker.start() else callTracker.stop()
         tracker.updatePackages(demand.appPackages)
+        if (demand.needs(TriggerEvent.NOTIFICATION_RECEIVED)) FlowPilotNotificationListener.ensureBound(appContext)
     }
     private fun getLiveSystemState(): LiveSystemState {
         val batteryPercent = batteryTracker.currentLevel

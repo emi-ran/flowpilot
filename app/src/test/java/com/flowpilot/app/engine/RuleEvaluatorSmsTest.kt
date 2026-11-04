@@ -133,6 +133,60 @@ class RuleEvaluatorSmsTest {
     }
 
     @Test
+    fun evaluateSms_blank_keyword_boundaries_differ_by_match_mode() {
+        val contains = smsRule(id = "contains", matchMode = SmsMatchMode.CONTAINS, keyword = "  ")
+        val startsWith = smsRule(id = "starts", matchMode = SmsMatchMode.STARTS_WITH, keyword = "")
+        val equals = smsRule(id = "equals", matchMode = SmsMatchMode.EQUALS, keyword = "")
+        val rules = listOf(contains, startsWith, equals)
+
+        val nonBlank = SmsReceivedEvent("+905551234567", "payload")
+        val blank = SmsReceivedEvent("+905551234567", "   ")
+
+        // Blank CONTAINS / STARTS_WITH act as "any body"; blank EQUALS only accepts a blank body.
+        assertThat(RuleEvaluator.evaluateSms(rules, nonBlank)).containsExactly(contains, startsWith)
+        assertThat(RuleEvaluator.evaluateSms(rules, blank)).containsExactly(contains, startsWith, equals)
+    }
+
+    @Test
+    fun evaluateSms_invalid_regex_pattern_never_matches() {
+        val rule = smsRule(matchMode = SmsMatchMode.REGEX, keyword = "[")
+        val event = SmsReceivedEvent("+905551234567", "Anything [")
+
+        assertThat(RuleEvaluator.evaluateSms(listOf(rule), event)).isEmpty()
+    }
+
+    @Test
+    fun evaluateSms_national_sender_filter_matches_international_event_number() {
+        val rule = smsRule(senderFilter = "555 123 45 67")
+        val matching = SmsReceivedEvent("+90 555 123 45 67", "Hello")
+        val mismatching = SmsReceivedEvent("+90 555 123 45 68", "Hello")
+
+        assertThat(RuleEvaluator.evaluateSms(listOf(rule), matching)).containsExactly(rule)
+        assertThat(RuleEvaluator.evaluateSms(listOf(rule), mismatching)).isEmpty()
+    }
+
+    @Test
+    fun evaluateSms_cooldown_expiry_boundary_allows_execution() {
+        val now = 1_000_000L
+        val fiveMinutes = 5 * 60_000L
+        val justBeforeExpiry = smsRule(
+            id = "before",
+            cooldownMinutes = 5,
+            lastTriggeredAt = now - fiveMinutes + 1,
+        )
+        val exactlyExpired = smsRule(
+            id = "expired",
+            cooldownMinutes = 5,
+            lastTriggeredAt = now - fiveMinutes,
+        )
+        val event = SmsReceivedEvent("+905551234567", "Test")
+
+        assertThat(RuleEvaluator.evaluateSms(listOf(justBeforeExpiry), event, nowMs = now)).isEmpty()
+        assertThat(RuleEvaluator.evaluateSms(listOf(exactlyExpired), event, nowMs = now))
+            .containsExactly(exactlyExpired)
+    }
+
+    @Test
     fun evaluateSms_respects_conditions() {
         val rule = smsRule(
             conditions = listOf(

@@ -44,7 +44,7 @@ The debug APK installs as **FlowPilot Dev** (`com.flowpilot.app.debug`) and can 
 2. **Write Unit Tests:** If you are adding a new trigger reducer, action executor, or condition validator, add corresponding unit tests under `app/src/test/java/com/flowpilot/app/`.
 3. **Verify Build:** Ensure `./gradlew testDebugUnitTest` passes with zero errors before pushing.
 4. **Conventional Commits:** Use clear commit messages (e.g., `feat: add screen brightness action`, `fix: prevent duplicate bluetooth broadcast`).
-5. **Open a PR:** Describe the change, the problem it solves, and how you tested it on device.
+5. **Open a PR:** Describe the change, the problem it solves, and how it was tested.
 
 For suspected security vulnerabilities, follow [SECURITY.md](SECURITY.md) and use private vulnerability reporting instead of a public issue.
 

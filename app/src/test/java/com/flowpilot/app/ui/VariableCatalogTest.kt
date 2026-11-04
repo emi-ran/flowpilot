@@ -105,6 +105,43 @@ class VariableCatalogTest {
     }
 
     @Test
+    fun smsTriggerRejectsNotificationVariableButRendersSmsBody() {
+        val result = VariableCatalog.renderSample(
+            "\${notification.text}|\${sms.body}",
+            listOf(TriggerEvent.SMS_RECEIVED),
+        )
+
+        assertThat(result.unknownVariables).containsExactly("notification.text")
+        assertThat(result.parseErrors).isEmpty()
+        assertThat(result.text).isEqualTo("\${notification.text}|Kod: 123456")
+        assertThat(VariableCatalog.isTemplateValid("\${notification.text}", listOf(TriggerEvent.SMS_RECEIVED)))
+            .isFalse()
+        assertThat(VariableCatalog.isTemplateValid("\${sms.body}", listOf(TriggerEvent.SMS_RECEIVED)))
+            .isTrue()
+    }
+
+    @Test
+    fun switchingTriggersSwapsValidEventVariables() {
+        val notificationTrigger = listOf(TriggerEvent.NOTIFICATION_RECEIVED)
+        val smsTrigger = listOf(TriggerEvent.SMS_RECEIVED)
+        val notificationTemplate = "\${notification.text}"
+        val smsTemplate = "\${sms.body}"
+
+        // Trigger switch is proven by the catalog groups: legacy SMS fields resolve as known-empty
+        // even for notification rules, so strict rendering alone cannot reject ${sms.body}.
+        val notificationSpecs = VariableCatalog.specsFor(notificationTrigger).map { it.name }
+        val smsSpecs = VariableCatalog.specsFor(smsTrigger).map { it.name }
+        assertThat(notificationSpecs).contains("notification.text")
+        assertThat(notificationSpecs).doesNotContain("sms.body")
+        assertThat(smsSpecs).contains("sms.body")
+        assertThat(smsSpecs).doesNotContain("notification.text")
+
+        assertThat(VariableCatalog.isTemplateValid(notificationTemplate, notificationTrigger)).isTrue()
+        assertThat(VariableCatalog.isTemplateValid(notificationTemplate, smsTrigger)).isFalse()
+        assertThat(VariableCatalog.isTemplateValid(smsTemplate, smsTrigger)).isTrue()
+    }
+
+    @Test
     fun catalogDoesNotOfferPrivateOrUnsupportedSources() {
         val names = VariableCatalog.allSpecs.map { it.name }
         listOf("clipboard", "contact", "contacts", "history").forEach { forbidden ->

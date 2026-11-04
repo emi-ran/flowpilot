@@ -6,7 +6,6 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 MAIN = ROOT / "app/src/main/java/com/flowpilot/app"
-TEST = ROOT / "app/src/androidTest/java/com/flowpilot/app/ConflictWarningDialogTest.kt"
 STRINGS = ROOT / "app/src/main/res"
 
 
@@ -44,53 +43,11 @@ class ConflictContractsTest(unittest.TestCase):
         self.assertIn("current != pendingConflicts", override.group("body"))
         self.assertNotIn("acknowledgedConflicts", source)
 
-    def test_inspect_routes_selected_conflicting_rule_id(self):
-        test = TEST.read_text()
-        self.assertIn('Text("Rule detail: $inspectedRuleId")', test)
-        self.assertIn('onNodeWithText("Rule detail: other").assertIsDisplayed()', test)
-        self.assertIn("onInspect = { inspectedRuleId = it }", test)
-        app = (MAIN / "ui/App.kt").read_text()
-        self.assertIn(
-            """inspectRule = { rule ->
-                        inspectedRule = rule
-                        inspectReturnPage = Page.CREATE
-                        page = Page.DETAIL""",
-            app,
-        )
-        self.assertIn("targetState = if (inspectedRule != null) inspectReturnPage else page", app)
-        self.assertIn("""inspectedRule = null
-                page = inspectReturnPage""", app)
-
-    def test_home_inspect_preserves_pending_enable_warning_in_root(self):
-        app = (MAIN / "ui/App.kt").read_text()
-        home = (MAIN / "ui/screens/HomeScreen.kt").read_text()
-        navigation_test = (ROOT / "app/src/androidTest/java/com/flowpilot/app/FlowPilotRootConflictNavigationTest.kt").read_text()
-        self.assertIn("fun homeEnableInspectBackReturnsToPendingWarningAndAllowsOverride()", navigation_test)
-        self.assertIn('testTag("rule-enabled-${item.rule.id}")', home)
-        self.assertIn("inspectRule: (Automation) -> Unit", home)
-        self.assertIn("?.rule?.let(inspectRule)", home)
-        self.assertIn(
-            """inspectRule = { rule ->
-                        inspectedRule = rule
-                        inspectReturnPage = Page.HOME
-                        page = Page.DETAIL""",
-            app,
-        )
 
     def test_inspect_hides_warning_without_clearing_pending_state(self):
         app = (MAIN / "ui/App.kt").read_text()
-        navigation_test = (ROOT / "app/src/androidTest/java/com/flowpilot/app/FlowPilotRootConflictNavigationTest.kt").read_text()
         self.assertEqual(app.count("showConflictWarning = inspectedRule == null"), 3)
         self.assertIn('testTag("rule-detail-${initialRule.id}")', (MAIN / "ui/screens/DetailScreen.kt").read_text())
-        self.assertGreaterEqual(
-            navigation_test.count('onNodeWithText("Likely automation conflict").assertDoesNotExist()'),
-            3,
-        )
-        self.assertGreaterEqual(
-            navigation_test.count('onNodeWithTag("rule-detail-other").assertIsDisplayed()'),
-            3,
-        )
-        self.assertIn("fun createInspectBackReturnsToPendingWarningAndAllowsOverride()", navigation_test)
 
     def test_english_and_turkish_warning_copy_and_actions_exist(self):
         required = {

@@ -95,6 +95,81 @@ class SensitiveEventQueueTest {
         assertThat(authorization.authorize(engineEnabled = false)).isNull()
     }
 
+    @Test
+    fun smsDrainWindowIsInclusiveAndDropsFutureEvents() {
+        assertThat(SmsEventTracker.enqueueIfEnabled(true, "+15550101", "body", now)).isTrue()
+        assertThat(SmsEventTracker.enqueueIfEnabled(true, "+15550102", "body", now - SmsEventTracker.MAX_EVENT_AGE_MS)).isTrue()
+        assertThat(SmsEventTracker.enqueueIfEnabled(true, "+15550103", "body", now - SmsEventTracker.MAX_EVENT_AGE_MS - 1)).isTrue()
+        assertThat(SmsEventTracker.enqueueIfEnabled(true, "+15550104", "body", now + 1)).isTrue()
+
+        assertThat(SmsEventTracker.drainEvents(now).map { it.sender })
+            .containsExactly("+15550101", "+15550102").inOrder()
+    }
+
+    @Test
+    fun smsRejectsDuplicatesWithinTtlAndNormalizesSender() {
+        assertThat(SmsEventTracker.enqueueIfEnabled(true, "+1 555 0100", "body", now)).isTrue()
+        assertThat(SmsEventTracker.enqueueIfEnabled(true, "+1 555 0100", "body", now)).isFalse()
+        assertThat(SmsEventTracker.enqueueIfEnabled(true, "+15550100", "body", now)).isFalse()
+        assertThat(SmsEventTracker.enqueueIfEnabled(true, "+15550100", "other body", now)).isTrue()
+    }
+
+    @Test
+    fun notificationDrainWindowIsInclusiveAndDropsFutureEvents() {
+        assertThat(FlowPilotNotificationListener.enqueueIfEnabled(true, notification("fresh", now))).isTrue()
+        assertThat(
+            FlowPilotNotificationListener.enqueueIfEnabled(
+                true,
+                notification("edge-old", now - FlowPilotNotificationListener.MAX_EVENT_AGE_MS),
+            ),
+        ).isTrue()
+        assertThat(
+            FlowPilotNotificationListener.enqueueIfEnabled(
+                true,
+                notification("too-old", now - FlowPilotNotificationListener.MAX_EVENT_AGE_MS - 1),
+            ),
+        ).isTrue()
+        assertThat(FlowPilotNotificationListener.enqueueIfEnabled(true, notification("future", now + 1))).isTrue()
+
+        assertThat(FlowPilotNotificationListener.drainEvents(now).map { it.key })
+            .containsExactly("key-fresh", "key-edge-old").inOrder()
+    }
+
+    @Test
+    fun notificationRejectsDuplicatesAndOlderPostTimes() {
+        val dedupe = NotificationDeduplicator(ttlMs = Long.MAX_VALUE)
+
+        assertThat(dedupe.shouldProcess("key", 10L, now)).isTrue()
+        assertThat(dedupe.shouldProcess("key", 10L, now)).isFalse()
+        assertThat(dedupe.shouldProcess("key", 9L, now)).isFalse()
+        assertThat(dedupe.shouldProcess("key", 11L, now)).isTrue()
+    }
+
+    @Test
+    fun notificationDedupeExpiresOnlyAfterTtl() {
+        val dedupe = NotificationDeduplicator(ttlMs = 1_000L)
+
+        assertThat(dedupe.shouldProcess("key", 5L, 0L)).isTrue()
+        assertThat(dedupe.shouldProcess("key", 5L, 1_000L)).isFalse()
+        assertThat(dedupe.shouldProcess("key", 5L, 1_001L)).isTrue()
+    }
+
+    @Test
+    fun reauthorizationInvalidatesOldTokensButAllowsNewOnes() {
+        val authorization = EventExecutionAuthorization()
+        val before = authorization.authorize(engineEnabled = true)!!
+        authorization.invalidate()
+        val after = authorization.authorize(engineEnabled = true)!!
+
+        assertThat(authorization.isAuthorized(before)).isFalse()
+        assertThat(authorization.executeIfAuthorized(before) { "ran" }).isNull()
+        assertThat(authorization.isAuthorized(after)).isTrue()
+        assertThat(authorization.executeIfAuthorized(after) { "ran" }).isEqualTo("ran")
+
+        authorization.invalidate()
+        assertThat(authorization.isAuthorized(after)).isFalse()
+    }
+
     private fun notification(id: String, postTime: Long) = TransientNotificationEvent(
         packageName = "com.example.$id",
         postTime = postTime,

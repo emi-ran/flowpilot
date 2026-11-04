@@ -837,6 +837,7 @@
     <string name="tts_btn_stop">Durdur</string>
     <string name="tts_preview_empty_error">Önizlemek için bir mesaj girin.</string>
     <string name="tts_preview_invalid_template">Önizlemeden önce bilinmeyen değişkeni veya geçersiz ifadeyi düzeltin.</string>
+    <string name="tts_template_trigger_mismatch">Seslendirilecek mesaj seçili tetikleyicilerle uyuşmayan değişkenler içeriyor: %1$s</string>
     <string name="tts_preview_renders_empty">Bu mesaj örnek verilerle boş kalıyor.</string>
     <string name="tts_preview_sample_data">Örnek veriler kullanılıyor</string>
     <string name="tts_dialog_title">Çevrimdışı Ses Seçin</string>
