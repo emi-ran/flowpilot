@@ -7,6 +7,8 @@ All notable FlowPilot changes are documented here.
 ### Fixed
 
 - Notification triggers recover when Android leaves the notification listener allowed but unbound after an in-place update or OEM process kill. The engine asks the system to rebind on rule reconciliation, retries after a disconnect, and throttles requests to once every 30 seconds.
+- HyperOS volume/headphone UI notifications from `com.miui.misound` no longer fire unfiltered notification rules, so pressing a volume key cannot speak the rule's literal speech text.
+- The spoken-message editor now explains when a template still uses variables from the previous trigger after the trigger changes, instead of leaving Save disabled without feedback.
 
 ## [2.2.0] - 2026-11-04
 

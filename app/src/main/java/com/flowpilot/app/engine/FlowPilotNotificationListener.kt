@@ -103,6 +103,17 @@ internal fun isFlowPilotNotificationPackage(candidate: String, listenerPackage: 
 }
 
 /**
+ * HyperOS posts silent, ongoing volume/headphone notifications from this system package.
+ * They carry no user-facing content, so an unfiltered notification rule must not treat a
+ * volume-key press as an incoming notification.
+ */
+internal fun isIgnoredSystemNotificationPackage(candidate: String): Boolean =
+    candidate == "com.miui.misound"
+
+internal fun isIgnoredNotificationPackage(candidate: String, listenerPackage: String): Boolean =
+    isFlowPilotNotificationPackage(candidate, listenerPackage) || isIgnoredSystemNotificationPackage(candidate)
+
+/**
  * Listens for posted notifications to trigger rules matching user-configured app & keyword.
  * Never persists or logs sensitive notification content.
  */
@@ -116,8 +127,8 @@ class FlowPilotNotificationListener : NotificationListenerService() {
         if (!isConnected) return
         sbn ?: return
         val pkg = sbn.packageName ?: return
-        // Ignore own and sibling-build notifications to prevent trigger loops.
-        if (isFlowPilotNotificationPackage(pkg, packageName)) return
+        // Ignore own, sibling-build, and system volume UI notifications to prevent trigger loops/noise.
+        if (isIgnoredNotificationPackage(pkg, packageName)) return
 
         val key = sbn.key ?: "${pkg}_${sbn.id}_${sbn.postTime}"
         val postTime = sbn.postTime

@@ -103,6 +103,13 @@ fun TtsSettings(
         ?.takeIf { it.unknownVariables.isEmpty() && it.parseErrors.isEmpty() }
         ?.text
         ?.takeIf { it.isNotBlank() }
+    val templateMismatch = previewResult
+        ?.unknownVariables
+        ?.takeIf { it.isNotEmpty() }
+        ?.joinToString(", ") { "\${$it}" }
+    val hasTemplateError = text.isNotBlank() &&
+        previewResult != null &&
+        (previewResult.unknownVariables.isNotEmpty() || previewResult.parseErrors.isNotEmpty())
     val contentFileName = remember(previewText, voiceName, speechRate) {
         previewText?.let { ttsManager.contentCacheFileName(it, voiceName, speechRate) }
     }
@@ -239,6 +246,16 @@ fun TtsSettings(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+
+        if (hasTemplateError) {
+            Text(
+                text = templateMismatch?.let { stringResource(R.string.tts_template_trigger_mismatch, it) }
+                    ?: stringResource(R.string.tts_preview_invalid_template),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 2.dp),
+            )
         }
 
         Spacer(Modifier.height(10.dp))
