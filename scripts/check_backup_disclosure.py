@@ -21,9 +21,12 @@ for locale in ("values", "values-tr"):
     strings = {node.attrib['name']: node.text for node in ET.parse(MAIN / f"res/{locale}/backup_disclosure.xml").getroot()}
     assert len(strings) == 6
     assert all(strings.values())
-body_node = ET.parse(MAIN / "res/values/backup_disclosure.xml").getroot().find("string[@name='backup_disclosure_body']")
-assert body_node is not None and body_node.text
-body = body_node.text
-for phrase in ("unencrypted", "Webhook URLs", "headers", "bodies", "phone numbers", "SMS", "Wi-Fi", "Bluetooth", "NFC", "cannot fully restore"):
-    assert phrase in body, phrase
+    if locale == "values":
+        body = strings["backup_disclosure_body"]
+        for phrase in ("webhook details", "cannot fully restore", "Phone", "SMS", "Wi-Fi", "trust"):
+            assert phrase in body, phrase
+        for phrase in ("webhook URLs", "headers", "bodies", "disabled"):
+            assert phrase in strings["backup_import_omissions"], phrase
+        for phrase in ("permanently deletes", "cannot be recovered", "Merge"):
+            assert phrase in strings["backup_replace_warning"], phrase
 print("PASS: attachment-only share, export disclosure coverage, replace acknowledgement guard, EN/TR resources")
