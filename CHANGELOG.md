@@ -4,6 +4,10 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Notification triggers recover when Android leaves the notification listener allowed but unbound after an in-place update or OEM process kill. The engine asks the system to rebind on rule reconciliation, retries after a disconnect, and throttles requests to once every 30 seconds.
+
 ### Added
 
 - Dynamic speech and general action templates: `${variable}` placeholders now render from the actual notification, SMS, call, app, Wi-Fi, Bluetooth, NFC, shake, light, geofence, screen, and power events. The speech editor's trigger-aware searchable picker inserts only variables that apply to the rule's configured triggers and shows filter examples.

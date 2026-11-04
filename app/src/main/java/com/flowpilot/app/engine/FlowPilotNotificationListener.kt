@@ -1,13 +1,19 @@
 package com.flowpilot.app.engine
 
+import android.content.ComponentName
+import android.content.Context
+import android.os.SystemClock
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
+import com.flowpilot.app.permission.CapabilityManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.ArrayDeque
 import java.util.LinkedHashMap
@@ -66,6 +72,24 @@ class NotificationDeduplicator(private val ttlMs: Long = 60_000L, private val ma
     }
 
     private data class Entry(val postTime: Long, val seenAt: Long)
+}
+
+/**
+ * Throttles listener rebind requests. The system can leave an allowed listener unbound after
+ * an APK update or an OEM process kill; retrying too often is wasteful, but never retrying
+ * leaves notification rules silently dead until the user toggles access.
+ */
+internal class NotificationListenerRebindGate(private val retryIntervalMs: Long = 30_000L) {
+    private var lastAttemptMs: Long? = null
+
+    @Synchronized
+    fun shouldAttempt(connected: Boolean, accessGranted: Boolean, nowMs: Long): Boolean {
+        if (connected || !accessGranted) return false
+        val last = lastAttemptMs
+        if (last != null && nowMs - last < retryIntervalMs) return false
+        lastAttemptMs = nowMs
+        return true
+    }
 }
 
 /**
@@ -142,6 +166,10 @@ class FlowPilotNotificationListener : NotificationListenerService() {
         super.onListenerDisconnected()
         isConnected = false
         intakeScope.coroutineContext.cancelChildren()
+        intakeScope.launch {
+            delay(1_000L)
+            ensureBound(applicationContext)
+        }
     }
 
     override fun onDestroy() {
@@ -164,6 +192,8 @@ class FlowPilotNotificationListener : NotificationListenerService() {
     }
 
     companion object {
+        private const val TAG = "FlowPilotNotification"
+
         @Volatile
         var isConnected: Boolean = false
             private set
@@ -173,7 +203,27 @@ class FlowPilotNotificationListener : NotificationListenerService() {
 
         private val queueLock = Any()
         private val eventQueue = ArrayDeque<TransientNotificationEvent>(MAX_QUEUE_SIZE)
+        private val rebindGate = NotificationListenerRebindGate()
         val deduplicator = NotificationDeduplicator()
+
+        /**
+         * Asks the system to bind this listener when access is granted but the process is not
+         * connected (observed on HyperOS after an in-place update). Safe to call repeatedly;
+         * requests are throttled and ignored while the listener is live.
+         */
+        fun ensureBound(context: Context, nowMs: Long = SystemClock.elapsedRealtime()): Boolean {
+            if (isConnected) return true
+            val accessGranted = CapabilityManager(context).hasNotificationListenerAccess()
+            if (!rebindGate.shouldAttempt(isConnected, accessGranted, nowMs)) return false
+            return try {
+                Log.i(TAG, "Listener not bound; requesting system rebind")
+                NotificationListenerService.requestRebind(ComponentName(context, FlowPilotNotificationListener::class.java))
+                true
+            } catch (error: Throwable) {
+                Log.w(TAG, "Listener rebind request failed", error)
+                false
+            }
+        }
 
         fun enqueueIfEnabled(engineEnabled: Boolean, event: TransientNotificationEvent): Boolean = synchronized(queueLock) {
             if (!engineEnabled || eventQueue.size >= MAX_QUEUE_SIZE || !deduplicator.shouldProcess(event.key, event.postTime)) {
