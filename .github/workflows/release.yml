@@ -146,8 +146,15 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run resource contracts
-        run: python scripts/test_lint_resource_contracts.py
+      - name: Run SDK-free contract scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in scripts/*.py; do
+            echo "::group::$script"
+            python3 "$script"
+            echo "::endgroup::"
+          done
 
       - name: Run Debug Unit Tests
         run: ./gradlew testDebugUnitTest --no-daemon

@@ -47,6 +47,17 @@ jobs:
         if: steps.changes.outputs.android != 'true'
         run: echo "No Android or build inputs changed; required check passes without Gradle."
 
+      - name: Run SDK-free contract scripts
+        if: steps.changes.outputs.android == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in scripts/*.py; do
+            echo "::group::$script"
+            python3 "$script"
+            echo "::endgroup::"
+          done
+
       - name: Set up JDK 17
         if: steps.changes.outputs.android == 'true'
         uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
