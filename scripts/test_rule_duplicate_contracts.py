@@ -24,10 +24,11 @@ for reset in (
 require(REPOSITORY, "firstOrNull { it.id == sourceId }?.withDecryptedSecrets()")
 require(REPOSITORY, "clone!!.withEncryptedSecrets()")
 for repository_contract in (
-    "throw java.io.IOException(\"Source TTS cache file is missing\")",
     "catch (error: java.io.IOException)",
+    "sourceFile?.isFile != true || sourceFile.length() <= 0L",
     "throw error",
     "catch (error: Throwable)",
+    "createdCloneTtsFile?.delete()",
 ):
     require(REPOSITORY, repository_contract)
 duplicate_body = REPOSITORY[REPOSITORY.index("suspend fun duplicate("):REPOSITORY.index("suspend fun update(")]
