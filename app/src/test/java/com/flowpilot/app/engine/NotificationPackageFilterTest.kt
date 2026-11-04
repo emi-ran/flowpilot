@@ -29,4 +29,12 @@ class NotificationPackageFilterTest {
         assertThat(isFlowPilotNotificationPackage("com.flowpilot.application", debug)).isFalse()
         assertThat(isFlowPilotNotificationPackage("com.flowpilot.app.other", debug)).isFalse()
     }
+
+    @Test
+    fun hyperosVolumeUiNotificationsAreIgnored() {
+        val release = "com.flowpilot.app"
+
+        assertThat(isIgnoredNotificationPackage("com.miui.misound", release)).isTrue()
+        assertThat(isIgnoredNotificationPackage("com.whatsapp", release)).isFalse()
+    }
 }

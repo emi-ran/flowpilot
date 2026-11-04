@@ -837,6 +837,7 @@
     <string name="tts_btn_stop">Stop</string>
     <string name="tts_preview_empty_error">Enter a message to preview.</string>
     <string name="tts_preview_invalid_template">Fix the unknown variable or invalid expression before previewing.</string>
+    <string name="tts_template_trigger_mismatch">Spoken message uses variables that do not apply to the selected triggers: %1$s</string>
     <string name="tts_preview_renders_empty">This message renders empty with sample data.</string>
     <string name="tts_preview_sample_data">Using sample data</string>
     <string name="tts_dialog_title">Choose Offline Voice</string>
