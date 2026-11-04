@@ -4,6 +4,8 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-04
+
 ### Added
 
 - Dynamic speech and general action templates: `${variable}` placeholders now render from the actual notification, SMS, call, app, Wi-Fi, Bluetooth, NFC, shake, light, geofence, screen, and power events. The speech editor's trigger-aware searchable picker inserts only variables that apply to the rule's configured triggers and shows filter examples.
