@@ -35,7 +35,7 @@ const translations = {
     hero_badge: "Açık Kaynak & Bağımsız",
     hero_title: "Root Gerektirmeyen Android Otomasyon Motoru.",
     hero_desc: "Olay tabanlı Android yayınları ve yalnız etkin kurallar gerektiğinde çalışan dinleyicilerle; Shizuku IPC ve Kotlin Coroutines kullanan gizlilik odaklı otomasyon.",
-    btn_download: "APK İndir (v2.1.0)",
+    btn_download: "APK İndir (v2.2.0)",
     btn_copy: "KOPYALA",
     copied: "✓ KOPYALANDI",
     stat_apk_label: "APK Boyutu",
@@ -116,7 +116,7 @@ const translations = {
     inst_desc: "Root gerekmez. Shizuku, Android 11+ Kablosuz Hata Ayıklama veya USB üzerinden başlatılabilir.",
     step_1_badge: "ADIM 01",
     step_1_title: "APK'yı Yükleyin",
-    step_1_desc: "GitHub Releases sayfasından derlenmiş FlowPilot-v2.1.0.apk dosyasını indirin veya ADB ile doğrudan cihaza kurun.",
+    step_1_desc: "GitHub Releases sayfasından derlenmiş FlowPilot-v2.2.0.apk dosyasını indirin veya ADB ile doğrudan cihaza kurun.",
     step_2_badge: "ADIM 02",
     step_2_title: "Shizuku'yu Başlatın",
     step_2_desc: "Geliştirici Seçenekleri'nden Kablosuz Hata Ayıklama üzerinden eşleyin veya cihazınızı USB ile bağlayıp terminalden başlatın.",
@@ -140,7 +140,7 @@ const translations = {
     hero_badge: "Open Source & Independent",
     hero_title: "Rootless Android Automation Engine.",
     hero_desc: "Privacy-focused automation using Shizuku IPC, Kotlin Coroutines, event-driven Android broadcasts, and listeners activated only when enabled rules need them.",
-    btn_download: "Download APK (v2.1.0)",
+    btn_download: "Download APK (v2.2.0)",
     btn_copy: "COPY",
     copied: "✓ COPIED",
     stat_apk_label: "APK Size",
@@ -221,7 +221,7 @@ const translations = {
     inst_desc: "No root required. Shizuku can be started through Wireless Debugging on Android 11+ or over USB.",
     step_1_badge: "STEP 01",
     step_1_title: "Install the APK",
-    step_1_desc: "Download FlowPilot-v2.1.0.apk from GitHub Releases or sideload it directly with adb install.",
+    step_1_desc: "Download FlowPilot-v2.2.0.apk from GitHub Releases or sideload it directly with adb install.",
     step_2_badge: "STEP 02",
     step_2_title: "Start Shizuku",
     step_2_desc: "Pair via Wireless Debugging in Developer Options or start it over USB via the standard start script.",
@@ -342,7 +342,7 @@ function setLang(lang, persist = true) {
 }
 
 function copyAdbInstall(el) {
-  const cmd = "adb install FlowPilot-v2.1.0.apk";
+  const cmd = "adb install FlowPilot-v2.2.0.apk";
   if (window.getSelection) {
     window.getSelection().removeAllRanges();
   }
