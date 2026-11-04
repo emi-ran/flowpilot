@@ -46,6 +46,8 @@ The debug APK installs as **FlowPilot Dev** (`com.flowpilot.app.debug`) and can 
 4. **Conventional Commits:** Use clear commit messages (e.g., `feat: add screen brightness action`, `fix: prevent duplicate bluetooth broadcast`).
 5. **Open a PR:** Describe the change, the problem it solves, and how it was tested.
 
+Automated tests are the JVM suites under `app/src/test/java/com/flowpilot/app/` plus the SDK-free checks in `scripts/`. There is no instrumentation/androidTest package and pull requests do not run device or emulator tests; device and OEM behavior is verified manually, so state what you checked by hand in the PR.
+
 For suspected security vulnerabilities, follow [SECURITY.md](SECURITY.md) and use private vulnerability reporting instead of a public issue.
 
 ---

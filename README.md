@@ -209,7 +209,7 @@ Chain multiple actions in any custom sequence with drag-and-drop ordering and in
 
 ### 4. Smart Productivity & Controls
 - **Quick Settings Tile & Engine Notification:** Toggle the automation engine or inspect live status directly from Android's notification shade. Engine status and startup-failure notifications follow FlowPilot's English, Turkish, or system-language setting even after a background restart.
-- **Material 3 Home Screen Widget:** Glance-powered widget displaying active rule counts with a one-tap pause/resume button.
+- **Material 3 Home Screen Widget:** Native `AppWidgetProvider` (RemoteViews) widget displaying active rule counts with a one-tap pause/resume button.
 - **In-App Live Test Run:** Test any rule action directly inside the editor before saving to verify parameters.
 - **Per-Rule Home-Screen Shortcuts:** Pin a launcher shortcut from Edit → Advanced. Tapping it reloads the rule and asks before running, with disabled or deleted rules blocked; no silent execution. On HyperOS, FlowPilot opens the Home screen shortcuts permission page when that permission is denied.
 - **Safe Rule Duplication:** Clone any rule into an immediately editable disabled copy with freshly encrypted webhook credentials.
@@ -299,10 +299,12 @@ FlowPilot
 │   ├── analysis/         # AutomationConflictAnalyzer and logic checks
 │   ├── data/             # Models, JSON Serialization, DataStore Repositories, Backups
 │   ├── engine/           # Foreground AutomationService, Receivers, Sensor Trackers
-│   ├── glance/           # Jetpack Glance Home Screen Widget
+│   ├── permission/       # Capability checks and setup state
 │   ├── quicksettings/    # System Quick Settings Tile Service
-│   ├── shizuku/          # Shizuku AIDL IPC client bridge
-│   └── ui/               # Jetpack Compose UI (Material 3 Theme, Screens, Components, Tutorial Overlay)
+│   ├── shortcut/         # Per-rule home-screen shortcuts
+│   ├── ui/               # Jetpack Compose UI (Material 3 Theme, Screens, Components, Tutorial Overlay)
+│   ├── update/           # In-app update check, download, and install flow
+│   └── widget/           # Home Screen widget (AppWidgetProvider + RemoteViews)
 └── app/src/test/         # Deterministic JUnit unit test suites
 ```
 
@@ -312,7 +314,7 @@ FlowPilot
 - **Storage:** Jetpack DataStore (Preferences & JSON)
 - **Encryption:** Android Keystore (AES-256-GCM)
 - **Privileged Bridge:** Shizuku AIDL IPC
-- **Widgets:** Jetpack Glance
+- **Widgets:** Native AppWidget (`AppWidgetProvider` + `RemoteViews`)
 - **Target SDK:** Android 16 (API 36) &bull; **Min SDK:** Android 8.0 (API 26)
 
 ---

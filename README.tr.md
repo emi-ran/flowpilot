@@ -74,7 +74,7 @@ Geleneksel Android otomasyon uygulamaları genelde karmaşık arayüzler, sürek
     </td>
     <td width="50%">
       <h3>🎨 Modern Material 3 &amp; Compose</h3>
-      <p>Tamamen yerel <b>Jetpack Compose</b> ile inşa edilmiştir. Akıcı animasyonlar, dinamik Material You renk temaları, dokunsal titreşim geri bildirimleri ve şık Glance ana ekran widget'ı sunar.</p>
+      <p>Tamamen yerel <b>Jetpack Compose</b> ile inşa edilmiştir. Akıcı animasyonlar, dinamik Material You renk temaları, dokunsal titreşim geri bildirimleri ve şık, yerel ana ekran widget'ı sunar.</p>
     </td>
   </tr>
   <tr>
@@ -209,7 +209,7 @@ Tek bir kuralda birden çok eylemi sürükle-bırak yöntemiyle dilediğiniz sı
 
 ### 4. Akıllı Verimlilik & Kolaylıklar
 - **Hızlı Ayarlar Kutusu ve Motor Bildirimi:** Otomasyon motorunu bildirim çubuğundan tek dokunuşla açıp kapatabilme veya canlı durumunu görme. Motor durumu ve başlatma hatası bildirimleri, arka plan yeniden başlatmalarından sonra da FlowPilot'ın İngilizce, Türkçe veya sistem dili ayarını izler.
-- **Material 3 Ana Ekran Widget'ı:** Aktif kural sayısını gösteren ve tek dokunuşla motoru duraklatıp sürdüren Glance widget'ı.
+- **Material 3 Ana Ekran Widget'ı:** Aktif kural sayısını gösteren ve tek dokunuşla motoru duraklatıp sürdüren yerel `AppWidgetProvider` (RemoteViews) widget'ı.
 - **Canlı Eylem Testi:** Bir kuralı kaydetmeden önce oluşturduğunuz eylemleri doğrudan cihazınızda test edebilme.
 - **Kurala Özel Ana Ekran Kısayolu:** Düzenle → Gelişmiş bölümünden başlatıcıya kısayol sabitleyin. Dokunulduğunda kural yeniden yüklenir ve çalıştırmadan önce onay ister; devre dışı veya silinmiş kurallar çalışmaz, sessiz çalıştırma yoktur. HyperOS'ta bu izin verilmemişse FlowPilot Ana ekran kısayolları izin sayfasını açar.
 - **Güvenli Kural Çoğaltma:** Mevcut bir kuralı tek tıkla çoğaltma; webhook şifreleri hedef kopya için Keystore ile yeniden şifrelenir.
@@ -299,10 +299,12 @@ FlowPilot
 │   ├── analysis/         # Çakışma analizi (AutomationConflictAnalyzer) ve kontroller
 │   ├── data/             # Veri modelleri, JSON serileştirme, DataStore depoları, Yedekleme
 │   ├── engine/           # Ön plan AutomationService, Alıcılar, Sensör takipçileri
-│   ├── glance/           # Jetpack Glance Ana Ekran Widget'ı
+│   ├── permission/       # Yetki ve kurulum durumu kontrolleri
 │   ├── quicksettings/    # Hızlı Ayarlar Servisi (TileService)
-│   ├── shizuku/          # Shizuku AIDL IPC köprüsü
-│   └── ui/               # Jetpack Compose Arayüzü (Material 3 Tema, Ekranlar, Bileşenler, Tanıtım Turu)
+│   ├── shortcut/         # Kurala özel ana ekran kısayolları
+│   ├── ui/               # Jetpack Compose Arayüzü (Material 3 Tema, Ekranlar, Bileşenler, Tanıtım Turu)
+│   ├── update/           # Uygulama içi güncelleme kontrolü, indirme ve kurulum akışı
+│   └── widget/           # Ana ekran widget'ı (AppWidgetProvider + RemoteViews)
 └── app/src/test/         # Deterministik JUnit birim testleri
 ```
 
@@ -312,7 +314,7 @@ FlowPilot
 - **Depolama:** Jetpack DataStore (Preferences & JSON)
 - **Şifreleme:** Android Keystore (AES-256-GCM)
 - **Sistem Köprüsü:** Shizuku AIDL IPC
-- **Widget:** Jetpack Glance
+- **Widget:** Yerel AppWidget (`AppWidgetProvider` + `RemoteViews`)
 - **Hedef SDK:** Android 16 (API 36) &bull; **Minimum SDK:** Android 8.0 (API 26)
 
 ---
