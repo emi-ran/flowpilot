@@ -12,7 +12,7 @@
 - Ana ajan build başarılıysa debug APK'yı bağlı hedef cihaza yükler ve `com.flowpilot.app.debug` (FlowPilot Dev) uygulamasını açar. Release paketi `com.flowpilot.app` olarak kalır; iki kurulum yan yana durabilir.
 - Ana ajan release gate: `./gradlew.bat testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`.
 - Resource/manifest veya localization değişikliğinde Android SDK gerektirmeyen `python scripts/test_lint_resource_contracts.py` çalıştırılır. Bu test EN/TR string parity kontrol eder.
-- `connectedDebugAndroidTest` yalnız manual CI dispatch ile API 35 emulator üzerinde çalışır; fiziksel cihaz/OEM smoke testinin yerine geçmez.
+- Otomatik test kapsamı `app/src/test` JVM testleri ve `scripts/` altındaki cihazsız Python kontrolleridir; instrumentation/androidTest paketi yoktur. Fiziksel cihaz veya emülatör gerektiren doğrulama otomatik testlerle kapsanmaz.
 
 ## Feature Constraints
 

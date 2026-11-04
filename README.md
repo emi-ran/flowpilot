@@ -46,7 +46,7 @@ Automate your device with event-driven triggers, privileged system actions via S
 
 > [!NOTE]
 > **📱 Device Compatibility & Community Testing Notice**
-> FlowPilot is an independent open-source project, actively developed and primary-tested on **Xiaomi HyperOS (Xiaomi 15T Pro)**. Strict adherence to standard Android Jetpack and system APIs is maintained throughout the codebase, and CI verifies runtime contracts against an **API 35 Android Emulator**.
+> FlowPilot is an independent open-source project, actively developed and primary-tested on **Xiaomi HyperOS (Xiaomi 15T Pro)**. Strict adherence to standard Android Jetpack and system APIs is maintained throughout the codebase; CI runs the JVM unit suites, lint, and debug/release builds, so device and OEM behavior is verified by hand and by community reports.
 >
 > Because OEM skins (Samsung One UI, Google Pixel, Motorola, OxygenOS, etc.) implement background process limits differently, your test reports, feedback, and pull requests are warmly welcomed!
 

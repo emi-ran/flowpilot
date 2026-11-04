@@ -46,7 +46,7 @@ Olay odaklı tetikleyiciler, Shizuku ile ayrıcalıklı sistem yetkileri ve akı
 
 > [!NOTE]
 > **📱 Cihaz Uyumluluğu & Topluluk Testi Bilgilendirmesi**
-> FlowPilot bağımsız bir açık kaynak projesidir ve bizzat geliştiricinin kişisel cihazı olan **Xiaomi HyperOS (Xiaomi 15T Pro)** üzerinde günlük olarak geliştirilip test edilmektedir. Proje genelinde standart Android Jetpack ve sistem API'lerine titizlikle uyulmuş, CI doğrulamasında ise **API 35 Android Emulator** ile çalışma zamanı sözleşmeleri denetlenmektedir.
+> FlowPilot bağımsız bir açık kaynak projesidir ve bizzat geliştiricinin kişisel cihazı olan **Xiaomi HyperOS (Xiaomi 15T Pro)** üzerinde günlük olarak geliştirilip test edilmektedir. Proje genelinde standart Android Jetpack ve sistem API'lerine titizlikle uyulmuş; CI'da JVM birim testleri, lint ve debug/release derlemeleri çalıştırılmaktadır. Cihaz ve OEM davranışları elle ve topluluk geri bildirimleriyle doğrulanır.
 >
 > Farklı üretici arayüzleri (Samsung One UI, Google Pixel, Motorola, OxygenOS vb.) arka plan kısıtlamalarını farklı uygulayabildiğinden, test geri bildirimleriniz, cihaz deneyimleriniz ve katkılarınız (Pull Request) memnuniyetle karşılanır!
 
