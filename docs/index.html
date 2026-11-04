@@ -4,459 +4,584 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FlowPilot — Rootless Android Automation Engine</title>
-  <meta name="description" content="Local, event-driven Android automation. Zero telemetry, no persistent background wake-locks, privileged system control via Shizuku IPC." />
+  <meta name="description" content="Olay tabanlı Android otomasyon motoru. Etkin kural için dinleyici, ayrıcalıklı eylem için Shizuku IPC. Root yok, telemetri yok." />
+  <meta name="theme-color" content="#08080a" />
+  <meta property="og:title" content="FlowPilot — Rootless Android Automation Engine" />
+  <meta property="og:description" content="Olay tabanlı Android otomasyonu: yalnız gereken dinleyici çalışır, ayrıcalıklı eylem Shizuku IPC ile uygulanır. Root yok, telemetri yok." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://emi-ran.github.io/flowpilot/" />
+  <meta property="og:image" content="https://emi-ran.github.io/flowpilot/assets/screenshots/en/home_screen.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
   <link rel="apple-touch-icon" href="assets/favicon.svg" />
+  <script>document.documentElement.classList.add("js");</script>
   <link rel="stylesheet" href="assets/css/style.css" />
   <script src="assets/js/app.js" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "FlowPilot",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Android 8.0+",
+    "softwareVersion": "2.2.0",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "downloadUrl": "https://github.com/emi-ran/flowpilot/releases/latest",
+    "url": "https://emi-ran.github.io/flowpilot/"
+  }
+  </script>
 </head>
 <body id="top">
+  <div class="preloader" id="preloader" aria-hidden="true">
+    <div class="preloader-brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </span>
+      <span class="preloader-name">FlowPilot</span>
+    </div>
+    <div class="preloader-bar"><span></span></div>
+    <p class="preloader-note" data-i18n="loading">Yükleniyor…</p>
+  </div>
 
-  <!-- Top Header -->
-  <header id="site-header">
-    <div class="shell header-content">
-      <a href="#top" class="brand" aria-label="FlowPilot Home">
-        <div class="brand-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-          </svg>
-        </div>
-        <span class="brand-name">FlowPilot</span>
-        <span class="brand-tag">v2.2.0</span>
+  <a class="skip-link" href="#main" data-i18n="skip_link">İçeriğe geç</a>
+
+  <header class="site-header" id="site-header">
+    <div class="wrap header-inner">
+      <a href="#top" class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </span>
+        <span class="brand-text">FlowPilot</span>
+        <span class="brand-version">v2.2.0</span>
       </a>
 
-      <div class="header-actions-mobile">
-        <div class="lang-switcher">
-          <button class="lang-btn lang-btn-tr active" onclick="setLang('tr')">TR</button>
-          <button class="lang-btn lang-btn-en" onclick="setLang('en')">EN</button>
-        </div>
+      <nav class="nav" id="primary-nav" aria-label="Ana gezinme">
+        <a class="nav-link" href="#studio" data-i18n="nav_studio">Stüdyo</a>
+        <a class="nav-link" href="#capabilities" data-i18n="nav_caps">Kabiliyetler</a>
+        <a class="nav-link" href="#how" data-i18n="nav_how">Nasıl çalışır</a>
+        <a class="nav-link" href="#compare" data-i18n="nav_compare">Mimari</a>
+        <a class="nav-link" href="#install" data-i18n="nav_install">Kurulum</a>
+        <a class="nav-link" href="#faq" data-i18n="nav_faq">SSS</a>
+      </nav>
 
-        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menüyü aç" aria-expanded="false">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+      <div class="header-tools">
+        <div class="lang" role="group" aria-label="Dil / Language">
+          <button class="lang-btn is-active" data-lang="tr" aria-pressed="true">TR</button>
+          <button class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+        </div>
+        <a class="icon-btn" href="https://github.com/emi-ran/flowpilot" target="_blank" rel="noopener" aria-label="GitHub deposu">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.79-.26.79-.58v-2.23c-3.34.73-4.03-1.42-4.03-1.42-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49 1-.11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.53-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.49 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.19.7.8.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+        <a class="btn btn-primary btn-sm header-cta" href="https://github.com/emi-ran/flowpilot/releases/latest" data-i18n="cta_download">APK indir</a>
+        <button class="icon-btn menu-btn" id="menu-btn" aria-expanded="false" aria-controls="primary-nav" aria-label="Menü">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
       </div>
-
-      <nav class="nav-items" id="nav-items" aria-label="Main Navigation">
-        <a href="#workbench" class="nav-link" data-i18n="nav_workbench">İncele</a>
-        <a href="#matrix" class="nav-link" data-i18n="nav_matrix">Kabiliyetler</a>
-        <a href="#comparison" class="nav-link" data-i18n="nav_comparison">Mimari</a>
-        <a href="#install" class="nav-link" data-i18n="nav_install">Kurulum</a>
-        
-        <div class="lang-switcher desktop-only">
-          <button class="lang-btn lang-btn-tr active" id="btn-tr" onclick="setLang('tr')">TR</button>
-          <button class="lang-btn lang-btn-en" id="btn-en" onclick="setLang('en')">EN</button>
-        </div>
-
-        <a href="https://github.com/emi-ran/flowpilot" target="_blank" class="btn btn-secondary">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-          </svg>
-          GitHub
-        </a>
-      </nav>
     </div>
-    <div class="scroll-progress-track">
-      <div class="scroll-progress-bar" id="scroll-progress-bar"></div>
-    </div>
+    <div class="scroll-progress" aria-hidden="true"><span id="scroll-progress"></span></div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="shell">
-      <div class="hero-pre">
-        <code>github.com/emi-ran/flowpilot</code>
-        <span>•</span>
-        <code data-i18n="hero_badge">Açık Kaynak & Bağımsız</code>
-      </div>
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">
+            <span class="dot" aria-hidden="true"></span>
+            <span data-i18n="hero_eyebrow">Açık kaynak · Root gerektirmez · v2.2.0</span>
+          </p>
+          <h1 class="hero-title" data-i18n-html="hero_title">Android'i <span class="accent">kendi kurallarınızla</span> yönetin.</h1>
+          <p class="hero-desc" data-i18n="hero_desc">Olay tabanlı otomasyon motoru: tetikleyici gerçekleştiğinde yalnız gereken dinleyici çalışır, ayrıcalıklı eylem Shizuku IPC ile uygulanır. Sürekli çalışan wake-lock yok.</p>
 
-      <h1 class="hero-title" data-i18n="hero_title">
-        Root Gerektirmeyen Android Otomasyon Motoru.
-      </h1>
-
-      <p class="hero-desc" data-i18n="hero_desc">
-        Olay tabanlı Android yayınları ve yalnız etkin kurallar gerektiğinde çalışan dinleyicilerle; Shizuku IPC ve Kotlin Coroutines kullanan gizlilik odaklı otomasyon.
-      </p>
-
-      <div class="hero-actions">
-        <a href="https://github.com/emi-ran/flowpilot/releases/latest" class="btn btn-primary">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          <span data-i18n="btn_download">APK İndir (v2.2.0)</span>
-        </a>
-
-        <div class="command-box" role="button" tabindex="0" onclick="copyAdbInstall(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyAdbInstall(this);event.preventDefault();}">
-          <code>adb install FlowPilot-v2.2.0.apk</code>
-          <span class="copy-tag" id="adb-copy-feedback" data-i18n="btn_copy">KOPYALA</span>
-        </div>
-      </div>
-
-      <!-- Key Attributes Bar -->
-      <div class="attr-bar">
-        <div class="attr-item">
-          <div class="attr-title" data-i18n="stat_apk_label">APK Boyutu</div>
-          <div class="attr-val">Release asset <small>(see GitHub Releases)</small></div>
-        </div>
-        <div class="attr-item">
-          <div class="attr-title" data-i18n="stat_runtime_label">Çalışma Modeli</div>
-          <div class="attr-val">Event-Driven <small>(No persistent wake-locks)</small></div>
-        </div>
-        <div class="attr-item">
-          <div class="attr-title" data-i18n="stat_shizuku_label">Yetki Katmanı</div>
-          <div class="attr-val">Shizuku IPC <small>(No Root)</small></div>
-        </div>
-        <div class="attr-item">
-          <div class="attr-title" data-i18n="stat_telemetry_label">Telemetri & Ağ</div>
-          <div class="attr-val" data-i18n-html="stat_telemetry_val">0 telemetri <small>(Kullanıcının açıkça kullandığı ağ, SMS ve paylaşım özellikleri hariç)</small></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Section: Interactive Workbench -->
-  <section class="section" id="workbench">
-    <div class="shell">
-      <div class="section-header" data-reveal="up">
-        <span class="section-label" data-i18n="wb_label">İnteraktif Kural Mühendisliği</span>
-        <h2 class="section-title" data-i18n="wb_title">Uygulamayı ve Otomasyon Mantığını İnceleyin</h2>
-        <p class="section-desc" data-i18n="wb_desc">
-          Aşağıdaki hazır kuralları seçerek cihaz ekranını ve kavramsal otomasyon örneklerini inceleyin; gösterilen kod serileştirilmiş dışa aktarma biçimi değildir.
-        </p>
-      </div>
-
-      <div class="workbench spotlight-surface" id="workbench-container">
-        <!-- Controls -->
-        <div class="wb-controls">
-          <button class="wb-rule-btn active" onclick="selectRule(0)" id="wb-rule-0">
-            <div class="btn-top">
-              <span class="btn-name" data-i18n="rule_0_title">Gece Rutini (Sessiz & Ekran)</span>
-              <span class="btn-tag" data-i18n="rule_0_tag">ZAMAN</span>
-            </div>
-            <div class="btn-summary" data-i18n="rule_0_summary">Saat 23:00 olunca otomatik parlaklığı kapat, seviyeyi %10 yap ve Rahatsız Etmeyin'e geç.</div>
-          </button>
-
-          <button class="wb-rule-btn" onclick="selectRule(1)" id="wb-rule-1">
-            <div class="btn-top">
-              <span class="btn-name" data-i18n="rule_1_title">Evden Çıkış (Hızlı Güç)</span>
-              <span class="btn-tag" data-i18n="rule_1_tag">AĞ</span>
-            </div>
-            <div class="btn-summary" data-i18n="rule_1_summary">Ev Wi-Fi bağlantısı koptuğunda Wi-Fi'ı devre dışı bırak ve otomatik parlaklığı aç.</div>
-          </button>
-
-          <button class="wb-rule-btn" onclick="selectRule(2)" id="wb-rule-2">
-            <div class="btn-top">
-              <span class="btn-name" data-i18n="rule_2_title">Kritik Pil Koruma</span>
-              <span class="btn-tag" data-i18n="rule_2_tag">GÜÇ</span>
-            </div>
-            <div class="btn-summary" data-i18n="rule_2_summary">Pil %20'nin altına indiğinde Bluetooth'u kapat ve ekranı en düşük enerjiye al.</div>
-          </button>
-
-          <button class="wb-rule-btn" onclick="selectRule(3)" id="wb-rule-3">
-            <div class="btn-top">
-              <span class="btn-name" data-i18n="rule_3_title">Kural Oluşturucu</span>
-              <span class="btn-tag" data-i18n="rule_3_tag">UI</span>
-            </div>
-            <div class="btn-summary" data-i18n="rule_3_summary">Tetikleyici, koşul ve sıralı eylem adımlarını görsel olarak yapılandırın.</div>
-          </button>
-        </div>
-
-        <!-- Stage: Device Mockup + JSON Spec -->
-        <div class="wb-stage">
-          <div class="device-viewport">
-            <img id="wb-screen-img" src="assets/screenshots/tr/home_screen.png" alt="FlowPilot Device Screen" />
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://github.com/emi-ran/flowpilot/releases/latest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+              <span data-i18n="cta_download_apk">APK indir · 2,6 MB</span>
+            </a>
+            <a class="btn btn-ghost" href="#studio">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+              <span data-i18n="cta_explore">Kural stüdyosunu aç</span>
+            </a>
           </div>
 
-          <div class="rule-spec" id="wb-spec-box">
-            <div class="spec-header">
-              <span id="wb-spec-name">flowpilot_rule_night_mode.json</span>
-              <span>CONCEPT</span>
-            </div>
-            <pre id="wb-code-content"></pre>
+          <div class="hero-meta">
+            <span><strong>API 26+</strong> <span data-i18n="meta_android">Android 8.0 ve üzeri</span></span>
+            <span class="sep" aria-hidden="true"></span>
+            <span><strong>0</strong> <span data-i18n="meta_telemetry">telemetri</span></span>
+            <span class="sep" aria-hidden="true"></span>
+            <span><strong>TR / EN</strong> <span data-i18n="meta_lang">arayüz</span></span>
+          </div>
+
+          <div class="adb">
+            <code class="adb-cmd">adb install FlowPilot-v2.2.0.apk</code>
+            <button class="adb-copy" id="adb-copy" data-i18n-aria="copy_adb" aria-label="Komutu kopyala">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span data-i18n="copy">Kopyala</span>
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- Section: Architecture & Comparison -->
-  <section class="section" id="comparison">
-    <div class="shell">
-      <div class="section-header" data-reveal="up">
-        <span class="section-label" data-i18n="comp_label">Mimari Tercihler</span>
-        <h2 class="section-title" data-i18n="comp_title">Neden Geleneksel Araçlar Yerine FlowPilot?</h2>
-        <p class="section-desc" data-i18n="comp_desc">
-          Yıllanmış otomasyon uygulamaları karmaşık izinler, sürekli CPU tüketen arka plan döngüleri ve kapalı kaynak kodlarla gelir. FlowPilot ise modern Android pratikleriyle tasarlandı.
-        </p>
-      </div>
-
-      <div class="comp-table-wrap" data-reveal="up">
-        <table class="comp-table">
-          <thead>
-            <tr>
-              <th data-i18n="th_feature">Kriter / Mimari</th>
-              <th data-i18n="th_legacy">Geleneksel / Diğer Araçlar</th>
-              <th>FlowPilot</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td data-i18n="comp_row_1_title">Arka Plan Kaynak Tüketimi</td>
-              <td><span class="badge-bad" data-i18n="comp_row_1_old">Sürekli çalışan Foreground Service ve Wake-Lock</span></td>
-              <td><span class="badge-good" data-i18n="comp_row_1_new">Olay tabanlı alıcılar ve ihtiyaç odaklı dinleyiciler</span></td>
-            </tr>
-            <tr>
-              <td data-i18n="comp_row_2_title">Ayrıcalıklı Sistem Erişimi</td>
-              <td><span class="badge-warn" data-i18n="comp_row_2_old">Root veya karmaşık ADB WRITE_SECURE_SETTINGS betikleri</span></td>
-              <td><span class="badge-good" data-i18n="comp_row_2_new">Standart Shizuku IPC (Root gerektirmez)</span></td>
-            </tr>
-            <tr>
-              <td data-i18n="comp_row_3_title">Uygulama Boyutu & Şişkinlik</td>
-              <td><span class="badge-warn">Varies by app and configuration</span></td>
-              <td><span class="badge-good">Release asset size published on GitHub</span></td>
-            </tr>
-            <tr>
-              <td data-i18n="comp_row_4_title">Gizlilik & Telemetri</td>
-              <td><span class="badge-warn" data-i18n="comp_row_4_old">Crashlytics, analitik SDK'ları, hesap zorunluluğu</span></td>
-              <td><span class="badge-good" data-i18n="comp_row_4_new">Sıfır telemetri ve hesap; dış iletişim yalnız açıkça kullanılan özelliklerle</span></td>
-            </tr>
-            <tr>
-              <td data-i18n="comp_row_5_title">Kaynak Kod Lisansı</td>
-              <td><span class="badge-bad" data-i18n="comp_row_5_old">Kapalı kaynak (Proprietary / Ücretli)</span></td>
-              <td><span class="badge-good" data-i18n="comp_row_5_new">%100 Açık Kaynak (GitHub / Bağımsız)</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- Section: Capability Matrix -->
-  <section class="section" id="matrix">
-    <div class="shell">
-      <div class="section-header" data-reveal="up">
-        <span class="section-label" data-i18n="mat_label">Yetkinlik Haritası</span>
-        <h2 class="section-title" data-i18n="mat_title">Desteklenen Tetikleyiciler ve Eylemler</h2>
-        <p class="section-desc" data-i18n="mat_desc">
-          FlowPilot; NFC arka plan onayı, güvenli kural çoğaltma, çakışma uyarıları ve İngilizce/Türkçe uygulama diliyle Android'in yerel API sınırları içinde çalışır.
-        </p>
-      </div>
-
-      <div class="cap-grid spotlight-surface" id="cap-grid-surface">
-        <!-- Card 1: Triggers -->
-        <div class="cap-card" data-reveal="up" style="--reveal-delay: 0ms;">
-          <div class="cap-card-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span data-i18n="cat_triggers">Tetikleyiciler (Triggers)</span>
+        <div class="hero-stage" aria-hidden="true">
+          <div class="stage-glow"></div>
+          <div class="phone phone-hero">
+            <div class="phone-notch"></div>
+            <img id="hero-screen" src="assets/screenshots/webp/tr/home_screen.webp" data-screen="home_screen" width="540" height="1200" alt="" fetchpriority="high" />
           </div>
-          <ul class="cap-list">
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_time">Belirli Saat / Periyot</span></span><span class="cap-badge">AlarmManager</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_geofence">Coğrafi Konum Alanı (Geofence)</span></span><span class="cap-badge">Play Services</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_bat_level">Pil Seviyesi Değişimi</span></span><span class="cap-badge">Broadcast</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_bat_state">Şarj Bağlandı / Kesildi</span></span><span class="cap-badge">Broadcast</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_wifi_state">Wi-Fi Bağlandı / Kesildi</span></span><span class="cap-badge">NetworkCallback</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_wifi_ssid">Belirli SSID Eşleşmesi</span></span><span class="cap-badge">Location/Wifi</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_bt_state">Bluetooth Cihaz Durumu</span></span><span class="cap-badge">BluetoothAdapter</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="trig_nfc">NFC Etiketi (arka planda onaylı)</span></span><span class="cap-badge">ReaderMode</span></li>
-          </ul>
-        </div>
-
-        <!-- Card 2: Display & Audio -->
-        <div class="cap-card" data-reveal="up" style="--reveal-delay: 80ms;">
-          <div class="cap-card-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
-            <span data-i18n="cat_display_audio">Ekran, Güç ve Ses</span>
-          </div>
-          <ul class="cap-list">
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_bright_level">Ekran Parlaklığı Ayarı</span></span><span class="cap-badge">WRITE_SETTINGS</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_bright_auto">Otomatik Parlaklık Aç/Kapa</span></span><span class="cap-badge">WRITE_SETTINGS</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_vol_media">Medya / Zil Sesi Seviyesi</span></span><span class="cap-badge">AudioManager</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_vol_ringer">Sessiz / Titreşim Modu</span></span><span class="cap-badge">AudioManager</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_dnd">Rahatsız Etmeyin (DND)</span></span><span class="cap-badge">NotificationPolicy</span></li>
-          </ul>
-        </div>
-
-        <!-- Card 3: System & Hardware via Shizuku -->
-        <div class="cap-card" data-reveal="up" style="--reveal-delay: 160ms;">
-          <div class="cap-card-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/></svg>
-            <span data-i18n="cat_hardware">Donanım & Sistem Kontrolü</span>
-          </div>
-          <ul class="cap-list">
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_wifi_toggle">Wi-Fi Aç / Kapat</span></span><span class="cap-badge shizuku">Shizuku IPC</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_bt_toggle">Bluetooth Aç / Kapat</span></span><span class="cap-badge shizuku">Shizuku / API</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_hotspot">Mobil Veri / Uçak Modu / Hotspot (Android 16+)</span></span><span class="cap-badge shizuku">Shizuku IPC</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_launch_app">Uygulama / Aktivite Başlat</span></span><span class="cap-badge">PackageManager</span></li>
-            <li class="cap-item"><span class="cap-name"><span class="cap-indicator"></span><span data-i18n="act_notify">Özel Sistem Bildirimi</span></span><span class="cap-badge">NotificationManager</span></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Section: Real App Gallery -->
-  <section class="section" id="gallery">
-    <div class="shell">
-      <div class="section-header" data-reveal="up">
-        <span class="section-label" data-i18n="gal_label">Arayüz Vitrini</span>
-        <h2 class="section-title" data-i18n="gal_title">Material 3 Expressive Tasarımı</h2>
-        <p class="section-desc" data-i18n="gal_desc">
-          Telefonunuzun doğal parçası gibi hissettiren saf Jetpack Compose bileşenleri, dinamik renk uyumu ve yüksek bilgi yoğunluğu.
-        </p>
-      </div>
-
-      <div class="gallery-grid">
-        <div class="gallery-card" data-reveal="up" style="--reveal-delay: 0ms;">
-          <div class="gallery-img-wrap">
-            <img class="gal-img" data-screen="home_screen" src="assets/screenshots/tr/home_screen.png" alt="Ana Ekran" loading="lazy" />
-          </div>
-          <div class="gallery-caption" data-i18n="gal_1_title">Ana Kontrol Paneli</div>
-          <div class="gallery-sub" data-i18n="gal_1_sub">Aktif kurallar, durum anahtarları ve servis göstergesi.</div>
-        </div>
-
-        <div class="gallery-card" data-reveal="up" style="--reveal-delay: 70ms;">
-          <div class="gallery-img-wrap">
-            <img class="gal-img" data-screen="presets_screen" src="assets/screenshots/tr/presets_screen.png" alt="Hazır Şablonlar" loading="lazy" />
-          </div>
-          <div class="gallery-caption" data-i18n="gal_2_title">Hazır Şablon Kataloğu</div>
-          <div class="gallery-sub" data-i18n="gal_2_sub">Tek tıkla içe aktarılabilen doğrulanmış otomasyonlar.</div>
-        </div>
-
-        <div class="gallery-card" data-reveal="up" style="--reveal-delay: 140ms;">
-          <div class="gallery-img-wrap">
-            <img class="gal-img" data-screen="create_screen" src="assets/screenshots/tr/create_screen.png" alt="Kural Oluşturucu" loading="lazy" />
-          </div>
-          <div class="gallery-caption" data-i18n="gal_3_title">Kural Oluşturucu</div>
-          <div class="gallery-sub" data-i18n="gal_3_sub">Kategori bazlı tetikleyici ve eylem yapılandırması.</div>
-        </div>
-
-        <div class="gallery-card" data-reveal="up" style="--reveal-delay: 210ms;">
-          <div class="gallery-img-wrap">
-            <img class="gal-img" data-screen="about_dialog" src="assets/screenshots/tr/about_dialog.png" alt="Hakkında" loading="lazy" />
-          </div>
-          <div class="gallery-caption" data-i18n="gal_4_title">Sistem & Bilgi</div>
-          <div class="gallery-sub" data-i18n="gal_4_sub">Sürüm, lisans ve cihaz ayrıcalık durumu.</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Section: Installation & Shizuku Terminal -->
-  <section class="section" id="install">
-    <div class="shell">
-      <div class="section-header" data-reveal="up">
-        <span class="section-label" data-i18n="inst_label">Hızlı Dağıtım</span>
-        <h2 class="section-title" data-i18n="inst_title">Kurulum & Shizuku Yapılandırması</h2>
-        <p class="section-desc" data-i18n="inst_desc">
-          Root gerekmez. Shizuku, Android 11+ Kablosuz Hata Ayıklama veya USB üzerinden başlatılabilir.
-        </p>
-      </div>
-
-      <div class="grid-2 install-grid">
-        <div class="install-stack">
-          <!-- Step 1 -->
-          <div class="install-card" data-reveal="up" style="--reveal-delay: 0ms;">
-            <div class="install-step-badge" data-i18n="step_1_badge">ADIM 01</div>
-            <div class="install-step-title" data-i18n="step_1_title">APK'yı Yükleyin</div>
-            <div class="install-step-desc" data-i18n="step_1_desc">
-              GitHub Releases sayfasından derlenmiş <span class="tag">FlowPilot-v2.2.0.apk</span> dosyasını indirin veya ADB ile doğrudan cihaza kurun.
+          <div class="float-card float-a">
+            <span class="pulse"></span>
+            <div>
+              <p class="float-title" data-i18n="float_rule_title">Kural tetiklendi</p>
+              <p class="float-sub">23:00 · <span data-i18n="float_rule_sub">Gece rutini</span></p>
             </div>
           </div>
-
-          <!-- Step 2 -->
-          <div class="install-card" data-reveal="up" style="--reveal-delay: 60ms;">
-            <div class="install-step-badge" data-i18n="step_2_badge">ADIM 02</div>
-            <div class="install-step-title" data-i18n="step_2_title">Shizuku'yu Başlatın</div>
-            <div class="install-step-desc" data-i18n="step_2_desc">
-              Geliştirici Seçenekleri'nden <em>Kablosuz Hata Ayıklama</em> üzerinden eşleyin veya cihazınızı USB ile bağlayıp terminalden başlatın.
-            </div>
-          </div>
-
-          <!-- Geofence & Location Note -->
-          <div class="install-callout install-callout--blue" data-reveal="up" style="--reveal-delay: 120ms;">
-            <div class="install-callout-tag" data-i18n="geofence_box_tag">GEOFENCE & PİL</div>
-            <div class="install-callout-title" data-i18n="geofence_box_title">Donanım Tabanlı Konum Alanı (Geofencing)</div>
-            <div class="install-callout-desc" data-i18n="geofence_box_desc">
-              Sürekli GPS taraması ve pil tüketen döngüler yerine Google Play Services donanım geofence API'si kullanılır. Giriş ve çıkışların arka planda güvenle algılanması için <strong>Hassas Konum (Fine Location)</strong> ve <strong>Arka Planda Her Zaman İzin Ver (Allow all the time)</strong> izni gereklidir.
-            </div>
-          </div>
-
-          <!-- Backup & Privacy Note -->
-          <div class="install-callout install-callout--emerald" data-reveal="up" style="--reveal-delay: 180ms;">
-            <div class="install-callout-tag" data-i18n="backup_box_tag">YEDEK &amp; GİZLİLİK</div>
-            <div class="install-callout-title" data-i18n="backup_box_title">Şifreli Tam Yedek</div>
-            <div class="install-callout-desc" data-i18n="backup_box_desc">
-              Normal JSON dışa aktarma webhook sırlarını çıkarır ve içe aktarılan kuralları devre dışı bırakır. Şifreli tam yedek; tüm kural verisini, AES-256-GCM ve parola ile taşır; geri yükleme etkinlik durumunu da korur.
-            </div>
-          </div>
-
-          <!-- Step 3 (HyperOS / OEM Warning) -->
-          <div class="oem-box" data-reveal="up" style="--reveal-delay: 240ms;">
-            <div class="oem-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span data-i18n="oem_box_title">Xiaomi HyperOS / Cihaz Optimizasyonu Notu</span>
-            </div>
-            <div class="oem-text" data-i18n="oem_box_desc">
-              Xiaomi 15T Pro veya HyperOS/MIUI cihazlarda kuralların ekran kapalıyken dakik çalışması için: FlowPilot için <strong>Otomatik Başlatma (Autostart)</strong> iznini açın ve <strong>Pil Tasarrufu: Kısıtlama Yok (No Restrictions)</strong> olarak ayarlayın.
+          <div class="float-card float-b">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h4l2-7 4 14 2-7h4"/></svg>
+            <div>
+              <p class="float-title" data-i18n="float_priv_title">Shizuku IPC</p>
+              <p class="float-sub" data-i18n="float_priv_sub">Wi-Fi kapatıldı</p>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Terminal Window -->
-        <div class="term-window" id="term-window-box" data-reveal="up" style="--reveal-delay: 100ms;">
-          <div class="term-bar">
-            <div class="term-dots">
-              <div class="term-dot"></div>
-              <div class="term-dot"></div>
-              <div class="term-dot"></div>
-            </div>
-            <span>terminal — shizuku-setup</span>
-            <span>zsh / pwsh</span>
+      <div class="wrap">
+        <div class="stat-strip">
+          <div class="stat">
+            <span class="stat-value">2,6 MB</span>
+            <span class="stat-label" data-i18n="stat_apk">Release APK boyutu</span>
           </div>
-          <div class="term-body">
-            <div class="term-line" style="--line-delay: 40ms;"><span class="term-prompt">$ </span><span class="term-cmd">adb devices</span></div>
-            <div class="term-line term-out" style="--line-delay: 90ms;">List of devices attached</div>
-            <div class="term-line term-out" style="--line-delay: 140ms;">2407FRK8EC&nbsp;&nbsp;&nbsp;&nbsp;device  # Xiaomi 15T Pro</div>
-            <br>
-            <div class="term-line" style="--line-delay: 190ms;"><span class="term-prompt">$ </span><span class="term-cmd">adb install FlowPilot-v2.2.0.apk</span></div>
-            <div class="term-line term-out" style="--line-delay: 240ms;">Performing Streamed Install</div>
-            <div class="term-line term-out" style="--line-delay: 290ms; color: var(--emerald);">Success</div>
-            <br>
-            <div class="term-line" style="--line-delay: 340ms;"><span class="term-prompt">$ </span><span class="term-cmd">adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh</span></div>
-            <div class="term-line term-out" style="--line-delay: 390ms;">info: start.sh begin</div>
-            <div class="term-line term-out" style="--line-delay: 440ms;">info: shizuku_starter service running</div>
-            <div class="term-line term-out" style="--line-delay: 490ms; color: var(--emerald);">info: shizuku server is ready to accept IPC connections</div>
+          <div class="stat">
+            <span class="stat-value">0</span>
+            <span class="stat-label" data-i18n="stat_telemetry">Telemetri ve analitik</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">API 26+</span>
+            <span class="stat-label" data-i18n="stat_min">Minimum Android sürümü</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">TR / EN</span>
+            <span class="stat-label" data-i18n="stat_lang">Uygulama dili</span>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Footer (Issue #2: Compact desktop footer, flex layout, centered, ~60px high) -->
-  <footer>
-    <div class="shell footer-inner">
-      <div class="footer-brand-info">
-        <strong style="color: #fff;">FlowPilot</strong> — Android Event Automation Engine.
-        <span style="font-size: 11px; margin-left: 6px;" data-i18n="footer_sub">Jetpack Compose, Kotlin Coroutines &amp; Shizuku ile geliştirildi.</span>
-      </div>
+    <!-- STUDIO -->
+    <section class="section" id="studio">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow" data-i18n="studio_eyebrow">İnteraktif stüdyo</p>
+          <h2 data-i18n="studio_title">Kuralı seçin, cihazda nasıl çalıştığını izleyin.</h2>
+          <p class="section-desc" data-i18n="studio_desc">Aşağıdaki üç hazır kural gerçek uygulamadan alınmış ekranlar ve kavramsal kural tanımıyla gösterilir. Tanımlar serileştirilmiş dışa aktarma biçimi değildir.</p>
+        </div>
 
-      <div class="footer-links">
-        <a href="https://github.com/emi-ran/flowpilot" target="_blank">GitHub</a>
-        <a href="https://github.com/emi-ran/flowpilot/releases" target="_blank">Releases</a>
-        <a href="https://shizuku.rikka.app" target="_blank">Shizuku</a>
-        <a href="https://github.com/emi-ran/flowpilot/blob/main/LICENSE" target="_blank">License</a>
+        <div class="studio reveal">
+          <div class="studio-tabs" role="tablist" aria-label="Hazır kurallar">
+            <button class="studio-tab is-active" id="tab-0" role="tab" aria-selected="true" aria-controls="studio-panel" data-rule="0">
+              <span class="tab-name" data-i18n="rule_0_title">Gece rutini</span>
+              <span class="tag tag-time" data-i18n="rule_0_tag">Zaman</span>
+            </button>
+            <button class="studio-tab" id="tab-1" role="tab" aria-selected="false" aria-controls="studio-panel" data-rule="1" tabindex="-1">
+              <span class="tab-name" data-i18n="rule_1_title">Evden çıkış</span>
+              <span class="tag tag-net" data-i18n="rule_1_tag">Ağ</span>
+            </button>
+            <button class="studio-tab" id="tab-2" role="tab" aria-selected="false" aria-controls="studio-panel" data-rule="2" tabindex="-1">
+              <span class="tab-name" data-i18n="rule_2_title">Pil koruma</span>
+              <span class="tag tag-power" data-i18n="rule_2_tag">Güç</span>
+            </button>
+            <button class="studio-tab" id="tab-3" role="tab" aria-selected="false" aria-controls="studio-panel" data-rule="3" tabindex="-1">
+              <span class="tab-name" data-i18n="rule_3_title">Kural oluşturucu</span>
+              <span class="tag tag-ui" data-i18n="rule_3_tag">Arayüz</span>
+            </button>
+            <span class="tab-progress" id="tab-progress" aria-hidden="true"></span>
+          </div>
+
+          <div class="studio-body">
+            <div class="studio-device">
+              <div class="phone phone-studio">
+                <div class="phone-notch"></div>
+                <img id="studio-screen" src="assets/screenshots/webp/tr/home_screen.webp" data-screen="home_screen" width="540" height="1200" alt="FlowPilot uygulama ekranı" loading="lazy" />
+              </div>
+            </div>
+
+            <div class="studio-detail" id="studio-panel" role="tabpanel" aria-live="polite">
+              <h3 class="studio-rule-title" id="studio-title">Gece rutini</h3>
+              <p class="studio-rule-desc" id="studio-desc">Saat 23:00'te otomatik parlaklığı kapatır, seviyeyi %10 yapar ve Rahatsız Etmeyin'i açar.</p>
+
+              <ol class="pipeline" id="pipeline">
+                <li class="pipeline-step is-active">
+                  <span class="pipeline-index">01</span>
+                  <span class="pipeline-label" data-i18n="pipeline_trigger">Tetikleyici</span>
+                  <span class="pipeline-value" id="pipe-trigger">TIME · 23:00</span>
+                </li>
+                <li class="pipeline-step">
+                  <span class="pipeline-index">02</span>
+                  <span class="pipeline-label" data-i18n="pipeline_condition">Koşul</span>
+                  <span class="pipeline-value" id="pipe-condition">SCREEN_ON</span>
+                </li>
+                <li class="pipeline-step">
+                  <span class="pipeline-index">03</span>
+                  <span class="pipeline-label" data-i18n="pipeline_action">Eylemler</span>
+                  <span class="pipeline-value" id="pipe-action">4 adım</span>
+                </li>
+              </ol>
+
+              <div class="spec">
+                <div class="spec-head">
+                  <span class="spec-file" id="spec-file">flowpilot_rule_night_mode.json</span>
+                  <span class="spec-badge">CONCEPT</span>
+                </div>
+                <pre class="spec-code" id="spec-code" tabindex="0"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+    </section>
+
+    <!-- CAPABILITIES -->
+    <section class="section" id="capabilities">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow" data-i18n="caps_eyebrow">Kabiliyet haritası</p>
+          <h2 data-i18n="caps_title">Tetikleyiciler ve eylemler, tek bakışta.</h2>
+          <p class="section-desc" data-i18n="caps_desc">Android'in yerel API sınırları içinde çalışır. Mavi işaretli eylemler Shizuku IPC gerektirir; kalanlar standart API'lerle uygulanır.</p>
+        </div>
+
+        <div class="caps-grid">
+          <article class="cap-card reveal">
+            <header class="cap-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <h3 data-i18n="caps_triggers">Tetikleyiciler</h3>
+            </header>
+            <ul class="chips">
+              <li data-i18n="trig_time">Belirli saat / periyot</li>
+              <li data-i18n="trig_geofence">Geofence</li>
+              <li data-i18n="trig_bat_level">Pil seviyesi</li>
+              <li data-i18n="trig_bat_state">Şarj bağlandı / kesildi</li>
+              <li data-i18n="trig_wifi_state">Wi-Fi bağlandı / kesildi</li>
+              <li data-i18n="trig_wifi_ssid">SSID eşleşmesi</li>
+              <li data-i18n="trig_bt_state">Bluetooth cihazı</li>
+              <li data-i18n="trig_nfc">NFC etiketi</li>
+            </ul>
+          </article>
+
+          <article class="cap-card reveal">
+            <header class="cap-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>
+              <h3 data-i18n="caps_actions">Ekran, güç ve ses</h3>
+            </header>
+            <ul class="chips">
+              <li data-i18n="act_bright_level">Parlaklık seviyesi</li>
+              <li data-i18n="act_bright_auto">Otomatik parlaklık</li>
+              <li data-i18n="act_vol_media">Medya / zil sesi</li>
+              <li data-i18n="act_vol_ringer">Sessiz / titreşim</li>
+              <li data-i18n="act_dnd">Rahatsız Etmeyin</li>
+              <li data-i18n="act_notify">Sistem bildirimi</li>
+            </ul>
+          </article>
+
+          <article class="cap-card reveal">
+            <header class="cap-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>
+              <h3 data-i18n="caps_privileged">Sistem ve donanım</h3>
+            </header>
+            <ul class="chips">
+              <li class="is-privileged" data-i18n="act_wifi_toggle">Wi-Fi aç / kapat</li>
+              <li class="is-privileged" data-i18n="act_bt_toggle">Bluetooth aç / kapat</li>
+              <li class="is-privileged" data-i18n="act_hotspot">Mobil veri / uçak modu / hotspot</li>
+              <li data-i18n="act_launch_app">Uygulama başlat</li>
+              <li data-i18n="act_volume_preset">Ses profili</li>
+              <li data-i18n="act_webhook">Webhook</li>
+              <li data-i18n="act_sms">SMS / telefon</li>
+            </ul>
+            <p class="cap-note"><span class="priv-dot" aria-hidden="true"></span><span data-i18n="caps_note">Shizuku IPC gerektirir</span></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW -->
+    <section class="section" id="how">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow" data-i18n="how_eyebrow">Çalışma modeli</p>
+          <h2 data-i18n="how_title">Motor yalnız gerektiğinde uyanır.</h2>
+          <p class="section-desc" data-i18n="how_desc">Kural oluşturmak, dinlemek ve uygulamak üç ayrı sorumluluk. Etkin kural yoksa ilgili dinleyici de kapanır.</p>
+        </div>
+
+        <div class="how-grid">
+          <div class="how-step reveal">
+            <span class="how-index">01</span>
+            <h3 data-i18n="how_1_title">Kuralı yazın</h3>
+            <p data-i18n="how_1_desc">Tetikleyici, koşul ve sıralı eylemleri görsel oluşturucuda birleştirin; hazır şablonlardan içe aktarın.</p>
+          </div>
+          <div class="how-step reveal">
+            <span class="how-index">02</span>
+            <h3 data-i18n="how_2_title">Motor dinler</h3>
+            <p data-i18n="how_2_desc">Yalnız etkin kuralların ihtiyaç duyduğu alıcı ve dinleyiciler kayıtlı kalır; kural devre dışı kalınca bırakılır.</p>
+          </div>
+          <div class="how-step reveal">
+            <span class="how-index">03</span>
+            <h3 data-i18n="how_3_title">Eylem uygulanır</h3>
+            <p data-i18n="how_3_desc">Değerlendirme yerelde yapılır; ayrıcalıklı eylem allowlist üzerinden Shizuku IPC'ye, diğerleri standart API'ye gider.</p>
+          </div>
+        </div>
+
+        <div class="flow-diagram reveal" aria-hidden="true">
+          <span class="flow-node">TRIGGER</span>
+          <span class="flow-line"></span>
+          <span class="flow-node is-accent">RuleEvaluator</span>
+          <span class="flow-line"></span>
+          <span class="flow-node">ACTION</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- GALLERY -->
+    <section class="section" id="gallery">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow" data-i18n="gal_eyebrow">Arayüz</p>
+          <h2 data-i18n="gal_title">Material 3 Expressive, Jetpack Compose.</h2>
+          <p class="section-desc" data-i18n="gal_desc">Dinamik renk uyumu, yüksek bilgi yoğunluğu ve tek elle erişilebilir kontroller.</p>
+        </div>
+
+        <div class="gallery reveal">
+          <div class="gallery-track" id="gallery-track" tabindex="0" aria-label="Uygulama ekranları">
+            <figure class="shot">
+              <img src="assets/screenshots/webp/tr/home_screen.webp" data-screen="home_screen" width="540" height="1200" loading="lazy" alt="Ana kontrol paneli" />
+              <figcaption><span data-i18n="gal_1_title">Ana panel</span><small data-i18n="gal_1_sub">Aktif kurallar ve servis durumu</small></figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="assets/screenshots/webp/tr/presets_screen.webp" data-screen="presets_screen" width="540" height="1200" loading="lazy" alt="Hazır şablonlar" />
+              <figcaption><span data-i18n="gal_2_title">Hazır şablonlar</span><small data-i18n="gal_2_sub">Doğrulanmış otomasyonlar</small></figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="assets/screenshots/webp/tr/create_screen.webp" data-screen="create_screen" width="540" height="1200" loading="lazy" alt="Kural oluşturucu" />
+              <figcaption><span data-i18n="gal_3_title">Kural oluşturucu</span><small data-i18n="gal_3_sub">Kategori bazlı yapılandırma</small></figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="assets/screenshots/webp/tr/settings_screen.webp" data-screen="settings_screen" width="540" height="1200" loading="lazy" alt="Ayarlar ve yedekleme" />
+              <figcaption><span data-i18n="gal_4_title">Ayarlar</span><small data-i18n="gal_4_sub">Yedekleme ve tercihler</small></figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="assets/screenshots/webp/tr/about_dialog.webp" data-screen="about_dialog" width="540" height="1200" loading="lazy" alt="Hakkında" />
+              <figcaption><span data-i18n="gal_5_title">Hakkında</span><small data-i18n="gal_5_sub">Sürüm, lisans ve yetkiler</small></figcaption>
+            </figure>
+          </div>
+          <div class="gallery-nav">
+            <button class="icon-btn" id="gallery-prev" aria-label="Önceki ekran">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button class="icon-btn" id="gallery-next" aria-label="Sonraki ekran">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPARE -->
+    <section class="section" id="compare">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow" data-i18n="cmp_eyebrow">Mimari fark</p>
+          <h2 data-i18n="cmp_title">Neden FlowPilot?</h2>
+          <p class="section-desc" data-i18n="cmp_desc">Eski otomasyon araçları karmaşık izinler, sürekli çalışan arka plan döngüleri ve kapalı kaynakla gelir. FlowPilot modern Android pratikleriyle tasarlandı.</p>
+        </div>
+
+        <div class="compare-wrap reveal">
+          <table class="compare">
+            <caption class="sr-only" data-i18n="cmp_caption">FlowPilot ile geleneksel otomasyon araçlarının karşılaştırması</caption>
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="cmp_th">Kriter</th>
+                <th scope="col" data-i18n="cmp_legacy">Geleneksel araçlar</th>
+                <th scope="col" class="is-us">FlowPilot</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="cmp_r1">Arka plan tüketimi</th>
+                <td><span class="mark mark-bad" data-i18n="cmp_r1_old">Sürekli foreground service ve wake-lock</span></td>
+                <td class="is-us"><span class="mark mark-good" data-i18n="cmp_r1_new">Olay tabanlı alıcılar, ihtiyaç odaklı dinleyiciler</span></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="cmp_r2">Ayrıcalıklı erişim</th>
+                <td><span class="mark mark-warn" data-i18n="cmp_r2_old">Root veya karmaşık ADB betikleri</span></td>
+                <td class="is-us"><span class="mark mark-good" data-i18n="cmp_r2_new">Standart Shizuku IPC, root gerekmez</span></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="cmp_r3">Uygulama boyutu</th>
+                <td><span class="mark mark-warn" data-i18n="cmp_r3_old">Uygulamaya ve yapılandırmaya göre değişir</span></td>
+                <td class="is-us"><span class="mark mark-good">2,6 MB release asset</span></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="cmp_r4">Gizlilik</th>
+                <td><span class="mark mark-bad" data-i18n="cmp_r4_old">Crashlytics, analitik SDK'ları, hesap zorunluluğu</span></td>
+                <td class="is-us"><span class="mark mark-good" data-i18n="cmp_r4_new">Sıfır telemetri; iletişim yalnız açıkça kullandığınız özelliklerle</span></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="cmp_r5">Kaynak kodu</th>
+                <td><span class="mark mark-bad" data-i18n="cmp_r5_old">Kapalı kaynak / ücretli</span></td>
+                <td class="is-us"><span class="mark mark-good" data-i18n="cmp_r5_new">GPL-3.0, GitHub'da tam kaynak</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTALL -->
+    <section class="section" id="install">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow" data-i18n="inst_eyebrow">Kurulum</p>
+          <h2 data-i18n="inst_title">İki adımda çalışır durumda.</h2>
+          <p class="section-desc" data-i18n="inst_desc">Root gerekmez. Shizuku'yu Android 11+ Kablosuz Hata Ayıklama ile telefonda veya USB üzerinden başlatın.</p>
+        </div>
+
+        <div class="install-grid">
+          <div class="install-steps">
+            <div class="step-card reveal">
+              <span class="step-badge">01</span>
+              <h3 data-i18n="step_1_title">APK'yı yükleyin</h3>
+              <p data-i18n-html="step_1_desc">GitHub Releases'ten <code>FlowPilot-v2.2.0.apk</code> dosyasını indirin ya da ADB ile doğrudan kurun.</p>
+            </div>
+            <div class="step-card reveal">
+              <span class="step-badge">02</span>
+              <h3 data-i18n="step_2_title">Shizuku'yu başlatın</h3>
+              <p data-i18n-html="step_2_desc">Geliştirici Seçenekleri'nden <em>Kablosuz Hata Ayıklama</em> ile eşleyin; ya da cihazı USB ile bağlayıp terminalden başlatın.</p>
+            </div>
+
+            <div class="callout callout-blue reveal">
+              <p class="callout-tag" data-i18n="callout_geo_tag">Geofence ve pil</p>
+              <h4 data-i18n="callout_geo_title">Donanım tabanlı konum alanı</h4>
+              <p data-i18n-html="callout_geo_desc">Sürekli GPS taraması yerine Google Play Services geofence API'si kullanılır. Arka planda giriş/çıkış algılamak için <strong>hassas konum</strong> ve <strong>arka planda her zaman izin</strong> gerekir.</p>
+            </div>
+
+            <div class="callout callout-green reveal">
+              <p class="callout-tag" data-i18n="callout_backup_tag">Yedek ve gizlilik</p>
+              <h4 data-i18n="callout_backup_title">Şifreli tam yedek</h4>
+              <p data-i18n-html="callout_backup_desc">Normal JSON dışa aktarma webhook sırlarını çıkarır ve içe aktarılan kuralları devre dışı bırakır. Şifreli tam yedek tüm kural verisini AES-256-GCM ve parola ile taşır; geri yükleme etkinlik durumunu korur.</p>
+            </div>
+
+            <div class="callout callout-warn reveal">
+              <p class="callout-tag" data-i18n="callout_oem_tag">HyperOS / MIUI</p>
+              <h4 data-i18n="callout_oem_title">Cihaz optimizasyonu</h4>
+              <p data-i18n-html="callout_oem_desc">Ekran kapalıyken dakik çalışması için FlowPilot'a <strong>otomatik başlatma</strong> iznini verin ve pil tasarrufunu <strong>kısıtlama yok</strong> yapın.</p>
+            </div>
+          </div>
+
+          <div class="term reveal">
+            <div class="term-bar">
+              <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="term-title">terminal — shizuku-setup</span>
+              <span class="term-shell">zsh</span>
+            </div>
+            <div class="term-body" id="term-body">
+              <p><span class="term-prompt">$</span> adb devices</p>
+              <p class="term-out">List of devices attached</p>
+              <p class="term-out">R58M12ABCDE&nbsp;&nbsp;&nbsp;&nbsp;device</p>
+              <p><span class="term-prompt">$</span> adb install FlowPilot-v2.2.0.apk</p>
+              <p class="term-out">Performing Streamed Install</p>
+              <p class="term-out term-ok">Success</p>
+              <p><span class="term-prompt">$</span> adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh</p>
+              <p class="term-out">info: start.sh begin</p>
+              <p class="term-out">info: shizuku_starter service running</p>
+              <p class="term-out term-ok">info: shizuku server is ready to accept IPC connections</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="compat reveal">
+          <div><strong>minSdk 26</strong><span data-i18n="compat_min">Android 8.0+</span></div>
+          <div><strong>targetSdk 36</strong><span data-i18n="compat_target">Android 16</span></div>
+          <div><strong>Java 17</strong><span data-i18n="compat_java">Derleme araç zinciri</span></div>
+          <div><strong>GPL-3.0</strong><span data-i18n="compat_license">Açık kaynak lisans</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="wrap faq-wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow" data-i18n="faq_eyebrow">SSS</p>
+          <h2 data-i18n="faq_title">Sık sorulan sorular.</h2>
+        </div>
+
+        <div class="faq reveal">
+          <details>
+            <summary data-i18n="faq_1_q">Root gerekiyor mu?</summary>
+            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_1_a">Hayır. Ayrıcalıklı eylemler Shizuku IPC üzerinden çalışır; cihazı rootlamanız gerekmez.</p></div></div>
+          </details>
+          <details>
+            <summary data-i18n="faq_2_q">Shizuku neden gerekli?</summary>
+            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_2_a">Wi-Fi, Bluetooth, mobil veri ve uçak modu gibi sistem anahtarları normal uygulama izinleriyle değiştirilemez. FlowPilot bu eylemleri allowlist üzerinden Shizuku'ya iletir; parlaklık, ses, DND ve bildirim gibi eylemler standart API'lerle çalışır.</p></div></div>
+          </details>
+          <details>
+            <summary data-i18n="faq_3_q">Verilerim nereye gidiyor?</summary>
+            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_3_a">Kurallar cihazda saklanır. Telemetri, analitik veya hesap yoktur; dış iletişim yalnızca sizin yapılandırdığınız webhook, SMS ve paylaşım gibi özelliklerle gerçekleşir.</p></div></div>
+          </details>
+          <details>
+            <summary data-i18n="faq_4_q">Yedekleme nasıl çalışıyor?</summary>
+            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_4_a">Normal JSON dışa aktarma webhook URL, header ve gövdelerini çıkarır; içe aktarılan kurallar siz etkinleştirene kadar kapalı kalır. Şifreli tam yedek tüm veriyi parola türevli AES-256-GCM ile taşır ve geri yüklemede etkinlik durumunu korur.</p></div></div>
+          </details>
+          <details>
+            <summary data-i18n="faq_5_q">Hangi Android sürümlerini destekliyor?</summary>
+            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_5_a">Android 8.0 (API 26) ve üzeri. Derleme hedefi Android 16 (API 36). Kablosuz Hata Ayıklama ile Shizuku başlatma Android 11+ gerektirir.</p></div></div>
+          </details>
+          <details>
+            <summary data-i18n="faq_6_q">Pil tüketimi nasıl?</summary>
+            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_6_a">Motor olay tabanlıdır: kalıcı wake-lock veya sürekli CPU döngüsü yoktur. Dinleyiciler yalnız etkin kuralların ihtiyaç duyduğu sürece kayıtlı kalır.</p></div></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="cta-band">
+      <div class="wrap cta-inner reveal">
+        <div>
+          <h2 data-i18n="cta_title">Kendi otomasyonunuzu kurun.</h2>
+          <p data-i18n="cta_desc">2,6 MB, root yok, telemetri yok. GPL-3.0 lisanslı, tamamen açık kaynak.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn btn-primary" href="https://github.com/emi-ran/flowpilot/releases/latest">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            <span data-i18n="cta_download">APK indir</span>
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/emi-ran/flowpilot" target="_blank" rel="noopener" data-i18n="cta_source">Kaynak kodu</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <div class="footer-brand">
+        <span class="brand-text">FlowPilot</span>
+        <p data-i18n="footer_desc">Olay tabanlı Android otomasyon motoru. Kotlin Coroutines, Jetpack Compose ve Shizuku IPC ile geliştirildi.</p>
+      </div>
+      <nav class="footer-links" aria-label="Bağlantılar">
+        <a href="https://github.com/emi-ran/flowpilot" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/emi-ran/flowpilot/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/emi-ran/flowpilot/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+        <a href="https://shizuku.rikka.app" target="_blank" rel="noopener">Shizuku</a>
+      </nav>
+      <p class="footer-meta">© <span id="year">2026</span> FlowPilot · GPL-3.0</p>
     </div>
   </footer>
 
+  <div class="mobile-cta" id="mobile-cta">
+    <span class="mobile-cta-text"><strong>FlowPilot</strong> <span data-i18n="mobile_cta_note">v2.2.0 · 2,6 MB</span></span>
+    <a class="btn btn-primary btn-sm" href="https://github.com/emi-ran/flowpilot/releases/latest" data-i18n="cta_download">APK indir</a>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
