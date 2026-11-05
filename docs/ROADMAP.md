@@ -57,6 +57,7 @@ Do not bundle unrelated features. One feature family at a time.
    - Selected app package matching
    - Optional case-insensitive title/text keyword filtering
    - NotificationListenerService lifecycle and duplicate post suppression
+   - 2.2.1 rebind after in-place update or OEM process kill and HyperOS volume-notification filtering: device validation pending
    - Zero content logging or persistence
 8. **Bluetooth device state** (complete; Xiaomi device smoke test passed)
     - Selected Bluetooth device connected/disconnected

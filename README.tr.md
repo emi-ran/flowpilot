@@ -46,7 +46,7 @@ Olay odaklı tetikleyiciler, Shizuku ile ayrıcalıklı sistem yetkileri ve akı
 
 > [!NOTE]
 > **📱 Cihaz Uyumluluğu & Topluluk Testi Bilgilendirmesi**
-> FlowPilot bağımsız bir açık kaynak projesidir ve bizzat geliştiricinin kişisel cihazı olan **Xiaomi HyperOS (Xiaomi 15T Pro)** üzerinde günlük olarak geliştirilip test edilmektedir. Proje genelinde standart Android Jetpack ve sistem API'lerine titizlikle uyulmuş; CI'da JVM birim testleri, lint ve debug/release derlemeleri çalıştırılmaktadır. Cihaz ve OEM davranışları elle ve topluluk geri bildirimleriyle doğrulanır.
+> FlowPilot bağımsız bir açık kaynak projesidir ve bizzat geliştiricinin kişisel cihazı olan **Xiaomi HyperOS (Xiaomi 15T Pro)** üzerinde günlük olarak geliştirilip test edilmektedir. Proje genelinde standart Android Jetpack ve sistem API'lerine titizlikle uyulmuş; CI'da JVM birim testleri, Android lint, debug/release derlemeleri ve `scripts/` altındaki SDK'sız sözleşme betikleri çalıştırılmaktadır. Cihaz ve OEM davranışları elle ve topluluk geri bildirimleriyle doğrulanır.
 >
 > Farklı üretici arayüzleri (Samsung One UI, Google Pixel, Motorola, OxygenOS vb.) arka plan kısıtlamalarını farklı uygulayabildiğinden, test geri bildirimleriniz, cihaz deneyimleriniz ve katkılarınız (Pull Request) memnuniyetle karşılanır!
 
@@ -175,7 +175,7 @@ Bir kural en fazla beş bağımsız tetikleyiciyi VEYA mantığıyla birleştire
 - 📍 **Donanım Coğrafi Çit (Geofence):** Google Play Services `GeofencingClient` ile belirlenen alana giriş/çıkış. Boşta CPU wake-lock kullanmaz; yeniden başlatmada kaybolmayan 50 olaylık kalıcı kuyruk kullanır. Güncel geçiş koordinatları konum şablonlarında kullanılır; eski koordinatlar yerine yeni konum alınır veya değerler boş bırakılır.
 - 🏷️ **NFC Etiketleri:** Fiziksel taramalarda anında hex UID eşleşmesi. Ön plandaki ReaderMode taramaları eşleşen kuralları otomatik çalıştırır; Android arka plan keşfi FlowPilot'ı açar ve eşleşen NFC otomasyonu çalışmadan önce açık onay ister.
 - 📞 **Arama & SMS:** Gelen arama çalıyor, yanıtlandı, giden arama başladı, arama bitti; SMS gönderen numaraya ve kelime, önek veya regex kalıbına göre tetikleme.
-- 🔔 **Bildirimler:** Seçili uygulamalardan gelen bildirimler ve anahtar kelime filtreleme.
+- 🔔 **Bildirimler:** Seçili uygulamalardan gelen bildirimler ve anahtar kelime filtreleme. FlowPilot'un kendi durum bildirimleri ve HyperOS ses/kulaklık arayüz bildirimleri yok sayılır; yerinde güncelleme veya OEM süreç sonlandırması sonrası Android dinleyiciyi bağsız bırakırsa bildirim kuralları sistemden yeniden bağlanma ister.
 
 ---
 
@@ -324,6 +324,7 @@ FlowPilot
 ### Gereksinimler
 - JDK 17 (OpenJDK veya Eclipse Temurin)
 - Android SDK (Platform 36, Build-Tools 36.0.0+)
+- Python 3 (SDK'sız sözleşme kontrolleri için)
 - Git
 
 ```bash
@@ -333,6 +334,9 @@ cd flowpilot
 
 # Birim testlerini çalıştırın
 ./gradlew testDebugUnitTest
+
+# SDK'sız sözleşme kontrollerinin tamamını çalıştırın
+for script in scripts/*.py; do python "$script" || exit 1; done
 
 # Hata ayıklama (Debug) APK'sını oluşturun
 ./gradlew assembleDebug
