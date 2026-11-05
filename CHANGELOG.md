@@ -4,6 +4,8 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-11-05
+
 ### Fixed
 
 - Notification triggers recover when Android leaves the notification listener allowed but unbound after an in-place update or OEM process kill. The engine asks the system to rebind on rule reconciliation, retries after a disconnect, and throttles requests to once every 30 seconds.

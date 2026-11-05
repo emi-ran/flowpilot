@@ -46,7 +46,7 @@ Automate your device with event-driven triggers, privileged system actions via S
 
 > [!NOTE]
 > **📱 Device Compatibility & Community Testing Notice**
-> FlowPilot is an independent open-source project, actively developed and primary-tested on **Xiaomi HyperOS (Xiaomi 15T Pro)**. Strict adherence to standard Android Jetpack and system APIs is maintained throughout the codebase; CI runs the JVM unit suites, lint, and debug/release builds, so device and OEM behavior is verified by hand and by community reports.
+> FlowPilot is an independent open-source project, actively developed and primary-tested on **Xiaomi HyperOS (Xiaomi 15T Pro)**. Strict adherence to standard Android Jetpack and system APIs is maintained throughout the codebase; CI runs the JVM unit suites, Android lint, debug/release builds, and the SDK-free contract scripts in `scripts/`, so device and OEM behavior is verified by hand and by community reports.
 >
 > Because OEM skins (Samsung One UI, Google Pixel, Motorola, OxygenOS, etc.) implement background process limits differently, your test reports, feedback, and pull requests are warmly welcomed!
 
@@ -175,7 +175,7 @@ A rule can combine up to five independently configured triggers with OR semantic
 - 📍 **Hardware Geofencing:** Enter or exit defined geographical zones using Google Play Services `GeofencingClient`. Uses no idle CPU wake-lock, keeps up to 50 queued events across engine restarts, and reuses recent transition coordinates for location template variables. Older coordinates trigger a fresh lookup or leave location values empty.
 - 🏷️ **NFC Tags:** Instant hex UID matching on physical scans. Foreground ReaderMode scans run matching rules automatically; background Android discovery opens FlowPilot and requires explicit confirmation before any matching NFC automation runs.
 - 📞 **Phone & SMS:** Call ringing, answered, outgoing dialed, call ended; SMS received with keyword, prefix, regex, or exact sender matching.
-- 🔔 **Notifications:** Incoming notifications from selected apps with keyword filtering.
+- 🔔 **Notifications:** Incoming notifications from selected apps with keyword filtering. FlowPilot's own status notifications and HyperOS volume/headphone UI notifications are ignored, and notification rules ask the system to rebind the listener if Android leaves it unbound after an in-place update or OEM process kill.
 
 ---
 
@@ -324,6 +324,7 @@ FlowPilot
 ### Prerequisites
 - JDK 17 (OpenJDK or Eclipse Temurin)
 - Android SDK (Platform 36, Build-Tools 36.0.0+)
+- Python 3 (for the SDK-free contract checks)
 - Git
 
 ```bash
@@ -333,6 +334,9 @@ cd flowpilot
 
 # Run unit tests
 ./gradlew testDebugUnitTest
+
+# Run all SDK-free contract checks
+for script in scripts/*.py; do python "$script" || exit 1; done
 
 # Assemble debug APK
 ./gradlew assembleDebug

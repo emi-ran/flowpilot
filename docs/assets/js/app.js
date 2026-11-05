@@ -2,7 +2,7 @@
 
 const LANGS = ['tr', 'en'];
 const STORAGE_KEY = 'flowpilot_lang_v2';
-const ADB_COMMAND = 'adb install FlowPilot-v2.2.0.apk';
+const ADB_COMMAND = 'adb install FlowPilot-v2.2.1.apk';
 const AUTOPLAY_MS = 7000;
 
 const I18N = {
@@ -23,7 +23,7 @@ const I18N = {
     cta_title: 'Kendi otomasyonunuzu kurun.',
     cta_desc: '2,6 MB, root yok, telemetri yok. GPL-3.0 lisanslı, tamamen açık kaynak.',
 
-    hero_eyebrow: 'Açık kaynak · Root gerektirmez · v2.2.0',
+    hero_eyebrow: 'Açık kaynak · Root gerektirmez · v2.2.1',
     hero_title: 'Android\'i <span class="accent">kendi kurallarınızla</span> yönetin.',
     hero_desc: 'Olay tabanlı otomasyon motoru: tetikleyici gerçekleştiğinde yalnız gereken dinleyici çalışır, ayrıcalıklı eylem Shizuku IPC ile uygulanır. Sürekli çalışan wake-lock yok.',
     meta_android: 'Android 8.0 ve üzeri',
@@ -144,7 +144,7 @@ const I18N = {
     inst_title: 'İki adımda çalışır durumda.',
     inst_desc: 'Root gerekmez. Shizuku\'yu Android 11+ Kablosuz Hata Ayıklama ile telefonda veya USB üzerinden başlatın.',
     step_1_title: 'APK\'yı yükleyin',
-    step_1_desc: 'GitHub Releases\'ten <code>FlowPilot-v2.2.0.apk</code> dosyasını indirin ya da ADB ile doğrudan kurun.',
+    step_1_desc: 'GitHub Releases\'ten <code>FlowPilot-v2.2.1.apk</code> dosyasını indirin ya da ADB ile doğrudan kurun.',
     step_2_title: 'Shizuku\'yu başlatın',
     step_2_desc: 'Geliştirici Seçenekleri\'nden <em>Kablosuz Hata Ayıklama</em> ile eşleyin; ya da cihazı USB ile bağlayıp terminalden başlatın.',
     callout_geo_tag: 'Geofence ve pil',
@@ -177,7 +177,7 @@ const I18N = {
     faq_6_a: 'Motor olay tabanlıdır: kalıcı wake-lock veya sürekli CPU döngüsü yoktur. Dinleyiciler yalnız etkin kuralların ihtiyaç duyduğu sürece kayıtlı kalır.',
 
     footer_desc: 'Olay tabanlı Android otomasyon motoru. Kotlin Coroutines, Jetpack Compose ve Shizuku IPC ile geliştirildi.',
-    mobile_cta_note: 'v2.2.0 · 2,6 MB',
+    mobile_cta_note: 'v2.2.1 · yaklaşık 2,6 MB',
     screen_alt_home_screen: 'FlowPilot ana paneli',
     screen_alt_presets_screen: 'Hazır şablon kataloğu',
     screen_alt_create_screen: 'Kural oluşturucu',
@@ -201,7 +201,7 @@ const I18N = {
     cta_title: 'Build your own automation.',
     cta_desc: '2.6 MB, no root, no telemetry. GPL-3.0, fully open source.',
 
-    hero_eyebrow: 'Open source · No root · v2.2.0',
+    hero_eyebrow: 'Open source · No root · v2.2.1',
     hero_title: 'Run Android by <span class="accent">your own rules</span>.',
     hero_desc: 'An event-driven automation engine: only the listeners a rule needs stay registered, and privileged actions run through Shizuku IPC. No always-on wake-lock.',
     meta_android: 'Android 8.0 and up',
@@ -322,7 +322,7 @@ const I18N = {
     inst_title: 'Running in two steps.',
     inst_desc: 'No root required. Start Shizuku over Android 11+ Wireless Debugging on the phone, or through USB.',
     step_1_title: 'Install the APK',
-    step_1_desc: 'Download <code>FlowPilot-v2.2.0.apk</code> from GitHub Releases, or install it over ADB.',
+    step_1_desc: 'Download <code>FlowPilot-v2.2.1.apk</code> from GitHub Releases, or install it over ADB.',
     step_2_title: 'Start Shizuku',
     step_2_desc: 'Pair it from Developer Options → <em>Wireless Debugging</em>, or connect the device over USB and start it from a terminal.',
     callout_geo_tag: 'Geofence and battery',
@@ -355,7 +355,7 @@ const I18N = {
     faq_6_a: 'The engine is event-driven: no persistent wake-locks and no continuous CPU loops. Listeners stay registered only while enabled rules need them.',
 
     footer_desc: 'Event-driven Android automation engine. Built with Kotlin Coroutines, Jetpack Compose and Shizuku IPC.',
-    mobile_cta_note: 'v2.2.0 · 2.6 MB',
+    mobile_cta_note: 'v2.2.1 · about 2.6 MB',
     screen_alt_home_screen: 'FlowPilot home panel',
     screen_alt_presets_screen: 'Preset catalog',
     screen_alt_create_screen: 'Rule builder',
