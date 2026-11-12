@@ -977,6 +977,8 @@
     <string name="action_music_search_desc">Open search results in Spotify or YouTube Music</string>
     <string name="action_music_play_link_desc">Open a track or video link in the selected music app</string>
     <string name="music_app_label">Music app</string>
+    <string name="music_app_unavailable">This app is not installed or is disabled. Install or enable it before this action runs, or choose another app.</string>
+    <string name="music_app_unavailable_label">%1$s (unavailable)</string>
     <string name="music_shared_explanation">The selected app is shared by music search and music link actions in this rule.</string>
     <string name="music_query_label">Song or artist name</string>
     <string name="music_link_label">Track or video HTTPS link</string>

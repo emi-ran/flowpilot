@@ -977,6 +977,8 @@
     <string name="action_music_search_desc">Spotify veya YouTube Music arama sonuçlarını açar</string>
     <string name="action_music_play_link_desc">Seçilen müzik uygulamasında parça veya video bağlantısını açar</string>
     <string name="music_app_label">Müzik uygulaması</string>
+    <string name="music_app_unavailable">Bu uygulama yüklü değil veya devre dışı. Eylem çalışmadan önce yükleyin ya da etkinleştirin veya başka bir uygulama seçin.</string>
+    <string name="music_app_unavailable_label">%1$s (kullanılamıyor)</string>
     <string name="music_shared_explanation">Seçilen uygulama, bu kuraldaki müzik arama ve bağlantı eylemleri için ortaktır.</string>
     <string name="music_query_label">Şarkı veya sanatçı adı</string>
     <string name="music_link_label">Parça veya video HTTPS bağlantısı</string>

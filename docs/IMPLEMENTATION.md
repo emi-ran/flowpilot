@@ -28,6 +28,7 @@ Media controls comprise `MEDIA_PLAY`, `MEDIA_PAUSE`, `MEDIA_TOGGLE`, `MEDIA_NEXT
 Song search sends a playback-from-search request to the selected Spotify or YouTube Music app without guaranteeing playback. Song-link actions hand a supported service-specific link to the selected app; playback and background activity launch are controlled by the player and Android, and are not guaranteed by FlowPilot.
 Music search and song links support trigger-context templates. Link templates are resolved at execution and the resulting URL must pass the selected service's link validator; manual tests do not have a notification event's values.
 YouTube Music links are trimmed at both ends before validation and launch; internal whitespace remains invalid.
+The editor checks whether each music app is installed and enabled, refreshing on resume. Saving and manual execution require the selected app to be available; existing and imported rules are preserved. An unavailable activity produces an actionable failure without switching apps.
 
 
 The event's `${media.title}` and `${media.artist}` are transient template context, not log or execution-history fields. A user-configured template action can deliberately display or transmit these values; this is distinct from persisting the raw metadata in logs or history. Media behavior and permission-denied paths have not been claimed as device-verified.

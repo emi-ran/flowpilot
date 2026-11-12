@@ -1,6 +1,7 @@
 package com.flowpilot.app.actions
 
 import android.app.SearchManager
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.provider.MediaStore
 import com.flowpilot.app.data.model.ActionType
@@ -118,6 +119,14 @@ class MusicExecutorTest {
         assertThat(launches).isEqualTo(0)
         val failed = executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = "secret query"))
         assertThat(failed.message).isEqualTo("Unable to open music app")
+    }
+
+    @Test fun missingMusicAppReportsActionableFailure() {
+        val executor = MusicExecutor { throw ActivityNotFoundException("sensitive") }
+        val result = executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = "song"))
+        assertThat(result.success).isFalse()
+        assertThat(result.message).contains("install or enable")
+        assertThat(result.message).doesNotContain("sensitive")
     }
 
     @Test fun fieldsSurviveSerializationAndParameterMapping() {

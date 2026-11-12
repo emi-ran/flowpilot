@@ -10,6 +10,8 @@ All notable FlowPilot changes are documented here.
 - Search for a song or open a supported Spotify or YouTube Music song link. Automatic playback and background launches depend on the target app and Android.
 - Show service-specific song-link formats and validate links as they are entered, before saving or running a rule.
 - Use trigger variables in music search queries and song-link actions; resolved links are validated against the selected service before opening.
+- Mark unavailable music apps in the editor and explain how to install or enable the selected app; report an actionable failure if the target cannot handle the action.
+- Prevent saving or manually running music rules when the selected app is missing or disabled; preserve existing and imported rules.
 
 ### Fixed
 

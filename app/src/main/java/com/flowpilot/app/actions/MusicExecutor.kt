@@ -1,6 +1,7 @@
 package com.flowpilot.app.actions
 
 import android.app.SearchManager
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -73,6 +74,8 @@ class MusicExecutor internal constructor(private val launch: (Intent) -> Unit) :
         return try {
             launch(intent)
             ActionResult(true, if (action == ActionType.MUSIC_SEARCH) "Music search opened; playback not verified" else "Music link opened; playback not verified")
+        } catch (_: ActivityNotFoundException) {
+            ActionResult(false, "Music app unavailable or unable to handle this action; install or enable it and try again")
         } catch (_: Exception) {
             ActionResult(false, "Unable to open music app")
         }

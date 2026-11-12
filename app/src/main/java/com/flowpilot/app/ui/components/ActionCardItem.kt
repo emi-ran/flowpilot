@@ -537,9 +537,20 @@ fun ActionCardItem(
                 ActionType.MUSIC_SEARCH, ActionType.MUSIC_PLAY_LINK -> {
                     Spacer(Modifier.height(8.dp))
                     Text(stringResource(R.string.music_app_label), style = MaterialTheme.typography.labelMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = musicAppPackage == "com.spotify.music", onClick = { onMusicAppPackageChange("com.spotify.music") }, label = { Text("Spotify") })
-                        FilterChip(selected = musicAppPackage == "com.google.android.apps.youtube.music", onClick = { onMusicAppPackageChange("com.google.android.apps.youtube.music") }, label = { Text("YouTube Music") })
+                    val installed = rememberMusicAppAvailability()
+                    val spotifyAvailable = installed(MusicLinkValidator.SPOTIFY)
+                    val youtubeAvailable = installed(MusicLinkValidator.YOUTUBE_MUSIC)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = musicAppPackage == MusicLinkValidator.SPOTIFY, onClick = { onMusicAppPackageChange(MusicLinkValidator.SPOTIFY) }, label = { Text(if (spotifyAvailable) "Spotify" else stringResource(R.string.music_app_unavailable_label, "Spotify")) })
+                        FilterChip(selected = musicAppPackage == MusicLinkValidator.YOUTUBE_MUSIC, onClick = { onMusicAppPackageChange(MusicLinkValidator.YOUTUBE_MUSIC) }, label = { Text(if (youtubeAvailable) "YouTube Music" else stringResource(R.string.music_app_unavailable_label, "YouTube Music")) })
+                    }
+                    val unavailable = when (musicAppPackage) {
+                        MusicLinkValidator.SPOTIFY -> !spotifyAvailable
+                        MusicLinkValidator.YOUTUBE_MUSIC -> !youtubeAvailable
+                        else -> false
+                    }
+                    AnimatedVisibility(visible = unavailable) {
+                        Text(stringResource(R.string.music_app_unavailable), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                     }
                     Text(stringResource(R.string.music_shared_explanation), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(8.dp))

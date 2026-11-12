@@ -52,6 +52,7 @@ import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.flattenConditions
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.actions.MusicLinkValidator
+import com.flowpilot.app.ui.components.rememberMusicAppAvailability
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.engine.isValidGeofenceConfig
@@ -107,6 +108,7 @@ fun DetailScreen(
     }
     BackHandler(onBack = back)
     val context = LocalContext.current
+    val musicAppAvailable = rememberMusicAppAvailability()
     val existingRules by vm.automations.collectAsState()
     var pendingSave by remember(initialRule.id) { mutableStateOf<Automation?>(null) }
     var pendingConflicts by remember(initialRule.id) { mutableStateOf<List<AutomationConflict>>(emptyList()) }
@@ -381,7 +383,7 @@ fun DetailScreen(
             text = {
                 val invalidMusicLink = ActionType.MUSIC_PLAY_LINK in actions && !MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)
                 val musicWarning = if (actions.any { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK }) stringResource(R.string.music_template_manual_warning) else ""
-                Text(if (invalidMusicLink) stringResource(R.string.music_link_invalid) else "$runConfirmDesc$warning$musicWarning")
+                Text(if (actions.any { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } && !musicAppAvailable(musicAppPackage)) stringResource(R.string.music_app_unavailable) else if (invalidMusicLink) stringResource(R.string.music_link_invalid) else "$runConfirmDesc$warning$musicWarning")
             },
             confirmButton = {
                 TextButton({
@@ -397,7 +399,7 @@ fun DetailScreen(
                             snackbarHostState.showSnackbar(msg)
                         }
                     }
-                }, enabled = ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) {
+                }, enabled = (actions.none { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } || musicAppAvailable(musicAppPackage)) && (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink))) {
                     Text(stringResource(R.string.btn_run_now))
                 }
             },
@@ -927,6 +929,7 @@ fun DetailScreen(
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
+                            (actions.none { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } || musicAppAvailable(musicAppPackage)) &&
                             (ActionType.MUSIC_SEARCH !in actions || (MusicLinkValidator.isSupportedPackage(musicAppPackage) && musicQuery.isNotBlank())) &&
                             (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
