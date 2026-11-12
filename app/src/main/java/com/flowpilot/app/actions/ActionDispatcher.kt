@@ -16,6 +16,7 @@ class ActionDispatcher private constructor(
     private val soundProfile: SoundProfileExecutor,
     private val mediaVolume: MediaVolumeExecutor,
     private val mediaControl: MediaControlExecutor,
+    private val music: MusicExecutor,
     private val launcher: LaunchExecutor,
     private val tts: TtsExecutor,
     private val dnd: DndExecutor,
@@ -36,7 +37,7 @@ class ActionDispatcher private constructor(
     private val map: Map<ActionType, ActionExecutor> by lazy {
         listOf(
             nfc, bluetooth, powerSaver, darkTheme, autoRotate, notification,
-            vibration, sound, soundProfile, mediaVolume, mediaControl, launcher, tts, dnd,
+            vibration, sound, soundProfile, mediaVolume, mediaControl, music, launcher, tts, dnd,
             clock, webhook, phone, wifi, mobileData, airplaneMode, hotspot, torch,
             brightness, lockScreen, forceStop, location, sms,
         )
@@ -87,6 +88,7 @@ class ActionDispatcher private constructor(
                     SoundProfileExecutor(context.applicationContext),
                     MediaVolumeExecutor(context.applicationContext),
                     MediaControlExecutor(context.applicationContext),
+                    MusicExecutor(context.applicationContext),
                     LaunchExecutor(context.applicationContext),
                     TtsExecutor(context.applicationContext),
                     DndExecutor(context.applicationContext),

@@ -7,6 +7,9 @@ All notable FlowPilot changes are documented here.
 ### Added
 
 - Media session controls: play, pause, toggle, next and previous, with an optional target app; media playing, paused and track-changed triggers with an optional app filter. Notification access is required, and observation runs only when enabled rules need it. Sessions present when the tracker starts are silently seeded without events; a newly observed session already playing after startup produces a playing event. Media title and artist are transient template values and are not written to logs or execution history; user-configured template actions can explicitly use them.
+- Search for a song or open a supported Spotify or YouTube Music song link. Automatic playback and background launches depend on the target app and Android.
+- Show service-specific song-link formats and validate links as they are entered, before saving or running a rule.
+- Use trigger variables in music search queries and song-link actions; resolved links are validated against the selected service before opening.
 
 ## [2.2.1] - 2026-11-05
 

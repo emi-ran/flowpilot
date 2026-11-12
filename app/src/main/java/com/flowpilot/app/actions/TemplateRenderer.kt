@@ -12,11 +12,13 @@ enum class RenderMode { LENIENT, STRICT }
  * @property text Rendered text. Unknown variables and malformed expressions keep their original token.
  * @property unknownVariables Names of variables that were not resolvable (populated in [RenderMode.STRICT]).
  * @property parseErrors Human-readable descriptions of malformed or oversized expressions.
+ * @property expressionCount Number of syntactically valid, unescaped expressions.
  */
 data class RenderResult(
     val text: String,
     val unknownVariables: Set<String> = emptySet(),
     val parseErrors: List<String> = emptyList(),
+    val expressionCount: Int = 0,
 )
 
 /**
@@ -109,6 +111,7 @@ object TemplateRenderer {
         val out = StringBuilder(template.length)
         val unknownVariables = LinkedHashSet<String>()
         val parseErrors = ArrayList<String>()
+        var expressionCount = 0
         var index = 0
         while (index < template.length) {
             if (isEscapedOpening(template, index)) {
@@ -135,6 +138,7 @@ object TemplateRenderer {
                 }
                 when (val parsed = parseExpression(inner)) {
                     is ExpressionOutcome.Success -> {
+                        expressionCount++
                         val value = resolve(parsed.name, context)
                         if (value == null) {
                             if (mode == RenderMode.STRICT) unknownVariables += parsed.name
@@ -158,6 +162,7 @@ object TemplateRenderer {
         return RenderResult(
             text = out.toString(),
             unknownVariables = unknownVariables,
+            expressionCount = expressionCount,
             parseErrors = parseErrors,
         )
     }

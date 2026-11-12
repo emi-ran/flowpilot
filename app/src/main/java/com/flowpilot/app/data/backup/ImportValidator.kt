@@ -14,6 +14,7 @@ import com.flowpilot.app.actions.TemplateRenderer
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.security.SecretCipher
 import com.flowpilot.app.actions.VariableCatalog
+import com.flowpilot.app.actions.MusicLinkValidator
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -165,6 +166,9 @@ internal object ImportValidator {
             if (ActionType.LAUNCH_APP in actions) require(packageName.matches(r.launchPackage)) { "Invalid launch package" }
             if (ActionType.FORCE_STOP_APP in actions) require(packageName.matches(r.forceStopPackage)) { "Invalid force-stop package" }
             if (actions.any { it in setOf(ActionType.MEDIA_PLAY, ActionType.MEDIA_PAUSE, ActionType.MEDIA_TOGGLE, ActionType.MEDIA_NEXT, ActionType.MEDIA_PREVIOUS) }) require(r.mediaTargetPackage.isBlank() || packageName.matches(r.mediaTargetPackage)) { "Invalid media target package" }
+            if (ActionType.MUSIC_SEARCH in actions || ActionType.MUSIC_PLAY_LINK in actions) require(MusicLinkValidator.isSupportedPackage(r.musicAppPackage)) { "Invalid music app" }
+            if (ActionType.MUSIC_SEARCH in actions) require(r.musicQuery.isNotBlank()) { "Missing music query" }
+            if (ActionType.MUSIC_PLAY_LINK in actions) require(MusicLinkValidator.isValidTemplate(r.musicAppPackage, r.musicLink)) { "Invalid music link" }
             if (ActionType.OPEN_URL in actions) require(webUri(r.url)) { "Invalid URL" }
             if (ActionType.DIAL_NUMBER in actions || ActionType.CALL_NUMBER in actions) require(r.phoneNumber.isNotBlank()) { "Missing phone number" }
             if (ActionType.SEND_SMS in actions) require(r.smsRecipient.isNotBlank() && r.smsMessage.isNotBlank()) { "Missing SMS fields" }

@@ -84,6 +84,21 @@ class ActionParametersFactoryTest {
     }
 
     @Test
+    fun create_rendersMusicFieldsOnceWithNotificationValues() {
+        val source = rule().copy(
+            musicQuery = "Find \${notification.title|lower} \${notification.text}",
+            musicLink = "\${notification.bigText|trim}",
+        )
+        val values = context().copy(values = context().values + mapOf(
+            "notification.text" to "\${trigger}",
+            "notification.bigText" to "  https://youtu.be/abcdefghijk  ",
+        ))
+        val parameters = ActionParametersFactory.create(source, values)
+        assertThat(parameters.musicQuery).isEqualTo("Find hello \${trigger}")
+        assertThat(parameters.musicLink).isEqualTo("https://youtu.be/abcdefghijk")
+    }
+
+    @Test
     fun create_leavesPackageSoundAndNumericFieldsUntouched() {
         val parameters = ActionParametersFactory.create(
             rule(launchPackage = "com.\${trigger}", forceStopPackage = "force.\${notification.text}", soundUri = "uri.\${trigger}"),

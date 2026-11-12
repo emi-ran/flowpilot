@@ -51,6 +51,7 @@ import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.flattenConditions
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.actions.MusicLinkValidator
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.engine.isValidGeofenceConfig
@@ -122,6 +123,9 @@ fun DetailScreen(
     var notificationKeyword by remember(initialRule.id) { mutableStateOf(initialRule.notificationKeyword) }
     var mediaTriggerPackage by remember(initialRule.id) { mutableStateOf(initialRule.mediaTriggerPackage) }
     var mediaTargetPackage by remember(initialRule.id) { mutableStateOf(initialRule.mediaTargetPackage) }
+    var musicAppPackage by remember(initialRule.id) { mutableStateOf(initialRule.musicAppPackage) }
+    var musicQuery by remember(initialRule.id) { mutableStateOf(initialRule.musicQuery) }
+    var musicLink by remember(initialRule.id) { mutableStateOf(initialRule.musicLink) }
     var showMediaTargetApps by remember { mutableStateOf(false) }
     var phoneNumber by remember(initialRule.id) { mutableStateOf(initialRule.phoneNumber) }
     var flipScreenOffDetection by remember(initialRule.id) { mutableStateOf(initialRule.flipScreenOffDetection) }
@@ -247,6 +251,9 @@ fun DetailScreen(
         notificationKeyword = notificationKeyword,
         mediaTriggerPackage = mediaTriggerPackage,
         mediaTargetPackage = mediaTargetPackage,
+        musicAppPackage = musicAppPackage,
+        musicQuery = musicQuery,
+        musicLink = musicLink,
         conditions = conditions,
         conditionTree = conditionTree,
         notificationTitle = notificationTitle,
@@ -372,7 +379,9 @@ fun DetailScreen(
             onDismissRequest = { showRunConfirm = false },
             title = { Text(stringResource(R.string.test_run_now_confirm_title)) },
             text = {
-                Text("$runConfirmDesc$warning")
+                val invalidMusicLink = ActionType.MUSIC_PLAY_LINK in actions && !MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)
+                val musicWarning = if (actions.any { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK }) stringResource(R.string.music_template_manual_warning) else ""
+                Text(if (invalidMusicLink) stringResource(R.string.music_link_invalid) else "$runConfirmDesc$warning$musicWarning")
             },
             confirmButton = {
                 TextButton({
@@ -388,7 +397,7 @@ fun DetailScreen(
                             snackbarHostState.showSnackbar(msg)
                         }
                     }
-                }) {
+                }, enabled = ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) {
                     Text(stringResource(R.string.btn_run_now))
                 }
             },
@@ -666,6 +675,12 @@ fun DetailScreen(
                             mediaTargetPackage = mediaTargetPackage,
                             onChooseMediaTarget = { showMediaTargetApps = true },
                             onClearMediaTarget = { mediaTargetPackage = "" },
+                            musicAppPackage = musicAppPackage,
+                            onMusicAppPackageChange = { musicAppPackage = it },
+                            musicQuery = musicQuery,
+                            onMusicQueryChange = { musicQuery = it },
+                            musicLink = musicLink,
+                            onMusicLinkChange = { musicLink = it },
                             // URL
                             url = url,
                             onUrlChange = { url = it },
@@ -912,6 +927,8 @@ fun DetailScreen(
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
+                            (ActionType.MUSIC_SEARCH !in actions || (MusicLinkValidator.isSupportedPackage(musicAppPackage) && musicQuery.isNotBlank())) &&
+                            (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || canSaveTtsConfiguration(ttsText, ttsSpeechRate, ttsAudioFileName, triggerItems.map { it.event }, ttsManager)) &&

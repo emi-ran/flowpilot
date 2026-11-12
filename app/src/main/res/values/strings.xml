@@ -972,4 +972,18 @@
     <string name="variable_desc_media_artist">Current track artist</string>
     <string name="media_target_system">Active player</string>
     <string name="media_trigger_any">Any media app</string>
+    <string name="action_music_search">Search for music</string>
+    <string name="action_music_play_link">Play music link</string>
+    <string name="action_music_search_desc">Open search results in Spotify or YouTube Music</string>
+    <string name="action_music_play_link_desc">Open a track or video link in the selected music app</string>
+    <string name="music_app_label">Music app</string>
+    <string name="music_shared_explanation">The selected app is shared by music search and music link actions in this rule.</string>
+    <string name="music_query_label">Song or artist name</string>
+    <string name="music_link_label">Track or video HTTPS link</string>
+    <string name="music_search_hint">Requests a search in the selected app; automatic playback is not guaranteed.</string>
+    <string name="music_link_spotify_hint">Use a Spotify track link: https://open.spotify.com/track/… Playback depends on Spotify and Android background restrictions.</string>
+    <string name="music_link_youtube_hint">Use a YouTube Music video link: https://music.youtube.com/watch?v=… or https://youtu.be/… Playback depends on YouTube Music and Android background restrictions.</string>
+    <string name="music_link_select_app_hint">Choose a music app to see its supported link formats.</string>
+    <string name="music_link_invalid">This link is not supported for the selected app. Check the format above.</string>
+    <string name="music_template_manual_warning">\n\nDuring a manual run, trigger event data (such as notification text) may be unavailable. Variables may be empty, and a music link may not open.</string>
 </resources>
