@@ -24,7 +24,8 @@ object MusicLinkValidator {
     }
 
     fun isValidLink(packageName: String, link: String): Boolean {
-        val uri = try { URI(link) } catch (_: Exception) { return false }
+        val normalizedLink = if (packageName == YOUTUBE_MUSIC) link.trim() else link
+        val uri = try { URI(normalizedLink) } catch (_: Exception) { return false }
         if (uri.scheme != "https" || uri.rawUserInfo != null || uri.port != -1 || uri.rawFragment != null) return false
         val host = uri.host ?: return false
         val path = uri.rawPath ?: return false
@@ -61,10 +62,11 @@ class MusicExecutor internal constructor(private val launch: (Intent) -> Unit) :
                     .putExtra(SearchManager.QUERY, parameters.musicQuery)
             }
             ActionType.MUSIC_PLAY_LINK -> {
-                if (!MusicLinkValidator.isValidLink(parameters.musicAppPackage, parameters.musicLink)) {
+                val link = if (parameters.musicAppPackage == MusicLinkValidator.YOUTUBE_MUSIC) parameters.musicLink.trim() else parameters.musicLink
+                if (!MusicLinkValidator.isValidLink(parameters.musicAppPackage, link)) {
                     return ActionResult(false, "Invalid music link")
                 }
-                Intent(Intent.ACTION_VIEW, Uri.parse(parameters.musicLink))
+                Intent(Intent.ACTION_VIEW, Uri.parse(link))
             }
             else -> return ActionResult(false, "Invalid music action")
         }.setPackage(parameters.musicAppPackage).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

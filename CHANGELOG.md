@@ -11,6 +11,10 @@ All notable FlowPilot changes are documented here.
 - Show service-specific song-link formats and validate links as they are entered, before saving or running a rule.
 - Use trigger variables in music search queries and song-link actions; resolved links are validated against the selected service before opening.
 
+### Fixed
+
+- Trim surrounding whitespace from YouTube Music links before validating and opening them, including links resolved from templates.
+
 ## [2.2.1] - 2026-11-05
 
 ### Fixed

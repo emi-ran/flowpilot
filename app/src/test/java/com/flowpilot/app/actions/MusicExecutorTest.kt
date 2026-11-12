@@ -39,6 +39,22 @@ class MusicExecutorTest {
         ).forEach { (pkg, link) -> assertThat(MusicLinkValidator.isValidLink(pkg, link)).isFalse() }
     }
 
+    @Test fun youtubeLinksTrimOuterWhitespaceBeforeValidationAndLaunch() {
+        val link = "https://music.youtube.com/watch?v=dQw4w9WgXcQ"
+        var launched: Intent? = null
+        val executor = MusicExecutor { launched = it }
+        val rule = Automation(id = "id", name = "music", createdAt = 1,
+            action = ActionType.MUSIC_PLAY_LINK, musicAppPackage = youtube,
+            musicLink = " \${notification.text|stripPrefix:\"playmusic\"|trim} ")
+        val parameters = ActionParametersFactory.create(rule, TemplateContext(values = mapOf(
+            "notification.text" to "playmusic $link")))
+        assertThat(MusicLinkValidator.isValidTemplate(youtube, " $link ")).isTrue()
+        assertThat(executor.execute(ActionType.MUSIC_PLAY_LINK, parameters).success).isTrue()
+        assertThat(launched!!.data.toString()).isEqualTo(link)
+        assertThat(MusicLinkValidator.isValidLink(youtube, "https://music.youtube.com/watch?v=abc defghijk")).isFalse()
+        assertThat(MusicLinkValidator.isValidLink(youtube, " https://music.youtube.com.evil.test/watch?v=abcdefghijk ")).isFalse()
+    }
+
     @Test fun templatesUseRendererSyntaxAndRequireAnExpression() {
         listOf(
             "https://open.spotify.com/track/abc123",
