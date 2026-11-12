@@ -13,7 +13,7 @@ Automate your device with event-driven triggers, privileged system actions via S
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Shizuku Supported](https://img.shields.io/badge/Shizuku-Supported-FB8C00)](https://shizuku.rikka.app)
-[![Privacy](https://img.shields.io/badge/Telemetry-Zero%20%2F%20Offline%20by%20Default-00C853)](#-privacy--zero-trust-promise)
+[![Privacy](https://img.shields.io/badge/Telemetry-Zero-00C853)](#-privacy--zero-trust-promise)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
 <br/>
@@ -31,7 +31,7 @@ Automate your device with event-driven triggers, privileged system actions via S
     <img src="https://img.shields.io/badge/💡%20How%20It%20Works-Guide-34A853?style=for-the-badge" alt="How It Works" />
   </a>
   &nbsp;
-  <a href="#-ready-to-use-presets">
+  <a href="#-1-tap-ready-presets">
     <img src="https://img.shields.io/badge/⚡%20Presets-1--Tap%20Recipes-FB8C00?style=for-the-badge" alt="Presets" />
   </a>
   &nbsp;
@@ -46,7 +46,7 @@ Automate your device with event-driven triggers, privileged system actions via S
 
 > [!NOTE]
 > **📱 Device Compatibility & Community Testing Notice**
-> FlowPilot is an independent open-source project, actively developed and primary-tested on **Xiaomi HyperOS (Xiaomi 15T Pro)**. Strict adherence to standard Android Jetpack and system APIs is maintained throughout the codebase; CI runs the JVM unit suites, Android lint, debug/release builds, and the SDK-free contract scripts in `scripts/`, so device and OEM behavior is verified by hand and by community reports.
+> FlowPilot is an independent open-source project, primarily tested on **Xiaomi HyperOS (Xiaomi 15T Pro)**. When Android or build inputs change, CI runs JVM unit suites, Android lint, debug/release builds, and the SDK-free `scripts/` checks; other changes can pass the required check without those steps. Device and OEM behavior is verified by hand and through community reports.
 >
 > Because OEM skins (Samsung One UI, Google Pixel, Motorola, OxygenOS, etc.) implement background process limits differently, your test reports, feedback, and pull requests are warmly welcomed!
 
@@ -60,11 +60,11 @@ Most Android automation tools force you to choose between steep complexity, heav
   <tr>
     <td width="50%">
       <h3>🔋 Battery-First &amp; Event-Driven</h3>
-      <p>No constant CPU wake-locks or polling loops. Hardware sensors (accelerometer, proximity, light) and broadcast receivers register <b>only when an active rule needs them</b> and unregister instantly when idle.</p>
+      <p>The running engine periodically processes events. Hardware sensors and relevant broadcast receivers register <b>only when enabled rules need them</b> and unregister when no longer needed.</p>
     </td>
     <td width="50%">
-      <h3>🔒 Offline by Default &amp; Private</h3>
-      <p>No analytics, no telemetry, no remote accounts. Optional update checks query GitHub only when enabled and can be turned off in Settings. Webhooks and SMS actions send only the data you explicitly configure.</p>
+      <h3>🔒 Private by Design</h3>
+      <p>No analytics, telemetry, or remote accounts. Release builds check GitHub for updates by default; this can be disabled in Settings. Webhook and SMS actions send the data you configure.</p>
     </td>
   </tr>
   <tr>
@@ -83,8 +83,8 @@ Most Android automation tools force you to choose between steep complexity, heav
       <p>Let your phone speak notification text, SMS codes, caller names, battery levels, and other trigger data with on-device TTS. Messages synthesize on demand and are cached offline—zero internet required.</p>
     </td>
     <td width="50%">
-      <h3>🔐 Safe Sharing &amp; Encrypted Backups</h3>
-      <p>Export portable sanitized JSON rules to share with friends, or secure your entire library with <b>AES-256-GCM password encryption</b> (PBKDF2 with 100,000 iterations).</p>
+      <h3>🔐 JSON Export &amp; Encrypted Backups</h3>
+      <p>JSON exports remove webhook URL, headers, and body but may retain other personal data; review before sharing. Protect full backups with <b>AES-256-GCM password encryption</b> (PBKDF2 with 100,000 iterations).</p>
     </td>
   </tr>
 </table>
@@ -140,7 +140,7 @@ Start automating instantly with built-in recipes designed for everyday life:
 | Preset | Trigger | Key Actions |
 | :--- | :--- | :--- |
 | 🌙 **Bedtime Routine** | Time reaches 23:30 | Enables Dark Mode, sets Silent profile, turns on DND, dims screen to 10% |
-| 🔋 **Full Battery Protection** | Battery reaches 100% | Speaks offline unplug voice reminder & pushes persistent notification |
+| 🔋 **Full Battery Protection** | Battery reaches 100% while charging | Speaks an unplug reminder, shows a notification, and plays a sound |
 | ⚡ **Battery Saver Emergency** | Battery drops below 15% while unplugged | Turns on Battery Saver, disables Bluetooth, lowers brightness, enables Dark Mode |
 | ☀️ **Morning Wake Up** | Charger unplugged OR screen on (weekdays 05:00–10:00) | Turns off DND, restores normal sound, sets brightness to 70% |
 | 🌙 **Night Quiet** | 23:00 schedule OR screen off (22:00–08:00) | Turns on DND, silences sound profile, drops media volume to 20% |
@@ -151,8 +151,8 @@ Start automating instantly with built-in recipes designed for everyday life:
 | 🔦 **Shake for Flashlight** | Firm phone shake | Toggles rear camera torch with tactile haptic feedback |
 | 🎬 **Cinema / Night Reading** | Ambient light drops < 5 lx | Dims brightness to minimum and switches system to Dark Theme |
 | 🚗 **Leaving Home Mode** | Disconnected from Home Wi-Fi | Enables Mobile Data (Shizuku), sets Normal ringer, raises volume to 80% |
-| 🏠 **Welcome Home Mode** | Connected to Home Wi-Fi | Disables Mobile Data (Shizuku) to save power and restores balanced settings |
-| 📍 **SMS Emergency Responder** | Incoming SMS with secret phrase | Locks GPS coordinates and replies with a live Google Maps location link |
+| 🏠 **Welcome Home Mode** | Connected to Home Wi-Fi | Disables Mobile Data (Shizuku) and sets brightness to 50% |
+| 📍 **SMS Emergency Responder** | Incoming SMS with secret phrase | Enables location and replies with a location link if a fix is available; a fix is not guaranteed |
 
 ---
 
@@ -244,8 +244,8 @@ FlowPilot uses **Shizuku** to perform elevated actions (Mobile Data, Airplane Mo
 FlowPilot is engineered with an uncompromised commitment to user privacy:
 
 - 🚫 **Zero Telemetry:** No Firebase Analytics, no Sentry, no remote crash reporters, and zero tracking SDKs.
-- 🔄 **Optional Update Checks:** When enabled, FlowPilot reads the public GitHub Releases API at most once a day and sends no account or device identifier. Disable it in Settings; manual checks remain available.
-- 📵 **No Cloud Synchronization:** Your automations, logs, and secrets never touch any third-party cloud.
+- 🔄 **Optional Update Checks:** Release builds automatically check the public GitHub Releases API by default, at most once a day, without sending an account or device identifier. Disable automatic checks in Settings; manual checks remain available. Debug builds do not check.
+- 📵 **No Cloud Synchronization:** FlowPilot does not automatically synchronize rules, logs, or secrets to a cloud account. User-configured actions can send selected data to external recipients.
 - 🛡️ **Android Keystore Protection:** Webhook secrets, tokens, and sensitive headers are encrypted with AES-256-GCM using Android Keystore keys, hardware-backed when supported by the device.
 - 🙈 **Strict Log Sanitization:** Phone numbers, webhook credentials, and sensitive headers are masked across all UI screens and audit logs.
 
@@ -254,7 +254,7 @@ FlowPilot declares sensitive permissions solely to power explicit automation fea
 - `QUERY_ALL_PACKAGES`: Required to list installed apps in the App Trigger and App Launcher pickers on Android 11+.
 - **Notification access:** Required for notification triggers and media-session triggers and controls; enable FlowPilot in Android's notification access settings.
 - `RECEIVE_SMS` & `SEND_SMS`: Used exclusively by the SMS trigger and direct SMS responder actions.
-- `ACCESS_BACKGROUND_LOCATION`: Powers zero-battery hardware geofencing (`GeofencingClient`) and injects coordinates only into user-configured automations.
+- `ACCESS_BACKGROUND_LOCATION`: Supports Google Play Services geofencing (`GeofencingClient`) and location values in user-configured automations; power use depends on device and conditions.
 - `FOREGROUND_SERVICE_LOCATION`: Required by Android 14+ to keep geofencing and active location tasks compliant while running in the background.
 - `REQUEST_INSTALL_PACKAGES`: Used only to open Android's installer for an APK downloaded from the official FlowPilot GitHub release after the user taps Download &amp; Install. FlowPilot never downloads or installs unattended.
 
@@ -284,7 +284,7 @@ If any check fails, do not install the APK. Gradle dependency checksums, reposit
 
 | Mode | Format | Security | Ideal For |
 | :--- | :--- | :--- | :--- |
-| **Sanitized JSON** | Plain JSON | Webhook URLs & credentials stripped | Sharing automation rules with friends or online communities |
+| **Sanitized JSON** | Plain JSON | Webhook URL, headers and body stripped; other personal data may remain | Export after reviewing remaining content before sharing |
 | **Encrypted Backup** | Encrypted Container | **AES-256-GCM + PBKDF2** (100k iterations, salt + IV) | Full backup including secrets, phone numbers, and enabled states |
 
 Restoring is effortless: choose your file, enter your password, and select **Merge** or **Replace**. Secrets are automatically re-encrypted with your new device's local Android Keystore.

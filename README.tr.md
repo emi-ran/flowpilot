@@ -13,7 +13,7 @@ Olay odaklı tetikleyiciler, Shizuku ile ayrıcalıklı sistem yetkileri ve akı
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Aray%C3%BCz-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Shizuku Desteği](https://img.shields.io/badge/Shizuku-Destekli-FB8C00)](https://shizuku.rikka.app)
-[![Gizlilik](https://img.shields.io/badge/Telemetri-S%C4%B1f%C4%B1r%20%2F%20Varsay%C4%B1lan%20%C3%87evrimd%C4%B1%C5%9F%C4%B1-00C853)](#-gizlilik-ve-s%C4%B1f%C4%B1r-g%C3%BCven-ilkesi)
+[![Gizlilik](https://img.shields.io/badge/Telemetri-S%C4%B1f%C4%B1r-00C853)](#-gizlilik-ve-s%C4%B1f%C4%B1r-g%C3%BCven-ilkesi)
 [![Lisans: GPL-3.0](https://img.shields.io/badge/Lisans-GPL--3.0-blue.svg)](LICENSE)
 
 <br/>
@@ -46,7 +46,7 @@ Olay odaklı tetikleyiciler, Shizuku ile ayrıcalıklı sistem yetkileri ve akı
 
 > [!NOTE]
 > **📱 Cihaz Uyumluluğu & Topluluk Testi Bilgilendirmesi**
-> FlowPilot bağımsız bir açık kaynak projesidir ve bizzat geliştiricinin kişisel cihazı olan **Xiaomi HyperOS (Xiaomi 15T Pro)** üzerinde günlük olarak geliştirilip test edilmektedir. Proje genelinde standart Android Jetpack ve sistem API'lerine titizlikle uyulmuş; CI'da JVM birim testleri, Android lint, debug/release derlemeleri ve `scripts/` altındaki SDK'sız sözleşme betikleri çalıştırılmaktadır. Cihaz ve OEM davranışları elle ve topluluk geri bildirimleriyle doğrulanır.
+> FlowPilot bağımsız bir açık kaynak projesidir ve öncelikle **Xiaomi HyperOS (Xiaomi 15T Pro)** üzerinde test edilir. Android veya derleme girdileri değiştiğinde CI, JVM birim testlerini, Android lint'i, debug/release derlemelerini ve `scripts/` altındaki SDK'sız kontrolleri çalıştırır; diğer değişiklikler bu adımlar çalışmadan gerekli kontrolü geçebilir. Cihaz ve üretici davranışları elle ve topluluk geri bildirimleriyle doğrulanır.
 >
 > Farklı üretici arayüzleri (Samsung One UI, Google Pixel, Motorola, OxygenOS vb.) arka plan kısıtlamalarını farklı uygulayabildiğinden, test geri bildirimleriniz, cihaz deneyimleriniz ve katkılarınız (Pull Request) memnuniyetle karşılanır!
 
@@ -60,11 +60,11 @@ Geleneksel Android otomasyon uygulamaları genelde karmaşık arayüzler, sürek
   <tr>
     <td width="50%">
       <h3>🔋 Pil Dostu &amp; Olay Odaklı</h3>
-      <p>İşlemciyi uyanık tutan (wake-lock) gereksiz döngüler yoktur. Donanım sensörleri (ivmeölçer, yakınlık, ışık) ve yayın alıcıları <b>yalnızca aktif bir kural ihtiyaç duyduğunda</b> devreye girer, işi bitince anında kapanır.</p>
+      <p>Motor çalışırken olayları düzenli aralıklarla işler. Donanım sensörleri ve ilgili yayın alıcıları <b>yalnızca etkin kurallar ihtiyaç duyduğunda</b> devreye girer ve ihtiyaç kalmayınca kapanır.</p>
     </td>
     <td width="50%">
-      <h3>🔒 Varsayılan Olarak Çevrimdışı &amp; Gizli</h3>
-      <p>Analitik, telemetri ve uzak hesap yoktur. İsteğe bağlı güncelleme kontrolü yalnızca açıksa GitHub'a sorgu gönderir ve Ayarlar'dan kapatılabilir. Webhook ve SMS eylemleri sadece sizin seçtiğiniz verileri iletir.</p>
+      <h3>🔒 Gizlilik Odaklı</h3>
+      <p>Analitik, telemetri ve uzak hesap yoktur. Release sürümünde GitHub güncelleme kontrolü varsayılan olarak açıktır ve Ayarlar'dan kapatılabilir. Webhook ve SMS eylemleri yapılandırdığınız verileri iletir.</p>
     </td>
   </tr>
   <tr>
@@ -83,8 +83,8 @@ Geleneksel Android otomasyon uygulamaları genelde karmaşık arayüzler, sürek
       <p>Bildirim metnini, SMS kodunu, arayan bilgisini, pil seviyesini ve diğer tetikleyici verilerini cihaz içi TTS ile seslendirin. Mesajlar ihtiyaç anında sentezlenir ve çevrimdışı önbelleğe alınır; internet gerekmez.</p>
     </td>
     <td width="50%">
-      <h3>🔐 Güvenli Paylaşım &amp; Şifreli Yedek</h3>
-      <p>Kurallarınızı temizlenmiş JSON olarak paylaşın veya tüm otomasyon arşivinizi <b>AES-256-GCM parola korumalı</b> (100.000 iterasyon PBKDF2) güvenli yedeklerle koruma altına alın.</p>
+      <h3>🔐 JSON Aktarımı &amp; Şifreli Yedek</h3>
+      <p>JSON dışa aktarımı webhook URL'sini, başlıklarını ve gövdesini çıkarır; başka kişisel veriler kalabilir, paylaşmadan önce inceleyin. Tam yedeklerinizi <b>AES-256-GCM parola korumasıyla</b> (100.000 iterasyon PBKDF2) saklayın.</p>
     </td>
   </tr>
 </table>
@@ -151,8 +151,8 @@ Günlük yaşamınızı anında kolaylaştıracak yerleşik şablonlarla hemen b
 | 🔦 **Sallayarak Fener Aç/Kapat** | Cihaz sağlam sallandığında | Kamera flaşını dokunsal geri bildirimle açar veya kapatır |
 | 🎬 **Sinema / Gece Okuma** | Ortam ışığı < 5 lüks olduğunda | Parlaklığı minimuma indirir ve sistemi Koyu Temaya geçirir |
 | 🚗 **Evden Çıkış Modu** | Ev Wi-Fi bağlantısı koptuğunda | Mobil Veriyi açar (Shizuku), Normal zil sesine geçer, medya sesini %80 yapar |
-| 🏠 **Eve Giriş Modu** | Ev Wi-Fi ağına bağlanıldığında | Pil tasarrufu için Mobil Veriyi kapatır (Shizuku) ve dengeli ses ayarlarını geri yükler |
-| 📍 **SMS Acil Konum Yanıtlayıcı**| Gizli kelimeli SMS geldiğinde | GPS koordinatlarını alıp harita bağlantısını SMS ile otomatik yanıtlar |
+| 🏠 **Eve Giriş Modu** | Ev Wi-Fi ağına bağlanıldığında | Mobil Veriyi kapatır (Shizuku) ve ekran parlaklığını %50 yapar |
+| 📍 **SMS Acil Konum Yanıtlayıcı** | Gizli kelimeli SMS geldiğinde | Konumu açar ve konum alınabilirse bağlantıyı SMS ile yanıtlar; konum alınması garanti değildir |
 
 ---
 
@@ -244,8 +244,8 @@ FlowPilot, yetkili işlemleri (Mobil Veri, Uçak Modu, GPS, Koyu Tema, Uygulama 
 FlowPilot kullanıcı gizliliğine tavizsiz bir bağlılıkla tasarlanmıştır:
 
 - 🚫 **Sıfır Telemetri:** Firebase Analytics, Sentry, uzaktan çökme raporlayıcıları veya takip SDK'ları yer almaz.
-- 🔄 **İsteğe Bağlı Güncelleme Kontrolü:** Açıksa FlowPilot herkese açık GitHub Releases API'sini günde en fazla bir kez okur; hesap veya cihaz kimliği göndermez. Ayarlar'dan kapatabilir, manuel kontrolü kullanabilirsiniz.
-- 📵 **Bulut Eşitlemesi Yok:** Kurallarınız, günlükleriniz ve anahtarlarınız asla üçüncü taraf bir buluta gönderilmez.
+- 🔄 **İsteğe Bağlı Güncelleme Kontrolü:** Release sürümü herkese açık GitHub Releases API'sini varsayılan olarak otomatik biçimde günde en fazla bir kez kontrol eder; hesap veya cihaz kimliği göndermez. Otomatik kontrol Ayarlar'dan kapatılabilir, manuel kontrol kullanılabilir. Debug sürümü kontrol yapmaz.
+- 📵 **Bulut Eşitlemesi Yok:** FlowPilot kuralları, günlükleri veya sırları otomatik olarak bir bulut hesabıyla eşitlemez. Kullanıcının yapılandırdığı eylemler seçilen verileri dış alıcılara gönderebilir.
 - 🛡️ **Android Keystore Koruması:** Webhook şifreleri ve özel başlıklar AES-256-GCM ile Android Keystore içinde, cihaz desteklediğinde donanım destekli olarak korunur.
 - 🙈 **Kişisel Veri Maskeleme:** Telefon numaraları, webhook anahtarları ve gizli başlıklar arayüzde ve loglarda maskelenmiş olarak tutulur.
 
@@ -254,7 +254,7 @@ FlowPilot hassas izinleri yalnızca açık otomasyon özelliklerini yerine getir
 - `QUERY_ALL_PACKAGES`: Android 11+ sürümlerinde Uygulama Tetikleyici ve Uygulama Açıcı listelerini gösterebilmek için gereklidir.
 - **Bildirim erişimi:** Bildirim tetikleyicileri ile medya oturumu tetikleyicileri ve kontrolleri için gereklidir; Android bildirim erişimi ayarlarında FlowPilot'a izin verin.
 - `RECEIVE_SMS` & `SEND_SMS`: Yalnızca SMS tetikleyicisi ve doğrudan SMS gönderme eylemlerinde kullanılır.
-- `ACCESS_BACKGROUND_LOCATION`: Sıfır pil tüketimli donanım geofence takibi (`GeofencingClient`) ve kullanıcının kurguladığı konum şablonları için kullanılır.
+- `ACCESS_BACKGROUND_LOCATION`: Google Play Services geofence takibini (`GeofencingClient`) ve kullanıcı tarafından yapılandırılan konum şablonlarını destekler; pil tüketimi cihaza ve koşullara bağlıdır.
 - `FOREGROUND_SERVICE_LOCATION`: Android 14+ sürümlerinde geofence ve aktif konum görevlerinin arka planda sorunsuz sürmesi için gereklidir.
 - `REQUEST_INSTALL_PACKAGES`: Yalnızca kullanıcı "İndir ve yükle"ye dokunduktan sonra resmi FlowPilot GitHub sürümünden indirilen APK için Android yükleyicisini açar. FlowPilot gözetimsiz indirme veya kurulum yapmaz.
 
@@ -284,7 +284,7 @@ Herhangi bir kontrol başarısız olursa APK'yı yüklemeyin. Gradle bağımlıl
 
 | Mod | Biçim | Güvenlik | Ne Zaman Kullanılır? |
 | :--- | :--- | :--- | :--- |
-| **Temizlenmiş JSON** | Düz Metin JSON | Webhook URL ve hassas kimlik bilgileri çıkarılır | Kuralları arkadaşlarınızla veya toplulukla güvenle paylaşırken |
+| **Temizlenmiş JSON** | Düz Metin JSON | Webhook URL, başlık ve gövdesi çıkarılır; başka kişisel veriler kalabilir | Paylaşmadan önce kalan içeriği inceleyerek dışa aktarım |
 | **Şifreli Tam Yedek** | Şifreli Paket | **AES-256-GCM + PBKDF2** (100.000 iterasyon, salt + IV) | Tüm webhook sırları, telefon numaraları ve aktiflik durumlarıyla eksiksiz yedek |
 
 Geri yükleme çok kolaydır: Dosyanızı seçin, parolanızı girin ve **Birleştir** veya **Üzerine Yaz** tercihinizi yapın. İçe aktarılan sırlar hedef cihazın yerel Android Keystore'u ile anında yeniden şifrelenir.

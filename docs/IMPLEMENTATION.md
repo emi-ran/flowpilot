@@ -12,6 +12,8 @@ Battery Saver off | Dark theme on | Dark theme off | Auto-rotate on | Auto-rotat
 UsageStatsManager, Wi-Fi transitions via ConnectivityManager/NetworkCallback, notification arrivals via NotificationListenerService, phone call transitions via TelephonyCallback / PhoneStateListener, device orientation transitions via Proximity and Accelerometer/Gravity sensors, and charger/battery transitions via Android broadcasts, evaluates enabled rules and conditions, executes
 each schedule occurrence once, and restarts on boot/app update when the engine-startup preference is enabled.
 
+Additional media triggers cover playing, paused, and track changes; actions include media playback controls and Spotify/YouTube Music search and song links. See Media automation below for permission and playback limitations.
+
 Actions can have a per-action pre-execution delay of 0-300 seconds. Configured actions can be reordered in Create and Edit screens using Move Up / Move Down controls (`ReorderableActionList`). Actions execute strictly sequentially in the configured order; each action waits for its own configured delay before executing. Engine stop cancels any pending delay and records cancellation in execution history.
 
 Rules can have a 0, 1, 5, 15, or 60-minute cooldown. Cooldown applies to all automatic trigger evaluators after a successful run updates `lastTriggeredAt`; manual test runs bypass it. A future `lastTriggeredAt` blocks safely until wall clock catches up.
@@ -203,18 +205,18 @@ tests (Robolectric + Truth) for rule/charger/battery/schedule matching, foregrou
 5. Before execution, repository-backed leases atomically reserve the current rule revision; rule edits, disablement, deletion, and engine stop revoke queued work.
 6. Execute actions through capability-aware executors. If at least one action succeeds, persist `lastTriggeredAt`; always release the execution lease. Suppressed or revoked runs do not create misleading history.
 
-ChargerStateTracker registers only while the engine runs. It queues `ACTION_POWER_CONNECTED` and
+ChargerStateTracker registers while the engine runs and enabled rules need charger events. It queues `ACTION_POWER_CONNECTED` and
 `ACTION_POWER_DISCONNECTED`, dedupes consecutive identical states, and does not query current charger state
 at startup. This prevents an existing cable connection from replaying an action after service restart.
 
-BatteryLevelTracker seeds current percentage from sticky `ACTION_BATTERY_CHANGED` at engine start without
+BatteryLevelTracker seeds current percentage from sticky `ACTION_BATTERY_CHANGED` when enabled rules require it, without
 queuing an event. It evaluates only later percentage crossings: above to at-or-below a below-threshold, or
 below to at-or-above an above-threshold. A level remaining beyond threshold cannot retrigger an action.
 
-ScreenStateTracker registers `ACTION_SCREEN_ON` and `ACTION_SCREEN_OFF` only while the engine runs,
+ScreenStateTracker registers `ACTION_SCREEN_ON` and `ACTION_SCREEN_OFF` while the engine runs and enabled rules need screen events,
 dedupes consecutive events, and does not read or replay current screen state when it starts.
 
-WifiStateTracker seeds the connected SSID at engine start without replaying it. Subsequent Wi-Fi-specific
+WifiStateTracker seeds the connected SSID when enabled rules require it, without replaying it. Subsequent Wi-Fi-specific
 `NetworkCallback` capability changes emit deduplicated connected/disconnected transitions. It does not use
 the default network to derive an SSID because Xiaomi may retain cellular as default while Wi-Fi is connected.
 SSID scans are user-initiated only; their results remain transient. Location permission, device Location, and
@@ -273,7 +275,7 @@ background-activity restrictions remain explicit failure cases.
 
 - WebhookExecutor dispatches HTTPS requests through `PinnedHttpsTransport`, pinning the initial connection to a prevalidated public IP while preserving TLS hostname verification. It validates strict `https` URLs with a host, enforces bounded timeouts (1-60s), sends pre-rendered header/body values, and considers strictly HTTP 2xx status codes as success. Templates support global values, trigger payloads, location aliases, and safe filters. Use `urlencode` for values inserted into URL paths or queries. Unknown and malformed tokens are preserved for non-speech fields and rendering is non-recursive. Location coordinates are obtained live via `LocationFetcher` which checks for fresh cache (<60s, <50m accuracy), triggers an active GPS/network fix with 5-second timeout, and falls back to best cached coordinates. Sensitive headers (`Authorization`, `Cookie`, tokens, secrets) and sensitive parameter values are redacted from log entries and execution failure messages to prevent credential leakage.
 
-Manual test runs execute a saved rule's effective actions on `Dispatchers.IO`, bypassing its trigger and conditions without altering `enabled` or `lastTriggeredAt`. The manual webhook context uses `MANUAL` as its trigger and reads current battery, charger, Wi-Fi state, and live GPS coordinates via `LocationFetcher`; result summaries redact sensitive error values before reaching UI.
+Manual editor test runs execute the current form's effective actions, including unsaved edits, on `Dispatchers.IO`, bypassing triggers and conditions without altering a saved rule's `enabled` or `lastTriggeredAt`. The manual webhook context uses `MANUAL` as its trigger and reads current battery, charger, Wi-Fi state, and live GPS coordinates via `LocationFetcher`; result summaries redact sensitive error values before reaching UI.
 
 Per-rule home-screen shortcuts are pinned with `ShortcutManagerCompat` from Edit → Advanced. The shortcut intent carries only the rule id and targets the exported `RuleShortcutActivity`, which reloads the rule from DataStore and shows a confirmation dialog. Missing rules finish with a message, disabled rules offer to open FlowPilot, and enabled rules call the same `ManualRuleRunner` used by editor test runs. The runner bypasses trigger, condition, and cooldown evaluation, ignores the engine pause state, keeps `enabled` and `lastTriggeredAt` unchanged, and appends a redacted `MANUAL` history entry. HyperOS silently rejects pin requests when MIUI app-op 10017 (Home screen shortcuts) is ignored; the manager checks that op through the numeric hidden `AppOpsManager` overload and the editor opens the MIUI permission editor with the package extra instead of reporting a launcher failure. Shortcut labels use the current rule name at pin time; renaming a rule does not rewrite an already pinned shortcut label, but the activity always loads the current name.
 

@@ -32,16 +32,16 @@ Do not bundle unrelated features. One feature family at a time.
 2. **Charger state** (complete)
     - Charger connected
     - Charger disconnected
-    - Android power broadcasts while engine runs; duplicate states are deduped and existing charger state is not replayed after engine start
+    - Android power broadcasts while the engine runs and enabled rules need charger events; duplicate states are deduped and existing charger state is not replayed on registration
 3. **Battery threshold** (complete)
     - Below selected percentage, such as 20%
     - Above selected percentage, such as 80%
     - Edge-triggered; must not fire repeatedly while remaining past threshold
-    - Current level seeds at engine start without replay; later battery broadcasts trigger only a threshold crossing
+    - Current level seeds when enabled rules require the tracker, without replay; later battery broadcasts trigger only a threshold crossing
 4. **Screen state** (complete; Xiaomi device smoke test passed)
    - Screen on
    - Screen off
-   - Dynamic broadcasts while engine runs; duplicate events deduped and no startup replay
+   - Dynamic broadcasts while the engine runs and enabled rules need screen events; duplicate events deduped and no registration replay
 5. **Headset state** (deferred; do not prioritize unless explicitly requested)
    - Wired headset connected/disconnected
    - Bluetooth audio device connected/disconnected
@@ -62,7 +62,7 @@ Do not bundle unrelated features. One feature family at a time.
 8. **Bluetooth device state** (complete; Xiaomi device smoke test passed)
     - Selected Bluetooth device connected/disconnected
     - Selected bonded device MAC address matching; cached name for UI
-    - Android public ACL broadcasts only while engine runs; no discovery, pairing, scan history, or startup replay
+    - Android public ACL broadcasts only while the engine runs and enabled rules need Bluetooth events; no discovery, pairing, scan history, or startup replay
     - Android 12+ `BLUETOOTH_CONNECT` runtime permission required
 9. **NFC tag scanned** (complete; Xiaomi foreground and background-confirmation smoke tests passed)
      - Selected normalized tag UID matching, with no NDEF payload or tag-tech persistence
@@ -85,13 +85,17 @@ Do not bundle unrelated features. One feature family at a time.
 12. **Location geofencing triggers** (implementation complete; unit tests passed; Xiaomi device smoke test pending)
     - Geographical area enter (`GEOFENCE_ENTER`) and exit (`GEOFENCE_EXIT`).
     - Hardware-assisted geofencing via Google Play Services `GeofencingClient` with zero idle CPU wake-locks.
-    - Persistent event queue in DataStore (`geofence_event_queue`, max 50 entries) ensures transitions captured by `GeofenceBroadcastReceiver` survive process restarts.
+    - DataStore queue (`geofence_event_queue`) can retain transitions across process restarts, but keeps only the latest 50 and discards events older than two hours; delivery is not guaranteed.
     - Dynamic diff synchronization (`calculateGeofenceDiff`): active rules added, disabled/deleted rules removed, and modified rules safely removed before re-adding to prevent request ID collisions.
     - Strict config bounds (lat: -90..90, lng: -180..180 excluding 0,0; radius: 50..1000m).
     - Location prerequisites gating: requires `ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION` ("Allow all the time"), and enabled system location services.
     - Event-driven battery behavior: location-template actions reuse transition coordinates only when their fix is less than 60 seconds old at dispatch; otherwise they request a fresh fix or leave location values empty.
     - Status & diagnostics UI: per-rule state indicators (`REGISTERED`, `UNREGISTERED`, `TRANSITION_ENTER`, `TRANSITION_EXIT`, `REGISTRATION_FAILED`) and receiver error banners.
     - Prerequisite/registration errors retry with bounded backoff (10s base, 60s maximum); a config or prerequisite change retries immediately.
+
+13. **Media session events** (implemented; additional device validation pending)
+    - Playing, paused, and track-changed triggers support an optional app filter and require notification access.
+    - Existing sessions are seeded without replay when observation starts; a newly observed playing session can emit a playing event.
 
 ## Planned Actions
 
@@ -154,6 +158,10 @@ Do not bundle unrelated features. One feature family at a time.
     - Foreground service type `location` attached to `AutomationService` with `FOREGROUND_SERVICE_LOCATION`
     - Dynamic template variables (`${location.lat}`, `${location.lng}`, `${location.coords}`, `${location.maps_url}`) and test run injection
 
+16. **Media controls and music search/link** (implemented; additional device validation pending)
+    - Play, pause, toggle, next and previous can target a media app. Spotify and YouTube Music search and song links use the selected app; playback and background launch are not guaranteed.
+    - Missing or disabled music apps block saving and manual runs; existing and imported rules remain intact.
+
 ### Phase 2 — HyperOS 3 system controls
 
 Each must expose its required permission or Shizuku state. Do not show success unless target device state changes.
@@ -167,7 +175,8 @@ Each must expose its required permission or Shizuku state. Do not show success u
     - Shizuku `svc data enable|disable` with `Settings.Global.mobile_data` / `TelephonyManager.isDataEnabled` readback verification
 4. **Airplane mode on/off** (implementation complete; unit tests passed; device smoke test pending)
     - Shizuku `cmd connectivity airplane-mode enable|disable` with `Settings.Global.AIRPLANE_MODE_ON` readback verification
-5. Location services on/off
+5. **Location services on/off** (implemented; device validation not established here)
+    - Shizuku `cmd location set-location-enabled true|false` with bounded `LocationManager` readback.
 6. **Hotspot on/off** (complete on Android 16; Xiaomi device smoke test passed)
    - Shizuku `newProcess` runs `HotspotBridge` via `app_process` against the app APK; the bridge registers as the tethering owner (`com.android.shell`) and uses the public `TetheringManager.startTethering`/`stopTethering`.
    - Verified on Xiaomi 15T Pro (Android 16) with the screen off and through the full app → Shizuku → bridge path. Android 15 and older report the action as unsupported; `cmd tethering` remains unusable on Android 11+ / HyperOS 3.
@@ -243,6 +252,10 @@ Each must expose its required permission or Shizuku state. Do not show success u
     - Export an encrypted full backup with a six-character-or-longer password; verify plaintext secrets are absent from file, wrong password leaves rules unchanged, and correct password restores secrets plus enabled state.
     - Share/import one encrypted rule and verify its full configuration is restored.
     - Execute notification, SMS, and location actions in Turkish, then verify History results and newly generated automatic rule names are Turkish. Verify custom rule names are unchanged.
+11. **Media and music device validation**
+    - Deny notification access and verify media controls and triggers report the limitation; check existing-session seeding and a newly observed playing session.
+    - With a selected music app absent or disabled, verify the editor's explanation and save/manual-run restrictions; reinstall or enable it and confirm state refresh on return.
+    - Verify template-based song links, including YouTube Music surrounding whitespace, and distinguish opening a player from actual playback.
 
 ## Acceptance Gate
 
