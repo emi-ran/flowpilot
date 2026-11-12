@@ -19,6 +19,8 @@ import java.time.format.DateTimeFormatter
  * @property locationLng Longitude, or null when no location is available.
  * @property triggerSourceIndex 1-based index of the matched trigger inside a multi-trigger rule.
  * @property values Additional dotted variables (notification.*, call.*, app.*, rule.name, ...).
+ * Media events provide `media.title` and `media.artist` here, using empty strings for missing
+ * metadata. These event values are transient and must not be written to logs or history.
  */
 data class TemplateContext(
     val trigger: String = "",

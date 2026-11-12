@@ -32,6 +32,7 @@ object ActionParametersFactory {
             vibrationDurationMs = rule.vibrationDurationMs,
             vibrationAmplitude = rule.vibrationAmplitude,
             mediaVolumePercent = rule.mediaVolumePercent,
+            mediaTargetPackage = rule.mediaTargetPackage,
             soundPreset = rule.soundPreset,
             soundUri = rule.soundUri,
             soundDurationMs = rule.soundDurationMs,

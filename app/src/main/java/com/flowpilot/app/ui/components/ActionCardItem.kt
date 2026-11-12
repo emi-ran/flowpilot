@@ -46,6 +46,11 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.VIBRATE -> Icons.Default.Vibration
     ActionType.PLAY_SOUND -> Icons.Default.MusicNote
     ActionType.SET_MEDIA_VOLUME -> Icons.AutoMirrored.Filled.VolumeUp
+    ActionType.MEDIA_PLAY -> Icons.Default.PlayArrow
+    ActionType.MEDIA_PAUSE -> Icons.Default.Pause
+    ActionType.MEDIA_TOGGLE -> Icons.Default.PlayCircle
+    ActionType.MEDIA_NEXT -> Icons.Default.SkipNext
+    ActionType.MEDIA_PREVIOUS -> Icons.Default.SkipPrevious
     ActionType.LAUNCH_APP -> Icons.Default.Apps
     ActionType.OPEN_URL -> Icons.AutoMirrored.Filled.OpenInNew
     ActionType.CREATE_ALARM -> Icons.Default.Alarm
@@ -111,6 +116,9 @@ fun ActionCardItem(
     // Volume
     mediaVolumePercent: Int = 70,
     onMediaVolumeChange: (Int) -> Unit = {},
+    mediaTargetPackage: String = "",
+    onChooseMediaTarget: () -> Unit = {},
+    onClearMediaTarget: () -> Unit = {},
     // Launch app
     launchAppName: String = "",
     launchPackage: String = "",
@@ -493,6 +501,28 @@ fun ActionCardItem(
                             steps = 0,
                             modifier = Modifier.weight(1f),
                         )
+                    }
+                }
+                ActionType.MEDIA_PLAY, ActionType.MEDIA_PAUSE, ActionType.MEDIA_TOGGLE,
+                ActionType.MEDIA_NEXT, ActionType.MEDIA_PREVIOUS -> {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.media_target_shared_explanation),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                    OutlinedCard(onClick = onChooseMediaTarget, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            AppIconImage(packageName = mediaTargetPackage, modifier = Modifier.size(28.dp), fallbackIcon = Icons.Default.MusicNote)
+                            Spacer(Modifier.width(10.dp))
+                            Text(mediaTargetPackage.ifBlank { stringResource(R.string.media_target_system) },
+                                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    if (mediaTargetPackage.isNotEmpty()) {
+                        TextButton(onClick = onClearMediaTarget) { Text(stringResource(R.string.media_target_system)) }
                     }
                 }
                 ActionType.LAUNCH_APP -> {

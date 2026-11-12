@@ -157,12 +157,14 @@ internal object ImportValidator {
             when (r.triggerEvent) {
                 TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED -> require(packageName.matches(r.appPackage)) { "Invalid trigger package" }
                 TriggerEvent.NOTIFICATION_RECEIVED -> require(r.notificationAppPackage.isBlank() || packageName.matches(r.notificationAppPackage)) { "Invalid notification package" }
+                TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED -> require(r.mediaTriggerPackage.isBlank() || packageName.matches(r.mediaTriggerPackage)) { "Invalid media trigger package" }
                 TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED -> require(bluetoothAddress.matches(r.bluetoothDeviceAddress)) { "Invalid Bluetooth address" }
                 TriggerEvent.NFC_TAG_SCANNED -> require(NfcTagUtils.isValidTagId(r.nfcTagId)) { "Invalid NFC tag" }
                 else -> Unit
             }
             if (ActionType.LAUNCH_APP in actions) require(packageName.matches(r.launchPackage)) { "Invalid launch package" }
             if (ActionType.FORCE_STOP_APP in actions) require(packageName.matches(r.forceStopPackage)) { "Invalid force-stop package" }
+            if (actions.any { it in setOf(ActionType.MEDIA_PLAY, ActionType.MEDIA_PAUSE, ActionType.MEDIA_TOGGLE, ActionType.MEDIA_NEXT, ActionType.MEDIA_PREVIOUS) }) require(r.mediaTargetPackage.isBlank() || packageName.matches(r.mediaTargetPackage)) { "Invalid media target package" }
             if (ActionType.OPEN_URL in actions) require(webUri(r.url)) { "Invalid URL" }
             if (ActionType.DIAL_NUMBER in actions || ActionType.CALL_NUMBER in actions) require(r.phoneNumber.isNotBlank()) { "Missing phone number" }
             if (ActionType.SEND_SMS in actions) require(r.smsRecipient.isNotBlank() && r.smsMessage.isNotBlank()) { "Missing SMS fields" }

@@ -25,6 +25,9 @@ enum class CapabilityRequirement {
 
     /** Needs Android's notification runtime permission on Android 13+. */
     NOTIFICATIONS,
+    /** Needs user-grantable notification listener access for media sessions. */
+    NOTIFICATION_LISTENER,
+
 
     /** Needs user-grantable Notification Policy Access (Do Not Disturb access). */
     NOTIFICATION_POLICY,
@@ -79,6 +82,11 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     SOUND_PROFILE_SILENT("Sound profile: Silent", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_POLICY),
     PLAY_SOUND("Play sound", ActionCategory.AUDIO, CapabilityRequirement.NONE),
     SET_MEDIA_VOLUME("Set media volume", ActionCategory.AUDIO, CapabilityRequirement.NONE),
+    MEDIA_PLAY("Play media", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
+    MEDIA_PAUSE("Pause media", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
+    MEDIA_TOGGLE("Toggle media playback", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
+    MEDIA_NEXT("Next track", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
+    MEDIA_PREVIOUS("Previous track", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
     SPEAK_TEXT("Speak text (TTS)", ActionCategory.AUDIO, CapabilityRequirement.NONE),
     CREATE_ALARM("Create alarm", ActionCategory.CLOCK, CapabilityRequirement.NONE),
     START_TIMER("Start timer", ActionCategory.CLOCK, CapabilityRequirement.NONE),
@@ -129,6 +137,7 @@ enum class TriggerCategory(val label: String) {
     SMS("SMS"),
     MOTION("Motion"),
     LOCATION("Location"),
+    MEDIA("Media"),
 }
 
 @Serializable
@@ -252,7 +261,10 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     LIGHT_ABOVE("Ambient light above level", TriggerCategory.DISPLAY),
     SMS_RECEIVED("SMS received", TriggerCategory.SMS),
     GEOFENCE_ENTER("Entered location area", TriggerCategory.LOCATION),
-    GEOFENCE_EXIT("Exited location area", TriggerCategory.LOCATION);
+    GEOFENCE_EXIT("Exited location area", TriggerCategory.LOCATION),
+    MEDIA_PLAYING("Media started playing", TriggerCategory.MEDIA),
+    MEDIA_PAUSED("Media paused", TriggerCategory.MEDIA),
+    MEDIA_TRACK_CHANGED("Media track changed", TriggerCategory.MEDIA);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }
@@ -310,6 +322,8 @@ data class Automation(
     val notificationAppPackage: String = "",
     val notificationAppName: String = "",
     val notificationKeyword: String = "",
+    /** Optional media-session package filter; empty matches any player. */
+    val mediaTriggerPackage: String = "",
     /** Legacy flat-AND condition list; still authoritative when [conditionTree] is null. */
     val conditions: List<RuleCondition> = emptyList(),
     /**
@@ -326,6 +340,8 @@ data class Automation(
     val vibrationDurationMs: Int = 220,
     val vibrationAmplitude: Int = 180,
     val mediaVolumePercent: Int = 50,
+    /** Optional media-session target; empty selects the active player. */
+    val mediaTargetPackage: String = "",
     val soundPreset: SoundPreset = SoundPreset.NOTIFICATION,
     val soundUri: String = "",
     val soundName: String = "",

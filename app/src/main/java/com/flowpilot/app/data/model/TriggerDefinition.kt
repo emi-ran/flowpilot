@@ -89,6 +89,21 @@ sealed interface TriggerDefinition {
         override val event: TriggerEvent get() = TriggerEvent.NOTIFICATION_RECEIVED
     }
     @Serializable
+    @SerialName("MEDIA_PLAYING")
+    data class MediaPlaying(val mediaTriggerPackage: String = "") : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.MEDIA_PLAYING
+    }
+    @Serializable
+    @SerialName("MEDIA_PAUSED")
+    data class MediaPaused(val mediaTriggerPackage: String = "") : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.MEDIA_PAUSED
+    }
+    @Serializable
+    @SerialName("MEDIA_TRACK_CHANGED")
+    data class MediaTrackChanged(val mediaTriggerPackage: String = "") : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.MEDIA_TRACK_CHANGED
+    }
+    @Serializable
     @SerialName("CALL_RINGING")
     data object CallRinging : TriggerDefinition {
         override val event: TriggerEvent get() = TriggerEvent.CALL_RINGING
@@ -174,6 +189,9 @@ fun Automation.legacyTriggerDefinition(): TriggerDefinition = when (triggerEvent
     TriggerEvent.BLUETOOTH_DISCONNECTED -> TriggerDefinition.BluetoothDisconnected(bluetoothDeviceAddress, bluetoothDeviceName)
     TriggerEvent.NFC_TAG_SCANNED -> TriggerDefinition.NfcTag(nfcTagId)
     TriggerEvent.NOTIFICATION_RECEIVED -> TriggerDefinition.Notification(notificationAppPackage, notificationAppName, notificationKeyword)
+    TriggerEvent.MEDIA_PLAYING -> TriggerDefinition.MediaPlaying(mediaTriggerPackage)
+    TriggerEvent.MEDIA_PAUSED -> TriggerDefinition.MediaPaused(mediaTriggerPackage)
+    TriggerEvent.MEDIA_TRACK_CHANGED -> TriggerDefinition.MediaTrackChanged(mediaTriggerPackage)
     TriggerEvent.CALL_RINGING -> TriggerDefinition.CallRinging
     TriggerEvent.CALL_ANSWERED -> TriggerDefinition.CallAnswered
     TriggerEvent.CALL_OUTGOING -> TriggerDefinition.CallOutgoing
@@ -206,6 +224,9 @@ fun Automation.withTrigger(definition: TriggerDefinition): Automation = when (de
     is TriggerDefinition.BluetoothDisconnected -> copy(triggerEvent = definition.event, triggerDefinitions = null, bluetoothDeviceAddress = definition.bluetoothDeviceAddress, bluetoothDeviceName = definition.bluetoothDeviceName)
     is TriggerDefinition.NfcTag -> copy(triggerEvent = definition.event, triggerDefinitions = null, nfcTagId = definition.nfcTagId)
     is TriggerDefinition.Notification -> copy(triggerEvent = definition.event, triggerDefinitions = null, notificationAppPackage = definition.notificationAppPackage, notificationAppName = definition.notificationAppName, notificationKeyword = definition.notificationKeyword)
+    is TriggerDefinition.MediaPlaying -> copy(triggerEvent = definition.event, triggerDefinitions = null, mediaTriggerPackage = definition.mediaTriggerPackage)
+    is TriggerDefinition.MediaPaused -> copy(triggerEvent = definition.event, triggerDefinitions = null, mediaTriggerPackage = definition.mediaTriggerPackage)
+    is TriggerDefinition.MediaTrackChanged -> copy(triggerEvent = definition.event, triggerDefinitions = null, mediaTriggerPackage = definition.mediaTriggerPackage)
     TriggerDefinition.CallRinging -> copy(triggerEvent = definition.event, triggerDefinitions = null)
     TriggerDefinition.CallAnswered -> copy(triggerEvent = definition.event, triggerDefinitions = null)
     TriggerDefinition.CallOutgoing -> copy(triggerEvent = definition.event, triggerDefinitions = null)
@@ -248,6 +269,7 @@ fun TriggerDefinition.isValidTriggerDefinition(): Boolean {
         TriggerEvent.NFC_TAG_SCANNED -> com.flowpilot.app.engine.NfcTagUtils.isValidTagId(r.nfcTagId)
         TriggerEvent.GEOFENCE_ENTER, TriggerEvent.GEOFENCE_EXIT -> com.flowpilot.app.engine.isValidGeofenceConfig(r.geofenceLatitude, r.geofenceLongitude, r.geofenceRadiusMeters)
         TriggerEvent.NOTIFICATION_RECEIVED -> r.notificationAppPackage.isBlank() || Regex("^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+$").matches(r.notificationAppPackage)
+        TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED -> r.mediaTriggerPackage.isBlank() || Regex("^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+$").matches(r.mediaTriggerPackage)
         TriggerEvent.SMS_RECEIVED -> r.smsMatchMode != SmsMatchMode.REGEX || runCatching { Regex(r.smsKeyword) }.isSuccess
         else -> true
     }

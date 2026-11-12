@@ -176,6 +176,7 @@ Bir kural en fazla beş bağımsız tetikleyiciyi VEYA mantığıyla birleştire
 - 🏷️ **NFC Etiketleri:** Fiziksel taramalarda anında hex UID eşleşmesi. Ön plandaki ReaderMode taramaları eşleşen kuralları otomatik çalıştırır; Android arka plan keşfi FlowPilot'ı açar ve eşleşen NFC otomasyonu çalışmadan önce açık onay ister.
 - 📞 **Arama & SMS:** Gelen arama çalıyor, yanıtlandı, giden arama başladı, arama bitti; SMS gönderen numaraya ve kelime, önek veya regex kalıbına göre tetikleme.
 - 🔔 **Bildirimler:** Seçili uygulamalardan gelen bildirimler ve anahtar kelime filtreleme. FlowPilot'un kendi durum bildirimleri ve HyperOS ses/kulaklık arayüz bildirimleri yok sayılır; yerinde güncelleme veya OEM süreç sonlandırması sonrası Android dinleyiciyi bağsız bırakırsa bildirim kuralları sistemden yeniden bağlanma ister.
+- 🎵 **Medya:** Oynatma başladığında, duraklatıldığında veya parça değiştiğinde tetikler; isteğe bağlı medya uygulaması filtresi vardır. Bildirim erişimi gerekir; dinleme yalnızca etkin kurallar ihtiyaç duyduğunda yapılır. Takipçi başladığında zaten mevcut oturumlar olay üretilmeden sessizce başlangıç durumuna alınır; başlangıçtan sonra yeni görülen ve zaten oynayan bir oturum ise oynatma olayı üretir. `${media.title}` ve `${media.artist}` geçici olay değerleridir; günlük veya çalışma geçmişine yazılmaz. Şablon destekli eylemler bu değerleri açıkça gösterebilir veya gönderebilir.
 
 ---
 
@@ -198,6 +199,7 @@ Tek bir kuralda birden çok eylemi sürükle-bırak yöntemiyle dilediğiniz sı
 - 🌐 **Bağlantı Kontrolü (Shizuku ile):** Wi-Fi, Mobil Veri, Uçak Modu, Bluetooth, GPS Konum ve Wi-Fi Erişim Noktası (Android 16+) açma/kapatma.
 - 🖥️ **Ekran & Sistem:** El Feneri açma/kapatma, Koyu Tema (Shizuku), Ekranı Otomatik Döndürme, Parlaklık seviyesi, Ekranı Kilitleme (Shizuku), Uygulamayı Zorla Durdurma (Shizuku).
 - 🔊 **Ses & Uyarılar:** Rahatsız Etmeyin (DND) açma/kapatma, Ses Profilleri (Normal / Titreşim / Sessiz), Medya Sesi (%0–100), Özel Ses Çalma (1–60 sn), Titreşim Şablonları (Tek darbe, Çift dokunuş, Uyarı, Kalp atışı, Üçlü dokunuş, SOS) ve Bildirim Gösterme.
+- 🎵 **Medya Kontrolleri:** Oynat, duraklat, oynat/duraklat, sonraki veya önceki parça; isteğe bağlı olarak belirli bir medya uygulaması hedeflenebilir. Medya oturumlarına erişim için bildirim erişimi gerekir; kullanılabilirlik oynatıcıya bağlıdır.
 - 🗣️ **Çevrimdışı Seslendirme (TTS):** Cihazın yerleşik TTS motoruyla metinleri sesli olarak okuyun (konuşma hızı ayarlı). Ses seçicide **Sistem varsayılanı** (telefonun çevrimdışı TTS sesi veya en iyi çevrimdışı yedek) bulunur ve örnek metin seçili sesin dilinde önizlenir. Şablonlarda `${notification.text|stripPrefix:"tts"|trim}`, `${sms.otp}`, `${call.state}` ve `${batteryPercent}` gibi tetikleyici verileri kullanılabilir; ses ihtiyaç anında sentezlenir ve önbelleğe alınır.
 - ⏱️ **Saat & Sayaç:** Sistem alarmı kurma veya arka planda sessiz zamanlayıcı başlatma (1 sn – 24 saat).
 - 🚀 **Uygulama & Web:** Cihazdaki bir uygulamayı açma veya web bağlantısına yönlendirme.
@@ -248,6 +250,7 @@ FlowPilot kullanıcı gizliliğine tavizsiz bir bağlılıkla tasarlanmıştır:
 ### Şeffaf İzin Açıklamaları
 FlowPilot hassas izinleri yalnızca açık otomasyon özelliklerini yerine getirebilmek için talep eder:
 - `QUERY_ALL_PACKAGES`: Android 11+ sürümlerinde Uygulama Tetikleyici ve Uygulama Açıcı listelerini gösterebilmek için gereklidir.
+- **Bildirim erişimi:** Bildirim tetikleyicileri ile medya oturumu tetikleyicileri ve kontrolleri için gereklidir; Android bildirim erişimi ayarlarında FlowPilot'a izin verin.
 - `RECEIVE_SMS` & `SEND_SMS`: Yalnızca SMS tetikleyicisi ve doğrudan SMS gönderme eylemlerinde kullanılır.
 - `ACCESS_BACKGROUND_LOCATION`: Sıfır pil tüketimli donanım geofence takibi (`GeofencingClient`) ve kullanıcının kurguladığı konum şablonları için kullanılır.
 - `FOREGROUND_SERVICE_LOCATION`: Android 14+ sürümlerinde geofence ve aktif konum görevlerinin arka planda sorunsuz sürmesi için gereklidir.

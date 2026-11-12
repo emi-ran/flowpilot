@@ -280,6 +280,20 @@ object RuleEvaluator {
         }
     }
 
+    fun evaluateMedia(
+        rules: List<Automation>,
+        event: MediaSessionEvent,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> = rules.matchingTriggerViews { rule ->
+        rule.enabled &&
+            rule.triggerEvent == event.event &&
+            event.event in setOf(TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED) &&
+            (rule.mediaTriggerPackage.isBlank() || rule.mediaTriggerPackage == event.packageName) &&
+            !rule.isCoolingDown(nowMs) &&
+            matchesRuleConditions(rule, liveState, nowMs)
+    }
+
     fun evaluateNotification(
         rules: List<Automation>,
         event: TransientNotificationEvent,

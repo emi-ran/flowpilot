@@ -1,6 +1,7 @@
 package com.flowpilot.app.permission
 
 import android.app.AppOpsManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.bluetooth.BluetoothManager
@@ -74,8 +75,8 @@ class CapabilityManager(private val context: Context) {
     /** Has the app been granted Notification Listener access? */
     fun hasNotificationListenerAccess(): Boolean {
         val flat = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners") ?: return false
-        val myComponent = "${context.packageName}/${com.flowpilot.app.engine.FlowPilotNotificationListener::class.java.name}"
-        return flat.split(":").any { it.trim().equals(myComponent, ignoreCase = true) || it.trim().startsWith("${context.packageName}/") }
+        val listener = ComponentName(context, com.flowpilot.app.engine.FlowPilotNotificationListener::class.java)
+        return flat.split(":").any { ComponentName.unflattenFromString(it.trim()) == listener }
     }
 
     /** Has the app been granted fine location permission? */
@@ -234,6 +235,9 @@ class CapabilityManager(private val context: Context) {
 
         CapabilityRequirement.NOTIFICATION_POLICY ->
             if (hasNotificationPolicyAccess()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
+
+        CapabilityRequirement.NOTIFICATION_LISTENER ->
+            if (hasNotificationListenerAccess()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
 
         CapabilityRequirement.VIBRATION ->
             if ((context.getSystemService(android.os.Vibrator::class.java))?.hasVibrator() == true) {

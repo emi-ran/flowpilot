@@ -7,6 +7,8 @@ import com.flowpilot.app.data.model.ConditionNode
 import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
+import com.flowpilot.app.data.model.TriggerDefinition
+import com.flowpilot.app.data.model.TriggerDefinitions
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
@@ -19,6 +21,48 @@ class RuleEvaluatorTest {
 
         assertThat(RuleEvaluator.evaluateScreen(listOf(on, off, disabled), ScreenEvent.ON)).containsExactly(on)
         assertThat(RuleEvaluator.evaluateScreen(listOf(on, off, disabled), ScreenEvent.OFF)).containsExactly(off)
+    }
+
+    @Test fun mediaEvents_matchTypeAndPackageAndIgnoreDisabledRules() {
+        val events = listOf(TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED)
+        for (type in events) {
+            val specific = rule(type).copy(id = "specific", mediaTriggerPackage = "music.player")
+            val any = rule(type).copy(id = "any", mediaTriggerPackage = "")
+            val disabled = specific.copy(id = "disabled", enabled = false)
+            val otherTypes = events.filter { it != type }.map { rule(it).copy(id = it.name) }
+            val unrelated = rule(TriggerEvent.SCREEN_ON).copy(id = "screen")
+            val rules = listOf(specific, any, disabled, unrelated) + otherTypes
+
+            assertThat(RuleEvaluator.evaluateMedia(rules, MediaSessionEvent(type, "music.player", "Title", "Artist")))
+                .containsExactly(specific, any)
+            assertThat(RuleEvaluator.evaluateMedia(rules, MediaSessionEvent(type, "other.player", "Title", "Artist")))
+                .containsExactly(any)
+            assertThat(RuleEvaluator.evaluateMedia(rules, MediaSessionEvent(type, "Music.Player", "Title", "Artist")))
+                .containsExactly(any)
+            assertThat(RuleEvaluator.evaluateMedia(rules, MediaSessionEvent(TriggerEvent.SCREEN_ON, "music.player", "", "")))
+                .isEmpty()
+        }
+    }
+
+    @Test fun mediaEvents_respectConditionsCooldownAndMultipleTriggerSources() {
+        val multi = rule().copy(
+            triggerDefinitions = TriggerDefinitions(items = listOf(
+                TriggerDefinition.AppOpened("music.player"),
+                TriggerDefinition.MediaPlaying("other.player"),
+                TriggerDefinition.MediaPlaying("music.player"),
+            )),
+            conditions = listOf(RuleCondition(ConditionType.SCREEN_ON)),
+            cooldownMinutes = 1,
+            lastTriggeredAt = 1000L,
+        )
+        val event = MediaSessionEvent(TriggerEvent.MEDIA_PLAYING, "music.player", "Title", "Artist")
+        val on = LiveSystemState(isScreenOn = true)
+        assertThat(RuleEvaluator.evaluateMedia(listOf(multi), event, on, nowMs = 2000L)).isEmpty()
+        assertThat(RuleEvaluator.evaluateMedia(listOf(multi), event, LiveSystemState(isScreenOn = false), nowMs = 61000L)).isEmpty()
+        val match = RuleEvaluator.evaluateMedia(listOf(multi), event, on, nowMs = 61000L).single()
+        assertThat(match.matchedTriggerIndex).isEqualTo(2)
+        assertThat(match.triggerEvent).isEqualTo(TriggerEvent.MEDIA_PLAYING)
+        assertThat(RuleEvaluator.evaluateMedia(listOf(multi.copy(enabled = false)), event, on, nowMs = 61000L)).isEmpty()
     }
     private fun rule(event: TriggerEvent = TriggerEvent.APP_OPENED) = Automation(
         id = "1", name = "Wallet", appPackage = "wallet.pkg", appName = "Wallet",

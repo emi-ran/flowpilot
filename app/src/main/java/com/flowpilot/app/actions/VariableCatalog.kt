@@ -112,6 +112,15 @@ object VariableCatalog {
             ),
         ),
         VariableGroup(
+            id = "media",
+            titleRes = R.string.variable_group_media,
+            triggers = setOf(TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED),
+            specs = listOf(
+                spec("media.title", R.string.variable_desc_media_title, "Example track", "\${media.title|default:\"Unknown track\"}"),
+                spec("media.artist", R.string.variable_desc_media_artist, "Example artist", "\${media.artist|default:\"Unknown artist\"}"),
+            ),
+        ),
+        VariableGroup(
             id = "wifi",
             titleRes = R.string.variable_group_wifi,
             triggers = setOf(TriggerEvent.WIFI_CONNECTED, TriggerEvent.WIFI_DISCONNECTED),

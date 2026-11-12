@@ -37,6 +37,9 @@ val TriggerEvent.labelRes: Int
         TriggerEvent.SMS_RECEIVED -> R.string.trigger_sms_received
         TriggerEvent.GEOFENCE_ENTER -> R.string.trigger_geofence_enter
         TriggerEvent.GEOFENCE_EXIT -> R.string.trigger_geofence_exit
+        TriggerEvent.MEDIA_PLAYING -> R.string.trigger_media_playing
+        TriggerEvent.MEDIA_PAUSED -> R.string.trigger_media_paused
+        TriggerEvent.MEDIA_TRACK_CHANGED -> R.string.trigger_media_track_changed
     }
 
 @get:StringRes
@@ -61,6 +64,11 @@ val ActionType.labelRes: Int
         ActionType.SOUND_PROFILE_SILENT -> R.string.action_sound_profile_silent
         ActionType.PLAY_SOUND -> R.string.action_play_sound
         ActionType.SET_MEDIA_VOLUME -> R.string.action_set_media_volume
+        ActionType.MEDIA_PLAY -> R.string.action_media_play
+        ActionType.MEDIA_PAUSE -> R.string.action_media_pause
+        ActionType.MEDIA_TOGGLE -> R.string.action_media_toggle
+        ActionType.MEDIA_NEXT -> R.string.action_media_next
+        ActionType.MEDIA_PREVIOUS -> R.string.action_media_previous
         ActionType.SPEAK_TEXT -> R.string.action_speak_text
         ActionType.CREATE_ALARM -> R.string.action_create_alarm
         ActionType.START_TIMER -> R.string.action_start_timer
@@ -122,6 +130,7 @@ val TriggerCategory.labelRes: Int
         TriggerCategory.SMS -> R.string.cat_sms
         TriggerCategory.MOTION -> R.string.cat_motion
         TriggerCategory.LOCATION -> R.string.cat_location
+        TriggerCategory.MEDIA -> R.string.cat_media
     }
 
 @get:StringRes
@@ -210,6 +219,9 @@ val TriggerEvent.descriptionRes: Int
         TriggerEvent.SMS_RECEIVED -> R.string.trigger_sms_received_desc
         TriggerEvent.GEOFENCE_ENTER -> R.string.trigger_geofence_enter_desc
         TriggerEvent.GEOFENCE_EXIT -> R.string.trigger_geofence_exit_desc
+        TriggerEvent.MEDIA_PLAYING -> R.string.trigger_media_playing_desc
+        TriggerEvent.MEDIA_PAUSED -> R.string.trigger_media_paused_desc
+        TriggerEvent.MEDIA_TRACK_CHANGED -> R.string.trigger_media_track_changed_desc
     }
 
 @get:StringRes
@@ -234,6 +246,11 @@ val ActionType.descriptionRes: Int
         ActionType.SOUND_PROFILE_SILENT -> R.string.action_sound_profile_silent_desc
         ActionType.PLAY_SOUND -> R.string.action_play_sound_desc
         ActionType.SET_MEDIA_VOLUME -> R.string.action_set_media_volume_desc
+        ActionType.MEDIA_PLAY -> R.string.action_media_play_desc
+        ActionType.MEDIA_PAUSE -> R.string.action_media_pause_desc
+        ActionType.MEDIA_TOGGLE -> R.string.action_media_toggle_desc
+        ActionType.MEDIA_NEXT -> R.string.action_media_next_desc
+        ActionType.MEDIA_PREVIOUS -> R.string.action_media_previous_desc
         ActionType.SPEAK_TEXT -> R.string.action_speak_text_desc
         ActionType.CREATE_ALARM -> R.string.action_create_alarm_desc
         ActionType.START_TIMER -> R.string.action_start_timer_desc

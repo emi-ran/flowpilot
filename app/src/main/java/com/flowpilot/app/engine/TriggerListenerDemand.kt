@@ -13,6 +13,8 @@ data class TriggerListenerDemand(
     val needsScreen: Boolean,
     val needsWifi: Boolean,
 ) {
+    val needsMedia: Boolean
+        get() = needs(TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED)
     fun needs(vararg types: TriggerEvent) = types.any { it in events }
     companion object {
         fun from(rules: List<Automation>): TriggerListenerDemand {

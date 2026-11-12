@@ -668,7 +668,8 @@
     <string name="perms_send_sms_title">Send SMS messages</string>
     <string name="perms_send_sms_desc">Required for the Send SMS action to send automated background SMS text messages directly without manual app confirmation.</string>
     <string name="perms_notif_listener_title">Notification listener access</string>
-    <string name="perms_notif_listener_desc">Allows FlowPilot to trigger automations when notifications arrive from selected apps.</string>
+    <string name="perms_notif_listener_desc">Allows FlowPilot to trigger automations when notifications arrive from selected apps and to monitor and control media sessions.</string>
+    <string name="media_target_shared_explanation">This target is shared by all media control actions in this rule. Changing it here changes it for all of them.</string>
     <string name="perms_bluetooth_title">Bluetooth paired-device access</string>
     <string name="perms_bluetooth_desc">Required on Android 12+ to list bonded devices and receive Bluetooth device connect/disconnect events. FlowPilot never runs Bluetooth discovery or stores paired-device history.</string>
     <string name="perms_nfc_title">NFC hardware &amp; status</string>
@@ -949,4 +950,26 @@
     <string name="about_btn_github">GitHub Repository</string>
     <string name="about_btn_issues">Report Issue / Feedback</string>
     <string name="engine_not_running">Engine is not running</string>
+    <string name="cat_media">Media</string>
+    <string name="trigger_media_playing">Media started playing</string>
+    <string name="trigger_media_paused">Media paused</string>
+    <string name="trigger_media_track_changed">Media track changed</string>
+    <string name="trigger_media_playing_desc">When media starts playing</string>
+    <string name="trigger_media_paused_desc">When media is paused</string>
+    <string name="trigger_media_track_changed_desc">When the current media track changes</string>
+    <string name="action_media_play">Play media</string>
+    <string name="action_media_pause">Pause media</string>
+    <string name="action_media_toggle">Toggle media playback</string>
+    <string name="action_media_next">Next track</string>
+    <string name="action_media_previous">Previous track</string>
+    <string name="action_media_play_desc">Start media playback</string>
+    <string name="action_media_pause_desc">Pause media playback</string>
+    <string name="action_media_toggle_desc">Toggle media playback</string>
+    <string name="action_media_next_desc">Skip to the next track</string>
+    <string name="action_media_previous_desc">Return to the previous track</string>
+    <string name="variable_group_media">Media</string>
+    <string name="variable_desc_media_title">Current track title</string>
+    <string name="variable_desc_media_artist">Current track artist</string>
+    <string name="media_target_system">Active player</string>
+    <string name="media_trigger_any">Any media app</string>
 </resources>
