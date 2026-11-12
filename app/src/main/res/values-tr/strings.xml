@@ -668,7 +668,8 @@
     <string name="perms_send_sms_title">SMS gönderme</string>
     <string name="perms_send_sms_desc">SMS gönder eyleminin manuel onay olmadan arka planda otomatik SMS gönderebilmesi için gereklidir.</string>
     <string name="perms_notif_listener_title">Bildirim dinleme erişimi</string>
-    <string name="perms_notif_listener_desc">Seçilen uygulamalardan bildirim geldiğinde FlowPilot\'ın otomasyonları tetiklemesini sağlar.</string>
+    <string name="perms_notif_listener_desc">FlowPilot\'ın seçilen uygulamalardan bildirim geldiğinde otomasyonları tetiklemesini ve medya oturumlarını izlemesini ve kontrol etmesini sağlar.</string>
+    <string name="media_target_shared_explanation">Bu hedef, bu kuraldaki tüm medya kontrolü eylemleri için ortaktır. Burada değiştirmek, tümünü etkiler.</string>
     <string name="perms_bluetooth_title">Bluetooth eşleşmiş cihaz erişimi</string>
     <string name="perms_bluetooth_desc">Android 12+ sürümlerde eşleşmiş cihazları listelemek ve bağlanma/kopma olaylarını yakalamak için gereklidir.</string>
     <string name="perms_nfc_title">NFC donanımı ve durumu</string>
@@ -949,4 +950,26 @@
     <string name="about_btn_github">GitHub Deposu</string>
     <string name="about_btn_issues">Sorun Bildir / Geri Bildirim</string>
     <string name="engine_not_running">Motor çalışmıyor</string>
+    <string name="cat_media">Medya</string>
+    <string name="trigger_media_playing">Medya oynatılmaya başladı</string>
+    <string name="trigger_media_paused">Medya duraklatıldı</string>
+    <string name="trigger_media_track_changed">Medya parçası değişti</string>
+    <string name="trigger_media_playing_desc">Medya oynatılmaya başladığında</string>
+    <string name="trigger_media_paused_desc">Medya duraklatıldığında</string>
+    <string name="trigger_media_track_changed_desc">Geçerli medya parçası değiştiğinde</string>
+    <string name="action_media_play">Medyayı oynat</string>
+    <string name="action_media_pause">Medyayı duraklat</string>
+    <string name="action_media_toggle">Medya oynatmayı değiştir</string>
+    <string name="action_media_next">Sonraki parça</string>
+    <string name="action_media_previous">Önceki parça</string>
+    <string name="action_media_play_desc">Medya oynatmayı başlatır</string>
+    <string name="action_media_pause_desc">Medya oynatmayı duraklatır</string>
+    <string name="action_media_toggle_desc">Medya oynatmayı başlatır veya duraklatır</string>
+    <string name="action_media_next_desc">Sonraki parçaya geçer</string>
+    <string name="action_media_previous_desc">Önceki parçaya döner</string>
+    <string name="variable_group_media">Medya</string>
+    <string name="variable_desc_media_title">Geçerli parçanın adı</string>
+    <string name="variable_desc_media_artist">Geçerli parçanın sanatçısı</string>
+    <string name="media_target_system">Etkin oynatıcı</string>
+    <string name="media_trigger_any">Herhangi bir medya uygulaması</string>
 </resources>

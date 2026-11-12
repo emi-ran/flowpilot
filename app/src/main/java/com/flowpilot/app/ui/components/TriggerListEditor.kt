@@ -68,11 +68,14 @@ private fun TriggerDefinitionEditor(view: Automation, onChangeType: () -> Unit, 
     val context = LocalContext.current
     var appPicker by remember { mutableStateOf(false) }
     var notificationPicker by remember { mutableStateOf(false) }
+    var mediaPicker by remember { mutableStateOf(false) }
     var timePicker by remember { mutableStateOf(false) }
     if (appPicker) AppPicker(select = { p, n -> onUpdate(view.copy(appPackage = p, appName = n)); appPicker = false },
         selectedPackage = view.appPackage, onDismiss = { appPicker = false })
     if (notificationPicker) AppPicker(select = { p, n -> onUpdate(view.copy(notificationAppPackage = p, notificationAppName = n)); notificationPicker = false },
         selectedPackage = view.notificationAppPackage, onDismiss = { notificationPicker = false })
+    if (mediaPicker) AppPicker(select = { p, _ -> onUpdate(view.copy(mediaTriggerPackage = p)); mediaPicker = false },
+        selectedPackage = view.mediaTriggerPackage, onDismiss = { mediaPicker = false })
     if (timePicker) {
         DisposableEffect(Unit) {
             val dialog = android.app.TimePickerDialog(context, { _, h, m ->
@@ -110,6 +113,9 @@ private fun TriggerDefinitionEditor(view: Automation, onChangeType: () -> Unit, 
         notificationAppPackage = view.notificationAppPackage, notificationAppName = view.notificationAppName,
         notificationKeyword = view.notificationKeyword, onOpenNotificationAppPicker = { notificationPicker = true },
         onNotificationKeywordChange = { onUpdate(view.copy(notificationKeyword = it)) },
+        mediaTriggerPackage = view.mediaTriggerPackage,
+        onOpenMediaAppPicker = { mediaPicker = true },
+        onClearMediaTriggerPackage = { onUpdate(view.copy(mediaTriggerPackage = "")) },
         flipScreenOffDetection = view.flipScreenOffDetection, onFlipScreenOffChange = { onUpdate(view.copy(flipScreenOffDetection = it)) },
         lightLux = view.lightLux, onLightLuxChange = { onUpdate(view.copy(lightLux = it)) },
         shakeThreshold = view.shakeThreshold, onShakeThresholdChange = { onUpdate(view.copy(shakeThreshold = it)) },

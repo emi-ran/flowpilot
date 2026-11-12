@@ -290,11 +290,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             .map { rule ->
                 val actionStatuses = rule.effectiveActions.map { capabilities.statusFor(it) }
 
-                // Check trigger/condition prerequisites for Wi-Fi, Bluetooth, NFC, Notifications, Phone Calls
+                // Check trigger/condition prerequisites for Wi-Fi, Bluetooth, NFC, notifications, media, and phone calls
                 val hasWifiTriggerOrCond = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.WIFI_CONNECTED, com.flowpilot.app.data.model.TriggerEvent.WIFI_DISCONNECTED) ||
                     rule.conditions.any { it.type == com.flowpilot.app.data.model.ConditionType.WIFI_CONNECTED || it.type == com.flowpilot.app.data.model.ConditionType.WIFI_DISCONNECTED }
 
-                val hasNotificationTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED)
+                val hasNotificationListenerTrigger = rule.hasTrigger(
+                    com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED,
+                    com.flowpilot.app.data.model.TriggerEvent.MEDIA_PLAYING,
+                    com.flowpilot.app.data.model.TriggerEvent.MEDIA_PAUSED,
+                    com.flowpilot.app.data.model.TriggerEvent.MEDIA_TRACK_CHANGED,
+                )
                 val hasBluetoothTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED, com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED)
                 val hasNfcTagTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.NFC_TAG_SCANNED)
                 val hasCallTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.CALL_RINGING, com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED, com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING, com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED)
@@ -304,7 +309,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     hasWifiTriggerOrCond && !capabilities.hasWifiPermissions() -> CapabilityStatus.PERMISSION_REQUIRED
                     hasBluetoothTrigger && !capabilities.hasBluetoothAdapter() -> CapabilityStatus.UNSUPPORTED
                     hasBluetoothTrigger && !capabilities.hasBluetoothConnectPermission() -> CapabilityStatus.PERMISSION_REQUIRED
-                    hasNotificationTrigger && !capabilities.hasNotificationListenerAccess() -> CapabilityStatus.PERMISSION_REQUIRED
+                    hasNotificationListenerTrigger && !capabilities.hasNotificationListenerAccess() -> CapabilityStatus.PERMISSION_REQUIRED
                     hasNfcTagTrigger && !capabilities.hasNfcHardware() -> CapabilityStatus.UNSUPPORTED
                     hasNfcTagTrigger && !capabilities.isNfcEnabled() -> CapabilityStatus.PERMISSION_REQUIRED
                     hasCallTrigger && !capabilities.hasReadPhoneStatePermission() -> CapabilityStatus.PERMISSION_REQUIRED
@@ -400,6 +405,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         notificationAppPackage: String = "",
         notificationAppName: String = "",
         notificationKeyword: String = "",
+        mediaTriggerPackage: String = "",
         conditions: List<com.flowpilot.app.data.model.RuleCondition> = emptyList(),
         conditionTree: com.flowpilot.app.data.model.ConditionNode? = null,
         triggerDefinitions: com.flowpilot.app.data.model.TriggerDefinitions? = null,
@@ -409,6 +415,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         vibrationDurationMs: Int = 220,
         vibrationAmplitude: Int = 180,
         mediaVolumePercent: Int = 50,
+        mediaTargetPackage: String = "",
         soundPreset: com.flowpilot.app.data.model.SoundPreset = com.flowpilot.app.data.model.SoundPreset.NOTIFICATION,
         soundUri: String = "",
         soundName: String = "",
@@ -467,6 +474,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 notificationAppPackage = notificationAppPackage,
                 notificationAppName = notificationAppName,
                 notificationKeyword = notificationKeyword,
+                mediaTriggerPackage = mediaTriggerPackage,
                 conditions = conditions,
                 conditionTree = conditionTree,
                 triggerDefinitions = triggerDefinitions,
@@ -476,6 +484,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 vibrationDurationMs = vibrationDurationMs,
                 vibrationAmplitude = vibrationAmplitude,
                 mediaVolumePercent = mediaVolumePercent,
+                mediaTargetPackage = mediaTargetPackage,
                 soundPreset = soundPreset,
                 soundUri = soundUri,
                 soundName = soundName,

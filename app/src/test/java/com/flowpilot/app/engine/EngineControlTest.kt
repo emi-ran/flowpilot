@@ -75,6 +75,23 @@ class EngineControlTest {
     }
 
     @Test
+    fun eventDispatch_rejectsTokenAfterDisableEvenWhenEnabledAgain() = runTest {
+        val repository = AutomationRepository(context)
+        repository.setEngineEnabled(true)
+        val token = AutomationService.authorizeEventExecution(context)!!
+        var dispatches = 0
+
+        AutomationService.setEnabled(context, false)
+        repository.setEngineEnabled(true)
+        assertThat(AutomationService.executeIfEventAuthorized(token) { ++dispatches }).isNull()
+        assertThat(dispatches).isEqualTo(0)
+
+        val freshToken = AutomationService.authorizeEventExecution(context)!!
+        assertThat(AutomationService.executeIfEventAuthorized(freshToken) { ++dispatches }).isEqualTo(1)
+        assertThat(dispatches).isEqualTo(1)
+    }
+
+    @Test
     fun rejectedStartup_retainsIntentAndPublishesFailureWithoutNotificationService() = runTest {
         val rejecting = object : ContextWrapper(context) {
             override fun startForegroundService(service: Intent): ComponentName? {

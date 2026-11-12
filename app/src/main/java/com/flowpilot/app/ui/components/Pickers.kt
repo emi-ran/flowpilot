@@ -167,6 +167,17 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                 ),
             ),
             PickerCategoryGroup(
+                id = TriggerCategory.MEDIA.name,
+                label = TriggerCategory.MEDIA.label,
+                icon = Icons.Default.MusicNote,
+                iconTint = Color(0xFF81D4FA),
+                items = listOf(
+                    PickerItem(TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PLAYING.label, "When media starts playing", Icons.Default.PlayArrow, keywords = listOf("media", "music", "play", "playing")),
+                    PickerItem(TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_PAUSED.label, "When media pauses", Icons.Default.Pause, keywords = listOf("media", "music", "pause", "paused")),
+                    PickerItem(TriggerEvent.MEDIA_TRACK_CHANGED, TriggerEvent.MEDIA_TRACK_CHANGED.label, "When the current media track changes", Icons.Default.MusicNote, keywords = listOf("media", "music", "track", "song", "changed")),
+                ),
+            ),
+            PickerCategoryGroup(
                 id = TriggerCategory.PHONE.name,
                 label = TriggerCategory.PHONE.label,
                 icon = Icons.Default.PhoneInTalk,
@@ -651,6 +662,11 @@ fun ActionPicker(
                 icon = Icons.AutoMirrored.Filled.VolumeUp,
                 iconTint = Color(0xFF81D4FA),
                 items = listOf(
+                    PickerItem(ActionType.MEDIA_PLAY, ActionType.MEDIA_PLAY.label, "Start media playback", Icons.Default.PlayArrow, keywords = listOf("media", "music", "play")),
+                    PickerItem(ActionType.MEDIA_PAUSE, ActionType.MEDIA_PAUSE.label, "Pause media playback", Icons.Default.Pause, keywords = listOf("media", "music", "pause")),
+                    PickerItem(ActionType.MEDIA_TOGGLE, ActionType.MEDIA_TOGGLE.label, "Toggle media playback", Icons.Default.PlayArrow, keywords = listOf("media", "music", "play", "pause", "toggle")),
+                    PickerItem(ActionType.MEDIA_NEXT, ActionType.MEDIA_NEXT.label, "Skip to the next track", Icons.Default.SkipNext, keywords = listOf("media", "music", "next", "skip")),
+                    PickerItem(ActionType.MEDIA_PREVIOUS, ActionType.MEDIA_PREVIOUS.label, "Return to the previous track", Icons.Default.SkipPrevious, keywords = listOf("media", "music", "previous", "skip")),
                     PickerItem(
                         value = ActionType.SOUND_PROFILE_NORMAL,
                         title = ActionType.SOUND_PROFILE_NORMAL.label,

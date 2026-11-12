@@ -32,6 +32,7 @@ data class ActionParameters(
     val vibrationDurationMs: Int = 220,
     val vibrationAmplitude: Int = 180,
     val mediaVolumePercent: Int = 50,
+    val mediaTargetPackage: String = "",
     val soundPreset: SoundPreset = SoundPreset.NOTIFICATION,
     val soundUri: String = "",
     val soundDurationMs: Int = 3_000,

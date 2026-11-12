@@ -126,6 +126,9 @@ fun CreateScreen(
     var notificationAppPackage by remember { mutableStateOf("") }
     var notificationAppName by remember { mutableStateOf("") }
     var notificationKeyword by remember { mutableStateOf("") }
+    var mediaTriggerPackage by remember { mutableStateOf("") }
+    var mediaTargetPackage by remember { mutableStateOf("") }
+    var showMediaTargetApps by remember { mutableStateOf(false) }
     var phoneNumber by remember { mutableStateOf("") }
     var flipScreenOffDetection by remember { mutableStateOf(false) }
     var conditions by remember { mutableStateOf(emptyList<RuleCondition>()) }
@@ -239,6 +242,8 @@ fun CreateScreen(
         notificationAppPackage = t.notificationAppPackage
         notificationAppName = t.notificationAppName
         notificationKeyword = t.notificationKeyword
+        mediaTriggerPackage = t.mediaTriggerPackage
+        mediaTargetPackage = t.mediaTargetPackage
         phoneNumber = t.phoneNumber
         flipScreenOffDetection = t.flipScreenOffDetection
         lightLux = t.lightLux
@@ -311,6 +316,7 @@ fun CreateScreen(
 
     if (showLaunchApps) AppPicker(select = { p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }, selectedPackage = launchPackage, onDismiss = { showLaunchApps = false })
     if (showForceStopApps) AppPicker(select = { p, n -> forceStopPackage = p; forceStopAppName = n; showForceStopApps = false }, selectedPackage = forceStopPackage, onDismiss = { showForceStopApps = false })
+    if (showMediaTargetApps) AppPicker(select = { p, _ -> mediaTargetPackage = p; showMediaTargetApps = false }, selectedPackage = mediaTargetPackage, onDismiss = { showMediaTargetApps = false })
     if (showConditionPicker) {
         ConditionPickerDialog(
             onAdd = { cond ->
@@ -407,6 +413,8 @@ fun CreateScreen(
                         notificationAppPackage = notificationAppPackage,
                         notificationAppName = notificationAppName,
                         notificationKeyword = notificationKeyword,
+                        mediaTriggerPackage = mediaTriggerPackage,
+                        mediaTargetPackage = mediaTargetPackage,
                         conditions = conditions,
                         conditionTree = conditionTree,
                         notificationTitle = notificationTitle,
@@ -593,6 +601,7 @@ fun CreateScreen(
                     notificationAppPackage = first.notificationAppPackage
                     notificationAppName = first.notificationAppName
                     notificationKeyword = first.notificationKeyword
+                    mediaTriggerPackage = first.mediaTriggerPackage
                     flipScreenOffDetection = first.flipScreenOffDetection
                     shakeThreshold = first.shakeThreshold
                     lightLux = first.lightLux
@@ -728,6 +737,9 @@ fun CreateScreen(
                             launchAppName = launchAppName,
                             launchPackage = launchPackage,
                             onChooseLaunchApp = { showLaunchApps = true },
+                            mediaTargetPackage = mediaTargetPackage,
+                            onChooseMediaTarget = { showMediaTargetApps = true },
+                            onClearMediaTarget = { mediaTargetPackage = "" },
                             // URL
                             url = url,
                             onUrlChange = { url = it },
@@ -920,6 +932,8 @@ fun CreateScreen(
                             nfcTagId = nfcTagId.trim(),
                             notificationAppPackage = notificationAppPackage,
                             notificationKeyword = notificationKeyword,
+                            mediaTriggerPackage = mediaTriggerPackage,
+                            mediaTargetPackage = mediaTargetPackage,
                             conditions = conditions,
                             conditionTree = conditionTree,
                             lightLux = lightLux,
@@ -955,6 +969,8 @@ fun CreateScreen(
                                 notificationAppPackage = notificationAppPackage,
                                 notificationAppName = notificationAppName,
                                 notificationKeyword = notificationKeyword,
+                                mediaTriggerPackage = mediaTriggerPackage,
+                                mediaTargetPackage = mediaTargetPackage,
                                 conditions = conditions,
                                 conditionTree = conditionTree,
                                 notificationTitle = notificationTitle,

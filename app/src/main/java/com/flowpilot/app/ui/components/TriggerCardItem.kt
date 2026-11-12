@@ -53,6 +53,9 @@ fun triggerIcon(event: TriggerEvent): ImageVector = when (event) {
     TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> Icons.Default.LightMode
     TriggerEvent.SMS_RECEIVED -> Icons.Default.Sms
     TriggerEvent.GEOFENCE_ENTER -> Icons.Default.LocationOn
+    TriggerEvent.MEDIA_PLAYING -> Icons.Default.PlayArrow
+    TriggerEvent.MEDIA_PAUSED -> Icons.Default.Pause
+    TriggerEvent.MEDIA_TRACK_CHANGED -> Icons.Default.MusicNote
     TriggerEvent.GEOFENCE_EXIT -> Icons.Default.LocationOff
 }
 
@@ -88,6 +91,7 @@ fun triggerAccent(event: TriggerEvent): Color = when (event) {
     TriggerEvent.LIGHT_ABOVE -> Color(0xFFFFB74D)
     TriggerEvent.SMS_RECEIVED -> Color(0xFF4FC3F7)
     TriggerEvent.GEOFENCE_ENTER -> Color(0xFF26A69A)
+    TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED -> Color(0xFFCE93D8)
     TriggerEvent.GEOFENCE_EXIT -> Color(0xFFEF5350)
 }
 
@@ -124,6 +128,9 @@ fun TriggerCardItem(
     notificationKeyword: String = "",
     onOpenNotificationAppPicker: () -> Unit = {},
     onNotificationKeywordChange: (String) -> Unit = {},
+    mediaTriggerPackage: String = "",
+    onOpenMediaAppPicker: () -> Unit = {},
+    onClearMediaTriggerPackage: () -> Unit = {},
     // Flip
     flipScreenOffDetection: Boolean = false,
     onFlipScreenOffChange: (Boolean) -> Unit = {},
@@ -239,6 +246,7 @@ fun TriggerCardItem(
                         TriggerEvent.DEVICE_FLIPPED_UP -> stringResource(R.string.trigger_device_flipped_up_desc)
                         TriggerEvent.NFC_TAG_SCANNED -> if (nfcTagId.isBlank()) stringResource(R.string.detail_tag_id, "—") else nfcTagId
                         TriggerEvent.NOTIFICATION_RECEIVED -> if (notificationAppPackage.isBlank()) stringResource(R.string.notification_choose_app) else notificationAppName.ifBlank { notificationAppPackage }
+                        TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED -> mediaTriggerPackage.ifBlank { stringResource(R.string.media_trigger_any) }
                         TriggerEvent.CALL_RINGING -> stringResource(R.string.trigger_call_ringing_desc)
                         TriggerEvent.CALL_ANSWERED -> stringResource(R.string.trigger_call_answered_desc)
                         TriggerEvent.CALL_OUTGOING -> stringResource(R.string.trigger_call_outgoing_desc)
@@ -408,6 +416,21 @@ fun TriggerCardItem(
                             Text(stringResource(R.string.nfc_tap_instruction))
                         },
                     )
+                }
+                TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED -> {
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedCard(onClick = onOpenMediaAppPicker, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            AppIconImage(packageName = mediaTriggerPackage, modifier = Modifier.size(28.dp), fallbackIcon = Icons.Default.MusicNote)
+                            Spacer(Modifier.width(10.dp))
+                            Text(mediaTriggerPackage.ifBlank { stringResource(R.string.media_trigger_any) },
+                                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    if (mediaTriggerPackage.isNotEmpty()) {
+                        TextButton(onClick = onClearMediaTriggerPackage) { Text(stringResource(R.string.media_trigger_any)) }
+                    }
                 }
                 TriggerEvent.NOTIFICATION_RECEIVED -> {
                     Spacer(Modifier.height(10.dp))

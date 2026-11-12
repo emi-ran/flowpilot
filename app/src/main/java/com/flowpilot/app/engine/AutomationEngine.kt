@@ -12,6 +12,8 @@ import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.triggerViews
 import com.flowpilot.app.data.model.hasTrigger
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
@@ -133,6 +135,14 @@ internal object EventTemplateContext {
             ),
         )
     }
+
+    fun media(event: MediaSessionEvent, liveState: LiveSystemState): TemplateContext =
+        base(
+            trigger = event.event.name,
+            timestamp = System.currentTimeMillis(),
+            liveState = liveState,
+            values = mapOf("media.title" to event.title, "media.artist" to event.artist),
+        )
 
     fun nfc(event: NfcTagScannedEvent, liveState: LiveSystemState): TemplateContext =
         base(
@@ -291,6 +301,9 @@ class AutomationEngine(
     private val appContext = context.applicationContext
     private val repository = AutomationRepository(appContext)
     private val dispatcher = ActionDispatcher.get(appContext)
+    private val mediaEvents = Channel<MediaSessionEvent>(capacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val mediaTracker = MediaSessionTracker(appContext) { mediaEvents.trySend(it) }
+    private var mediaEventSequence = 0L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     @Volatile private var job: Job? = null
@@ -362,6 +375,7 @@ class AutomationEngine(
                 pollWifiTransitions(liveState)
                 pollBluetoothTransitions(liveState)
                 pollCallTransitions(liveState)
+                pollMediaEvents(liveState)
                 pollDeviceFlipEvents(liveState)
                 pollNfcTagEvents(liveState)
                 pollNotificationEvents(liveState)
@@ -388,11 +402,13 @@ class AutomationEngine(
             chargerTracker::stop, batteryTracker::stop, screenTracker::stop,
             wifiTracker::stop, bluetoothTracker::stop, callTracker::stop,
             flipTracker::stop, shakeTracker::stop, lightTracker::stop,
+            mediaTracker::stop,
         ).forEach { stop ->
             try { stop() } catch (e: Exception) {
                 Log.w(TAG, "Tracker cleanup failed (${e.javaClass.simpleName})")
             }
         }
+        clearMediaEvents()
         try {
             geofenceTracker.stop(removeSystemGeofences = teardownGeofences)
         } catch (e: Exception) {
@@ -409,6 +425,12 @@ class AutomationEngine(
         if (demand.needsWifi) wifiTracker.start() else wifiTracker.stop()
         if (demand.needs(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED)) bluetoothTracker.start() else bluetoothTracker.stop()
         if (demand.needs(TriggerEvent.CALL_RINGING, TriggerEvent.CALL_ANSWERED, TriggerEvent.CALL_OUTGOING, TriggerEvent.CALL_ENDED)) callTracker.start() else callTracker.stop()
+        if (demand.needsMedia) {
+            if (!mediaTracker.start()) clearMediaEvents()
+        } else {
+            mediaTracker.stop()
+            clearMediaEvents()
+        }
         tracker.updatePackages(demand.appPackages)
         if (demand.needs(TriggerEvent.NOTIFICATION_RECEIVED)) FlowPilotNotificationListener.ensureBound(appContext)
     }
@@ -767,6 +789,28 @@ class AutomationEngine(
                     matches,
                     liveState = liveState,
                     eventContext = EventTemplateContext.call(transition, liveState),
+                )
+            }
+        }
+    }
+
+    private fun clearMediaEvents() {
+        while (mediaEvents.tryReceive().isSuccess) Unit
+    }
+
+    private suspend fun pollMediaEvents(liveState: LiveSystemState) {
+        while (true) {
+            val event = mediaEvents.tryReceive().getOrNull() ?: return
+            val authorization = AutomationService.authorizeEventExecution(appContext) ?: return
+            val rules = repository.automations.first()
+            val matches = RuleEvaluator.evaluateMedia(rules, event, liveState)
+            if (matches.isNotEmpty()) {
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.media(event, liveState),
+                    eventAuthorization = authorization,
+                    eventId = (++mediaEventSequence).toString(),
                 )
             }
         }

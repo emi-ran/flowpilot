@@ -22,6 +22,12 @@ Home list overflow duplication copies the complete rule configuration into a new
 
 Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request a one-shot nearby-network scan; scan results are transient, deduplicated, and never persisted. Android throttles scan frequency and may return cached results. The tracker reads SSID from Wi-Fi-specific `NetworkCallback` capabilities instead of `activeNetwork`, so Xiaomi can detect Wi-Fi transitions even when cellular remains the default data network.
 
+## Media automation
+
+Media controls comprise `MEDIA_PLAY`, `MEDIA_PAUSE`, `MEDIA_TOGGLE`, `MEDIA_NEXT` and `MEDIA_PREVIOUS`, with an optional target media app. Media session events comprise `MEDIA_PLAYING`, `MEDIA_PAUSED` and `MEDIA_TRACK_CHANGED`, with an optional app filter. Android notification access is needed for media session access; the media listener is active only when enabled rules require it. Sessions already present when the tracker starts are silently seeded without emitting events. After startup, a newly observed session that is already playing emits `MEDIA_PLAYING`. Player capabilities and active sessions determine whether a requested control can be handled.
+
+The event's `${media.title}` and `${media.artist}` are transient template context, not log or execution-history fields. A user-configured template action can deliberately display or transmit these values; this is distinct from persisting the raw metadata in logs or history. Media behavior and permission-denied paths have not been claimed as device-verified.
+
 ## Multiple OR triggers (#5)
 
 Create/Edit supports one to five ordered, heterogeneous triggers. ANY matching definition executes the same ordered actions once, subject to the rule conditions and one shared per-rule cooldown. A null `Automation.triggerDefinitions` retains the exact legacy trigger fields and omits the new key from JSON. The optional `TriggerDefinitions(version = 1, items = ...)` wrapper contains sealed `TriggerDefinition` payloads: one concrete class/object per event, with only that event's matching data. `normalizedTriggers()` presents legacy rules as one-item lists without changing their wire format. Load/import normalizes the legacy primary projection for old readers; non-null definitions remain authoritative. Imports reject unsupported versions, empty or >5 lists, and invalid per-type payloads before mutation.

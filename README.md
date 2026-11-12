@@ -176,6 +176,7 @@ A rule can combine up to five independently configured triggers with OR semantic
 - 🏷️ **NFC Tags:** Instant hex UID matching on physical scans. Foreground ReaderMode scans run matching rules automatically; background Android discovery opens FlowPilot and requires explicit confirmation before any matching NFC automation runs.
 - 📞 **Phone & SMS:** Call ringing, answered, outgoing dialed, call ended; SMS received with keyword, prefix, regex, or exact sender matching.
 - 🔔 **Notifications:** Incoming notifications from selected apps with keyword filtering. FlowPilot's own status notifications and HyperOS volume/headphone UI notifications are ignored, and notification rules ask the system to rebind the listener if Android leaves it unbound after an in-place update or OEM process kill.
+- 🎵 **Media:** Playback starts, pauses, or the track changes, optionally filtered by media app. These triggers need notification access and are monitored only while enabled rules need them. Sessions already present when the tracker starts are silently seeded, without startup events; a newly observed session that is already playing after startup produces a playing event. `${media.title}` and `${media.artist}` are transient event values; they are not written to logs or execution history. Template-enabled actions can explicitly send or display them.
 
 ---
 
@@ -198,6 +199,7 @@ Chain multiple actions in any custom sequence with drag-and-drop ordering and in
 - 🌐 **Connectivity (via Shizuku):** Toggle Wi-Fi, Mobile Data, Airplane Mode, Bluetooth, GPS Location, and Wi-Fi Hotspot (Android 16+).
 - 🖥️ **Display & Device:** Toggle Flashlight (Torch), Dark Theme (Shizuku), Auto-rotate, Brightness level, Lock Screen (Shizuku), and Force Stop App (Shizuku).
 - 🔊 **Sound & Alerts:** Do Not Disturb (DND) toggle, Sound Profiles (Normal / Vibrate / Silent), Media Volume (0–100%), Custom Audio playback (1–60s duration), Haptic Patterns (Pulse, Double Tap, Alert, Heartbeat, Triple Tap, SOS), and Rich Notifications.
+- 🎵 **Media Controls:** Play, pause, play/pause toggle, next track, or previous track, optionally targeting a selected media app. Notification access is required to access media sessions; availability depends on the player.
 - 🗣️ **Offline Speech (TTS):** Speak custom messages using Android's on-device TTS engine with speech rate control. The voice picker includes **System default** (the phone's offline TTS voice, or the best offline fallback) and previews sample text in the selected voice's language. Templates can include trigger data such as `${notification.text|stripPrefix:"tts"|trim}`, `${sms.otp}`, `${call.state}`, and `${batteryPercent}`; audio is synthesized on demand and cached.
 - ⏱️ **Clock & Timers:** Set system alarm or start a background timer (1s–24h).
 - 🚀 **Apps & Web:** Launch installed app or open web URL.
@@ -248,6 +250,7 @@ FlowPilot is engineered with an uncompromised commitment to user privacy:
 ### Transparent Permission Disclosures
 FlowPilot declares sensitive permissions solely to power explicit automation features:
 - `QUERY_ALL_PACKAGES`: Required to list installed apps in the App Trigger and App Launcher pickers on Android 11+.
+- **Notification access:** Required for notification triggers and media-session triggers and controls; enable FlowPilot in Android's notification access settings.
 - `RECEIVE_SMS` & `SEND_SMS`: Used exclusively by the SMS trigger and direct SMS responder actions.
 - `ACCESS_BACKGROUND_LOCATION`: Powers zero-battery hardware geofencing (`GeofencingClient`) and injects coordinates only into user-configured automations.
 - `FOREGROUND_SERVICE_LOCATION`: Required by Android 14+ to keep geofencing and active location tasks compliant while running in the background.

@@ -4,6 +4,10 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Media session controls: play, pause, toggle, next and previous, with an optional target app; media playing, paused and track-changed triggers with an optional app filter. Notification access is required, and observation runs only when enabled rules need it. Sessions present when the tracker starts are silently seeded without events; a newly observed session already playing after startup produces a playing event. Media title and artist are transient template values and are not written to logs or execution history; user-configured template actions can explicitly use them.
+
 ## [2.2.1] - 2026-11-05
 
 ### Fixed

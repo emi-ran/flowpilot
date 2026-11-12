@@ -120,6 +120,9 @@ fun DetailScreen(
     var notificationAppPackage by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppPackage) }
     var notificationAppName by remember(initialRule.id) { mutableStateOf(initialRule.notificationAppName) }
     var notificationKeyword by remember(initialRule.id) { mutableStateOf(initialRule.notificationKeyword) }
+    var mediaTriggerPackage by remember(initialRule.id) { mutableStateOf(initialRule.mediaTriggerPackage) }
+    var mediaTargetPackage by remember(initialRule.id) { mutableStateOf(initialRule.mediaTargetPackage) }
+    var showMediaTargetApps by remember { mutableStateOf(false) }
     var phoneNumber by remember(initialRule.id) { mutableStateOf(initialRule.phoneNumber) }
     var flipScreenOffDetection by remember(initialRule.id) { mutableStateOf(initialRule.flipScreenOffDetection) }
     var conditions by remember(initialRule.id) { mutableStateOf(initialRule.conditions) }
@@ -242,6 +245,8 @@ fun DetailScreen(
         notificationAppPackage = notificationAppPackage,
         notificationAppName = notificationAppName,
         notificationKeyword = notificationKeyword,
+        mediaTriggerPackage = mediaTriggerPackage,
+        mediaTargetPackage = mediaTargetPackage,
         conditions = conditions,
         conditionTree = conditionTree,
         notificationTitle = notificationTitle,
@@ -291,6 +296,7 @@ fun DetailScreen(
 
     if (showLaunchApps) AppPicker(select = { p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }, selectedPackage = launchPackage, onDismiss = { showLaunchApps = false })
     if (showForceStopApps) AppPicker(select = { p, n -> forceStopPackage = p; forceStopAppName = n; showForceStopApps = false }, selectedPackage = forceStopPackage, onDismiss = { showForceStopApps = false })
+    if (showMediaTargetApps) AppPicker(select = { p, _ -> mediaTargetPackage = p; showMediaTargetApps = false }, selectedPackage = mediaTargetPackage, onDismiss = { showMediaTargetApps = false })
     if (showConditionPicker) {
         ConditionPickerDialog(
             onAdd = { cond ->
@@ -521,6 +527,7 @@ fun DetailScreen(
                     notificationAppPackage = first.notificationAppPackage
                     notificationAppName = first.notificationAppName
                     notificationKeyword = first.notificationKeyword
+                    mediaTriggerPackage = first.mediaTriggerPackage
                     flipScreenOffDetection = first.flipScreenOffDetection
                     shakeThreshold = first.shakeThreshold
                     lightLux = first.lightLux
@@ -656,6 +663,9 @@ fun DetailScreen(
                             launchAppName = launchAppName,
                             launchPackage = launchPackage,
                             onChooseLaunchApp = { showLaunchApps = true },
+                            mediaTargetPackage = mediaTargetPackage,
+                            onChooseMediaTarget = { showMediaTargetApps = true },
+                            onClearMediaTarget = { mediaTargetPackage = "" },
                             // URL
                             url = url,
                             onUrlChange = { url = it },
