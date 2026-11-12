@@ -44,6 +44,47 @@ object MusicLinkValidator {
             else -> false
         }
     }
+
+    /** Describes rejected links without retaining the link, host, query, or identifier. */
+    fun diagnoseInvalidLink(packageName: String, link: String): ActionDiagnostic? {
+        if (isValidLink(packageName, link)) return null
+        fun reason(value: ActionDiagnosticReason) = ActionDiagnostic(value)
+        val normalized = if (packageName == YOUTUBE_MUSIC) link.trim() else link
+        val uri = try { URI(normalized) } catch (_: Exception) {
+            return reason(ActionDiagnosticReason.MALFORMED_LINK)
+        }
+        if (uri.scheme != "https" || uri.rawUserInfo != null || uri.port != -1 || uri.rawFragment != null) {
+            return reason(ActionDiagnosticReason.INVALID_LINK_COMPONENTS)
+        }
+        val host = uri.host ?: return reason(ActionDiagnosticReason.UNSUPPORTED_LINK_HOST)
+        val path = uri.rawPath ?: return reason(ActionDiagnosticReason.INVALID_LINK_PATH)
+        if (packageName == SPOTIFY) {
+            return reason(if (host.equals("open.spotify.com", ignoreCase = true)) ActionDiagnosticReason.INVALID_LINK_PATH else ActionDiagnosticReason.UNSUPPORTED_LINK_HOST)
+        }
+        if (packageName != YOUTUBE_MUSIC) return reason(ActionDiagnosticReason.UNSUPPORTED_LINK_HOST)
+        val id = when {
+            host.equals("youtu.be", ignoreCase = true) -> {
+                if (!path.startsWith('/') || path.drop(1).trimEnd('/').contains('/')) {
+                    return reason(ActionDiagnosticReason.INVALID_LINK_PATH)
+                }
+                path.drop(1).removeSuffix("/")
+            }
+            host.equals("music.youtube.com", ignoreCase = true) -> {
+                if (path != "/watch") return reason(ActionDiagnosticReason.INVALID_LINK_PATH)
+                val ids = uri.rawQuery.orEmpty().split('&').filter { it.startsWith("v=") }
+                if (ids.isEmpty()) return reason(ActionDiagnosticReason.MISSING_VIDEO_ID)
+                if (ids.size > 1) return reason(ActionDiagnosticReason.MULTIPLE_VIDEO_IDS)
+                ids.single().substring(2)
+            }
+            else -> return reason(ActionDiagnosticReason.UNSUPPORTED_LINK_HOST)
+        }
+        if (id.length != 11) return ActionDiagnostic(
+            ActionDiagnosticReason.INVALID_VIDEO_ID_LENGTH,
+            expectedLength = 11,
+            observedLength = id.length.coerceAtMost(1000),
+        )
+        return reason(ActionDiagnosticReason.INVALID_VIDEO_ID_CHARACTERS)
+    }
 }
 
 /** Opens search results or a validated track link; playback is not verified. */
@@ -65,7 +106,7 @@ class MusicExecutor internal constructor(private val launch: (Intent) -> Unit) :
             ActionType.MUSIC_PLAY_LINK -> {
                 val link = if (parameters.musicAppPackage == MusicLinkValidator.YOUTUBE_MUSIC) parameters.musicLink.trim() else parameters.musicLink
                 if (!MusicLinkValidator.isValidLink(parameters.musicAppPackage, link)) {
-                    return ActionResult(false, "Invalid music link")
+                    return ActionResult(false, "Invalid music link", diagnostic = MusicLinkValidator.diagnoseInvalidLink(parameters.musicAppPackage, link))
                 }
                 Intent(Intent.ACTION_VIEW, Uri.parse(link))
             }

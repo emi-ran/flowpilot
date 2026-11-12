@@ -16,6 +16,7 @@ import com.flowpilot.app.data.security.SecretCipher
 import com.flowpilot.app.engine.AutomationService
 import com.flowpilot.app.engine.GeofenceTransition
 import com.flowpilot.app.engine.GeofenceDiagnostic
+import com.flowpilot.app.engine.GeofenceDiagnosticErrorCode
 import com.flowpilot.app.engine.GeofenceDiagnosticStatus
 import com.flowpilot.app.engine.GeofenceEvent
 import com.flowpilot.app.ui.util.applyAppLocale
@@ -78,10 +79,17 @@ class AutomationRepository(private val context: Context) {
     }
 
     val geofenceDiagnostics: Flow<Map<String, GeofenceDiagnostic>> = context.dataStore.data.map { prefs ->
-        prefs[geofenceDiagnosticsKey]
+        val diagnostics = prefs[geofenceDiagnosticsKey]
             ?.let(::safeDecodeGeofenceDiagnostics)
             .orEmpty()
-            .associateBy { it.automationId }
+        val migrated = diagnostics.map { it.sanitized() }
+        val resolved = if (migrated != diagnostics) {
+            val updated = context.dataStore.edit { migrateGeofenceDiagnostics(it) }
+            updated[geofenceDiagnosticsKey]?.let(::safeDecodeGeofenceDiagnostics)?.map { it.sanitized() } ?: migrated
+        } else {
+            migrated
+        }
+        resolved.associateBy { it.automationId }
     }
 
     suspend fun syncPersistedLanguage(): String {
@@ -256,8 +264,9 @@ class AutomationRepository(private val context: Context) {
                 status = GeofenceDiagnosticStatus.REGISTERED,
                 lastRegistrationAt = at,
                 error = "",
+                errorCode = null,
                 updatedAt = at,
-            )
+            ).sanitized()
         }
     }
 
@@ -267,8 +276,25 @@ class AutomationRepository(private val context: Context) {
                 automationId = id,
                 status = GeofenceDiagnosticStatus.UNREGISTERED,
                 error = "",
+                errorCode = null,
                 updatedAt = at,
-            )
+            ).sanitized()
+        }
+    }
+
+    suspend fun recordGeofenceRegistrationFailure(
+        automationIds: List<String>,
+        errorCode: GeofenceDiagnosticErrorCode,
+        at: Long = System.currentTimeMillis(),
+    ) {
+        updateGeofenceDiagnostics(automationIds) { id, current ->
+            current.copy(
+                automationId = id,
+                status = GeofenceDiagnosticStatus.REGISTRATION_FAILED,
+                error = errorCode.message,
+                errorCode = errorCode,
+                updatedAt = at,
+            ).sanitized()
         }
     }
 
@@ -277,13 +303,18 @@ class AutomationRepository(private val context: Context) {
         error: String,
         at: Long = System.currentTimeMillis(),
     ) {
+        val (resolvedCode, safeError) = GeofenceDiagnosticErrorCode.resolveOrSanitize(
+            rawError = error,
+            status = GeofenceDiagnosticStatus.REGISTRATION_FAILED,
+        )
         updateGeofenceDiagnostics(automationIds) { id, current ->
             current.copy(
                 automationId = id,
                 status = GeofenceDiagnosticStatus.REGISTRATION_FAILED,
-                error = error.take(MAX_GEOFENCE_ERROR_LENGTH),
+                error = safeError.take(MAX_GEOFENCE_ERROR_LENGTH),
+                errorCode = resolvedCode,
                 updatedAt = at,
-            )
+            ).sanitized()
         }
     }
 
@@ -293,6 +324,7 @@ class AutomationRepository(private val context: Context) {
             val current = prefs[geofenceDiagnosticsKey]
                 ?.let(::safeDecodeGeofenceDiagnostics)
                 .orEmpty()
+                .map { it.sanitized() }
                 .associateBy { it.automationId }
                 .toMutableMap()
             transitions.forEach { transition ->
@@ -308,13 +340,14 @@ class AutomationRepository(private val context: Context) {
                     lastTransitionAt = transition.timestamp,
                     lastTransition = transition.event,
                     error = "",
+                    errorCode = null,
                     updatedAt = transition.timestamp,
-                )
+                ).sanitized()
             }
             current.remove(GEOFENCE_RECEIVER_DIAGNOSTIC_ID)
             prefs[geofenceDiagnosticsKey] = json.encodeToString(
                 geofenceDiagnosticListSerializer,
-                current.values.toList(),
+                current.values.map { it.sanitized() },
             )
         }
     }
@@ -324,25 +357,49 @@ class AutomationRepository(private val context: Context) {
             val current = prefs[geofenceDiagnosticsKey]
                 ?.let(::safeDecodeGeofenceDiagnostics)
                 .orEmpty()
+                .map { it.sanitized() }
                 .associateBy { it.automationId }
                 .toMutableMap()
-            if (current.remove(GEOFENCE_RECEIVER_DIAGNOSTIC_ID) != null) {
+            val removed = current.remove(GEOFENCE_RECEIVER_DIAGNOSTIC_ID) != null
+            if (removed) {
                 prefs[geofenceDiagnosticsKey] = json.encodeToString(
                     geofenceDiagnosticListSerializer,
-                    current.values.toList(),
+                    current.values.map { it.sanitized() },
                 )
+            } else {
+                migrateGeofenceDiagnostics(prefs)
             }
         }
     }
 
-    suspend fun recordGeofenceReceiverError(error: String, at: Long = System.currentTimeMillis()) {
+    suspend fun recordGeofenceReceiverError(
+        errorCode: GeofenceDiagnosticErrorCode,
+        at: Long = System.currentTimeMillis(),
+    ) {
         updateGeofenceDiagnostics(listOf(GEOFENCE_RECEIVER_DIAGNOSTIC_ID)) { id, current ->
             current.copy(
                 automationId = id,
                 status = GeofenceDiagnosticStatus.RECEIVER_ERROR,
-                error = error.take(MAX_GEOFENCE_ERROR_LENGTH),
+                error = errorCode.message,
+                errorCode = errorCode,
                 updatedAt = at,
-            )
+            ).sanitized()
+        }
+    }
+
+    suspend fun recordGeofenceReceiverError(error: String, at: Long = System.currentTimeMillis()) {
+        val (resolvedCode, safeError) = GeofenceDiagnosticErrorCode.resolveOrSanitize(
+            rawError = error,
+            status = GeofenceDiagnosticStatus.RECEIVER_ERROR,
+        )
+        updateGeofenceDiagnostics(listOf(GEOFENCE_RECEIVER_DIAGNOSTIC_ID)) { id, current ->
+            current.copy(
+                automationId = id,
+                status = GeofenceDiagnosticStatus.RECEIVER_ERROR,
+                error = safeError.take(MAX_GEOFENCE_ERROR_LENGTH),
+                errorCode = resolvedCode,
+                updatedAt = at,
+            ).sanitized()
         }
     }
 
@@ -920,11 +977,24 @@ class AutomationRepository(private val context: Context) {
     }
 
     private fun migrateHistory(prefs: MutablePreferences) {
-        val raw = prefs[historyKey] ?: return
+        val raw = prefs[historyKey] ?: run {
+            migrateGeofenceDiagnostics(prefs)
+            return
+        }
         val history = safeDecodeHistory(raw)
         val migrated = history.map { it.sanitized() }
         if (migrated != history) {
             prefs[historyKey] = json.encodeToString(historySerializer, migrated)
+        }
+        migrateGeofenceDiagnostics(prefs)
+    }
+
+    private fun migrateGeofenceDiagnostics(prefs: MutablePreferences) {
+        val raw = prefs[geofenceDiagnosticsKey] ?: return
+        val diagnostics = safeDecodeGeofenceDiagnostics(raw)
+        val migrated = diagnostics.map { it.sanitized() }
+        if (migrated != diagnostics) {
+            prefs[geofenceDiagnosticsKey] = json.encodeToString(geofenceDiagnosticListSerializer, migrated)
         }
     }
 
@@ -944,6 +1014,7 @@ class AutomationRepository(private val context: Context) {
             val current = prefs[geofenceDiagnosticsKey]
                 ?.let(::safeDecodeGeofenceDiagnostics)
                 .orEmpty()
+                .map { it.sanitized() }
                 .associateBy { it.automationId }
                 .toMutableMap()
             val ruleIds = prefs[key]?.let(::safeDecode).orEmpty().mapTo(mutableSetOf()) { it.id }
@@ -955,14 +1026,14 @@ class AutomationRepository(private val context: Context) {
                     automationId = id,
                     status = GeofenceDiagnosticStatus.UNREGISTERED,
                 )
-                current[id] = update(id, prior)
+                current[id] = update(id, prior).sanitized()
             }
             if (clearReceiverError) {
                 current.remove(GEOFENCE_RECEIVER_DIAGNOSTIC_ID)
             }
             prefs[geofenceDiagnosticsKey] = json.encodeToString(
                 geofenceDiagnosticListSerializer,
-                current.values.toList(),
+                current.values.map { it.sanitized() },
             )
         }
     }

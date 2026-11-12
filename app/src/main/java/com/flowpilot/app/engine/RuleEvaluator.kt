@@ -299,17 +299,13 @@ object RuleEvaluator {
         event: TransientNotificationEvent,
         liveState: LiveSystemState = LiveSystemState(),
         nowMs: Long = System.currentTimeMillis(),
-    ): List<Automation> {
-        return rules.matchingTriggerViews { rule ->
-            if (!rule.enabled || rule.triggerEvent != TriggerEvent.NOTIFICATION_RECEIVED || rule.isCoolingDown(nowMs)) return@matchingTriggerViews false
-            if (!TriggerTargetMatcher.notificationPackageTargetMatches(rule.notificationAppPackage, event.packageName)) {
-                return@matchingTriggerViews false
-            }
-            if (!TriggerTargetMatcher.notificationKeywordMatches(rule.notificationKeyword, event.title, "${event.text} ${event.bigText}")) {
-                return@matchingTriggerViews false
-            }
+    ): List<Automation> = rules.matchingTriggerViews { rule ->
+        rule.enabled &&
+            rule.triggerEvent == TriggerEvent.NOTIFICATION_RECEIVED &&
+            !rule.isCoolingDown(nowMs) &&
+            TriggerTargetMatcher.notificationPackageTargetMatches(rule.notificationAppPackage, event.packageName) &&
+            TriggerTargetMatcher.notificationKeywordMatches(rule.notificationKeyword, event.title, "${event.text} ${event.bigText}") &&
             matchesRuleConditions(rule, liveState, nowMs)
-        }
     }
 
     fun evaluateNfcTag(

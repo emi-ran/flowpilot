@@ -127,6 +127,7 @@ app/src/main/java/com/flowpilot/app/
       DetailScreen.kt                rule detail, manual run test action, delete, and IME-safe form scrolling
       PermissionsScreen.kt           setup wizard and background location guide
       SettingsScreen.kt
+      HistoryScreen.kt               execution history, status/rule filters, single-cause failure grouping, action/template diagnostics
     components/                      toggle, cards, picker controls, action reordering, conflict warning dialog, focus-gated bring-into-view modifier
       TemplateTextField.kt           shared template action field backed by the trigger-aware variable picker
   analysis/
@@ -186,6 +187,8 @@ app/src/main/java/com/flowpilot/app/
     LaunchExecutor.kt                 selected app or validated HTTP(S) URL activity launch
     WebhookExecutor.kt                outbound HTTP/HTTPS webhook request with bounded timeout, secret redaction, and pre-rendered header/body values
     ActionParametersFactory.kt        builds one transient template context per action from the trigger, payload, and live state
+    TemplateDiagnostics.kt            content-free per-action template and notification field state diagnostics
+    MusicExecutor.kt                  Spotify and YouTube Music search/link intents, strict link validation, and non-content link diagnostics
     TemplateRenderer.kt               quote-aware `${...}` parser, safe filters, strict/permissive rendering
     VariableCatalog.kt                trigger-aware template variables, descriptions, and sample contexts for the picker
     TtsManager.kt                     offline voice discovery, strict rendering, on-demand synthesis, and content-addressed cache management
@@ -282,6 +285,12 @@ Per-rule home-screen shortcuts are pinned with `ShortcutManagerCompat` from Edit
 Geofence prerequisite and registration failures retry with bounded exponential backoff (10 seconds base, 60 seconds maximum); desired configuration or prerequisite changes trigger an immediate retry. This prevents rapid retry, DataStore, and UI loops while keeping recovery responsive.
 
 Execution history persists `ActionResultCode` plus safe arguments for new records, separating locale-neutral outcome data from display text. History renders known success, state, notification, SMS, permission, and cancellation results through current app-language resources. SMS arguments are masked before persistence; technical failures retain only redacted fallback text. Legacy successful records resolve from their action type for localization. Blank automatic rule names use the saved English or Turkish app language; custom names remain untouched. Persisted app language also drives background components (foreground engine notification, notification channels, and startup-failure alerts) across service restarts, task removals, process recreation, and boot. Switching language refreshes ongoing notification text and channel metadata immediately.
+
+
+### Diagnostics & troubleshooting
+
+- **Execution history, failure grouping, and structured action diagnostics:** Execution history persists the last 100 runs (`MAX_HISTORY_ENTRIES`) and only records rules that reach execution. `ActionResult` and `ActionExecutionRecord` carry an optional `ActionDiagnostic` payload (defaulting to `null` for legacy JSON compatibility) with non-content `ActionDiagnosticReason` enums (`MALFORMED_LINK`, `INVALID_LINK_COMPONENTS`, `UNSUPPORTED_LINK_HOST`, `INVALID_LINK_PATH`, `MISSING_VIDEO_ID`, `MULTIPLE_VIDEO_IDS`, `INVALID_VIDEO_ID_LENGTH`, `INVALID_VIDEO_ID_CHARACTERS`) and bounded numeric metadata (`0..1000`, such as expected 11-character vs. observed video ID lengths from `MusicLinkValidator.diagnoseInvalidLink`). `HistoryScreen` groups repeated non-successful runs by `(ruleId, actionType, reason)` only when the entry has a non-blank `ruleId` and exactly one failed action with a non-null `ActionDiagnostic`; entries with multiple failed actions remain ungrouped so a combined failure is never attributed to a single cause. Raw URLs, notification bodies, phone numbers, credentials, and exception strings are never stored.
+- **Safe per-action template diagnostics:** Because notification keyword matching checks combined `text` and `bigText` while `${notification.text}` resolves only the primary `EXTRA_TEXT`, a rule can match on `bigText` while `${notification.text}` evaluates empty. During both `AutomationEngine` and `ManualRuleRunner` dispatch, `TemplateDiagnostics.forAction` inspects only the template fields consumed by the executed action (`NOTIFICATION_TITLE`, `NOTIFICATION_BODY`, `MUSIC_QUERY`, `MUSIC_LINK`, `URL`, `TTS_TEXT`, `ALARM_MESSAGE`, `TIMER_MESSAGE`, `WEBHOOK_URL`, `WEBHOOK_HEADERS`, `WEBHOOK_BODY`, `PHONE_NUMBER`, `SMS_RECIPIENT`, `SMS_MESSAGE`) using `TemplateRenderer` in strict mode with a side-effect-free time provider. Each `ActionExecutionRecord` stores `templateDiagnostics: List<ActionTemplateDiagnostic>` (defaulting to empty for legacy records), recording whether `notification.text` and `notification.bigText` were `MISSING`, `EMPTY`, or `PRESENT` alongside `hasParseErrors`, `hasUnknownVariables`, `analysisFailed`, and `renderedEmpty`, without retaining raw templates, event values, or rendered strings.
 
 Normal JSON export/share removes webhook URL, headers, and body; normal imports disable rules. Encrypted full backup uses a portable AES-256-GCM envelope with PBKDF2-HMAC-SHA256 (100,000 iterations), random 16-byte salt, random 12-byte IV, and a six-character minimum password. It preserves full rule data, including secret fields and enabled state. Format/version/KDF bounds, password, and GCM authentication are verified before import mutation; imported secrets are re-encrypted with the target device's Android Keystore. Execution history, geofence queue/diagnostics, engine state, Android permissions, Shizuku state, and TTS cache are excluded.
 

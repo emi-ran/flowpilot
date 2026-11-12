@@ -11,7 +11,33 @@ data class ActionResult(
     val message: String,
     val resultCode: ActionResultCode? = null,
     val resultArgs: List<String> = emptyList(),
+    val diagnostic: ActionDiagnostic? = null,
 )
+
+/** Payload-free diagnostic metadata. Lengths are capped to avoid retaining unbounded input data. */
+@Serializable
+data class ActionDiagnostic(
+    val reason: ActionDiagnosticReason,
+    val expectedLength: Int? = null,
+    val observedLength: Int? = null,
+) {
+    init {
+        require(expectedLength == null || expectedLength in 0..1000)
+        require(observedLength == null || observedLength in 0..1000)
+    }
+}
+
+@Serializable
+enum class ActionDiagnosticReason {
+    MALFORMED_LINK,
+    INVALID_LINK_COMPONENTS,
+    UNSUPPORTED_LINK_HOST,
+    INVALID_LINK_PATH,
+    MISSING_VIDEO_ID,
+    MULTIPLE_VIDEO_IDS,
+    INVALID_VIDEO_ID_LENGTH,
+    INVALID_VIDEO_ID_CHARACTERS,
+}
 
 /** Locale-neutral outcome metadata persisted by execution history. */
 @Serializable

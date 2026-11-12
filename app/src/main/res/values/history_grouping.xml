@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_group_occurrences">%1$d occurrences</string>
+    <string name="history_group_show_records">Show records</string>
+    <string name="history_group_hide_records">Hide records</string>
+    <string name="history_template_field">Template field: %1$s</string>
+    <string name="history_template_notification_text">Notification text: %1$s</string>
+    <string name="history_template_notification_big_text">Expanded notification text: %1$s</string>
+    <string name="history_template_value_missing">Unavailable</string>
+    <string name="history_template_value_empty">Empty</string>
+    <string name="history_template_value_present">Present</string>
+    <string name="history_template_parse_error">Template syntax error</string>
+    <string name="history_template_unknown_variable">Unknown template variable</string>
+    <string name="history_template_analysis_failed">Template analysis failed</string>
+    <string name="history_template_rendered_empty">Rendered value is empty</string>
+    <string name="history_template_field_notification_title">Notification title</string>
+    <string name="history_template_field_notification_body">Notification body</string>
+    <string name="history_template_field_music_query">Music search</string>
+    <string name="history_template_field_music_link">Music link</string>
+    <string name="history_template_field_url">URL</string>
+    <string name="history_template_field_tts_text">Speech text</string>
+    <string name="history_template_field_alarm_message">Alarm message</string>
+    <string name="history_template_field_timer_message">Timer message</string>
+    <string name="history_template_field_webhook_url">Webhook URL</string>
+    <string name="history_template_field_webhook_headers">Webhook headers</string>
+    <string name="history_template_field_webhook_body">Webhook body</string>
+    <string name="history_template_field_phone_number">Phone number</string>
+    <string name="history_template_field_sms_recipient">SMS recipient</string>
+    <string name="history_template_field_sms_message">SMS message</string>
+</resources>

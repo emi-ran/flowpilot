@@ -217,7 +217,7 @@ Tek bir kuralda birden çok eylemi sürükle-bırak yöntemiyle dilediğiniz sı
 - **Canlı Eylem Testi:** Bir kuralı kaydetmeden önce oluşturduğunuz eylemleri doğrudan cihazınızda test edebilme.
 - **Kurala Özel Ana Ekran Kısayolu:** Düzenle → Gelişmiş bölümünden başlatıcıya kısayol sabitleyin. Dokunulduğunda kural yeniden yüklenir ve çalıştırmadan önce onay ister; devre dışı veya silinmiş kurallar çalışmaz, sessiz çalıştırma yoktur. HyperOS'ta bu izin verilmemişse FlowPilot Ana ekran kısayolları izin sayfasını açar.
 - **Güvenli Kural Çoğaltma:** Mevcut bir kuralı tek tıkla çoğaltma; webhook şifreleri hedef kopya için Keystore ile yeniden şifrelenir.
-- **Çalışma Geçmişi:** Son 100 kural tetiklenmesini, eylem bazında sonuçları ve maskelenmiş güvenli detaylarıyla yerel günlükte saklama. Ham sağlayıcı hataları, özel URI'ler, yerel dosya yolları, kimlik bilgileri ve telefon numaraları kalıcı olarak saklanmaz.
+- **Çalışma Geçmişi ve Sorun Giderme:** Son 100 kural yürütmesini, eylem bazında sonuçları, maskelenmiş güvenli detayları, tekrarlayan tek eylemli hatalar için kural/eylem/neden bazlı gruplamayı, içerik taşımayan yapılandırılmış tanı kodlarını (ör. geçersiz müzik bağlantılarında güvenli neden kodu ve beklenen/gözlenen video kimliği uzunluğu) ve eylem bazlı şablon tanılarını (`notification.text` / `notification.bigText` yok/boş/mevcut durumu, sözdizimi veya bilinmeyen değişken bayrakları ve boş çıktı durumu) yerel günlükte saklama. Ham sağlayıcı hataları, özel URI'ler, yerel dosya yolları, URL'ler, kimlik bilgileri, bildirim metinleri ve telefon numaraları kalıcı olarak saklanmaz. Çalışmaya dönüşmeyen olaylar geçmişe kaydedilmez.
 - **Çakışma Uyarıları:** Birbirine zıt durum eylemleri içeren kurallarda otomatik, engelleyici olmayan akıllı uyarı sistemi.
 - **İlk Açılış Turu:** Altı adımlı spotlight turu (karşılama, şablonlar, oluştur, motor durumu, ayarlar, bitiş) ilk açılışta ilgili alanları vurgular; kural listeniz doluysa oluşturma adımı atlanır. Turu dilediğiniz an atlayabilirsiniz; tamamlandığı cihazda hatırlanır ve Ayarlar → Turu yeniden başlat ile tekrar açılır.
 
@@ -247,7 +247,7 @@ FlowPilot kullanıcı gizliliğine tavizsiz bir bağlılıkla tasarlanmıştır:
 - 🔄 **İsteğe Bağlı Güncelleme Kontrolü:** Release sürümü herkese açık GitHub Releases API'sini varsayılan olarak otomatik biçimde günde en fazla bir kez kontrol eder; hesap veya cihaz kimliği göndermez. Otomatik kontrol Ayarlar'dan kapatılabilir, manuel kontrol kullanılabilir. Debug sürümü kontrol yapmaz.
 - 📵 **Bulut Eşitlemesi Yok:** FlowPilot kuralları, günlükleri veya sırları otomatik olarak bir bulut hesabıyla eşitlemez. Kullanıcının yapılandırdığı eylemler seçilen verileri dış alıcılara gönderebilir.
 - 🛡️ **Android Keystore Koruması:** Webhook şifreleri ve özel başlıklar AES-256-GCM ile Android Keystore içinde, cihaz desteklediğinde donanım destekli olarak korunur.
-- 🙈 **Kişisel Veri Maskeleme:** Telefon numaraları, webhook anahtarları ve gizli başlıklar arayüzde ve loglarda maskelenmiş olarak tutulur.
+- 🙈 **Kişisel Veri ve Tanılama Gizliliği:** Telefon numaraları, URL'ler, webhook anahtarları, bildirim metinleri ve gizli başlıklar arayüzde, çalışma geçmişinde ve günlüklerde maskelenir veya hiç saklanmaz. Kalıcı tanı kayıtları yalnızca içerik taşımayan durum kodlarını ve sınırlı sayısal meta verileri tutar.
 
 ### Şeffaf İzin Açıklamaları
 FlowPilot hassas izinleri yalnızca açık otomasyon özelliklerini yerine getirebilmek için talep eder:

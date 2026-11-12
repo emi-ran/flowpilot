@@ -47,6 +47,135 @@ enum class GeofenceDiagnosticStatus {
 }
 
 @Serializable
+enum class GeofenceDiagnosticErrorCode(val message: String) {
+    MISSING_LOCATION_PERMISSION("Precise location permission is required for geofencing."),
+    MISSING_BACKGROUND_LOCATION("Background location permission ('Allow all the time') is required for background geofencing."),
+    LOCATION_SERVICES_DISABLED("System location services are turned off."),
+    GEOFENCE_NOT_AVAILABLE("Geofencing error (1000): GEOFENCE_NOT_AVAILABLE"),
+    GEOFENCE_TOO_MANY_GEOFENCES("Geofencing error (1001): GEOFENCE_TOO_MANY_GEOFENCES"),
+    GEOFENCE_TOO_MANY_PENDING_INTENTS("Geofencing error (1002): GEOFENCE_TOO_MANY_PENDING_INTENTS"),
+    GEOFENCE_INSUFFICIENT_LOCATION_PERMISSION("Geofencing error (1004): GEOFENCE_INSUFFICIENT_LOCATION_PERMISSION"),
+    GEOFENCE_REQUEST_TOO_FREQUENT("Geofencing error (1005): GEOFENCE_REQUEST_TOO_FREQUENT"),
+    REGISTRATION_SECURITY_ERROR("Location permission denied while registering geofences."),
+    REGISTRATION_FAILED("Geofence registration failed."),
+    UNREGISTER_SECURITY_ERROR("Location permission denied while removing geofences."),
+    UNREGISTER_FAILED("Failed to unregister geofences."),
+    EVENT_PARSE_FAILED("Could not parse geofence event."),
+    UNSUPPORTED_TRANSITION("Unsupported geofence transition."),
+    EMPTY_TRIGGERING_GEOFENCES("No triggering geofences reported"),
+    TRANSITION_HANDLING_FAILED("Failed to handle geofence transitions."),
+    RECEIVER_ERROR("Geofence receiver error.");
+
+    companion object {
+        fun fromStatusCode(statusCode: Int): GeofenceDiagnosticErrorCode? = when (statusCode) {
+            1000 -> GEOFENCE_NOT_AVAILABLE
+            1001 -> GEOFENCE_TOO_MANY_GEOFENCES
+            1002 -> GEOFENCE_TOO_MANY_PENDING_INTENTS
+            1004 -> GEOFENCE_INSUFFICIENT_LOCATION_PERMISSION
+            1005 -> GEOFENCE_REQUEST_TOO_FREQUENT
+            else -> null
+        }
+
+        fun fromThrowable(
+            throwable: Throwable?,
+            status: GeofenceDiagnosticStatus = GeofenceDiagnosticStatus.REGISTRATION_FAILED,
+            unregisterOperation: Boolean = false,
+        ): GeofenceDiagnosticErrorCode {
+            if (throwable is SecurityException) {
+                return if (unregisterOperation) UNREGISTER_SECURITY_ERROR else REGISTRATION_SECURITY_ERROR
+            }
+            val statusCode = extractStatusCode(throwable)
+            if (statusCode != null) {
+                fromStatusCode(statusCode)?.let { return it }
+                if (statusCode == 13 || statusCode == 17) {
+                    return if (unregisterOperation) UNREGISTER_FAILED else REGISTRATION_FAILED
+                }
+            }
+            return when {
+                status == GeofenceDiagnosticStatus.RECEIVER_ERROR -> TRANSITION_HANDLING_FAILED
+                unregisterOperation -> UNREGISTER_FAILED
+                else -> REGISTRATION_FAILED
+            }
+        }
+
+        private fun extractStatusCode(throwable: Throwable?): Int? {
+            if (throwable == null) return null
+            try {
+                val method = throwable.javaClass.getMethod("getStatusCode")
+                val code = method.invoke(throwable) as? Int
+                if (code != null) return code
+            } catch (_: Throwable) {}
+            return null
+        }
+
+        fun resolveOrSanitize(
+            rawError: String,
+            status: GeofenceDiagnosticStatus,
+            errorCode: GeofenceDiagnosticErrorCode? = null,
+        ): Pair<GeofenceDiagnosticErrorCode?, String> {
+            when (status) {
+                GeofenceDiagnosticStatus.REGISTERED,
+                GeofenceDiagnosticStatus.UNREGISTERED,
+                GeofenceDiagnosticStatus.TRANSITION_ENTER,
+                GeofenceDiagnosticStatus.TRANSITION_EXIT -> return null to ""
+                GeofenceDiagnosticStatus.REGISTRATION_FAILED,
+                GeofenceDiagnosticStatus.RECEIVER_ERROR -> {}
+            }
+            if (errorCode != null) {
+                return errorCode to errorCode.message
+            }
+            val trimmed = rawError.trim()
+            entries.firstOrNull { it.message.equals(trimmed, ignoreCase = true) || it.name.equals(trimmed, ignoreCase = true) }
+                ?.let { return it to it.message }
+
+            val lower = trimmed.lowercase()
+            val matched = when {
+                trimmed.equals("Location disabled", ignoreCase = true) ||
+                    trimmed.equals("Location services disabled", ignoreCase = true) ||
+                    trimmed.equals("System location services are turned off", ignoreCase = true) ->
+                    LOCATION_SERVICES_DISABLED to "Location disabled"
+                trimmed.equals("Missing background location", ignoreCase = true) ||
+                    trimmed.equals("Background location permission required", ignoreCase = true) ->
+                    MISSING_BACKGROUND_LOCATION to MISSING_BACKGROUND_LOCATION.message
+                trimmed.equals("Missing location permission", ignoreCase = true) ||
+                    trimmed.equals("Location permission required", ignoreCase = true) ||
+                    trimmed.equals("Precise location permission required", ignoreCase = true) ->
+                    MISSING_LOCATION_PERMISSION to MISSING_LOCATION_PERMISSION.message
+                lower.startsWith("geofencing error (1000)") || lower == "1000: geofence_not_available" || lower == "geofence_not_available" ->
+                    GEOFENCE_NOT_AVAILABLE to GEOFENCE_NOT_AVAILABLE.message
+                lower.startsWith("geofencing error (1001)") || lower == "1001: geofence_too_many_geofences" || lower == "geofence_too_many_geofences" ->
+                    GEOFENCE_TOO_MANY_GEOFENCES to GEOFENCE_TOO_MANY_GEOFENCES.message
+                lower.startsWith("geofencing error (1002)") || lower == "1002: geofence_too_many_pending_intents" || lower == "geofence_too_many_pending_intents" ->
+                    GEOFENCE_TOO_MANY_PENDING_INTENTS to GEOFENCE_TOO_MANY_PENDING_INTENTS.message
+                lower.startsWith("geofencing error (1004)") || lower == "1004: geofence_insufficient_location_permission" || lower == "geofence_insufficient_location_permission" ->
+                    GEOFENCE_INSUFFICIENT_LOCATION_PERMISSION to GEOFENCE_INSUFFICIENT_LOCATION_PERMISSION.message
+                lower.startsWith("geofencing error (1005)") || lower == "1005: geofence_request_too_frequent" || lower == "geofence_request_too_frequent" ->
+                    GEOFENCE_REQUEST_TOO_FREQUENT to GEOFENCE_REQUEST_TOO_FREQUENT.message
+                lower.startsWith("unregister security error") ->
+                    UNREGISTER_SECURITY_ERROR to UNREGISTER_SECURITY_ERROR.message
+                lower.startsWith("unregister failed") || lower.startsWith("unregister error") ->
+                    UNREGISTER_FAILED to UNREGISTER_FAILED.message
+                lower.startsWith("security error") ->
+                    REGISTRATION_SECURITY_ERROR to REGISTRATION_SECURITY_ERROR.message
+                lower.startsWith("could not parse geofence event") ->
+                    EVENT_PARSE_FAILED to EVENT_PARSE_FAILED.message
+                lower.startsWith("unsupported geofence transition") ->
+                    UNSUPPORTED_TRANSITION to UNSUPPORTED_TRANSITION.message
+                lower.startsWith("no triggering geofences reported") ->
+                    EMPTY_TRIGGERING_GEOFENCES to EMPTY_TRIGGERING_GEOFENCES.message
+                lower.startsWith("failed to handle geofence transitions") ->
+                    TRANSITION_HANDLING_FAILED to TRANSITION_HANDLING_FAILED.message
+                else -> {
+                    val fallback = if (status == GeofenceDiagnosticStatus.RECEIVER_ERROR) RECEIVER_ERROR else REGISTRATION_FAILED
+                    fallback to fallback.message
+                }
+            }
+            return matched
+        }
+    }
+}
+
+@Serializable
 data class GeofenceDiagnostic(
     val automationId: String,
     val status: GeofenceDiagnosticStatus,
@@ -54,8 +183,22 @@ data class GeofenceDiagnostic(
     val lastTransitionAt: Long? = null,
     val lastTransition: GeofenceEvent? = null,
     val error: String = "",
+    val errorCode: GeofenceDiagnosticErrorCode? = null,
     val updatedAt: Long = System.currentTimeMillis(),
-)
+) {
+    fun sanitized(): GeofenceDiagnostic {
+        val (resolvedCode, safeError) = GeofenceDiagnosticErrorCode.resolveOrSanitize(
+            rawError = error,
+            status = status,
+            errorCode = errorCode,
+        )
+        return if (error == safeError && errorCode == resolvedCode) {
+            this
+        } else {
+            copy(error = safeError, errorCode = resolvedCode)
+        }
+    }
+}
 
 /**
  * Validates whether user-specified latitude, longitude, and radius meet geographic
@@ -256,10 +399,14 @@ class GeofenceRetryPolicy(
         now: Long = System.currentTimeMillis(),
     ) {
         val rulesById = rules.associateBy { it.id }
+        val (_, safeError) = GeofenceDiagnosticErrorCode.resolveOrSanitize(
+            rawError = error,
+            status = GeofenceDiagnosticStatus.REGISTRATION_FAILED,
+        )
         for (id in automationIds) {
             val rule = rulesById[id] ?: continue
             val prev = failureRecords[id]
-            val count = if (prev != null && prev.signature == rule.toGeofenceConfigSignature() && prev.error == error) {
+            val count = if (prev != null && prev.signature == rule.toGeofenceConfigSignature() && prev.error == safeError) {
                 prev.failureCount + 1
             } else {
                 1
@@ -267,7 +414,7 @@ class GeofenceRetryPolicy(
             val backoff = calculateBackoff(count)
             failureRecords[id] = FailureRecord(
                 signature = rule.toGeofenceConfigSignature(),
-                error = error,
+                error = safeError,
                 failureCount = count,
                 nextRetryAt = now + backoff,
             )

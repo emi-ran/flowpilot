@@ -5,6 +5,8 @@ import android.util.Log
 import com.flowpilot.app.actions.ActionDispatcher
 import com.flowpilot.app.actions.ActionParametersFactory
 import com.flowpilot.app.actions.TemplateContext
+import com.flowpilot.app.actions.TemplateDiagnostics
+import com.flowpilot.app.actions.ActionTemplateDiagnostic
 import com.flowpilot.app.actions.TemplateRenderer
 import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.data.model.ActionExecutionRecord
@@ -919,6 +921,7 @@ class AutomationEngine(
                                 }
 
                                 currentCoroutineContext().ensureActive()
+                                var templateDiagnostics = emptyList<ActionTemplateDiagnostic>()
                                 val result = try {
                                     repository.dispatchIfAuthorized(reservation) {
                                         val needsLocation = rule.requiresLocation(action)
@@ -936,6 +939,7 @@ class AutomationEngine(
                                             templateContext
                                         }
                                         val parameters = ActionParametersFactory.create(rule, actionContext)
+                                        templateDiagnostics = TemplateDiagnostics.forAction(action, rule, actionContext, parameters)
                                         eventAuthorization?.let { token ->
                                             AutomationService.executeIfEventAuthorized(token) {
                                                 dispatcher.executeAsync(action, parameters)
@@ -965,7 +969,7 @@ class AutomationEngine(
                                 Log.i(TAG, "Rule action result: action=${action.name}, success=${result.success}")
                                 anySuccess = anySuccess || result.success
                                 actionRecords.add(
-                                    ActionExecutionRecord.create(action, result)
+                                    ActionExecutionRecord.create(action, result, templateDiagnostics)
                                 )
                                 currentAction = null
                             }

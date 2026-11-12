@@ -3,6 +3,8 @@ package com.flowpilot.app.data.model
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.actions.ActionResult
 import com.flowpilot.app.actions.ActionResultCode
+import com.flowpilot.app.actions.ActionDiagnostic
+import com.flowpilot.app.actions.ActionTemplateDiagnostic
 import com.flowpilot.app.engine.PhoneNumberUtils
 import kotlinx.serialization.Serializable
 
@@ -29,14 +31,18 @@ data class ActionExecutionRecord(
     val message: String,
     val resultCode: ActionResultCode? = null,
     val resultArgs: List<String> = emptyList(),
+    val diagnostic: ActionDiagnostic? = null,
+    val templateDiagnostics: List<ActionTemplateDiagnostic> = emptyList(),
 ) {
     companion object {
-        fun create(actionType: ActionType, result: ActionResult): ActionExecutionRecord = create(
+        fun create(actionType: ActionType, result: ActionResult, templateDiagnostics: List<ActionTemplateDiagnostic> = emptyList()): ActionExecutionRecord = create(
             actionType = actionType,
             success = result.success,
             message = result.message,
             resultCode = result.resultCode,
             resultArgs = result.resultArgs,
+            diagnostic = result.diagnostic,
+            templateDiagnostics = templateDiagnostics,
         )
 
         fun create(
@@ -45,6 +51,8 @@ data class ActionExecutionRecord(
             message: String,
             resultCode: ActionResultCode? = null,
             resultArgs: List<String> = emptyList(),
+            diagnostic: ActionDiagnostic? = null,
+            templateDiagnostics: List<ActionTemplateDiagnostic> = emptyList(),
         ): ActionExecutionRecord {
             val safeMessage = sanitizeMessage(message, success, actionType)
             val safeArgs = resultArgs.map(WebhookExecutor::redactSensitiveText).map { arg ->
@@ -57,6 +65,8 @@ data class ActionExecutionRecord(
                 message = safeMessage,
                 resultCode = resultCode ?: successCodeFor(actionType, success),
                 resultArgs = safeArgs,
+                diagnostic = diagnostic,
+                templateDiagnostics = templateDiagnostics,
             )
         }
 
@@ -150,6 +160,8 @@ data class ExecutionHistoryEntry(
                 message = action.message,
                 resultCode = action.resultCode,
                 resultArgs = action.resultArgs,
+                diagnostic = action.diagnostic,
+                templateDiagnostics = action.templateDiagnostics,
             )
         }
         return copy(

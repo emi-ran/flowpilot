@@ -124,8 +124,7 @@ class FlowPilotNotificationListener : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         checkWatchdog()
-        if (!isConnected) return
-        sbn ?: return
+        if (!isConnected || sbn == null) return
         val pkg = sbn.packageName ?: return
         // Ignore own, sibling-build, and system volume UI notifications to prevent trigger loops/noise.
         if (isIgnoredNotificationPackage(pkg, packageName)) return
@@ -230,16 +229,15 @@ class FlowPilotNotificationListener : NotificationListenerService() {
                 Log.i(TAG, "Listener not bound; requesting system rebind")
                 NotificationListenerService.requestRebind(ComponentName(context, FlowPilotNotificationListener::class.java))
                 true
-            } catch (error: Throwable) {
-                Log.w(TAG, "Listener rebind request failed", error)
+            } catch (_: Throwable) {
+                Log.w(TAG, "Listener rebind request failed")
                 false
             }
         }
 
         fun enqueueIfEnabled(engineEnabled: Boolean, event: TransientNotificationEvent): Boolean = synchronized(queueLock) {
-            if (!engineEnabled || eventQueue.size >= MAX_QUEUE_SIZE || !deduplicator.shouldProcess(event.key, event.postTime)) {
-                return false
-            }
+            if (!engineEnabled || eventQueue.size >= MAX_QUEUE_SIZE ||
+                !deduplicator.shouldProcess(event.key, event.postTime)) return false
             eventQueue.addLast(event)
             true
         }
@@ -248,7 +246,7 @@ class FlowPilotNotificationListener : NotificationListenerService() {
             buildList {
                 while (eventQueue.isNotEmpty()) {
                     val event = eventQueue.removeFirst()
-                    if (event.postTime in (currentTime - MAX_EVENT_AGE_MS)..currentTime) {
+                    if (event.postTime <= currentTime && event.postTime >= currentTime - MAX_EVENT_AGE_MS) {
                         add(event)
                     }
                 }

@@ -7,7 +7,6 @@ import android.util.Log
 import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.data.model.geofenceRegistrationViews
 import com.google.android.gms.location.Geofence
-import com.google.android.gms.location.GeofenceStatusCodes
 import com.google.android.gms.location.GeofencingEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,16 +34,18 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
         val geofencingEvent = try {
             GeofencingEvent.fromIntent(intent)
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse GeofencingEvent from intent: ${e.message}")
-            recordReceiverError(context, "Could not parse geofence event: ${e.message.orEmpty()}")
+        } catch (_: Exception) {
+            val errorCode = GeofenceDiagnosticErrorCode.EVENT_PARSE_FAILED
+            Log.w(TAG, "Failed to parse GeofencingEvent from intent (${errorCode.name})")
+            recordReceiverError(context, errorCode)
             return
         } ?: return
 
         if (geofencingEvent.hasError()) {
-            val errorString = GeofenceStatusCodes.getStatusCodeString(geofencingEvent.errorCode)
-            Log.w(TAG, "Geofencing error (${geofencingEvent.errorCode}): $errorString")
-            recordReceiverError(context, "Geofencing error (${geofencingEvent.errorCode}): $errorString")
+            val errorCode = GeofenceDiagnosticErrorCode.fromStatusCode(geofencingEvent.errorCode)
+                ?: GeofenceDiagnosticErrorCode.RECEIVER_ERROR
+            Log.w(TAG, "Geofencing error (${geofencingEvent.errorCode}): ${errorCode.name}")
+            recordReceiverError(context, errorCode)
             return
         }
 
@@ -54,7 +55,7 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
             Geofence.GEOFENCE_TRANSITION_EXIT -> GeofenceEvent.EXIT
             else -> {
                 Log.d(TAG, "Ignoring non-enter/exit geofence transition: $geofenceTransition")
-                recordReceiverError(context, "Unsupported geofence transition: $geofenceTransition")
+                recordReceiverError(context, GeofenceDiagnosticErrorCode.UNSUPPORTED_TRANSITION)
                 return
             }
         }
@@ -62,7 +63,7 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         val triggeringGeofences = geofencingEvent.triggeringGeofences
         if (triggeringGeofences.isNullOrEmpty()) {
             Log.w(TAG, "No triggering geofences reported")
-            recordReceiverError(context, "No triggering geofences reported")
+            recordReceiverError(context, GeofenceDiagnosticErrorCode.EMPTY_TRIGGERING_GEOFENCES)
             return
         }
 
@@ -112,8 +113,8 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 if (isEngineEnabled) {
                     val serviceStarted = try {
                         AutomationService.reconcileEnabled(appContext)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Exception while reconciling AutomationService for geofence: ${e.message}", e)
+                    } catch (_: Exception) {
+                        Log.e(TAG, "Exception while reconciling AutomationService for geofence")
                         false
                     }
                     if (!serviceStarted) {
@@ -124,9 +125,10 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 } else {
                     Log.i(TAG, "FlowPilot engine is disabled; geofence events enqueued but service reconciliation skipped")
                 }
-            } catch (t: Throwable) {
-                repository.recordGeofenceReceiverError("Failed to handle geofence transitions: ${t.message.orEmpty()}")
-                Log.e(TAG, "Failed to handle geofence transitions: ${t.message}", t)
+            } catch (_: Throwable) {
+                val errorCode = GeofenceDiagnosticErrorCode.TRANSITION_HANDLING_FAILED
+                repository.recordGeofenceReceiverError(errorCode)
+                Log.e(TAG, "Failed to handle geofence transitions (${errorCode.name})")
             } finally {
                 try {
                     pendingResult.finish()
@@ -140,11 +142,11 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         const val ACTION_GEOFENCE_TRANSITION = "com.flowpilot.app.ACTION_GEOFENCE_TRANSITION"
     }
 
-    private fun recordReceiverError(context: Context, error: String) {
+    private fun recordReceiverError(context: Context, errorCode: GeofenceDiagnosticErrorCode) {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                AutomationRepository(context.applicationContext).recordGeofenceReceiverError(error)
+                AutomationRepository(context.applicationContext).recordGeofenceReceiverError(errorCode)
             } finally {
                 pendingResult.finish()
             }

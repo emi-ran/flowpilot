@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_group_occurrences">%1$d kez</string>
+    <string name="history_group_show_records">Kayıtları göster</string>
+    <string name="history_group_hide_records">Kayıtları gizle</string>
+    <string name="history_template_field">Şablon alanı: %1$s</string>
+    <string name="history_template_notification_text">Bildirim metni: %1$s</string>
+    <string name="history_template_notification_big_text">Genişletilmiş bildirim metni: %1$s</string>
+    <string name="history_template_value_missing">Kullanılamıyor</string>
+    <string name="history_template_value_empty">Boş</string>
+    <string name="history_template_value_present">Mevcut</string>
+    <string name="history_template_parse_error">Şablon sözdizimi hatası</string>
+    <string name="history_template_unknown_variable">Bilinmeyen şablon değişkeni</string>
+    <string name="history_template_analysis_failed">Şablon analizi başarısız</string>
+    <string name="history_template_rendered_empty">Çözümlenen değer boş</string>
+    <string name="history_template_field_notification_title">Bildirim başlığı</string>
+    <string name="history_template_field_notification_body">Bildirim içeriği</string>
+    <string name="history_template_field_music_query">Müzik araması</string>
+    <string name="history_template_field_music_link">Müzik bağlantısı</string>
+    <string name="history_template_field_url">URL</string>
+    <string name="history_template_field_tts_text">Konuşma metni</string>
+    <string name="history_template_field_alarm_message">Alarm mesajı</string>
+    <string name="history_template_field_timer_message">Zamanlayıcı mesajı</string>
+    <string name="history_template_field_webhook_url">Webhook URL</string>
+    <string name="history_template_field_webhook_headers">Webhook başlıkları</string>
+    <string name="history_template_field_webhook_body">Webhook gövdesi</string>
+    <string name="history_template_field_phone_number">Telefon numarası</string>
+    <string name="history_template_field_sms_recipient">SMS alıcısı</string>
+    <string name="history_template_field_sms_message">SMS mesajı</string>
+</resources>
