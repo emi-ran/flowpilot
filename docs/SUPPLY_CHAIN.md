@@ -25,15 +25,17 @@ A maintainer runs the generation, reviews the resulting XML as source, and commi
 change that adds or upgrades a dependency must regenerate the metadata in the same change; an
 unreviewed dependency addition is a supply-chain change.
 
-Once committed, every local and CI build verifies:
+When Gradle runs, dependency verification checks the artifacts and metadata that the invoked tasks resolve and that are subject to verification, including:
 
-- artifact files (JAR/AAR/ZIP) and their POM/Gradle Module Metadata for the entire dependency graph,
+- artifact files (JAR/AAR/ZIP) and their POM/Gradle Module Metadata,
 - project and settings plugins resolved by `pluginManagement`,
 - the exact SHA-256 bytes recorded in the XML.
 
+CI skips Gradle for changes outside its Android and build input paths; those runs do not perform dependency verification.
+
 Gradle's default `strict` verification mode is used: a missing checksum, an unlisted artifact, or a
 checksum mismatch fails resolution before compilation. No workflow passes
-`--dependency-verification=lenient` or `off`. CI therefore fails on a mismatch rather than warning.
+`--dependency-verification=lenient` or `off`. CI runs that invoke Gradle fail on a mismatch rather than warning.
 
 The metadata records SHA-256 checksums (`<verify-signatures>false</verify-signatures>`). That
 protects integrity: an artifact swapped in transit or at rest under the same coordinates is
