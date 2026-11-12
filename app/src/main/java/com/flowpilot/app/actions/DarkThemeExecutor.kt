@@ -34,16 +34,16 @@ class DarkThemeExecutor(
         }
 
         if (!shell.isShizukuRunning()) {
-            return ActionResult(false, "Shizuku not running — Dark theme can't be toggled")
+            return ActionResult(false, "Shizuku not running — Dark theme can't be toggled", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
         }
         if (!shell.hasPermission()) {
-            return ActionResult(false, "Shizuku permission not granted to FlowPilot")
+            return ActionResult(false, "Shizuku permission not granted to FlowPilot", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED))
         }
 
         return try {
-            val (code, out) = shell.run("cmd uimode night $cmdArg")
+            val (code, _) = shell.run("cmd uimode night $cmdArg")
             if (code != 0) {
-                return ActionResult(false, "Dark theme toggle failed: $out")
+                return ActionResult(false, "Dark theme toggle failed", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED))
             }
 
             val currentMode = settingsReader(context.contentResolver, "ui_night_mode", -1)
@@ -51,12 +51,16 @@ class DarkThemeExecutor(
                 return ActionResult(
                     false,
                     "Dark theme state mismatch: expected $expectedMode but read $currentMode",
+                    diagnostic = ActionDiagnostic(
+                        if (currentMode == -1) ActionDiagnosticReason.STATE_UNAVAILABLE
+                        else ActionDiagnosticReason.STATE_MISMATCH,
+                    ),
                 )
             }
 
             ActionResult(true, "Dark theme $actionLabel")
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+        } catch (_: Throwable) {
+            ActionResult(false, "Dark theme toggle error")
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.flowpilot.app.actions
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -17,18 +18,18 @@ class LaunchExecutor(
         Log.i(TAG, "Executing ${action.name}")
         val intent = when (action) {
             ActionType.LAUNCH_APP -> {
-                if (parameters.launchPackage.isBlank()) return ActionResult(false, "Choose an app to launch")
+                if (parameters.launchPackage.isBlank()) return ActionResult(false, "Choose an app to launch", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
                 context.packageManager.getLaunchIntentForPackage(parameters.launchPackage)
                     ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    ?: return ActionResult(false, "Selected app is not installed or launchable")
+                    ?: return ActionResult(false, "Selected app is not installed or launchable", diagnostic = ActionDiagnostic(ActionDiagnosticReason.TARGET_APP_UNAVAILABLE))
             }
             ActionType.OPEN_URL -> {
                 val uri = Uri.parse(parameters.url.trim())
                 if (uri.scheme !in setOf("https", "http") || uri.host.isNullOrBlank()) {
-                    return ActionResult(false, "Enter a valid http or https URL")
+                    return ActionResult(false, "Enter a valid http or https URL", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
                 }
                 Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).also {
-                    if (it.resolveActivity(context.packageManager) == null) return ActionResult(false, "No app can open this URL")
+                    if (it.resolveActivity(context.packageManager) == null) return ActionResult(false, "No app can open this URL", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
                 }
             }
             else -> return ActionResult(false, "Unsupported launch action")
@@ -36,6 +37,8 @@ class LaunchExecutor(
         launch(intent)
         Log.i(TAG, "Started ${action.name}")
         ActionResult(true, if (action == ActionType.LAUNCH_APP) "App launched" else "URL opened")
+    } catch (_: ActivityNotFoundException) {
+        ActionResult(false, "No application can handle this action", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
     } catch (_: Throwable) {
         Log.w(TAG, "Failed ${action.name}")
         ActionResult(false, "Unable to complete ${action.name.lowercase().replace('_', ' ')}")

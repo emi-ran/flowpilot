@@ -13,6 +13,7 @@ All notable FlowPilot changes are documented here.
 - Mark unavailable music apps in the editor and explain how to install or enable the selected app; report an actionable failure if the target cannot handle the action.
 - Prevent saving or manually running music rules when the selected app is missing or disabled; preserve existing and imported rules.
 - Execution history and notification diagnostics: History groups repeated single-action failures by rule, action type, and structured `ActionDiagnosticReason` when a non-successful run has exactly one failed action with a diagnostic, while leaving multi-action failures ungrouped; each action row renders structured music-link failure reasons (including bounded expected/observed video ID lengths) and content-free template diagnostics (`ActionTemplateDiagnostic` reporting `notification.text` / `notification.bigText` missing/empty/present states, syntax errors, unknown variables, analysis failures, and empty rendered output) without persisting URLs, phone numbers, notification text, or raw error strings.
+- Extend safe action-history reasons to observed Shizuku, permission, system-command, state, target-app/handler, media-session, invalid-input and network failures. Reasons are recorded only when identified; otherwise the generic failure remains. Legacy records remain readable, and no raw error or sensitive action content is retained in diagnostics.
 
 ### Fixed
 

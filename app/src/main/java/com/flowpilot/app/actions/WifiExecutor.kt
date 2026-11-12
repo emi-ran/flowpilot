@@ -34,29 +34,29 @@ class WifiExecutor(
         }
 
         if (enabledStateReader() == null) {
-            return ActionResult(false, "Wi-Fi is unsupported on this device")
+            return ActionResult(false, "Wi-Fi is unsupported on this device", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
         }
         if (!shell.isShizukuRunning()) {
-            return ActionResult(false, "Shizuku not running — Wi-Fi can't be toggled")
+            return ActionResult(false, "Shizuku not running — Wi-Fi can't be toggled", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
         }
         if (!shell.hasPermission()) {
-            return ActionResult(false, "Shizuku permission not granted to FlowPilot")
+            return ActionResult(false, "Shizuku permission not granted to FlowPilot", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED))
         }
 
         return try {
-            val (code, output) = shell.run(command)
+            val (code) = shell.run(command)
             if (code != 0) {
-                return ActionResult(false, "Wi-Fi toggle failed: $output")
+                return ActionResult(false, "Wi-Fi toggle failed", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED))
             }
 
             val enabled = awaitExpectedState(expectedEnabled)
-                ?: return ActionResult(false, "Wi-Fi state became unavailable")
+                ?: return ActionResult(false, "Wi-Fi state became unavailable", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
             if (enabled != expectedEnabled) {
-                return ActionResult(false, "Wi-Fi state mismatch: expected ${if (expectedEnabled) "on" else "off"} but read ${if (enabled) "on" else "off"}")
+                return ActionResult(false, "Wi-Fi state mismatch: expected ${if (expectedEnabled) "on" else "off"} but read ${if (enabled) "on" else "off"}", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_MISMATCH))
             }
             ActionResult(true, "Wi-Fi turned $label")
-        } catch (t: Throwable) {
-            ActionResult(false, "Wi-Fi toggle error: ${t.message ?: t.javaClass.simpleName}")
+        } catch (_: Throwable) {
+            ActionResult(false, "Wi-Fi toggle error")
         }
     }
 

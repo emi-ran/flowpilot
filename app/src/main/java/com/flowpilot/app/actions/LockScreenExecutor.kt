@@ -38,20 +38,20 @@ class LockScreenExecutor(
         }
 
         if (!shizukuShell.isShizukuRunning()) {
-            return ActionResult(false, "Lock screen requires Shizuku (service not running)")
+            return ActionResult(false, "Lock screen requires Shizuku (service not running)", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
         }
         if (!shizukuShell.hasPermission()) {
-            return ActionResult(false, "Lock screen requires Shizuku permission")
+            return ActionResult(false, "Lock screen requires Shizuku permission", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED))
         }
 
-        val (exitCode, output) = shizukuShell.run("input keyevent 26")
+        val (exitCode, _) = shizukuShell.run("input keyevent 26")
         if (exitCode != 0) {
-            return ActionResult(false, "Failed to lock screen (exit code $exitCode): $output")
+            return ActionResult(false, "Failed to lock screen: system command failed", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED))
         }
 
         return when (awaitScreenInteractive()) {
             false -> ActionResult(true, "Screen locked")
-            true -> ActionResult(false, "Failed to lock screen: screen is still interactive")
+            true -> ActionResult(false, "Failed to lock screen: screen is still interactive", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_MISMATCH))
             null -> ActionResult(true, "Screen lock command accepted (completion not verified)")
         }
     }

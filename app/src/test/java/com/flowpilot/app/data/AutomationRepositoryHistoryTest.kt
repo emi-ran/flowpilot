@@ -14,6 +14,8 @@ import com.flowpilot.app.data.model.resolvedResultArgs
 import com.flowpilot.app.data.model.resolvedResultCode
 import com.flowpilot.app.actions.ActionResult
 import com.flowpilot.app.actions.ActionResultCode
+import com.flowpilot.app.actions.ActionDiagnostic
+import com.flowpilot.app.actions.ActionDiagnosticReason
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -390,6 +392,15 @@ class AutomationRepositoryHistoryTest {
     }
 
     @Test
+    fun legacyHistoryWithoutDiagnostic_doesNotInferReasonFromMessage() = runTest {
+        repository.rawDataStore.edit { prefs ->
+            prefs[historyKey] = """[{"id":"legacy","ruleId":"rule","ruleName":"Rule","trigger":"MANUAL","timestamp":1,"status":"FAILURE","actions":[{"actionType":"NFC_ON","actionLabel":"NFC on","success":false,"message":"Shizuku not running"}]}]"""
+        }
+
+        assertThat(repository.executionHistory.first().single().actions.single().diagnostic).isNull()
+    }
+
+    @Test
     fun appendHistory_withInjectedSyntheticSecretAndPrivateUri_isAbsentFromSerializedAndPersistedHistory() = runTest {
         val syntheticSecret = "SYNTHETIC_SECRET_DO_NOT_PERSIST"
         val syntheticUri = "content://com.flowpilot.test.provider/synthetic/private/uri"
@@ -408,6 +419,7 @@ class AutomationRepositoryHistoryTest {
                         message = rawErrorMessage,
                         resultCode = null,
                         resultArgs = listOf(syntheticUri, syntheticSecret, syntheticLocalPath),
+                        diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING),
                     ),
                 ),
             ),
@@ -420,9 +432,13 @@ class AutomationRepositoryHistoryTest {
         assertThat(rawSerialized).doesNotContain(syntheticUri)
         assertThat(rawSerialized).doesNotContain("/data/user/0")
         assertThat(rawSerialized).doesNotContain("IllegalStateException")
+        assertThat(rawSerialized).contains("SHIZUKU_NOT_RUNNING")
+        assertThat(json.decodeFromString(historySerializer, rawSerialized).single().actions.single().diagnostic)
+            .isEqualTo(ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
 
         val persisted = repository.executionHistory.first().first { it.ruleId == "leak-test-rule" }
         val action = persisted.actions.single()
+        assertThat(action.diagnostic).isEqualTo(ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
 
         assertThat(action.message).doesNotContain(syntheticSecret)
         assertThat(action.message).doesNotContain(syntheticUri)

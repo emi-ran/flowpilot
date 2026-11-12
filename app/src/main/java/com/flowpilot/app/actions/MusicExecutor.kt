@@ -94,12 +94,13 @@ class MusicExecutor internal constructor(private val launch: (Intent) -> Unit) :
     override val supportedTypes = setOf(ActionType.MUSIC_SEARCH, ActionType.MUSIC_PLAY_LINK)
 
     override fun execute(action: ActionType, parameters: ActionParameters): ActionResult {
-        if (action !in supportedTypes || !MusicLinkValidator.isSupportedPackage(parameters.musicAppPackage)) {
-            return ActionResult(false, "Invalid music action or app")
+        if (action !in supportedTypes) return ActionResult(false, "Invalid music action")
+        if (!MusicLinkValidator.isSupportedPackage(parameters.musicAppPackage)) {
+            return ActionResult(false, "Invalid music app", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
         val intent = when (action) {
             ActionType.MUSIC_SEARCH -> {
-                if (parameters.musicQuery.isBlank()) return ActionResult(false, "Missing music query")
+                if (parameters.musicQuery.isBlank()) return ActionResult(false, "Missing music query", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
                 Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)
                     .putExtra(SearchManager.QUERY, parameters.musicQuery)
             }
@@ -116,7 +117,7 @@ class MusicExecutor internal constructor(private val launch: (Intent) -> Unit) :
             launch(intent)
             ActionResult(true, if (action == ActionType.MUSIC_SEARCH) "Music search opened; playback not verified" else "Music link opened; playback not verified")
         } catch (_: ActivityNotFoundException) {
-            ActionResult(false, "Music app unavailable or unable to handle this action; install or enable it and try again")
+            ActionResult(false, "Music app unavailable or unable to handle this action", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
         } catch (_: Exception) {
             ActionResult(false, "Unable to open music app")
         }

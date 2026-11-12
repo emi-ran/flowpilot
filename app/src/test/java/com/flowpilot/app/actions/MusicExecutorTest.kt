@@ -115,18 +115,19 @@ class MusicExecutorTest {
     @Test fun rejectsInvalidInputAndRedactsFailures() {
         var launches = 0
         val executor = MusicExecutor { launches++; throw IllegalStateException("secret query") }
-        assertThat(executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = " ")).success).isFalse()
+        assertThat(executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = " ")).diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
         assertThat(executor.execute(ActionType.MUSIC_PLAY_LINK, ActionParameters(musicAppPackage = youtube, musicLink = "https://open.spotify.com/track/id")).success).isFalse()
         assertThat(launches).isEqualTo(0)
         val failed = executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = "secret query"))
         assertThat(failed.message).isEqualTo("Unable to open music app")
+        assertThat(failed.diagnostic).isNull()
     }
 
     @Test fun missingMusicAppReportsActionableFailure() {
         val executor = MusicExecutor { throw ActivityNotFoundException("sensitive") }
         val result = executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = "song"))
         assertThat(result.success).isFalse()
-        assertThat(result.message).contains("install or enable")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.HANDLER_UNAVAILABLE)
         assertThat(result.message).doesNotContain("sensitive")
     }
 
@@ -163,6 +164,28 @@ class MusicExecutorTest {
         val legacy = """{"actionType":"MUSIC_PLAY_LINK","actionLabel":"Music","success":false,"message":"Invalid music link"}"""
         assertThat(Json.decodeFromString<ActionExecutionRecord>(legacy).diagnostic).isNull()
         assertThat(ActionExecutionRecord.create(ActionType.MUSIC_SEARCH, ActionResult(true, "ok")).diagnostic).isNull()
+    }
+
+    @Test fun missingHandlerAndInvalidInputRemainDistinctAndPrivateInHistory() {
+        val secret = "private song query"
+        val missing = MusicExecutor { throw ActivityNotFoundException(secret) }.execute(
+            ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = secret),
+        )
+        var launches = 0
+        val invalid = MusicExecutor { launches++ }.execute(
+            ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = "private.invalid.app", musicQuery = secret),
+        )
+        listOf(missing to ActionDiagnosticReason.HANDLER_UNAVAILABLE, invalid to ActionDiagnosticReason.INVALID_INPUT)
+            .forEach { (result, reason) ->
+                val record = ActionExecutionRecord.create(ActionType.MUSIC_SEARCH, result)
+                assertThat(record.success).isFalse()
+                assertThat(record.diagnostic?.reason).isEqualTo(reason)
+                val encoded = Json.encodeToString(record)
+                assertThat(encoded).doesNotContain(secret)
+                assertThat(encoded).doesNotContain("private.invalid.app")
+                assertThat(Json.decodeFromString<ActionExecutionRecord>(encoded).diagnostic).isEqualTo(record.diagnostic)
+            }
+        assertThat(launches).isEqualTo(0)
     }
 
     @Test fun fieldsSurviveSerializationAndParameterMapping() {

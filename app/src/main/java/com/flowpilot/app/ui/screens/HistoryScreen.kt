@@ -440,7 +440,9 @@ private fun ActionOutcomeRow(action: ActionExecutionRecord, index: Int) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
-            } else if (!action.success) {
+            } else if (!action.success && action.templateDiagnostics.isEmpty() &&
+                (action.resolvedResultCode() == null || action.resolvedResultCode() == ActionResultCode.COMPLETED)
+            ) {
                 Text(
                     text = stringResource(R.string.history_diagnostic_unavailable),
                     style = MaterialTheme.typography.bodySmall,
@@ -479,6 +481,23 @@ private fun ActionDiagnosticReason.labelRes(): Int = when (this) {
     ActionDiagnosticReason.MULTIPLE_VIDEO_IDS -> R.string.history_diagnostic_multiple_video_ids
     ActionDiagnosticReason.INVALID_VIDEO_ID_LENGTH -> R.string.history_diagnostic_video_id_length
     ActionDiagnosticReason.INVALID_VIDEO_ID_CHARACTERS -> R.string.history_diagnostic_video_id_characters
+    ActionDiagnosticReason.SHIZUKU_NOT_RUNNING -> R.string.history_diagnostic_shizuku_not_running
+    ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED -> R.string.history_diagnostic_shizuku_permission_required
+    ActionDiagnosticReason.BLUETOOTH_PERMISSION_REQUIRED -> R.string.history_diagnostic_bluetooth_permission_required
+    ActionDiagnosticReason.SETTINGS_PERMISSION_REQUIRED -> R.string.history_diagnostic_settings_permission_required
+    ActionDiagnosticReason.DND_PERMISSION_REQUIRED -> R.string.history_diagnostic_dnd_permission_required
+    ActionDiagnosticReason.SYSTEM_COMMAND_FAILED -> R.string.history_diagnostic_system_command_failed
+    ActionDiagnosticReason.STATE_UNAVAILABLE -> R.string.history_diagnostic_state_unavailable
+    ActionDiagnosticReason.STATE_MISMATCH -> R.string.history_diagnostic_state_mismatch
+    ActionDiagnosticReason.TARGET_APP_UNAVAILABLE -> R.string.history_diagnostic_target_app_unavailable
+    ActionDiagnosticReason.INVALID_INPUT -> R.string.history_diagnostic_invalid_input
+    ActionDiagnosticReason.HANDLER_UNAVAILABLE -> R.string.history_diagnostic_handler_unavailable
+    ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED -> R.string.history_diagnostic_notification_permission_required
+    ActionDiagnosticReason.PHONE_PERMISSION_REQUIRED -> R.string.history_diagnostic_phone_permission_required
+    ActionDiagnosticReason.SMS_PERMISSION_REQUIRED -> R.string.history_diagnostic_sms_permission_required
+    ActionDiagnosticReason.MEDIA_SESSION_UNAVAILABLE -> R.string.history_diagnostic_media_session_unavailable
+    ActionDiagnosticReason.NETWORK_TIMEOUT -> R.string.history_diagnostic_network_timeout
+    ActionDiagnosticReason.NETWORK_FAILURE -> R.string.history_diagnostic_network_failure
 }
 
 @Composable

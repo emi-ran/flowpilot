@@ -27,4 +27,21 @@
     <string name="history_template_field_phone_number">Phone number</string>
     <string name="history_template_field_sms_recipient">SMS recipient</string>
     <string name="history_template_field_sms_message">SMS message</string>
+    <string name="history_diagnostic_shizuku_not_running">Shizuku is not running. Start Shizuku and try again.</string>
+    <string name="history_diagnostic_shizuku_permission_required">FlowPilot needs Shizuku permission for this action.</string>
+    <string name="history_diagnostic_bluetooth_permission_required">Bluetooth permission is required for this action.</string>
+    <string name="history_diagnostic_settings_permission_required">Permission to modify system settings is required for this action.</string>
+    <string name="history_diagnostic_dnd_permission_required">Do Not Disturb access is required for this action.</string>
+    <string name="history_diagnostic_system_command_failed">The system command could not be completed.</string>
+    <string name="history_diagnostic_state_unavailable">The current system state could not be checked.</string>
+    <string name="history_diagnostic_state_mismatch">The system state did not match the requested change.</string>
+    <string name="history_diagnostic_target_app_unavailable">The selected app is unavailable or disabled.</string>
+    <string name="history_diagnostic_invalid_input">The action contains an invalid or missing value.</string>
+    <string name="history_diagnostic_handler_unavailable">No available app can handle this action.</string>
+    <string name="history_diagnostic_notification_permission_required">Notification permission is required for this action.</string>
+    <string name="history_diagnostic_phone_permission_required">Phone permission is required for this action.</string>
+    <string name="history_diagnostic_sms_permission_required">SMS permission is required for this action.</string>
+    <string name="history_diagnostic_media_session_unavailable">No suitable active media session is available.</string>
+    <string name="history_diagnostic_network_timeout">The network request timed out.</string>
+    <string name="history_diagnostic_network_failure">The network request failed.</string>
 </resources>

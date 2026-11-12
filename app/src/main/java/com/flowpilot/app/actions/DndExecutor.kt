@@ -45,6 +45,7 @@ class DndExecutor(
             return ActionResult(
                 false,
                 "Do Not Disturb requires Notification Policy Access permission",
+                diagnostic = ActionDiagnostic(ActionDiagnosticReason.DND_PERMISSION_REQUIRED),
             )
         }
 
@@ -55,6 +56,10 @@ class DndExecutor(
                 return ActionResult(
                     false,
                     "Do Not Disturb state mismatch: requested $targetFilter but read back $readBack",
+                    diagnostic = ActionDiagnostic(
+                        if (readBack == NotificationManager.INTERRUPTION_FILTER_UNKNOWN) ActionDiagnosticReason.STATE_UNAVAILABLE
+                        else ActionDiagnosticReason.STATE_MISMATCH,
+                    ),
                 )
             }
 
@@ -64,8 +69,8 @@ class DndExecutor(
                 "Do Not Disturb turned off"
             }
             ActionResult(true, message)
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+        } catch (_: Throwable) {
+            ActionResult(false, "Failed to change Do Not Disturb setting")
         }
     }
 }

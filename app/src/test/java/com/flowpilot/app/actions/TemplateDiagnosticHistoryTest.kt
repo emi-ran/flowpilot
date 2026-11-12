@@ -15,6 +15,20 @@ class TemplateDiagnosticHistoryTest {
         val old = """{"actionType":"SPEAK_TEXT","actionLabel":"Speak","success":false,"message":"Execution failed"}"""
         val record = Json.decodeFromString<ActionExecutionRecord>(old)
         assertThat(record.templateDiagnostics).isEmpty()
+        assertThat(record.diagnostic).isNull()
+    }
+
+    @Test
+    fun actionDiagnosticSurvivesJsonRoundTrip() {
+        val diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING)
+        val record = ActionExecutionRecord.create(
+            ActionType.NFC_ON,
+            ActionResult(false, "Execution failed", diagnostic = diagnostic),
+        )
+        val encoded = Json.encodeToString(record)
+
+        assertThat(encoded).contains("SHIZUKU_NOT_RUNNING")
+        assertThat(Json.decodeFromString<ActionExecutionRecord>(encoded).diagnostic).isEqualTo(diagnostic)
     }
 
     @Test

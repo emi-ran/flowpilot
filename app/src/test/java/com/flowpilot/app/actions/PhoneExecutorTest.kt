@@ -47,6 +47,7 @@ class PhoneExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).isEqualTo("No dialer application found")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.HANDLER_UNAVAILABLE)
         assertThat(started).isFalse()
     }
 
@@ -58,6 +59,7 @@ class PhoneExecutorTest {
         val result = executor.execute(ActionType.DIAL_NUMBER, ActionParameters(phoneNumber = "   "))
         assertThat(result.success).isFalse()
         assertThat(result.message).isEqualTo("Invalid or empty phone number")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
     }
 
     @Test
@@ -74,6 +76,7 @@ class PhoneExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).isEqualTo("No dialer application found")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.HANDLER_UNAVAILABLE)
         assertThat(started).isFalse()
     }
 
@@ -106,6 +109,7 @@ class PhoneExecutorTest {
         val result = executor.execute(ActionType.CALL_NUMBER, ActionParameters(phoneNumber = "+905551234567"))
         assertThat(result.success).isFalse()
         assertThat(result.message).isEqualTo("Phone call permission required")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.PHONE_PERMISSION_REQUIRED)
     }
 
     @Test
@@ -123,6 +127,7 @@ class PhoneExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).isEqualTo("No phone calling application found")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.HANDLER_UNAVAILABLE)
         assertThat(started).isFalse()
     }
 

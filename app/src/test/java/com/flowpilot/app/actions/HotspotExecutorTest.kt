@@ -52,13 +52,14 @@ class HotspotExecutorTest {
 
     @Test
     fun bridge_failure_is_reported_as_failure() {
-        val shell = FakeHotspotShell(bridgeResult = 1 to "start failed=14")
+        val shell = FakeHotspotShell(bridgeResult = 1 to "sensitive bridge output")
         val result = executor(shell).execute(ActionType.HOTSPOT_ON)
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Hotspot on failed")
-        assertThat(result.message).contains("start failed=14")
+        assertThat(result.toString()).doesNotContain("sensitive bridge output")
         assertThat(result.resultCode).isNull()
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED)
         assertThat(shell.hotspotRequests).containsExactly(true)
     }
 
@@ -69,14 +70,16 @@ class HotspotExecutorTest {
             override fun hasPermission(): Boolean = true
             override fun run(command: String): Pair<Int, String> = 0 to ""
             override fun runHotspot(enabled: Boolean): Pair<Int, String> =
-                throw IllegalStateException("binder died")
+                throw IllegalStateException("sensitive binder detail")
         }
 
         val result = executor(shell).execute(ActionType.HOTSPOT_OFF)
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Hotspot toggle error")
-        assertThat(result.message).contains("binder died")
+        assertThat(result.toString()).doesNotContain("sensitive binder detail")
+        assertThat(result.resultCode).isNull()
+        assertThat(result.diagnostic).isNull()
     }
 
     @Test

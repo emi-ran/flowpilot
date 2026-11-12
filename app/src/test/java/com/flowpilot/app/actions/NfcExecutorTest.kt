@@ -48,6 +48,7 @@ class NfcExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("state mismatch")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.STATE_MISMATCH)
         assertThat(result.message).contains("expected on")
         assertThat(result.message).contains("read off")
         assertThat(result.message).isNotEqualTo("NFC turned on")
@@ -75,6 +76,7 @@ class NfcExecutorTest {
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("could not be verified")
         assertThat(result.message).contains("unavailable")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.STATE_UNAVAILABLE)
     }
 
     @Test
@@ -105,6 +107,8 @@ class NfcExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("NFC toggle failed")
+        assertThat(result.message).doesNotContain("Unknown service: nfc")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED)
         assertThat(shell.commands).containsExactly("svc nfc enable")
     }
 

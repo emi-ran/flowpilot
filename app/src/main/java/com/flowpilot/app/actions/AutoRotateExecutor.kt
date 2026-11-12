@@ -47,6 +47,7 @@ class AutoRotateExecutor(
             return ActionResult(
                 false,
                 "Auto-rotate requires Modify system settings (WRITE_SETTINGS) permission",
+                diagnostic = ActionDiagnostic(ActionDiagnosticReason.SETTINGS_PERMISSION_REQUIRED),
             )
         }
 
@@ -61,6 +62,10 @@ class AutoRotateExecutor(
                 return ActionResult(
                     false,
                     "Auto-rotate state mismatch: wrote $target but read $readBack",
+                    diagnostic = ActionDiagnostic(
+                        if (readBack == -1) ActionDiagnosticReason.STATE_UNAVAILABLE
+                        else ActionDiagnosticReason.STATE_MISMATCH,
+                    ),
                 )
             }
 
@@ -70,8 +75,8 @@ class AutoRotateExecutor(
                 "Auto-rotate off (portrait lock)"
             }
             ActionResult(true, message)
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+        } catch (_: Throwable) {
+            ActionResult(false, "Failed to change auto-rotate setting")
         }
     }
 }

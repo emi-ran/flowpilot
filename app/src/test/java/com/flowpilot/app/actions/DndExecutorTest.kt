@@ -41,6 +41,7 @@ class DndExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Notification Policy Access")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.DND_PERMISSION_REQUIRED)
         assertThat(writeAttempted).isFalse()
     }
 
@@ -108,7 +109,7 @@ class DndExecutorTest {
     }
 
     @Test
-    fun execute_whenExceptionThrown_returnsFailureWithMessage() {
+    fun execute_whenExceptionThrown_returnsSafeFailure() {
         val context = RuntimeEnvironment.getApplication()
 
         val executor = DndExecutor(
@@ -120,6 +121,8 @@ class DndExecutorTest {
         val result = executor.execute(ActionType.DND_ON)
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).isEqualTo("Mock DND security block")
+        assertThat(result.message).isNotEmpty()
+        assertThat(result.message).doesNotContain("Mock DND security block")
+        assertThat(result.diagnostic).isNull()
     }
 }

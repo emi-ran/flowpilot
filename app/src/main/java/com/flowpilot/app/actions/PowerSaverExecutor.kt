@@ -64,26 +64,34 @@ class PowerSaverExecutor(
                 } else {
                     verifyState(target)
                 }
-            } catch (t: Throwable) {
-                ActionResult(false, t.message ?: t.javaClass.simpleName)
+            } catch (_: Throwable) {
+                ActionResult(false, "Battery saver setting error")
             }
         }
 
         // Fallback method: Shizuku executes `cmd power set-mode <0|1>`
         // and updates system & global settings for AOSP and Xiaomi HyperOS.
-        if (shell.isShizukuRunning() && shell.hasPermission()) {
+        val shizukuRunning = shell.isShizukuRunning()
+        if (shizukuRunning && shell.hasPermission()) {
             return try {
                 shell.run("cmd power set-mode $target")
                 try { shell.run("settings put system POWER_SAVE_MODE_OPEN $target") } catch (_: Throwable) {}
                 try { shell.run("settings put global $LOW_POWER_SETTING $target") } catch (_: Throwable) {}
                 // Exit codes are advisory; only the platform setting decides the result.
                 verifyState(target)
-            } catch (t: Throwable) {
-                ActionResult(false, t.message ?: t.javaClass.simpleName)
+            } catch (_: Throwable) {
+                ActionResult(false, "Battery saver command error")
             }
         }
 
-        return ActionResult(false, "Battery saver needs WRITE_SECURE_SETTINGS or Shizuku permission")
+        return ActionResult(
+            false,
+            "Battery saver needs WRITE_SECURE_SETTINGS or Shizuku permission",
+            diagnostic = ActionDiagnostic(
+                if (shizukuRunning) ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED
+                else ActionDiagnosticReason.SHIZUKU_NOT_RUNNING,
+            ),
+        )
     }
 
     private fun verifyState(target: Int): ActionResult {
@@ -91,11 +99,13 @@ class PowerSaverExecutor(
             ?: return ActionResult(
                 false,
                 "Battery saver state could not be verified: $LOW_POWER_SETTING setting is unavailable",
+                diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE),
             )
         if (observed != target) {
             return ActionResult(
                 false,
                 "Battery saver state mismatch: expected ${describe(target)} but read ${describe(observed)}",
+                diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_MISMATCH),
             )
         }
         return ActionResult(true, "Battery saver ${describe(target)}")
