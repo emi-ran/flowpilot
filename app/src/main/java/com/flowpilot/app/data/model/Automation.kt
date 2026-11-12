@@ -87,6 +87,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     MEDIA_TOGGLE("Toggle media playback", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
     MEDIA_NEXT("Next track", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
     MEDIA_PREVIOUS("Previous track", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
+    MUSIC_SEARCH("Search music", ActionCategory.AUDIO, CapabilityRequirement.NONE),
+    MUSIC_PLAY_LINK("Play music link", ActionCategory.AUDIO, CapabilityRequirement.NONE),
     SPEAK_TEXT("Speak text (TTS)", ActionCategory.AUDIO, CapabilityRequirement.NONE),
     CREATE_ALARM("Create alarm", ActionCategory.CLOCK, CapabilityRequirement.NONE),
     START_TIMER("Start timer", ActionCategory.CLOCK, CapabilityRequirement.NONE),
@@ -342,6 +344,9 @@ data class Automation(
     val mediaVolumePercent: Int = 50,
     /** Optional media-session target; empty selects the active player. */
     val mediaTargetPackage: String = "",
+    val musicAppPackage: String = "",
+    val musicQuery: String = "",
+    val musicLink: String = "",
     val soundPreset: SoundPreset = SoundPreset.NOTIFICATION,
     val soundUri: String = "",
     val soundName: String = "",

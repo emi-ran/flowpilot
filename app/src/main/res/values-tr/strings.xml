@@ -972,4 +972,20 @@
     <string name="variable_desc_media_artist">Geçerli parçanın sanatçısı</string>
     <string name="media_target_system">Etkin oynatıcı</string>
     <string name="media_trigger_any">Herhangi bir medya uygulaması</string>
+    <string name="action_music_search">Müzik ara</string>
+    <string name="action_music_play_link">Müzik bağlantısını oynat</string>
+    <string name="action_music_search_desc">Spotify veya YouTube Music arama sonuçlarını açar</string>
+    <string name="action_music_play_link_desc">Seçilen müzik uygulamasında parça veya video bağlantısını açar</string>
+    <string name="music_app_label">Müzik uygulaması</string>
+    <string name="music_app_unavailable">Bu uygulama yüklü değil veya devre dışı. Eylem çalışmadan önce yükleyin ya da etkinleştirin veya başka bir uygulama seçin.</string>
+    <string name="music_app_unavailable_label">%1$s (kullanılamıyor)</string>
+    <string name="music_shared_explanation">Seçilen uygulama, bu kuraldaki müzik arama ve bağlantı eylemleri için ortaktır.</string>
+    <string name="music_query_label">Şarkı veya sanatçı adı</string>
+    <string name="music_link_label">Parça veya video HTTPS bağlantısı</string>
+    <string name="music_search_hint">Seçilen uygulamada arama ister; otomatik oynatma garanti değildir.</string>
+    <string name="music_link_spotify_hint">Spotify parça bağlantısı kullanın: https://open.spotify.com/track/… Oynatma, Spotify ve Android arka plan kısıtlarına bağlıdır.</string>
+    <string name="music_link_youtube_hint">YouTube Music video bağlantısı kullanın: https://music.youtube.com/watch?v=… veya https://youtu.be/… Oynatma, YouTube Music ve Android arka plan kısıtlarına bağlıdır.</string>
+    <string name="music_link_select_app_hint">Desteklenen bağlantı biçimlerini görmek için müzik uygulaması seçin.</string>
+    <string name="music_link_invalid">Bu bağlantı seçilen uygulama için desteklenmiyor. Yukarıdaki biçimi kontrol edin.</string>
+    <string name="music_template_manual_warning">\n\nElle çalıştırmada tetikleyiciye ait olay verileri (örneğin bildirim metni) bulunmayabilir. Değişkenler boş kalabilir ve müzik bağlantısı açılmayabilir.</string>
 </resources>

@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
 import com.flowpilot.app.actions.ActionParameters
+import com.flowpilot.app.actions.MusicLinkValidator
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.SoundPreset
@@ -51,6 +52,8 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.MEDIA_TOGGLE -> Icons.Default.PlayCircle
     ActionType.MEDIA_NEXT -> Icons.Default.SkipNext
     ActionType.MEDIA_PREVIOUS -> Icons.Default.SkipPrevious
+    ActionType.MUSIC_SEARCH -> Icons.Default.Search
+    ActionType.MUSIC_PLAY_LINK -> Icons.Default.MusicNote
     ActionType.LAUNCH_APP -> Icons.Default.Apps
     ActionType.OPEN_URL -> Icons.AutoMirrored.Filled.OpenInNew
     ActionType.CREATE_ALARM -> Icons.Default.Alarm
@@ -119,6 +122,12 @@ fun ActionCardItem(
     mediaTargetPackage: String = "",
     onChooseMediaTarget: () -> Unit = {},
     onClearMediaTarget: () -> Unit = {},
+    musicAppPackage: String = "",
+    onMusicAppPackageChange: (String) -> Unit = {},
+    musicQuery: String = "",
+    onMusicQueryChange: (String) -> Unit = {},
+    musicLink: String = "",
+    onMusicLinkChange: (String) -> Unit = {},
     // Launch app
     launchAppName: String = "",
     launchPackage: String = "",
@@ -523,6 +532,50 @@ fun ActionCardItem(
                     }
                     if (mediaTargetPackage.isNotEmpty()) {
                         TextButton(onClick = onClearMediaTarget) { Text(stringResource(R.string.media_target_system)) }
+                    }
+                }
+                ActionType.MUSIC_SEARCH, ActionType.MUSIC_PLAY_LINK -> {
+                    Spacer(Modifier.height(8.dp))
+                    Text(stringResource(R.string.music_app_label), style = MaterialTheme.typography.labelMedium)
+                    val installed = rememberMusicAppAvailability()
+                    val spotifyAvailable = installed(MusicLinkValidator.SPOTIFY)
+                    val youtubeAvailable = installed(MusicLinkValidator.YOUTUBE_MUSIC)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = musicAppPackage == MusicLinkValidator.SPOTIFY, onClick = { onMusicAppPackageChange(MusicLinkValidator.SPOTIFY) }, label = { Text(if (spotifyAvailable) "Spotify" else stringResource(R.string.music_app_unavailable_label, "Spotify")) })
+                        FilterChip(selected = musicAppPackage == MusicLinkValidator.YOUTUBE_MUSIC, onClick = { onMusicAppPackageChange(MusicLinkValidator.YOUTUBE_MUSIC) }, label = { Text(if (youtubeAvailable) "YouTube Music" else stringResource(R.string.music_app_unavailable_label, "YouTube Music")) })
+                    }
+                    val unavailable = when (musicAppPackage) {
+                        MusicLinkValidator.SPOTIFY -> !spotifyAvailable
+                        MusicLinkValidator.YOUTUBE_MUSIC -> !youtubeAvailable
+                        else -> false
+                    }
+                    AnimatedVisibility(visible = unavailable) {
+                        Text(stringResource(R.string.music_app_unavailable), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    }
+                    Text(stringResource(R.string.music_shared_explanation), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    val linkAction = action == ActionType.MUSIC_PLAY_LINK
+                    val invalidLink = linkAction && musicLink.isNotBlank() &&
+                        !MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)
+                    TemplateTextField(
+                        value = if (linkAction) musicLink else musicQuery,
+                        onValueChange = if (linkAction) onMusicLinkChange else onMusicQueryChange,
+                        triggers = triggerEvents,
+                        label = { Text(stringResource(if (linkAction) R.string.music_link_label else R.string.music_query_label)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        isError = invalidLink,
+                    )
+                    val hint = when {
+                        !linkAction -> R.string.music_search_hint
+                        musicAppPackage == MusicLinkValidator.SPOTIFY -> R.string.music_link_spotify_hint
+                        musicAppPackage == MusicLinkValidator.YOUTUBE_MUSIC -> R.string.music_link_youtube_hint
+                        else -> R.string.music_link_select_app_hint
+                    }
+                    Text(stringResource(hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+                    if (invalidLink) {
+                        Text(stringResource(if (MusicLinkValidator.isSupportedPackage(musicAppPackage)) R.string.music_link_invalid else R.string.music_link_select_app_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 4.dp))
                     }
                 }
                 ActionType.LAUNCH_APP -> {

@@ -667,6 +667,8 @@ fun ActionPicker(
                     PickerItem(ActionType.MEDIA_TOGGLE, ActionType.MEDIA_TOGGLE.label, "Toggle media playback", Icons.Default.PlayArrow, keywords = listOf("media", "music", "play", "pause", "toggle")),
                     PickerItem(ActionType.MEDIA_NEXT, ActionType.MEDIA_NEXT.label, "Skip to the next track", Icons.Default.SkipNext, keywords = listOf("media", "music", "next", "skip")),
                     PickerItem(ActionType.MEDIA_PREVIOUS, ActionType.MEDIA_PREVIOUS.label, "Return to the previous track", Icons.Default.SkipPrevious, keywords = listOf("media", "music", "previous", "skip")),
+                    PickerItem(ActionType.MUSIC_SEARCH, ActionType.MUSIC_SEARCH.label, "Search for music", Icons.Default.Search, keywords = listOf("music", "search", "spotify", "youtube")),
+                    PickerItem(ActionType.MUSIC_PLAY_LINK, ActionType.MUSIC_PLAY_LINK.label, "Play a music link", Icons.Default.MusicNote, keywords = listOf("music", "link", "spotify", "youtube")),
                     PickerItem(
                         value = ActionType.SOUND_PROFILE_NORMAL,
                         title = ActionType.SOUND_PROFILE_NORMAL.label,

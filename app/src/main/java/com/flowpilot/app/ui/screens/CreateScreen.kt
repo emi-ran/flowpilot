@@ -65,6 +65,8 @@ import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.flattenConditions
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.actions.MusicLinkValidator
+import com.flowpilot.app.ui.components.rememberMusicAppAvailability
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.engine.isValidGeofenceConfig
 import com.flowpilot.app.data.model.VibrationPattern
@@ -107,6 +109,7 @@ fun CreateScreen(
 ) {
     BackHandler(onBack = done)
     val context = LocalContext.current
+    val musicAppAvailable = rememberMusicAppAvailability()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val existingRules by vm.automations.collectAsState()
@@ -128,6 +131,9 @@ fun CreateScreen(
     var notificationKeyword by remember { mutableStateOf("") }
     var mediaTriggerPackage by remember { mutableStateOf("") }
     var mediaTargetPackage by remember { mutableStateOf("") }
+    var musicAppPackage by remember { mutableStateOf("") }
+    var musicQuery by remember { mutableStateOf("") }
+    var musicLink by remember { mutableStateOf("") }
     var showMediaTargetApps by remember { mutableStateOf(false) }
     var phoneNumber by remember { mutableStateOf("") }
     var flipScreenOffDetection by remember { mutableStateOf(false) }
@@ -244,6 +250,9 @@ fun CreateScreen(
         notificationKeyword = t.notificationKeyword
         mediaTriggerPackage = t.mediaTriggerPackage
         mediaTargetPackage = t.mediaTargetPackage
+        musicAppPackage = t.musicAppPackage
+        musicQuery = t.musicQuery
+        musicLink = t.musicLink
         phoneNumber = t.phoneNumber
         flipScreenOffDetection = t.flipScreenOffDetection
         lightLux = t.lightLux
@@ -386,7 +395,9 @@ fun CreateScreen(
             onDismissRequest = { showRunConfirm = false },
             title = { Text(stringResource(R.string.test_run_now_confirm_title)) },
             text = {
-                Text("$runConfirmDesc$warning")
+                val invalidMusicLink = ActionType.MUSIC_PLAY_LINK in actions && !MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)
+                val musicWarning = if (actions.any { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK }) stringResource(R.string.music_template_manual_warning) else ""
+                Text(if (actions.any { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } && !musicAppAvailable(musicAppPackage)) stringResource(R.string.music_app_unavailable) else if (invalidMusicLink) stringResource(R.string.music_link_invalid) else "$runConfirmDesc$warning$musicWarning")
             },
             confirmButton = {
                 TextButton({
@@ -415,6 +426,9 @@ fun CreateScreen(
                         notificationKeyword = notificationKeyword,
                         mediaTriggerPackage = mediaTriggerPackage,
                         mediaTargetPackage = mediaTargetPackage,
+                        musicAppPackage = musicAppPackage,
+                        musicQuery = musicQuery,
+                        musicLink = musicLink,
                         conditions = conditions,
                         conditionTree = conditionTree,
                         notificationTitle = notificationTitle,
@@ -472,7 +486,7 @@ fun CreateScreen(
                             snackbarHostState.showSnackbar(msg)
                         }
                     }
-                }) {
+                }, enabled = (actions.none { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } || musicAppAvailable(musicAppPackage)) && (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink))) {
                     Text(stringResource(R.string.btn_run_now))
                 }
             },
@@ -740,6 +754,12 @@ fun CreateScreen(
                             mediaTargetPackage = mediaTargetPackage,
                             onChooseMediaTarget = { showMediaTargetApps = true },
                             onClearMediaTarget = { mediaTargetPackage = "" },
+                            musicAppPackage = musicAppPackage,
+                            onMusicAppPackageChange = { musicAppPackage = it },
+                            musicQuery = musicQuery,
+                            onMusicQueryChange = { musicQuery = it },
+                            musicLink = musicLink,
+                            onMusicLinkChange = { musicLink = it },
                             // URL
                             url = url,
                             onUrlChange = { url = it },
@@ -971,6 +991,9 @@ fun CreateScreen(
                                 notificationKeyword = notificationKeyword,
                                 mediaTriggerPackage = mediaTriggerPackage,
                                 mediaTargetPackage = mediaTargetPackage,
+                                musicAppPackage = musicAppPackage,
+                                musicQuery = musicQuery,
+                                musicLink = musicLink,
                                 conditions = conditions,
                                 conditionTree = conditionTree,
                                 notificationTitle = notificationTitle,
@@ -1034,6 +1057,9 @@ fun CreateScreen(
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
+                            (actions.none { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } || musicAppAvailable(musicAppPackage)) &&
+                            (ActionType.MUSIC_SEARCH !in actions || (MusicLinkValidator.isSupportedPackage(musicAppPackage) && musicQuery.isNotBlank())) &&
+                            (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || canSaveTtsConfiguration(ttsText, ttsSpeechRate, ttsAudioFileName, triggerItems.map { it.event }, ttsManager)) &&

@@ -37,6 +37,34 @@ class ImportValidatorTest {
             ImportValidator.validate(listOf(rule))
         }
     }
+    @Test
+    fun musicImportRequiresMatchingServiceAndFields() {
+        val search = rule(actions = listOf(ActionType.MUSIC_SEARCH)).copy(
+            musicAppPackage = "com.spotify.music", musicQuery = "song",
+        )
+        ImportValidator.validate(listOf(search))
+        assertRejected(search.copy(musicQuery = " "))
+        assertRejected(search.copy(musicAppPackage = "unknown"))
+        val link = search.copy(action = ActionType.MUSIC_PLAY_LINK, actions = listOf(ActionType.MUSIC_PLAY_LINK),
+            musicLink = "https://open.spotify.com/track/abc?si=share")
+        ImportValidator.validate(listOf(link))
+        assertRejected(link.copy(musicAppPackage = "com.google.android.apps.youtube.music"))
+        assertRejected(link.copy(musicLink = "https://open.spotify.com.evil.test/track/abc"))
+    }
+
+    @Test
+    fun musicImportAcceptsValidTemplatesButRejectsMalformedOrEscapedExpressions() {
+        val link = rule(actions = listOf(ActionType.MUSIC_PLAY_LINK)).copy(
+            musicAppPackage = "com.spotify.music", musicLink = "\${notification.text|trim}",
+        )
+        ImportValidator.validate(listOf(link))
+        ImportValidator.validate(listOf(link.copy(musicLink = "https://open.spotify.com/track/\${notification.title}")))
+        assertRejected(link.copy(musicLink = "\$\${notification.text}"))
+        assertRejected(link.copy(musicLink = "\${notification.text|badFilter}"))
+        assertRejected(link.copy(musicLink = "\${notification.text"))
+        assertRejected(link.copy(musicAppPackage = "unknown"))
+    }
+
 
     @Test
     fun dynamicRuleWithoutAudioIsAccepted() {
