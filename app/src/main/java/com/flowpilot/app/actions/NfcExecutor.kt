@@ -35,10 +35,10 @@ class NfcExecutor(
 
     override fun execute(action: ActionType, parameters: ActionParameters): ActionResult {
         if (!shell.isShizukuRunning()) {
-            return ActionResult(false, "Shizuku not running — NFC can't be toggled")
+            return ActionResult(false, "Shizuku not running — NFC can't be toggled", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
         }
         if (!shell.hasPermission()) {
-            return ActionResult(false, "Shizuku permission not granted to FlowPilot")
+            return ActionResult(false, "Shizuku permission not granted to FlowPilot", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED))
         }
         val svcCmd = when (action) {
             ActionType.NFC_ON -> "svc nfc enable"
@@ -48,26 +48,28 @@ class NfcExecutor(
         val expectedEnabled = action == ActionType.NFC_ON
 
         return try {
-            val (code1, out1) = shell.run(svcCmd)
+            val (code1) = shell.run(svcCmd)
             if (code1 != 0) {
-                return ActionResult(false, "NFC toggle failed: $out1")
+                return ActionResult(false, "NFC toggle failed", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED))
             }
 
             val enabled = awaitExpectedState(expectedEnabled)
                 ?: return ActionResult(
                     false,
                     "NFC toggle could not be verified: adapter state is unavailable",
+                    diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE),
                 )
             if (enabled != expectedEnabled) {
                 return ActionResult(
                     false,
                     "NFC state mismatch: expected ${describe(expectedEnabled)} but read ${describe(enabled)}",
+                    diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_MISMATCH),
                 )
             }
 
             ActionResult(true, "NFC turned ${describe(expectedEnabled)}")
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+        } catch (_: Throwable) {
+            ActionResult(false, "NFC toggle error")
         }
     }
 

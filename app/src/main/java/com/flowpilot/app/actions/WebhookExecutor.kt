@@ -3,12 +3,14 @@ package com.flowpilot.app.actions
 import android.util.Log
 import com.flowpilot.app.data.model.ActionType
 import java.io.EOFException
+import java.io.IOException
 import java.io.InputStream
 import java.net.Inet6Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ProtocolException
 import java.net.Socket
+import java.net.SocketTimeoutException
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLSocket
@@ -157,7 +159,7 @@ class WebhookExecutor internal constructor(
 
         val validationError = validateParameters(parameters)
         if (validationError != null) {
-            return ActionResult(false, validationError)
+            return ActionResult(false, validationError, diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
 
         val rawUrl = parameters.webhookUrl.trim()
@@ -166,7 +168,7 @@ class WebhookExecutor internal constructor(
         val headers = try {
             renderHeaders(parameters.webhookHeaders)
         } catch (_: IllegalArgumentException) {
-            return ActionResult(false, "Invalid rendered webhook headers")
+            return ActionResult(false, "Invalid rendered webhook headers", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
         val body = parameters.webhookBody
 
@@ -199,7 +201,12 @@ class WebhookExecutor internal constructor(
                 "Request could not be completed [REDACTED]"
             }
             Log.w(TAG, "HTTP Webhook execution failed")
-            ActionResult(false, "HTTP request failed: $safeMessage")
+            val diagnostic = when (e) {
+                is SocketTimeoutException -> ActionDiagnostic(ActionDiagnosticReason.NETWORK_TIMEOUT)
+                is IOException -> ActionDiagnostic(ActionDiagnosticReason.NETWORK_FAILURE)
+                else -> null
+            }
+            ActionResult(false, "HTTP request failed: $safeMessage", diagnostic = diagnostic)
         } finally {
             try {
                 transport?.close()
@@ -299,7 +306,7 @@ class WebhookExecutor internal constructor(
             val method = parameters.webhookMethod.trim().uppercase()
             if (method !in ALLOWED_METHODS) {
                 val allowedMethods = ALLOWED_METHODS.joinToString(separator = ", ")
-                return "Unsupported HTTP method: $method. Allowed: $allowedMethods"
+                return "Unsupported HTTP method. Allowed: $allowedMethods"
             }
 
             if (method !in METHODS_WITH_BODY && parameters.webhookBody.isNotEmpty()) {

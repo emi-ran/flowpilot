@@ -45,6 +45,7 @@ class BrightnessExecutor(
             return ActionResult(
                 false,
                 "Screen brightness requires Modify system settings (WRITE_SETTINGS) permission",
+                diagnostic = ActionDiagnostic(ActionDiagnosticReason.SETTINGS_PERMISSION_REQUIRED),
             )
         }
 
@@ -70,8 +71,8 @@ class BrightnessExecutor(
                             ActionResult(true, "Auto-brightness command sent")
                         }
                     }
-                } catch (e: Exception) {
-                    ActionResult(false, "Auto-brightness error: ${e.message ?: "Unknown"}")
+                } catch (_: Exception) {
+                    ActionResult(false, "Auto-brightness error")
                 }
             }
 
@@ -96,8 +97,8 @@ class BrightnessExecutor(
                             ActionResult(true, "Auto-brightness command sent")
                         }
                     }
-                } catch (e: Exception) {
-                    ActionResult(false, "Auto-brightness error: ${e.message ?: "Unknown"}")
+                } catch (_: Exception) {
+                    ActionResult(false, "Auto-brightness error")
                 }
             }
 
@@ -129,8 +130,8 @@ class BrightnessExecutor(
                     } else {
                         ActionResult(true, "Screen brightness set command sent ($percent%)")
                     }
-                } catch (e: Exception) {
-                    ActionResult(false, "Screen brightness error: ${e.message ?: "Unknown"}")
+                } catch (_: Exception) {
+                    ActionResult(false, "Screen brightness error")
                 }
             }
 

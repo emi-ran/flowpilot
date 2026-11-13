@@ -52,11 +52,11 @@ class MediaControlExecutor internal constructor(
     override fun execute(action: ActionType, parameters: ActionParameters): ActionResult {
         if (action !in supportedTypes) return ActionResult(false, "Unsupported media action")
         return try {
-            if (!hasAccess()) return ActionResult(false, "Notification listener access required", ActionResultCode.PERMISSION_REQUIRED)
-            val active = sessions() ?: return ActionResult(false, "Media session service unavailable")
+            if (!hasAccess()) return ActionResult(false, "Notification listener access required", ActionResultCode.PERMISSION_REQUIRED, diagnostic = ActionDiagnostic(ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED))
+            val active = sessions() ?: return ActionResult(false, "Media session service unavailable", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
             val target = parameters.mediaTargetPackage.trim()
             val session = (if (target.isEmpty()) active.firstOrNull() else active.firstOrNull { it.packageName == target })
-                ?: return ActionResult(false, "No matching active media session")
+                ?: return ActionResult(false, "No matching active media session", diagnostic = ActionDiagnostic(ActionDiagnosticReason.MEDIA_SESSION_UNAVAILABLE))
             val state = session.state
             val command = when (action) {
                 ActionType.MEDIA_PLAY -> {
@@ -72,7 +72,7 @@ class MediaControlExecutor internal constructor(
                 ActionType.MEDIA_TOGGLE -> when (state) {
                     PlaybackState.STATE_PLAYING -> ActionType.MEDIA_PAUSE
                     PlaybackState.STATE_PAUSED, PlaybackState.STATE_STOPPED -> ActionType.MEDIA_PLAY
-                    else -> return ActionResult(false, "Media playback state is unavailable for toggle")
+                    else -> return ActionResult(false, "Media playback state is unavailable for toggle", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
                 }
                 else -> action
             }
@@ -94,7 +94,7 @@ class MediaControlExecutor internal constructor(
             // Transport controls are asynchronous and provide no acknowledgement of playback.
             ActionResult(true, "Media command sent; playback change not verified")
         } catch (_: SecurityException) {
-            ActionResult(false, "Notification listener access required", ActionResultCode.PERMISSION_REQUIRED)
+            ActionResult(false, "Notification listener access required", ActionResultCode.PERMISSION_REQUIRED, diagnostic = ActionDiagnostic(ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED))
         } catch (_: Exception) {
             ActionResult(false, "Media command failed")
         }

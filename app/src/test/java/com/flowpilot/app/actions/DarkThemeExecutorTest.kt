@@ -99,7 +99,7 @@ class DarkThemeExecutorTest {
     }
 
     @Test
-    fun execute_whenShellFails_returnsFailure() {
+    fun execute_whenShellFails_returnsSafeFailureWithDiagnostic() {
         val context = RuntimeEnvironment.getApplication()
         val shell = FakeShell(
             isShizukuRunning = true,
@@ -115,7 +115,9 @@ class DarkThemeExecutorTest {
         val result = executor.execute(ActionType.DARK_THEME_ON)
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).contains("Dark theme toggle failed: Error executing command")
+        assertThat(result.message).isNotEmpty()
+        assertThat(result.message).doesNotContain("Error executing command")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED)
         assertThat(shell.commands).containsExactly("cmd uimode night yes")
     }
 
@@ -140,7 +142,7 @@ class DarkThemeExecutorTest {
     }
 
     @Test
-    fun execute_whenShellThrows_returnsFailure() {
+    fun execute_whenShellThrows_returnsSafeFailure() {
         val context = RuntimeEnvironment.getApplication()
         val shell = FakeShell(
             isShizukuRunning = true,
@@ -155,7 +157,9 @@ class DarkThemeExecutorTest {
         val result = executor.execute(ActionType.DARK_THEME_ON)
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).isEqualTo("DeadObjectException")
+        assertThat(result.message).isNotEmpty()
+        assertThat(result.message).doesNotContain("DeadObjectException")
+        assertThat(result.diagnostic).isNull()
     }
 
     private class FakeShell(

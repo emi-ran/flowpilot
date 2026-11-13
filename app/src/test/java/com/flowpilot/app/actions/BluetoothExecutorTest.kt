@@ -1,5 +1,10 @@
 package com.flowpilot.app.actions
 
+import android.Manifest
+import com.flowpilot.app.data.model.ActionExecutionRecord
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.robolectric.Shadows.shadowOf
 import com.flowpilot.app.data.model.ActionType
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -25,6 +30,8 @@ class BluetoothExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Bluetooth toggle failed")
+        assertThat(result.message).doesNotContain("permission denied")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED)
         assertThat(shell.commands).containsExactly("svc bluetooth disable")
     }
 
@@ -41,6 +48,9 @@ class BluetoothExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Bluetooth state mismatch")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.STATE_MISMATCH)
+        assertThat(ActionExecutionRecord.create(ActionType.BLUETOOTH_ON, result).diagnostic?.reason)
+            .isEqualTo(ActionDiagnosticReason.STATE_MISMATCH)
     }
 
     @Test fun delayed_state_change_succeeds_before_poll_timeout() {
@@ -82,6 +92,43 @@ class BluetoothExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Shizuku not running")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING)
+        assertThat(shell.commands).isEmpty()
+    }
+
+    @Test fun failures_are_preserved_in_history_without_shell_output() {
+        val secret = "private-shell-output"
+        val stopped = FakeShell(running = false)
+        val denied = FakeShell(granted = false)
+        val failed = FakeShell(results = mapOf("svc bluetooth enable" to (1 to secret)))
+        val missing = FakeShell()
+        val cases = listOf(
+            executor(stopped, true).execute(ActionType.BLUETOOTH_ON) to ActionDiagnosticReason.SHIZUKU_NOT_RUNNING,
+            executor(denied, true).execute(ActionType.BLUETOOTH_ON) to ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED,
+            executor(failed, true).execute(ActionType.BLUETOOTH_ON) to ActionDiagnosticReason.SYSTEM_COMMAND_FAILED,
+            BluetoothExecutor(RuntimeEnvironment.getApplication(), missing, enabledStateReader = { null })
+                .execute(ActionType.BLUETOOTH_ON) to ActionDiagnosticReason.STATE_UNAVAILABLE,
+        )
+        cases.forEach { (result, reason) ->
+            val record = ActionExecutionRecord.create(ActionType.BLUETOOTH_ON, result)
+            assertThat(record.success).isFalse()
+            assertThat(record.diagnostic?.reason).isEqualTo(reason)
+            assertThat(Json.encodeToString(record)).doesNotContain(secret)
+        }
+        assertThat(stopped.commands).isEmpty()
+        assertThat(denied.commands).isEmpty()
+        assertThat(missing.commands).isEmpty()
+        assertThat(failed.commands).containsExactly("svc bluetooth enable")
+    }
+
+    @Test @Config(sdk = [34]) fun bluetooth_permission_is_distinct_from_shizuku_service_failure() {
+        val context = RuntimeEnvironment.getApplication()
+        shadowOf(context).denyPermissions(Manifest.permission.BLUETOOTH_CONNECT)
+        val shell = FakeShell(running = false)
+        val result = BluetoothExecutor(context, shell, enabledStateReader = { true }).execute(ActionType.BLUETOOTH_ON)
+        val record = ActionExecutionRecord.create(ActionType.BLUETOOTH_ON, result)
+        assertThat(record.success).isFalse()
+        assertThat(record.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.BLUETOOTH_PERMISSION_REQUIRED)
         assertThat(shell.commands).isEmpty()
     }
 

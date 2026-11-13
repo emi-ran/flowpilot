@@ -36,6 +36,7 @@ class SmsExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Recipient phone number is required")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
     }
 
     @Test
@@ -49,11 +50,14 @@ class SmsExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("SMS message body cannot be empty")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
     }
 
     @Test
     fun sendSms_fails_whenPermissionNotGranted() {
-        val executor = SmsExecutor(app)
+        shadowOf(app).denyPermissions(Manifest.permission.SEND_SMS)
+        var sent = false
+        val executor = SmsExecutor(app, sendTextMessage = { _, _ -> sent = true })
 
         val result = executor.execute(
             ActionType.SEND_SMS,
@@ -62,6 +66,9 @@ class SmsExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("SEND_SMS permission required")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.SMS_PERMISSION_REQUIRED)
+        assertThat(result.resultCode).isEqualTo(ActionResultCode.PERMISSION_REQUIRED)
+        assertThat(sent).isFalse()
     }
 
     @Test
@@ -81,6 +88,7 @@ class SmsExecutorTest {
         assertThat(result.success).isFalse()
         assertThat(result.message).isEqualTo("Failed to send SMS")
         assertThat(result.message).doesNotContain(secret)
+        assertThat(result.diagnostic).isNull()
     }
 
     @Test
@@ -173,6 +181,9 @@ class SmsExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("No messaging application found")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.HANDLER_UNAVAILABLE)
+        assertThat(result.message).doesNotContain("+905551234567")
+        assertThat(result.message).doesNotContain("Draft message")
         assertThat(started).isFalse()
     }
 }

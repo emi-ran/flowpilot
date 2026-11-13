@@ -34,33 +34,33 @@ class LocationExecutor(
         }
 
         if (enabledStateReader() == null) {
-            return ActionResult(false, "Location is unsupported on this device")
+            return ActionResult(false, "Location is unsupported on this device", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
         }
         if (!shell.isShizukuRunning()) {
-            return ActionResult(false, "Shizuku not running — Location can't be toggled")
+            return ActionResult(false, "Shizuku not running — Location can't be toggled", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
         }
         if (!shell.hasPermission()) {
-            return ActionResult(false, "Shizuku permission not granted to FlowPilot")
+            return ActionResult(false, "Shizuku permission not granted to FlowPilot", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED))
         }
 
         return try {
-            val (code, output) = shell.run(command)
+            val (code, _) = shell.run(command)
             if (code != 0) {
-                return ActionResult(false, "Location toggle failed: $output")
+                return ActionResult(false, "Location toggle failed", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED))
             }
 
             val enabled = awaitExpectedState(expectedEnabled)
-                ?: return ActionResult(false, "Location state became unavailable")
+                ?: return ActionResult(false, "Location state became unavailable", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
             if (enabled != expectedEnabled) {
-                return ActionResult(false, "Location state mismatch: expected ${if (expectedEnabled) "on" else "off"} but read ${if (enabled) "on" else "off"}")
+                return ActionResult(false, "Location state mismatch: expected ${if (expectedEnabled) "on" else "off"} but read ${if (enabled) "on" else "off"}", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_MISMATCH))
             }
             ActionResult(
                 true,
                 "Location turned $label",
                 if (expectedEnabled) ActionResultCode.STATE_ENABLED else ActionResultCode.STATE_DISABLED,
             )
-        } catch (t: Throwable) {
-            ActionResult(false, "Location toggle error: ${t.message ?: t.javaClass.simpleName}")
+        } catch (_: Throwable) {
+            ActionResult(false, "Location toggle error")
         }
     }
 

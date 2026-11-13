@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
@@ -14,6 +13,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.Surface
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,7 +72,10 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
         CompositionLocalProvider(LocalTutorialAnchors provides anchors) {
             Crossfade(
                 targetState = if (inspectedRule != null) inspectReturnPage else page,
@@ -121,7 +124,10 @@ fun FlowPilotRoot(vm: AppViewModel = viewModel()) {
                         page = Page.HOME
                     }
                     Page.PERMISSIONS -> PermissionsScreen(vm) { page = permissionsReturnPage }
-                    Page.HISTORY -> HistoryScreen(vm) { page = Page.SETTINGS }
+                    Page.HISTORY -> HistoryScreen(
+                        vm = vm,
+                        back = { page = Page.SETTINGS },
+                    )
                     Page.DETAIL -> {
                         selectedRule?.let { rule ->
                             DetailScreen(

@@ -27,7 +27,7 @@ class NotificationExecutor(
     override fun execute(action: ActionType, parameters: ActionParameters): ActionResult {
         if (action != ActionType.SHOW_NOTIFICATION) return ActionResult(false, "Unsupported action for notification")
         if (!permissionChecker(context)) {
-            return ActionResult(false, "Notification permission not granted", ActionResultCode.PERMISSION_REQUIRED)
+            return ActionResult(false, "Notification permission not granted", ActionResultCode.PERMISSION_REQUIRED, diagnostic = ActionDiagnostic(ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED))
         }
         return try {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

@@ -43,7 +43,7 @@ class PhoneExecutor(
         return try {
             if (!resolveActivity(intent)) {
                 Log.w(TAG, "No dialer application resolved")
-                return ActionResult(false, "No dialer application found")
+                return ActionResult(false, "No dialer application found", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
             }
             startActivity(intent)
             Log.i(TAG, "Dialer opened successfully")
@@ -58,7 +58,7 @@ class PhoneExecutor(
         val normalized = PhoneNumberUtils.normalize(phoneNumber)
         if (normalized.isBlank()) {
             Log.w(TAG, "Dial number failed: empty or invalid number")
-            return ActionResult(false, "Invalid or empty phone number")
+            return ActionResult(false, "Invalid or empty phone number", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
         val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$normalized")).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -66,7 +66,7 @@ class PhoneExecutor(
         return try {
             if (!resolveActivity(intent)) {
                 Log.w(TAG, "No dialer application resolved for dial intent")
-                return ActionResult(false, "No dialer application found")
+                return ActionResult(false, "No dialer application found", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
             }
             startActivity(intent)
             Log.i(TAG, "Phone number prepared in dialer")
@@ -81,13 +81,13 @@ class PhoneExecutor(
         val normalized = PhoneNumberUtils.normalize(phoneNumber)
         if (normalized.isBlank()) {
             Log.w(TAG, "Direct call failed: empty or invalid number")
-            return ActionResult(false, "Invalid or empty phone number")
+            return ActionResult(false, "Invalid or empty phone number", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
 
         val hasCallPermission = context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
         if (!hasCallPermission) {
             Log.w(TAG, "Direct call blocked: CALL_PHONE permission not granted")
-            return ActionResult(false, "Phone call permission required", ActionResultCode.PERMISSION_REQUIRED)
+            return ActionResult(false, "Phone call permission required", ActionResultCode.PERMISSION_REQUIRED, diagnostic = ActionDiagnostic(ActionDiagnosticReason.PHONE_PERMISSION_REQUIRED))
         }
 
         val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$normalized")).apply {
@@ -96,7 +96,7 @@ class PhoneExecutor(
         return try {
             if (!resolveActivity(intent)) {
                 Log.w(TAG, "No phone calling application resolved for call intent")
-                return ActionResult(false, "No phone calling application found")
+                return ActionResult(false, "No phone calling application found", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
             }
             startActivity(intent)
             Log.i(TAG, "Direct phone call initiated")

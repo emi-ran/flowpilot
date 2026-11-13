@@ -8,9 +8,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.net.InetAddress
 import java.net.ProtocolException
 import java.net.Socket
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.lang.reflect.Proxy
@@ -61,6 +63,7 @@ class WebhookExecutorTest {
         ))
         assertThat(injected.success).isFalse()
         assertThat(injected.message).doesNotContain("attacker")
+        assertThat(injected.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
         assertThat(opened).isFalse()
     }
 
@@ -79,6 +82,7 @@ class WebhookExecutorTest {
         ))
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("does not support a webhook body")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
     }
 
     @Test
@@ -118,6 +122,40 @@ class WebhookExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(transport.closed).isTrue()
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.NETWORK_FAILURE)
+    }
+
+    @Test
+    fun execute_redactsUnsupportedMethodAndClassifiesNetworkFailures() {
+        val secret = "sensitive-user-input"
+        var lookedUp = false
+        var opened = false
+        val invalid = WebhookExecutor(
+            addressLookup = { lookedUp = true; emptyArray() },
+            transportFactory = { _, _ -> opened = true; error("must not connect") },
+        ).execute(
+            ActionType.HTTP_WEBHOOK,
+            ActionParameters(webhookUrl = "https://target.example/hook", webhookMethod = secret),
+        )
+        assertThat(invalid.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
+        assertThat(invalid.message.lowercase()).doesNotContain(secret)
+        assertThat(invalid.success).isFalse()
+        assertThat(lookedUp).isFalse()
+        assertThat(opened).isFalse()
+
+        listOf(
+            SocketTimeoutException(secret) to ActionDiagnosticReason.NETWORK_TIMEOUT,
+            IOException(secret) to ActionDiagnosticReason.NETWORK_FAILURE,
+            IllegalStateException(secret) to null,
+        ).forEach { (error, reason) ->
+            val executor = WebhookExecutor(
+                addressLookup = { arrayOf(InetAddress.getByName("93.184.216.34")) },
+                transportFactory = { _, _ -> throw error },
+            )
+            val result = executor.execute(ActionType.HTTP_WEBHOOK, ActionParameters(webhookUrl = "https://target.example/hook"))
+            assertThat(result.diagnostic?.reason).isEqualTo(reason)
+            assertThat(result.message).doesNotContain(secret)
+        }
     }
 
     @Test

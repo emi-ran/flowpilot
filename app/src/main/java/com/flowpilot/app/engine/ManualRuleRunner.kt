@@ -8,6 +8,7 @@ import android.os.PowerManager
 import com.flowpilot.app.actions.ActionDispatcher
 import com.flowpilot.app.actions.ActionParametersFactory
 import com.flowpilot.app.actions.ActionResultCode
+import com.flowpilot.app.actions.TemplateDiagnostics
 import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.data.model.ActionExecutionRecord
@@ -93,7 +94,7 @@ class ManualRuleRunner(
                     val redacted = WebhookExecutor.redactSensitiveText(result.message)
                     failureMessages += "${localizedContext.getString(action.labelRes)}: $redacted"
                 }
-                actionRecords += ActionExecutionRecord.create(action, result)
+                actionRecords += ActionExecutionRecord.create(action, result, TemplateDiagnostics.forAction(action, rule, templateContext, actionParameters))
             }
         } catch (ce: CancellationException) {
             cancellation = ce

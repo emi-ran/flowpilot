@@ -1,5 +1,6 @@
 package com.flowpilot.app.actions
 
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -41,7 +42,7 @@ class ClockExecutor(
         val hour = parameters.alarmHour
         val minute = parameters.alarmMinute
         if (hour !in 0..23 || minute !in 0..59) {
-            return ActionResult(false, "Invalid alarm time: %02d:%02d".format(hour, minute))
+            return ActionResult(false, "Invalid alarm time", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
 
         val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
@@ -54,14 +55,16 @@ class ClockExecutor(
         }
 
         if (intentResolver(context, intent) == null) {
-            return ActionResult(false, "No Clock application available to handle alarm creation")
+            return ActionResult(false, "No Clock application available to handle alarm creation", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
         }
 
         return try {
             activityStarter(context, intent)
-            ActionResult(true, "Alarm request sent to Clock app for %02d:%02d".format(hour, minute))
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+            ActionResult(true, "Alarm request sent to Clock app")
+        } catch (_: ActivityNotFoundException) {
+            ActionResult(false, "No Clock application available to handle alarm creation", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
+        } catch (_: Throwable) {
+            ActionResult(false, "Unable to send alarm request")
         }
     }
 
@@ -69,7 +72,7 @@ class ClockExecutor(
         val durationSeconds = parameters.timerDurationSeconds
         // Bounded duration: 1 second up to 24 hours (86400 seconds)
         if (durationSeconds < 1 || durationSeconds > 86400) {
-            return ActionResult(false, "Invalid timer duration: $durationSeconds seconds (must be 1s to 24h)")
+            return ActionResult(false, "Invalid timer duration (must be 1s to 24h)", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
 
         val intent = Intent(AlarmClock.ACTION_SET_TIMER).apply {
@@ -82,14 +85,16 @@ class ClockExecutor(
         }
 
         if (intentResolver(context, intent) == null) {
-            return ActionResult(false, "No Clock application available to handle timer start")
+            return ActionResult(false, "No Clock application available to handle timer start", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
         }
 
         return try {
             activityStarter(context, intent)
-            ActionResult(true, "Timer request sent to Clock app ($durationSeconds seconds)")
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+            ActionResult(true, "Timer request sent to Clock app")
+        } catch (_: ActivityNotFoundException) {
+            ActionResult(false, "No Clock application available to handle timer start", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
+        } catch (_: Throwable) {
+            ActionResult(false, "Unable to send timer request")
         }
     }
 }

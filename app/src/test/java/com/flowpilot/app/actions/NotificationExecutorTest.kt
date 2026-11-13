@@ -28,14 +28,19 @@ class NotificationExecutorTest {
     }
 
     @Test fun execute_returnsFailure_whenPermissionMissing() {
+        var posted = false
         val executor = NotificationExecutor(
             context = RuntimeEnvironment.getApplication(),
             permissionChecker = { false },
+            poster = { _, _ -> posted = true },
         )
 
         val result = executor.execute(ActionType.SHOW_NOTIFICATION, ActionParameters(notificationTitle = "Title", notificationBody = "Body"))
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("permission")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED)
+        assertThat(result.resultCode).isEqualTo(ActionResultCode.PERMISSION_REQUIRED)
+        assertThat(posted).isFalse()
     }
 }

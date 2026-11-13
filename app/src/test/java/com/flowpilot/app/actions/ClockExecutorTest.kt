@@ -38,6 +38,7 @@ class ClockExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Invalid alarm time")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
     }
 
     @Test
@@ -55,6 +56,7 @@ class ClockExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("No Clock application available")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.HANDLER_UNAVAILABLE)
     }
 
     @Test
@@ -74,7 +76,7 @@ class ClockExecutorTest {
         )
 
         assertThat(result.success).isTrue()
-        assertThat(result.message).contains("Alarm request sent to Clock app for 07:15")
+        assertThat(result.message).isEqualTo("Alarm request sent to Clock app")
         assertThat(startedIntent).isNotNull()
         assertThat(startedIntent!!.action).isEqualTo(AlarmClock.ACTION_SET_ALARM)
         assertThat(startedIntent!!.getIntExtra(AlarmClock.EXTRA_HOUR, -1)).isEqualTo(7)
@@ -95,6 +97,7 @@ class ClockExecutorTest {
         )
         assertThat(resultLow.success).isFalse()
         assertThat(resultLow.message).contains("Invalid timer duration")
+        assertThat(resultLow.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
 
         val resultHigh = executor.execute(
             ActionType.START_TIMER,
@@ -102,6 +105,7 @@ class ClockExecutorTest {
         )
         assertThat(resultHigh.success).isFalse()
         assertThat(resultHigh.message).contains("Invalid timer duration")
+        assertThat(resultHigh.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
     }
 
     @Test
@@ -119,6 +123,7 @@ class ClockExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("No Clock application available")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.HANDLER_UNAVAILABLE)
     }
 
     @Test
@@ -138,7 +143,7 @@ class ClockExecutorTest {
         )
 
         assertThat(result.success).isTrue()
-        assertThat(result.message).contains("Timer request sent to Clock app (300 seconds)")
+        assertThat(result.message).isEqualTo("Timer request sent to Clock app")
         assertThat(startedIntent).isNotNull()
         assertThat(startedIntent!!.action).isEqualTo(AlarmClock.ACTION_SET_TIMER)
         assertThat(startedIntent!!.getIntExtra(AlarmClock.EXTRA_LENGTH, -1)).isEqualTo(300)
@@ -163,6 +168,7 @@ class ClockExecutorTest {
         )
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).isEqualTo("Activity start blocked")
+        assertThat(result.message).isEqualTo("Unable to send alarm request")
+        assertThat(result.diagnostic).isNull()
     }
 }

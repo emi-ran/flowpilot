@@ -4,6 +4,7 @@ import android.app.SearchManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.provider.MediaStore
+import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.data.model.Automation
 import com.google.common.truth.Truth.assertThat
@@ -114,19 +115,77 @@ class MusicExecutorTest {
     @Test fun rejectsInvalidInputAndRedactsFailures() {
         var launches = 0
         val executor = MusicExecutor { launches++; throw IllegalStateException("secret query") }
-        assertThat(executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = " ")).success).isFalse()
+        assertThat(executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = " ")).diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
         assertThat(executor.execute(ActionType.MUSIC_PLAY_LINK, ActionParameters(musicAppPackage = youtube, musicLink = "https://open.spotify.com/track/id")).success).isFalse()
         assertThat(launches).isEqualTo(0)
         val failed = executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = "secret query"))
         assertThat(failed.message).isEqualTo("Unable to open music app")
+        assertThat(failed.diagnostic).isNull()
     }
 
     @Test fun missingMusicAppReportsActionableFailure() {
         val executor = MusicExecutor { throw ActivityNotFoundException("sensitive") }
         val result = executor.execute(ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = "song"))
         assertThat(result.success).isFalse()
-        assertThat(result.message).contains("install or enable")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.HANDLER_UNAVAILABLE)
         assertThat(result.message).doesNotContain("sensitive")
+    }
+
+    @Test fun invalidLinksProduceSafeStructuredDiagnostics() {
+        var launches = 0
+        val executor = MusicExecutor { launches++ }
+        fun diagnostic(link: String) = executor.execute(
+            ActionType.MUSIC_PLAY_LINK, ActionParameters(musicAppPackage = youtube, musicLink = link),
+        ).diagnostic
+        val shortId = diagnostic("https://youtu.be/secret1234?token=private")!!
+        assertThat(shortId.reason).isEqualTo(ActionDiagnosticReason.INVALID_VIDEO_ID_LENGTH)
+        assertThat(shortId.expectedLength).isEqualTo(11)
+        assertThat(shortId.observedLength).isEqualTo(10)
+        assertThat(diagnostic("https://music.youtube.com/watch?x=private")!!.reason).isEqualTo(ActionDiagnosticReason.MISSING_VIDEO_ID)
+        assertThat(diagnostic("https://music.youtube.com/watch?v=abcdefghijk&v=lmnopqrstuv")!!.reason).isEqualTo(ActionDiagnosticReason.MULTIPLE_VIDEO_IDS)
+        assertThat(diagnostic("https://youtu.be/abcdefghij%")!!.reason).isEqualTo(ActionDiagnosticReason.MALFORMED_LINK)
+        assertThat(diagnostic("https://youtu.be/abcdefghij%21")!!.reason).isEqualTo(ActionDiagnosticReason.INVALID_VIDEO_ID_LENGTH)
+        assertThat(diagnostic("https://evil.test/abcdefghijk")!!.reason).isEqualTo(ActionDiagnosticReason.UNSUPPORTED_LINK_HOST)
+        assertThat(diagnostic("https://youtu.be/" + "a".repeat(1100))!!.observedLength).isEqualTo(1000)
+        assertThat(launches).isEqualTo(0)
+    }
+
+    @Test fun diagnosticsRoundTripAndLegacyHistoryRemainsReadable() {
+        val result = MusicExecutor { }.execute(
+            ActionType.MUSIC_PLAY_LINK,
+            ActionParameters(musicAppPackage = youtube, musicLink = "https://youtu.be/secret1234?token=private"),
+        )
+        val record = ActionExecutionRecord.create(ActionType.MUSIC_PLAY_LINK, result)
+        val encoded = Json.encodeToString(record)
+        assertThat(encoded).doesNotContain("secret1234")
+        assertThat(encoded).doesNotContain("private")
+        assertThat(encoded).doesNotContain("https")
+        assertThat(Json.decodeFromString<ActionExecutionRecord>(encoded).diagnostic).isEqualTo(result.diagnostic)
+        val legacy = """{"actionType":"MUSIC_PLAY_LINK","actionLabel":"Music","success":false,"message":"Invalid music link"}"""
+        assertThat(Json.decodeFromString<ActionExecutionRecord>(legacy).diagnostic).isNull()
+        assertThat(ActionExecutionRecord.create(ActionType.MUSIC_SEARCH, ActionResult(true, "ok")).diagnostic).isNull()
+    }
+
+    @Test fun missingHandlerAndInvalidInputRemainDistinctAndPrivateInHistory() {
+        val secret = "private song query"
+        val missing = MusicExecutor { throw ActivityNotFoundException(secret) }.execute(
+            ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = spotify, musicQuery = secret),
+        )
+        var launches = 0
+        val invalid = MusicExecutor { launches++ }.execute(
+            ActionType.MUSIC_SEARCH, ActionParameters(musicAppPackage = "private.invalid.app", musicQuery = secret),
+        )
+        listOf(missing to ActionDiagnosticReason.HANDLER_UNAVAILABLE, invalid to ActionDiagnosticReason.INVALID_INPUT)
+            .forEach { (result, reason) ->
+                val record = ActionExecutionRecord.create(ActionType.MUSIC_SEARCH, result)
+                assertThat(record.success).isFalse()
+                assertThat(record.diagnostic?.reason).isEqualTo(reason)
+                val encoded = Json.encodeToString(record)
+                assertThat(encoded).doesNotContain(secret)
+                assertThat(encoded).doesNotContain("private.invalid.app")
+                assertThat(Json.decodeFromString<ActionExecutionRecord>(encoded).diagnostic).isEqualTo(record.diagnostic)
+            }
+        assertThat(launches).isEqualTo(0)
     }
 
     @Test fun fieldsSurviveSerializationAndParameterMapping() {

@@ -29,25 +29,24 @@ class HotspotExecutor(
             return ActionResult(false, "Hotspot control requires Android 16 or newer")
         }
         if (!shell.isShizukuRunning()) {
-            return ActionResult(false, "Shizuku not running — Hotspot can't be toggled")
+            return ActionResult(false, "Shizuku not running — Hotspot can't be toggled", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
         }
         if (!shell.hasPermission()) {
-            return ActionResult(false, "Shizuku permission not granted to FlowPilot")
+            return ActionResult(false, "Shizuku permission not granted to FlowPilot", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED))
         }
 
         return try {
-            val (code, output) = shell.runHotspot(enabled)
+            val (code, _) = shell.runHotspot(enabled)
             if (code != 0) {
-                val detail = if (output.isEmpty()) "" else ": $output"
-                return ActionResult(false, "Hotspot $label failed$detail")
+                return ActionResult(false, "Hotspot $label failed", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED))
             }
             ActionResult(
                 true,
                 "Hotspot turned $label",
                 if (enabled) ActionResultCode.STATE_ENABLED else ActionResultCode.STATE_DISABLED,
             )
-        } catch (t: Throwable) {
-            ActionResult(false, "Hotspot toggle error: ${t.message ?: t.javaClass.simpleName}")
+        } catch (_: Throwable) {
+            ActionResult(false, "Hotspot toggle error")
         }
     }
 }

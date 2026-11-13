@@ -11,7 +11,50 @@ data class ActionResult(
     val message: String,
     val resultCode: ActionResultCode? = null,
     val resultArgs: List<String> = emptyList(),
+    val diagnostic: ActionDiagnostic? = null,
 )
+
+/** Payload-free diagnostic metadata. Lengths are capped to avoid retaining unbounded input data. */
+@Serializable
+data class ActionDiagnostic(
+    val reason: ActionDiagnosticReason,
+    val expectedLength: Int? = null,
+    val observedLength: Int? = null,
+) {
+    init {
+        require(expectedLength == null || expectedLength in 0..1000)
+        require(observedLength == null || observedLength in 0..1000)
+    }
+}
+
+@Serializable
+enum class ActionDiagnosticReason {
+    MALFORMED_LINK,
+    INVALID_LINK_COMPONENTS,
+    UNSUPPORTED_LINK_HOST,
+    INVALID_LINK_PATH,
+    MISSING_VIDEO_ID,
+    MULTIPLE_VIDEO_IDS,
+    INVALID_VIDEO_ID_LENGTH,
+    INVALID_VIDEO_ID_CHARACTERS,
+    SHIZUKU_NOT_RUNNING,
+    SHIZUKU_PERMISSION_REQUIRED,
+    BLUETOOTH_PERMISSION_REQUIRED,
+    SETTINGS_PERMISSION_REQUIRED,
+    DND_PERMISSION_REQUIRED,
+    SYSTEM_COMMAND_FAILED,
+    STATE_UNAVAILABLE,
+    STATE_MISMATCH,
+    TARGET_APP_UNAVAILABLE,
+    INVALID_INPUT,
+    HANDLER_UNAVAILABLE,
+    NOTIFICATION_PERMISSION_REQUIRED,
+    PHONE_PERMISSION_REQUIRED,
+    SMS_PERMISSION_REQUIRED,
+    MEDIA_SESSION_UNAVAILABLE,
+    NETWORK_TIMEOUT,
+    NETWORK_FAILURE,
+}
 
 /** Locale-neutral outcome metadata persisted by execution history. */
 @Serializable

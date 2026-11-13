@@ -86,11 +86,13 @@ class GeofenceTracker(
                         isUpdating.set(false)
                     }
                     .addOnFailureListener { e ->
-                        Log.w(TAG, "Failed to reconcile surviving geofences", e)
+                        val errorCode = GeofenceDiagnosticErrorCode.fromThrowable(e, unregisterOperation = true)
+                        Log.w(TAG, "Failed to reconcile surviving geofences (${errorCode.name})")
                         isUpdating.set(false)
                     }
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to reconcile surviving geofences", e)
+                val errorCode = GeofenceDiagnosticErrorCode.fromThrowable(e, unregisterOperation = true)
+                Log.w(TAG, "Failed to reconcile surviving geofences (${errorCode.name})")
                 isUpdating.set(false)
             }
             return
@@ -153,30 +155,30 @@ class GeofenceTracker(
                         }
                     }
                     .addOnFailureListener { e ->
-                        Log.w(TAG, "Failed to unregister geofences: ${e.message}")
-                        val errorMsg = "Unregister failed: ${e.message.orEmpty()}"
+                        val errorCode = GeofenceDiagnosticErrorCode.fromThrowable(e, unregisterOperation = true)
+                        Log.w(TAG, "Failed to unregister geofences (${errorCode.name})")
                         if (toReAdd.isNotEmpty()) {
-                            retryPolicy.recordFailure(toReAdd.map { it.id }, toReAdd, errorMsg)
+                            retryPolicy.recordFailure(toReAdd.map { it.id }, toReAdd, errorCode.message)
                         }
-                        recordRegistrationFailure(toRemoveIds, errorMsg)
+                        recordRegistrationFailure(toRemoveIds, errorCode)
                         // Remove failed: do NOT add toReAdd rules to avoid ID collision and state drift!
                         onOpFinished()
                     }
             } catch (e: SecurityException) {
-                Log.w(TAG, "SecurityException while removing geofences: ${e.message}")
-                val errorMsg = "Unregister security error: ${e.message.orEmpty()}"
+                val errorCode = GeofenceDiagnosticErrorCode.UNREGISTER_SECURITY_ERROR
+                Log.w(TAG, "SecurityException while removing geofences (${errorCode.name})")
                 if (toReAdd.isNotEmpty()) {
-                    retryPolicy.recordFailure(toReAdd.map { it.id }, toReAdd, errorMsg)
+                    retryPolicy.recordFailure(toReAdd.map { it.id }, toReAdd, errorCode.message)
                 }
-                recordRegistrationFailure(toRemoveIds, errorMsg)
+                recordRegistrationFailure(toRemoveIds, errorCode)
                 onOpFinished()
             } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error removing geofences: ${e.message}")
-                val errorMsg = "Unregister error: ${e.message.orEmpty()}"
+                val errorCode = GeofenceDiagnosticErrorCode.fromThrowable(e, unregisterOperation = true)
+                Log.e(TAG, "Unexpected error removing geofences (${errorCode.name})")
                 if (toReAdd.isNotEmpty()) {
-                    retryPolicy.recordFailure(toReAdd.map { it.id }, toReAdd, errorMsg)
+                    retryPolicy.recordFailure(toReAdd.map { it.id }, toReAdd, errorCode.message)
                 }
-                recordRegistrationFailure(toRemoveIds, errorMsg)
+                recordRegistrationFailure(toRemoveIds, errorCode)
                 onOpFinished()
             }
         }
@@ -227,21 +229,24 @@ class GeofenceTracker(
                 registerGeofences(rulesToAdd, onComplete)
             }
             is GeofencePrerequisitesResult.MissingLocationPermission -> {
-                Log.w(TAG, "Cannot register geofences: ${prereqResult.message}")
-                retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, prereqResult.message)
-                recordRegistrationFailure(rulesToAdd.map { it.id }, prereqResult.message)
+                val errorCode = GeofenceDiagnosticErrorCode.MISSING_LOCATION_PERMISSION
+                Log.w(TAG, "Cannot register geofences: ${errorCode.message}")
+                retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, errorCode.message)
+                recordRegistrationFailure(rulesToAdd.map { it.id }, errorCode)
                 onComplete()
             }
             is GeofencePrerequisitesResult.MissingBackgroundLocation -> {
-                Log.w(TAG, "Cannot register geofences: ${prereqResult.message}")
-                retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, prereqResult.message)
-                recordRegistrationFailure(rulesToAdd.map { it.id }, prereqResult.message)
+                val errorCode = GeofenceDiagnosticErrorCode.MISSING_BACKGROUND_LOCATION
+                Log.w(TAG, "Cannot register geofences: ${errorCode.message}")
+                retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, errorCode.message)
+                recordRegistrationFailure(rulesToAdd.map { it.id }, errorCode)
                 onComplete()
             }
             is GeofencePrerequisitesResult.LocationServicesDisabled -> {
-                Log.w(TAG, "Cannot register geofences: ${prereqResult.message}")
-                retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, prereqResult.message)
-                recordRegistrationFailure(rulesToAdd.map { it.id }, prereqResult.message)
+                val errorCode = GeofenceDiagnosticErrorCode.LOCATION_SERVICES_DISABLED
+                Log.w(TAG, "Cannot register geofences: ${errorCode.message}")
+                retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, errorCode.message)
+                recordRegistrationFailure(rulesToAdd.map { it.id }, errorCode)
                 onComplete()
             }
         }
@@ -285,23 +290,23 @@ class GeofenceTracker(
                     onComplete()
                 }
                 .addOnFailureListener { e ->
-                    Log.e(TAG, "Failed to register geofences with Google Play Services: ${e.message}", e)
-                    val errorMsg = e.message.orEmpty().ifBlank { "Registration failed" }
-                    retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, errorMsg)
-                    recordRegistrationFailure(rulesToAdd.map { it.id }, errorMsg)
+                    val errorCode = GeofenceDiagnosticErrorCode.fromThrowable(e)
+                    Log.e(TAG, "Failed to register geofences with Google Play Services (${errorCode.name})")
+                    retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, errorCode.message)
+                    recordRegistrationFailure(rulesToAdd.map { it.id }, errorCode)
                     onComplete()
                 }
         } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException registering geofences: ${e.message}", e)
-            val errorMsg = "Security error: ${e.message.orEmpty()}"
-            retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, errorMsg)
-            recordRegistrationFailure(rulesToAdd.map { it.id }, errorMsg)
+            val errorCode = GeofenceDiagnosticErrorCode.REGISTRATION_SECURITY_ERROR
+            Log.e(TAG, "SecurityException registering geofences (${errorCode.name})")
+            retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, errorCode.message)
+            recordRegistrationFailure(rulesToAdd.map { it.id }, errorCode)
             onComplete()
         } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error registering geofences: ${e.message}", e)
-            val errorMsg = e.message.orEmpty().ifBlank { "Unexpected registration error" }
-            retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, errorMsg)
-            recordRegistrationFailure(rulesToAdd.map { it.id }, errorMsg)
+            val errorCode = GeofenceDiagnosticErrorCode.fromThrowable(e)
+            Log.e(TAG, "Unexpected error registering geofences (${errorCode.name})")
+            retryPolicy.recordFailure(rulesToAdd.map { it.id }, rulesToAdd, errorCode.message)
+            recordRegistrationFailure(rulesToAdd.map { it.id }, errorCode)
             onComplete()
         }
     }
@@ -340,12 +345,14 @@ class GeofenceTracker(
                     recordUnregistration(allIds)
                 }
                 .addOnFailureListener { e ->
-                    Log.w(TAG, "Failed to remove geofences on stop: ${e.message}")
-                    recordRegistrationFailure(allIds, "Unregister failed: ${e.message.orEmpty()}")
+                    val errorCode = GeofenceDiagnosticErrorCode.fromThrowable(e, unregisterOperation = true)
+                    Log.w(TAG, "Failed to remove geofences on stop (${errorCode.name})")
+                    recordRegistrationFailure(allIds, errorCode)
                 }
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to remove geofences on stop", e)
-            recordRegistrationFailure(allIds, "Unregister failed: ${e.message.orEmpty()}")
+            val errorCode = GeofenceDiagnosticErrorCode.fromThrowable(e, unregisterOperation = true)
+            Log.w(TAG, "Failed to remove geofences on stop (${errorCode.name})")
+            recordRegistrationFailure(allIds, errorCode)
         }
         registeredRules.clear()
     }
@@ -360,7 +367,7 @@ class GeofenceTracker(
         CoroutineScope(Dispatchers.IO).launch { repository.recordGeofenceUnregistration(automationIds) }
     }
 
-    private fun recordRegistrationFailure(automationIds: List<String>, error: String) {
-        CoroutineScope(Dispatchers.IO).launch { repository.recordGeofenceRegistrationFailure(automationIds, error) }
+    private fun recordRegistrationFailure(automationIds: List<String>, errorCode: GeofenceDiagnosticErrorCode) {
+        CoroutineScope(Dispatchers.IO).launch { repository.recordGeofenceRegistrationFailure(automationIds, errorCode) }
     }
 }

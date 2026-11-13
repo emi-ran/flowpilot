@@ -74,6 +74,7 @@ class PowerSaverExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("state mismatch")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.STATE_MISMATCH)
         assertThat(result.message).contains("expected on")
         assertThat(result.message).contains("read off")
         assertThat(result.message).isNotEqualTo("Battery saver on")
@@ -92,6 +93,7 @@ class PowerSaverExecutorTest {
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("could not be verified")
         assertThat(result.message).contains("unavailable")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.STATE_UNAVAILABLE)
     }
 
     @Test
@@ -204,6 +206,7 @@ class PowerSaverExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("needs WRITE_SECURE_SETTINGS or Shizuku")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING)
         assertThat(shell.commands).isEmpty()
     }
 

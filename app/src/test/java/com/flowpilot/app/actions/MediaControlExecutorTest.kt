@@ -54,7 +54,9 @@ class MediaControlExecutorTest {
         assertThat(executor.execute(ActionType.MEDIA_PLAY, ActionParameters(mediaTargetPackage = " second ")).success).isTrue()
         assertThat(second.command).isEqualTo("play")
         second.command = null
-        assertThat(executor.execute(ActionType.MEDIA_PLAY, ActionParameters(mediaTargetPackage = "missing")).success).isFalse()
+        val missing = executor.execute(ActionType.MEDIA_PLAY, ActionParameters(mediaTargetPackage = "missing"))
+        assertThat(missing.success).isFalse()
+        assertThat(missing.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.MEDIA_SESSION_UNAVAILABLE)
         assertThat(first.command).isNull()
         assertThat(second.command).isNull()
     }
@@ -64,9 +66,10 @@ class MediaControlExecutorTest {
         val denied = MediaControlExecutor({ false }, { queried = true; emptyList() }).execute(ActionType.MEDIA_PLAY)
         assertThat(denied.success).isFalse()
         assertThat(denied.resultCode).isEqualTo(ActionResultCode.PERMISSION_REQUIRED)
+        assertThat(denied.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED)
         assertThat(queried).isFalse()
-        assertThat(MediaControlExecutor({ true }, { null }).execute(ActionType.MEDIA_PLAY).message).contains("unavailable")
-        assertThat(MediaControlExecutor({ true }, { emptyList() }).execute(ActionType.MEDIA_PLAY).success).isFalse()
+        assertThat(MediaControlExecutor({ true }, { null }).execute(ActionType.MEDIA_PLAY).diagnostic?.reason).isEqualTo(ActionDiagnosticReason.STATE_UNAVAILABLE)
+        assertThat(MediaControlExecutor({ true }, { emptyList() }).execute(ActionType.MEDIA_PLAY).diagnostic?.reason).isEqualTo(ActionDiagnosticReason.MEDIA_SESSION_UNAVAILABLE)
     }
 
     @Test fun rejectsUnsupportedCommandsAndUnknownToggleState() {
@@ -75,6 +78,7 @@ class MediaControlExecutorTest {
         assertThat(executor.execute(ActionType.MEDIA_PLAY).message).contains("does not support")
         session.state = null
         assertThat(executor.execute(ActionType.MEDIA_TOGGLE).message).contains("state")
+        assertThat(executor.execute(ActionType.MEDIA_TOGGLE).diagnostic?.reason).isEqualTo(ActionDiagnosticReason.STATE_UNAVAILABLE)
         assertThat(executor.execute(ActionType.SET_MEDIA_VOLUME).success).isFalse()
         assertThat(session.command).isNull()
     }
@@ -91,9 +95,12 @@ class MediaControlExecutorTest {
     @Test fun reportsPermissionRevocationAndCommandFailureWithoutLeakingException() {
         val denied = MediaControlExecutor({ true }, { throw SecurityException("private") }).execute(ActionType.MEDIA_PLAY)
         assertThat(denied.resultCode).isEqualTo(ActionResultCode.PERMISSION_REQUIRED)
+        assertThat(denied.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED)
+        assertThat(denied.message).doesNotContain("private")
         val session = Session().apply { failure = IllegalStateException("private") }
         val failed = MediaControlExecutor({ true }, { listOf(session) }).execute(ActionType.MEDIA_PLAY)
         assertThat(failed.success).isFalse()
         assertThat(failed.message).isEqualTo("Media command failed")
+        assertThat(failed.diagnostic).isNull()
     }
 }

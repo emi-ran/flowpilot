@@ -34,25 +34,25 @@ class AirplaneModeExecutor(
         }
 
         if (!shell.isShizukuRunning()) {
-            return ActionResult(false, "Shizuku not running — Airplane mode can't be toggled")
+            return ActionResult(false, "Shizuku not running — Airplane mode can't be toggled", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
         }
         if (!shell.hasPermission()) {
-            return ActionResult(false, "Shizuku permission not granted to FlowPilot")
+            return ActionResult(false, "Shizuku permission not granted to FlowPilot", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED))
         }
 
         return try {
-            val (code, output) = shell.run(command)
+            val (code, _) = shell.run(command)
             if (code != 0) {
-                return ActionResult(false, "Airplane mode toggle failed: $output")
+                return ActionResult(false, "Airplane mode toggle failed", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED))
             }
 
             val enabled = awaitExpectedState(expectedEnabled)
             if (enabled != null && enabled != expectedEnabled) {
-                return ActionResult(false, "Airplane mode state mismatch: expected ${if (expectedEnabled) "on" else "off"} but read ${if (enabled) "on" else "off"}")
+                return ActionResult(false, "Airplane mode state mismatch: expected ${if (expectedEnabled) "on" else "off"} but read ${if (enabled) "on" else "off"}", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_MISMATCH))
             }
             ActionResult(true, "Airplane mode turned $label")
-        } catch (t: Throwable) {
-            ActionResult(false, "Airplane mode toggle error: ${t.message ?: t.javaClass.simpleName}")
+        } catch (_: Throwable) {
+            ActionResult(false, "Airplane mode toggle error")
         }
     }
 

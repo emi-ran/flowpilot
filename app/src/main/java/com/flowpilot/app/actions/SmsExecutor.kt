@@ -66,19 +66,19 @@ class SmsExecutor(
         val recipient = resolveRecipient(parameters)
         if (recipient.isBlank()) {
             Log.w(TAG, "Direct SMS failed: recipient is empty")
-            return ActionResult(false, "Recipient phone number is required")
+            return ActionResult(false, "Recipient phone number is required", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
 
         val message = resolveMessage(parameters)
         if (message.isBlank()) {
             Log.w(TAG, "Direct SMS failed: message body is empty")
-            return ActionResult(false, "SMS message body cannot be empty")
+            return ActionResult(false, "SMS message body cannot be empty", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
 
         val hasSendPermission = context.checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
         if (!hasSendPermission) {
             Log.w(TAG, "Direct SMS blocked: SEND_SMS permission not granted")
-            return ActionResult(false, "SEND_SMS permission required", ActionResultCode.PERMISSION_REQUIRED)
+            return ActionResult(false, "SEND_SMS permission required", ActionResultCode.PERMISSION_REQUIRED, diagnostic = ActionDiagnostic(ActionDiagnosticReason.SMS_PERMISSION_REQUIRED))
         }
 
         return try {
@@ -112,7 +112,7 @@ class SmsExecutor(
         return try {
             if (!resolveActivity(intent)) {
                 Log.w(TAG, "No messaging application resolved for SMS draft intent")
-                return ActionResult(false, "No messaging application found")
+                return ActionResult(false, "No messaging application found", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
             }
             startActivity(intent)
             Log.i(TAG, "SMS draft opened successfully")

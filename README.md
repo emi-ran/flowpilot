@@ -217,7 +217,9 @@ Chain multiple actions in any custom sequence with drag-and-drop ordering and in
 - **In-App Live Test Run:** Test any rule action directly inside the editor before saving to verify parameters.
 - **Per-Rule Home-Screen Shortcuts:** Pin a launcher shortcut from Edit → Advanced. Tapping it reloads the rule and asks before running, with disabled or deleted rules blocked; no silent execution. On HyperOS, FlowPilot opens the Home screen shortcuts permission page when that permission is denied.
 - **Safe Rule Duplication:** Clone any rule into an immediately editable disabled copy with freshly encrypted webhook credentials.
-- **Execution Run History:** Local persistent audit trail of the last 100 executions with masked sensitive details. Raw provider errors, private URIs, local paths, credentials, and phone numbers are not persisted.
+- **Execution Run History & Troubleshooting:** Local persistent audit trail of the last 100 executions with masked sensitive details, repeated-failure grouping (when a failed run has a single failed action with a structured `ActionDiagnosticReason`), structured music-link failure reasons (including bounded expected/observed video ID lengths), and content-free per-action template diagnostics (`notification.text` / `notification.bigText` missing/empty/present state, syntax or unknown-variable flags, and empty rendered output). Raw provider errors, private URIs, local paths, URLs, credentials, notification text, and phone numbers are never persisted. History does not record events that never execute a rule.
+  Where an action can identify the cause, history also shows safe reasons for Shizuku, permissions, system commands, state readback, target apps or handlers, media sessions, invalid input, and network failures. It does not infer an unobserved cause: other failures remain generic, and older records remain readable.
+  For recognized webhook failures, history also displays the HTTP response status without displaying the stored message; unrecognized messages stay generic.
 - **Conflict Warnings:** Automatic non-blocking analysis warning you when opposite state actions target the same trigger.
 - **First-Launch Guided Tour:** A six-step spotlight walkthrough (welcome, presets, create, engine status, settings, done) highlights each area on first launch and skips the create step when rules already exist. Skip it at any time; completion is remembered on the device and the tour can be replayed from Settings → Replay tutorial.
 
@@ -247,7 +249,7 @@ FlowPilot is engineered with an uncompromised commitment to user privacy:
 - 🔄 **Optional Update Checks:** Release builds automatically check the public GitHub Releases API by default, at most once a day, without sending an account or device identifier. Disable automatic checks in Settings; manual checks remain available. Debug builds do not check.
 - 📵 **No Cloud Synchronization:** FlowPilot does not automatically synchronize rules, logs, or secrets to a cloud account. User-configured actions can send selected data to external recipients.
 - 🛡️ **Android Keystore Protection:** Webhook secrets, tokens, and sensitive headers are encrypted with AES-256-GCM using Android Keystore keys, hardware-backed when supported by the device.
-- 🙈 **Strict Log Sanitization:** Phone numbers, webhook credentials, and sensitive headers are masked across all UI screens and audit logs.
+- 🙈 **Strict Log & Diagnostic Sanitization:** Phone numbers, URLs, webhook credentials, notification text, and sensitive headers are masked or excluded across UI screens, execution history, and audit logs. Persistent diagnostics store only non-content enums and bounded numeric metadata.
 
 ### Transparent Permission Disclosures
 FlowPilot declares sensitive permissions solely to power explicit automation features:

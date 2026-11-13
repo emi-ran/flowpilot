@@ -44,6 +44,7 @@ class BrightnessExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("WRITE_SETTINGS")
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.SETTINGS_PERMISSION_REQUIRED)
         assertThat(writeAttempted).isFalse()
     }
 
@@ -144,5 +145,7 @@ class BrightnessExecutorTest {
 
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Auto-brightness error")
+        assertThat(result.message).doesNotContain("Security error")
+        assertThat(result.diagnostic).isNull()
     }
 }

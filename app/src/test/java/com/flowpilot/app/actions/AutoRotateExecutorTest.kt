@@ -134,7 +134,7 @@ class AutoRotateExecutorTest {
     }
 
     @Test
-    fun execute_whenExceptionThrown_returnsFailureWithMessage() {
+    fun execute_whenExceptionThrown_returnsSafeFailure() {
         val context = RuntimeEnvironment.getApplication()
 
         val executor = AutoRotateExecutor(
@@ -146,6 +146,8 @@ class AutoRotateExecutorTest {
         val result = executor.execute(ActionType.AUTO_ROTATE_ON)
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).isEqualTo("Mock system block")
+        assertThat(result.message).isNotEmpty()
+        assertThat(result.message).doesNotContain("Mock system block")
+        assertThat(result.diagnostic).isNull()
     }
 }

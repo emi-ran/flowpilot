@@ -217,4 +217,28 @@ class ActionParametersFactoryTest {
         assertThat(parameters.ttsText).isEmpty()
         assertThat(parameters.ttsTemplateError).isEqualTo(ActionParametersFactory.TTS_TEMPLATE_ERROR)
     }
+    @Test
+    fun actionDiagnostics_areScopedAndContainNoPrivateInputs() {
+        val privateRule = rule(ttsText = "secret \${privateUnknown} \${notification.text|bad}")
+        val ctx = TemplateContext(values = mapOf("notification.text" to "", "notification.bigText" to "private-content"))
+        val params = ActionParametersFactory.create(privateRule, ctx)
+        val diagnostics = TemplateDiagnostics.forAction(ActionType.SPEAK_TEXT, privateRule, ctx, params)
+        assertThat(diagnostics).hasSize(1)
+        val diagnostic = diagnostics.single()
+        assertThat(diagnostic.field).isEqualTo(ActionTemplateField.TTS_TEXT)
+        assertThat(diagnostic.hasUnknownVariables).isTrue()
+        assertThat(diagnostic.hasParseErrors).isTrue()
+        assertThat(diagnostic.notificationText).isEqualTo(TemplateValueState.EMPTY)
+        assertThat(diagnostic.notificationBigText).isEqualTo(TemplateValueState.PRESENT)
+        assertThat(diagnostic.renderedEmpty).isTrue()
+        assertThat(diagnostic.toString()).doesNotContain("private")
+        assertThat(TemplateDiagnostics.forAction(ActionType.OPEN_DIALER, privateRule, ctx, params)).isEmpty()
+    }
+
+    @Test
+    fun actionDiagnostics_legacyAudioDoesNotAnalyzeUnusedText() {
+        val legacy = rule(ttsAudioFileName = "legacy.wav")
+        assertThat(TemplateDiagnostics.forAction(ActionType.SPEAK_TEXT, legacy, context(), ActionParametersFactory.create(legacy, context()))).isEmpty()
+    }
+
 }

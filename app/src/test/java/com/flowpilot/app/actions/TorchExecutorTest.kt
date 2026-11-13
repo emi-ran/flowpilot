@@ -138,11 +138,13 @@ class TorchExecutorTest {
         val store = FakeTorchStateStore(initial = true)
 
         val result = executor(store) { _, _, _ ->
-            throw IllegalStateException("camera in use")
+            throw IllegalStateException("sensitive camera detail")
         }.execute(ActionType.TORCH_TOGGLE)
 
         assertThat(result.success).isFalse()
-        assertThat(result.message).contains("camera in use")
+        assertThat(result.message).contains("flashlight")
+        assertThat(result.toString()).doesNotContain("sensitive camera detail")
+        assertThat(result.resultCode).isNull()
         assertThat(store.state).isTrue()
         assertThat(store.writes).isEmpty()
     }

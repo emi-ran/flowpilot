@@ -26,17 +26,17 @@ class ForceStopExecutor(
         }
 
         if (!shizukuShell.isShizukuRunning()) {
-            return ActionResult(false, "Force stop requires Shizuku (service not running)")
+            return ActionResult(false, "Force stop requires Shizuku (service not running)", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
         }
         if (!shizukuShell.hasPermission()) {
-            return ActionResult(false, "Force stop requires Shizuku permission")
+            return ActionResult(false, "Force stop requires Shizuku permission", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED))
         }
 
-        val (exitCode, output) = shizukuShell.run("am force-stop $pkg")
+        val (exitCode, _) = shizukuShell.run("am force-stop $pkg")
         return if (exitCode == 0) {
             ActionResult(true, "Force stopped $pkg")
         } else {
-            ActionResult(false, "Failed to force stop $pkg (exit code $exitCode): $output")
+            ActionResult(false, "Failed to force stop application: system command failed", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED))
         }
     }
 }

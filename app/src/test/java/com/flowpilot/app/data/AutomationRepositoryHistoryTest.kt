@@ -12,8 +12,11 @@ import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.ExecutionStatus
 import com.flowpilot.app.data.model.resolvedResultArgs
 import com.flowpilot.app.data.model.resolvedResultCode
+import com.flowpilot.app.data.model.resolvedHttpFailureStatus
 import com.flowpilot.app.actions.ActionResult
 import com.flowpilot.app.actions.ActionResultCode
+import com.flowpilot.app.actions.ActionDiagnostic
+import com.flowpilot.app.actions.ActionDiagnosticReason
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -390,6 +393,39 @@ class AutomationRepositoryHistoryTest {
     }
 
     @Test
+    fun webhookStatus_legacyHistorySurvivesReloadWithoutExposingUntrustedMessages() = runTest {
+        repository.rawDataStore.edit { prefs ->
+            prefs[historyKey] = """[{"id":"legacy","ruleId":"rule","ruleName":"Rule","trigger":"MANUAL","timestamp":1,"status":"FAILURE","actions":[{"actionType":"HTTP_WEBHOOK","actionLabel":"Webhook","success":false,"message":"HTTP Webhook failed: status 503"}]}]"""
+        }
+        val legacy = repository.executionHistory.first().single().actions.single()
+        assertThat(legacy.resolvedHttpFailureStatus()).isEqualTo(503)
+        assertThat(ActionExecutionRecord.create(ActionType.HTTP_WEBHOOK, false, "HTTP 503 from upstream").resolvedHttpFailureStatus()).isEqualTo(503)
+        val untrusted = listOf(
+            "HTTP Webhook failed: status 503 https://example.com/?token=secret",
+            "HTTP 503 from upstream Authorization: Bearer secret",
+            "HTTP Webhook failed: status 503 +905551234567",
+            "java.io.IOException: HTTP Webhook failed: status 503 body=secret",
+            "HTTP Webhook failed: status 200",
+            "HTTP Webhook failed: status 999",
+        )
+        untrusted.forEach { message ->
+            val action = ActionExecutionRecord(ActionType.HTTP_WEBHOOK, "Webhook", false, message)
+            assertThat(action.resolvedHttpFailureStatus()).isNull()
+        }
+        assertThat(ActionExecutionRecord(ActionType.SHOW_NOTIFICATION, "Notification", false, "HTTP 503 from upstream").resolvedHttpFailureStatus()).isNull()
+        assertThat(ActionExecutionRecord(ActionType.HTTP_WEBHOOK, "Webhook", true, "HTTP 503 from upstream").resolvedHttpFailureStatus()).isNull()
+    }
+
+    @Test
+    fun legacyHistoryWithoutDiagnostic_doesNotInferReasonFromMessage() = runTest {
+        repository.rawDataStore.edit { prefs ->
+            prefs[historyKey] = """[{"id":"legacy","ruleId":"rule","ruleName":"Rule","trigger":"MANUAL","timestamp":1,"status":"FAILURE","actions":[{"actionType":"NFC_ON","actionLabel":"NFC on","success":false,"message":"Shizuku not running"}]}]"""
+        }
+
+        assertThat(repository.executionHistory.first().single().actions.single().diagnostic).isNull()
+    }
+
+    @Test
     fun appendHistory_withInjectedSyntheticSecretAndPrivateUri_isAbsentFromSerializedAndPersistedHistory() = runTest {
         val syntheticSecret = "SYNTHETIC_SECRET_DO_NOT_PERSIST"
         val syntheticUri = "content://com.flowpilot.test.provider/synthetic/private/uri"
@@ -408,6 +444,7 @@ class AutomationRepositoryHistoryTest {
                         message = rawErrorMessage,
                         resultCode = null,
                         resultArgs = listOf(syntheticUri, syntheticSecret, syntheticLocalPath),
+                        diagnostic = ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING),
                     ),
                 ),
             ),
@@ -420,9 +457,13 @@ class AutomationRepositoryHistoryTest {
         assertThat(rawSerialized).doesNotContain(syntheticUri)
         assertThat(rawSerialized).doesNotContain("/data/user/0")
         assertThat(rawSerialized).doesNotContain("IllegalStateException")
+        assertThat(rawSerialized).contains("SHIZUKU_NOT_RUNNING")
+        assertThat(json.decodeFromString(historySerializer, rawSerialized).single().actions.single().diagnostic)
+            .isEqualTo(ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
 
         val persisted = repository.executionHistory.first().first { it.ruleId == "leak-test-rule" }
         val action = persisted.actions.single()
+        assertThat(action.diagnostic).isEqualTo(ActionDiagnostic(ActionDiagnosticReason.SHIZUKU_NOT_RUNNING))
 
         assertThat(action.message).doesNotContain(syntheticSecret)
         assertThat(action.message).doesNotContain(syntheticUri)

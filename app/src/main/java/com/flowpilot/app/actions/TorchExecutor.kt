@@ -64,8 +64,8 @@ class TorchExecutor(
             // Optimistic write: system callbacks correct it if the platform rejects the change.
             torchStateStore.write(cameraId, enabled)
             ActionResult(true, "Flashlight turned ${if (enabled) "on" else "off"}")
-        } catch (t: Throwable) {
-            ActionResult(false, "Flashlight toggle error: ${t.message ?: t.javaClass.simpleName}")
+        } catch (_: Throwable) {
+            ActionResult(false, "Failed to change flashlight state")
         }
     }
 }
