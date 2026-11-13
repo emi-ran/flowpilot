@@ -746,6 +746,7 @@
     <string name="history_result_failed">Başarısız</string>
     <string name="history_result_sms_sent_safe">SMS gönderildi</string>
     <string name="history_diagnostic_unavailable">Tanılama bilgisi bulunmuyor.</string>
+    <string name="history_http_status">HTTP yanıt durumu: %1$d</string>
     <string name="history_diagnostic_malformed_link">Bağlantı biçimi geçersiz.</string>
     <string name="history_diagnostic_link_components">Bağlantı desteklenmeyen bileşenler içeriyor.</string>
     <string name="history_diagnostic_link_host">Bağlantının sunucusu desteklenmiyor.</string>

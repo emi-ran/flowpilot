@@ -128,6 +128,14 @@ fun ActionExecutionRecord.resolvedResultArgs(): List<String> = when {
     else -> emptyList()
 }
 
+/** Extract only an entire, known webhook failure format; never display stored message text. */
+fun ActionExecutionRecord.resolvedHttpFailureStatus(): Int? {
+    if (success || actionType != ActionType.HTTP_WEBHOOK) return null
+    val match = Regex("""(?:HTTP Webhook failed: status ([0-9]{3})|HTTP ([0-9]{3}) from upstream)""")
+        .matchEntire(message) ?: return null
+    return (match.groups[1]?.value ?: match.groups[2]?.value)?.toIntOrNull()?.takeIf { it in 300..599 }
+}
+
 @Serializable
 data class ExecutionHistoryEntry(
     val id: String,
