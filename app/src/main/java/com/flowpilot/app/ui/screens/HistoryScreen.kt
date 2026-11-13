@@ -525,6 +525,9 @@ private fun ActionTemplateField.labelRes(): Int = when (this) {
     ActionTemplateField.URL -> R.string.history_template_field_url
     ActionTemplateField.TTS_TEXT -> R.string.history_template_field_tts_text
     ActionTemplateField.ALARM_MESSAGE -> R.string.history_template_field_alarm_message
+    ActionTemplateField.CALENDAR_TITLE -> R.string.calendar_title
+    ActionTemplateField.CALENDAR_DESCRIPTION -> R.string.calendar_description
+    ActionTemplateField.CALENDAR_LOCATION -> R.string.calendar_location
     ActionTemplateField.TIMER_MESSAGE -> R.string.history_template_field_timer_message
     ActionTemplateField.WEBHOOK_URL -> R.string.history_template_field_webhook_url
     ActionTemplateField.WEBHOOK_HEADERS -> R.string.history_template_field_webhook_headers

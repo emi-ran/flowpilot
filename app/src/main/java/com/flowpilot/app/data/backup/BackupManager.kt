@@ -119,7 +119,7 @@ object BackupManager {
     }
 
     fun exportToString(automations: List<Automation>): String {
-        val safeRules = automations.map { it.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "") }
+        val safeRules = automations.map { it.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "", calendarAccountName = "", calendarAccountType = "", calendarName = "") }
         val backup = FlowPilotBackup(
             version = FlowPilotBackup.BACKUP_VERSION,
             exportedAt = System.currentTimeMillis(),
@@ -129,7 +129,7 @@ object BackupManager {
     }
 
     fun exportSingleToString(rule: Automation): String {
-        val safeRule = rule.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "")
+        val safeRule = rule.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "", calendarAccountName = "", calendarAccountType = "", calendarName = "")
         return prettyJson.encodeToString(Automation.serializer(), safeRule)
     }
 

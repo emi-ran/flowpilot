@@ -17,9 +17,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -30,11 +35,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
 import com.flowpilot.app.actions.ActionParameters
@@ -45,6 +58,10 @@ import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.ui.util.localizedLabel
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.text.format.DateFormat
+import androidx.compose.ui.platform.LocalContext
 import java.util.Calendar
 
 fun actionIcon(action: ActionType): ImageVector = when (action) {
@@ -62,6 +79,7 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.LAUNCH_APP -> Icons.Default.Apps
     ActionType.OPEN_URL -> Icons.AutoMirrored.Filled.OpenInNew
     ActionType.CREATE_ALARM -> Icons.Default.Alarm
+    ActionType.CREATE_CALENDAR_EVENT -> Icons.Default.Event
     ActionType.START_TIMER -> Icons.Default.HourglassEmpty
     ActionType.HTTP_WEBHOOK -> Icons.Default.Http
     ActionType.SPEAK_TEXT -> Icons.Default.RecordVoiceOver
@@ -148,6 +166,26 @@ fun ActionCardItem(
     onChooseAlarmTime: () -> Unit = {},
     onAlarmMessageChange: (String) -> Unit = {},
     onAlarmDaysChange: (List<Int>) -> Unit = {},
+    // Calendar event
+    calendarSelection: CalendarSelectionState,
+    calendarAccountName: String = "",
+    calendarAccountType: String = "",
+    calendarName: String = "",
+    onCalendarSelect: (CalendarChoice) -> Unit = {},
+    calendarTitle: String = "",
+    calendarDescription: String = "",
+    calendarLocation: String = "",
+    calendarStartMillis: Long = 0L,
+    calendarEndMillis: Long = 0L,
+    calendarRepeat: String = "NONE",
+    calendarReminderMinutes: Int = -1,
+    onCalendarTitleChange: (String) -> Unit = {},
+    onCalendarDescriptionChange: (String) -> Unit = {},
+    onCalendarLocationChange: (String) -> Unit = {},
+    onCalendarStartChange: (Long) -> Unit = {},
+    onCalendarEndChange: (Long) -> Unit = {},
+    onCalendarRepeatChange: (String) -> Unit = {},
+    onCalendarReminderMinutesChange: (Int) -> Unit = {},
     // Timer
     timerDurationSeconds: Int = 300,
     timerMessage: String = "",
@@ -620,6 +658,29 @@ fun ActionCardItem(
                         singleLine = true,
                     )
                 }
+                ActionType.CREATE_CALENDAR_EVENT -> {
+                    Spacer(Modifier.height(8.dp))
+                    CalendarSelectionEditor(calendarSelection, calendarAccountName, calendarAccountType, calendarName, onCalendarSelect)
+                    Column(Modifier.padding(top = 10.dp)) {
+                        TemplateTextField(value = calendarTitle, onValueChange = onCalendarTitleChange, triggers = triggerEvents, modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.calendar_title)) }, shape = RoundedCornerShape(12.dp), singleLine = true)
+                        Spacer(Modifier.height(6.dp))
+                        TemplateTextField(value = calendarDescription, onValueChange = onCalendarDescriptionChange, triggers = triggerEvents, modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.calendar_description)) }, shape = RoundedCornerShape(12.dp))
+                        Spacer(Modifier.height(6.dp))
+                        TemplateTextField(value = calendarLocation, onValueChange = onCalendarLocationChange, triggers = triggerEvents, modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.calendar_location)) }, shape = RoundedCornerShape(12.dp), singleLine = true)
+                    }
+                    CalendarDateTimeField(R.string.calendar_start, calendarStartMillis, System.currentTimeMillis(), R.string.calendar_start_default, onCalendarStartChange)
+                    CalendarDateTimeField(R.string.calendar_end, calendarEndMillis, (if (calendarStartMillis == 0L) System.currentTimeMillis() else calendarStartMillis) + 3_600_000L, R.string.calendar_end_default, onCalendarEndChange)
+                    if (!com.flowpilot.app.actions.CalendarExecutor.validEditorTimes(calendarStartMillis, calendarEndMillis)) {
+                        Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Top) {
+                            Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 1.dp).size(14.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.calendar_invalid_range), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        }
+                    }
+                    CalendarRepeatSelector(calendarRepeat, onCalendarRepeatChange)
+                    CalendarReminderSelector(calendarReminderMinutes, onCalendarReminderMinutesChange)
+                    Text(stringResource(R.string.calendar_save_explanation), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
+                }
                 ActionType.CREATE_ALARM -> {
                     Spacer(Modifier.height(8.dp))
                     OutlinedCard(
@@ -952,6 +1013,276 @@ fun ActionCardItem(
 }
 
 @Composable
+private fun CalendarRepeatSelector(selected: String, onSelect: (String) -> Unit) {
+    Text(
+        stringResource(R.string.calendar_repeat),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 16.dp),
+    )
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .padding(top = 6.dp)
+            .selectableGroup(),
+    ) {
+        listOf(
+            "NONE" to R.string.calendar_repeat_none,
+            "DAILY" to R.string.calendar_repeat_daily,
+            "WEEKLY" to R.string.calendar_repeat_weekly,
+            "MONTHLY" to R.string.calendar_repeat_monthly,
+            "YEARLY" to R.string.calendar_repeat_yearly,
+        ).forEach { (value, label) ->
+            FilterChip(
+                selected = selected == value,
+                onClick = { onSelect(value) },
+                label = { Text(stringResource(label)) },
+            )
+        }
+    }
+    AnimatedVisibility(
+        visible = selected != "NONE",
+        enter = expandVertically(
+            animationSpec = tween(durationMillis = 220, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
+        ) + fadeIn(animationSpec = tween(140)),
+        exit = shrinkVertically(
+            animationSpec = tween(durationMillis = 180, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
+        ) + fadeOut(animationSpec = tween(100)),
+    ) {
+        Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Top) {
+            Icon(
+                Icons.Default.Autorenew,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 1.dp).size(14.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                stringResource(R.string.calendar_repeat_warning),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+private const val REMINDER_MAX_MINUTES = 40_320
+private const val REMINDER_MINUTE = 1
+private const val REMINDER_HOUR = 60
+private const val REMINDER_DAY = 1_440
+private const val REMINDER_WEEK = 10_080
+
+/** Picks the largest whole unit so an existing custom value reopens in a readable form. */
+private fun reminderAmountFor(minutes: Int): Pair<Int, Int> = when {
+    minutes > 0 && minutes % REMINDER_WEEK == 0 -> (minutes / REMINDER_WEEK) to REMINDER_WEEK
+    minutes > 0 && minutes % REMINDER_DAY == 0 -> (minutes / REMINDER_DAY) to REMINDER_DAY
+    minutes > 0 && minutes % REMINDER_HOUR == 0 -> (minutes / REMINDER_HOUR) to REMINDER_HOUR
+    else -> minutes.coerceAtLeast(1) to REMINDER_MINUTE
+}
+
+@Composable
+private fun reminderSummary(minutes: Int): String = when {
+    minutes <= 0 -> stringResource(R.string.calendar_reminder_at_start)
+    minutes % REMINDER_WEEK == 0 -> stringResource(R.string.calendar_reminder_weeks, minutes / REMINDER_WEEK)
+    minutes % REMINDER_DAY == 0 -> stringResource(R.string.calendar_reminder_days, minutes / REMINDER_DAY)
+    minutes % REMINDER_HOUR == 0 -> stringResource(R.string.calendar_reminder_hours, minutes / REMINDER_HOUR)
+    else -> stringResource(R.string.calendar_reminder_minutes, minutes)
+}
+
+@Composable
+private fun CalendarReminderSelector(selectedMinutes: Int, onSelect: (Int) -> Unit) {
+    val options = listOf(
+        -1 to stringResource(R.string.calendar_reminder_none),
+        0 to stringResource(R.string.calendar_reminder_at_start),
+        5 to stringResource(R.string.calendar_reminder_minutes, 5),
+        10 to stringResource(R.string.calendar_reminder_minutes, 10),
+        15 to stringResource(R.string.calendar_reminder_minutes, 15),
+        30 to stringResource(R.string.calendar_reminder_minutes, 30),
+        60 to stringResource(R.string.calendar_reminder_hour),
+        1440 to stringResource(R.string.calendar_reminder_day),
+        10080 to stringResource(R.string.calendar_reminder_week),
+    )
+    val presetSummary = options.firstOrNull { it.first == selectedMinutes }?.second
+    val summary = presetSummary ?: if (selectedMinutes >= 0) {
+        reminderSummary(selectedMinutes)
+    } else {
+        stringResource(R.string.calendar_reminder_none)
+    }
+    val isCustom = selectedMinutes >= 0 && presetSummary == null
+    val reminderLabel = stringResource(R.string.calendar_reminder)
+    val selectionDescription = stringResource(R.string.calendar_reminder_selected, reminderLabel, summary)
+    val iconTint by animateColorAsState(
+        targetValue = if (selectedMinutes >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(160),
+        label = "calendarReminderIcon",
+    )
+    val summaryColor by animateColorAsState(
+        targetValue = if (selectedMinutes >= 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(160),
+        label = "calendarReminderSummary",
+    )
+    var expanded by remember { mutableStateOf(false) }
+    var showCustom by remember { mutableStateOf(false) }
+    Text(
+        reminderLabel,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 16.dp),
+    )
+    Box(Modifier.padding(top = 6.dp)) {
+        OutlinedCard(
+            onClick = { expanded = !expanded },
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics(mergeDescendants = true) {
+                    contentDescription = selectionDescription
+                },
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Notifications,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = summaryColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { (minutes, text) ->
+                DropdownMenuItem(
+                    text = { Text(text) },
+                    onClick = { expanded = false; onSelect(minutes) },
+                    trailingIcon = if (selectedMinutes == minutes) {
+                        { Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                    } else null,
+                )
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.calendar_reminder_custom)) },
+                onClick = {
+                    expanded = false
+                    showCustom = true
+                },
+                trailingIcon = if (isCustom) {
+                    { Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                } else null,
+            )
+        }
+    }
+    if (showCustom) {
+        CustomReminderDialog(
+            initialMinutes = selectedMinutes,
+            onDismiss = { showCustom = false },
+            onConfirm = { minutes ->
+                onSelect(minutes)
+                showCustom = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun CustomReminderDialog(
+    initialMinutes: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit,
+) {
+    val initial = remember(initialMinutes) {
+        if (initialMinutes > 0) reminderAmountFor(initialMinutes) else 1 to REMINDER_MINUTE
+    }
+    var amountText by remember(initialMinutes) { mutableStateOf(initial.first.toString()) }
+    var unit by remember(initialMinutes) { mutableIntStateOf(initial.second) }
+    val maxAmount = REMINDER_MAX_MINUTES / unit
+    val total = amountText.toIntOrNull()?.takeIf { it in 1..maxAmount }?.times(unit)
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.calendar_reminder_custom_title)) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = it.filter(Char::isDigit).take(5) },
+                    label = { Text(stringResource(R.string.calendar_reminder_amount)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { if (total != null) onConfirm(total) }),
+                    singleLine = true,
+                    isError = total == null,
+                    supportingText = {
+                        Text(
+                            if (total != null) reminderSummary(total)
+                            else stringResource(R.string.calendar_reminder_invalid)
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                )
+                Spacer(Modifier.height(4.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.selectableGroup(),
+                ) {
+                    listOf(
+                        REMINDER_MINUTE to R.string.calendar_unit_minutes,
+                        REMINDER_HOUR to R.string.calendar_unit_hours,
+                        REMINDER_DAY to R.string.calendar_unit_days,
+                        REMINDER_WEEK to R.string.calendar_unit_weeks,
+                    ).forEach { (value, label) ->
+                        FilterChip(
+                            selected = unit == value,
+                            onClick = { unit = value },
+                            label = { Text(stringResource(label)) },
+                        )
+                    }
+                }
+                Text(
+                    stringResource(R.string.calendar_reminder_limit),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = total != null, onClick = { if (total != null) onConfirm(total) }) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
 private fun AlarmDayToggle(
     label: String,
     selected: Boolean,
@@ -982,5 +1313,59 @@ private fun AlarmDayToggle(
             color = content,
             maxLines = 1,
         )
+    }
+}
+
+@Composable
+private fun CalendarDateTimeField(label: Int, value: Long, defaultValue: Long, defaultLabel: Int, onChange: (Long) -> Unit) {
+    val context = LocalContext.current
+    val display = if (value == 0L) stringResource(defaultLabel) else {
+        DateFormat.getDateFormat(context).format(java.util.Date(value)) + " " + DateFormat.getTimeFormat(context).format(java.util.Date(value))
+    }
+    Spacer(Modifier.height(8.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedCard(onClick = {
+            val selected = Calendar.getInstance().apply { timeInMillis = if (value == 0L) defaultValue else value }
+            DatePickerDialog(context, { _, year, month, day ->
+                selected.set(year, month, day)
+                TimePickerDialog(context, { _, hour, minute ->
+                    selected.set(Calendar.HOUR_OF_DAY, hour)
+                    selected.set(Calendar.MINUTE, minute)
+                    selected.set(Calendar.SECOND, 0)
+                    selected.set(Calendar.MILLISECOND, 0)
+                    onChange(selected.timeInMillis)
+                }, selected.get(Calendar.HOUR_OF_DAY), selected.get(Calendar.MINUTE), DateFormat.is24HourFormat(context)).show()
+            }, selected.get(Calendar.YEAR), selected.get(Calendar.MONTH), selected.get(Calendar.DAY_OF_MONTH)).show()
+        }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
+            Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Event,
+                    contentDescription = null,
+                    tint = if (value == 0L) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        stringResource(label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        display,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = 1.dp),
+                    )
+                }
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (value != 0L) {
+            TextButton(
+                onClick = { onChange(0L) },
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+            ) { Text(stringResource(R.string.calendar_reset), style = MaterialTheme.typography.labelMedium) }
+        }
     }
 }

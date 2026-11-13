@@ -85,6 +85,7 @@ import com.flowpilot.app.engine.NfcTagUtils
 import com.flowpilot.app.analysis.AutomationConflict
 import com.flowpilot.app.analysis.AutomationConflictAnalyzer
 import com.flowpilot.app.ui.components.ConflictWarningDialog
+import com.flowpilot.app.ui.components.rememberCalendarSelectionState
 import com.flowpilot.app.shortcut.RuleShortcutManager
 import kotlinx.coroutines.launch
 
@@ -109,6 +110,7 @@ fun DetailScreen(
     BackHandler(onBack = back)
     val context = LocalContext.current
     val musicAppAvailable = rememberMusicAppAvailability()
+    val calendarSelection = rememberCalendarSelectionState()
     val existingRules by vm.automations.collectAsState()
     var pendingSave by remember(initialRule.id) { mutableStateOf<Automation?>(null) }
     var pendingConflicts by remember(initialRule.id) { mutableStateOf<List<AutomationConflict>>(emptyList()) }
@@ -152,6 +154,16 @@ fun DetailScreen(
     var alarmMessage by remember(initialRule.id) { mutableStateOf(initialRule.alarmMessage) }
     var alarmDays by remember(initialRule.id) { mutableStateOf(initialRule.alarmDays) }
     var showAlarmTimePicker by remember { mutableStateOf(false) }
+    var calendarAccountName by remember(initialRule.id) { mutableStateOf(initialRule.calendarAccountName) }
+    var calendarAccountType by remember(initialRule.id) { mutableStateOf(initialRule.calendarAccountType) }
+    var calendarName by remember(initialRule.id) { mutableStateOf(initialRule.calendarName) }
+    var calendarTitle by remember(initialRule.id) { mutableStateOf(initialRule.calendarTitle) }
+    var calendarDescription by remember(initialRule.id) { mutableStateOf(initialRule.calendarDescription) }
+    var calendarLocation by remember(initialRule.id) { mutableStateOf(initialRule.calendarLocation) }
+    var calendarStartMillis by remember(initialRule.id) { mutableLongStateOf(initialRule.calendarStartMillis) }
+    var calendarEndMillis by remember(initialRule.id) { mutableLongStateOf(initialRule.calendarEndMillis) }
+    var calendarRepeat by remember(initialRule.id) { mutableStateOf(initialRule.calendarRepeat) }
+    var calendarReminderMinutes by remember(initialRule.id) { mutableIntStateOf(initialRule.calendarReminderMinutes) }
     var timerDurationSeconds by remember(initialRule.id) { mutableIntStateOf(initialRule.timerDurationSeconds) }
     var timerMessage by remember(initialRule.id) { mutableStateOf(initialRule.timerMessage) }
     var cooldownMinutes by remember(initialRule.id) { mutableIntStateOf(initialRule.cooldownMinutes) }
@@ -276,6 +288,16 @@ fun DetailScreen(
         alarmMinute = alarmMinute,
         alarmMessage = alarmMessage,
         alarmDays = alarmDays,
+        calendarAccountName = calendarAccountName,
+        calendarAccountType = calendarAccountType,
+        calendarName = calendarName,
+        calendarTitle = calendarTitle,
+        calendarDescription = calendarDescription,
+        calendarLocation = calendarLocation,
+        calendarStartMillis = calendarStartMillis,
+        calendarEndMillis = calendarEndMillis,
+        calendarRepeat = calendarRepeat,
+        calendarReminderMinutes = calendarReminderMinutes,
         timerDurationSeconds = timerDurationSeconds,
         timerMessage = timerMessage,
         cooldownMinutes = cooldownMinutes,
@@ -385,7 +407,7 @@ fun DetailScreen(
             text = {
                 val invalidMusicLink = ActionType.MUSIC_PLAY_LINK in actions && !MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)
                 val musicWarning = if (actions.any { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK }) stringResource(R.string.music_template_manual_warning) else ""
-                Text(if (actions.any { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } && !musicAppAvailable(musicAppPackage)) stringResource(R.string.music_app_unavailable) else if (invalidMusicLink) stringResource(R.string.music_link_invalid) else "$runConfirmDesc$warning$musicWarning")
+                Text(if (ActionType.CREATE_CALENDAR_EVENT in actions && !calendarSelection.valid(calendarAccountName, calendarAccountType, calendarName)) stringResource(R.string.calendar_selection_required) else if (ActionType.CREATE_CALENDAR_EVENT in actions && !com.flowpilot.app.actions.CalendarExecutor.validEditorTimes(calendarStartMillis, calendarEndMillis)) stringResource(R.string.calendar_invalid_range) else if (actions.any { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } && !musicAppAvailable(musicAppPackage)) stringResource(R.string.music_app_unavailable) else if (invalidMusicLink) stringResource(R.string.music_link_invalid) else "$runConfirmDesc$warning$musicWarning")
             },
             confirmButton = {
                 TextButton({
@@ -401,7 +423,7 @@ fun DetailScreen(
                             snackbarHostState.showSnackbar(msg)
                         }
                     }
-                }, enabled = (actions.none { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } || musicAppAvailable(musicAppPackage)) && (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink))) {
+                }, enabled = (ActionType.CREATE_CALENDAR_EVENT !in actions || (calendarSelection.valid(calendarAccountName, calendarAccountType, calendarName) && com.flowpilot.app.actions.CalendarExecutor.validEditorTimes(calendarStartMillis, calendarEndMillis))) && (actions.none { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } || musicAppAvailable(musicAppPackage)) && (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink))) {
                     Text(stringResource(R.string.btn_run_now))
                 }
             },
@@ -696,6 +718,25 @@ fun DetailScreen(
                             onChooseAlarmTime = { showAlarmTimePicker = true },
                             onAlarmMessageChange = { alarmMessage = it },
                             onAlarmDaysChange = { alarmDays = it },
+                            calendarSelection = calendarSelection,
+                            calendarAccountName = calendarAccountName,
+                            calendarAccountType = calendarAccountType,
+                            calendarName = calendarName,
+                            onCalendarSelect = { calendarAccountName = it.accountName; calendarAccountType = it.accountType; calendarName = it.name },
+                            calendarTitle = calendarTitle,
+                            calendarDescription = calendarDescription,
+                            calendarLocation = calendarLocation,
+                            calendarStartMillis = calendarStartMillis,
+                            calendarEndMillis = calendarEndMillis,
+                            calendarRepeat = calendarRepeat,
+                            calendarReminderMinutes = calendarReminderMinutes,
+                            onCalendarTitleChange = { calendarTitle = it },
+                            onCalendarDescriptionChange = { calendarDescription = it },
+                            onCalendarLocationChange = { calendarLocation = it },
+                            onCalendarStartChange = { calendarStartMillis = it },
+                            onCalendarEndChange = { calendarEndMillis = it },
+                            onCalendarRepeatChange = { calendarRepeat = it },
+                            onCalendarReminderMinutesChange = { calendarReminderMinutes = it },
                             // Timer
                             timerDurationSeconds = timerDurationSeconds,
                             timerMessage = timerMessage,
@@ -930,6 +971,7 @@ fun DetailScreen(
                     shape = RoundedCornerShape(16.dp),
                     enabled =
                         triggerItems.all { it.isValidTriggerDefinition() } &&
+                            (ActionType.CREATE_CALENDAR_EVENT !in actions || (calendarSelection.valid(calendarAccountName, calendarAccountType, calendarName) && com.flowpilot.app.actions.CalendarExecutor.validEditorTimes(calendarStartMillis, calendarEndMillis))) &&
                             (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
                             (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
                             (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&

@@ -265,6 +265,11 @@ and fails with clear messages if permission is missing, state mismatches, or sys
 ClockExecutor dispatches `AlarmClock.ACTION_SET_ALARM` with hour, minute, optional rendered message and repeat days, plus `EXTRA_SKIP_UI = true`; an empty day list requests a one-time alarm.
 It sends `ACTION_SET_TIMER` with length (1s–24h), optional message and `EXTRA_SKIP_UI = true`. Both use `FLAG_ACTIVITY_NEW_TASK` and resolve the handler before starting. Success means the request was dispatched, not that the Clock app scheduled it or skipped its UI.
 
+Calendar event creation requires calendar read/write permissions and an explicit writable calendar selection. It inserts the configured start/end and rendered title, description and location into the calendar provider; provider synchronization is separate from local insertion.
+Optional daily, weekly, monthly or yearly recurrence creates a series without an end date; preset or custom reminders up to four weeks before are provided through the calendar provider. Each action execution creates a new event or series, so repeated triggers can produce duplicates; actual reminder delivery depends on the calendar app and device settings.
+Unencrypted exports omit calendar account and calendar identifiers; imported rules without a selection require the user to select a calendar again. Encrypted backups retain the selection, which must still resolve to one writable calendar on the destination device.
+The editor reports invalid or equal explicit endpoints and blocks save and manual execution. A dynamic start with an explicit end must be future at editing time; execution validates it again because time may have passed.
+
 NotificationExecutor posts title/body configured on the rule to `automation_alerts_v2` at high importance.
 Android preserves channel importance after creation, so channel IDs are versioned when alert behavior changes.
 Android 13+ notification permission is required; OEM notification settings can still suppress banners.

@@ -83,6 +83,54 @@ class BackupManagerTest {
     }
 
     @Test
+    fun calendarFieldsRoundTripAndLegacyDefaults() {
+        val rule = createSampleRule("calendar", "Calendar").copy(action = ActionType.CREATE_CALENDAR_EVENT,
+            actions = listOf(ActionType.CREATE_CALENDAR_EVENT), calendarTitle = "Title",
+            calendarDescription = "Description", calendarLocation = "Location",
+            calendarStartMillis = 100L, calendarEndMillis = 200L, calendarRepeat = "MONTHLY", calendarReminderMinutes = 30)
+        val restored = BackupManager.parseImport(BackupManager.exportToString(listOf(rule))).getOrThrow().single()
+        assertThat(restored.calendarTitle).isEqualTo("Title")
+        assertThat(restored.calendarDescription).isEqualTo("Description")
+        assertThat(restored.calendarLocation).isEqualTo("Location")
+        assertThat(restored.calendarStartMillis).isEqualTo(100L)
+        assertThat(restored.calendarEndMillis).isEqualTo(200L)
+        assertThat(restored.calendarRepeat).isEqualTo("MONTHLY")
+        assertThat(restored.calendarReminderMinutes).isEqualTo(30)
+        val legacy = kotlinx.serialization.json.Json { encodeDefaults = false }.encodeToString(Automation.serializer(), createSampleRule("legacy", "Legacy"))
+        val old = BackupManager.parseImport(legacy).getOrThrow().single()
+        assertThat(old.calendarTitle).isEmpty()
+        assertThat(old.calendarStartMillis).isEqualTo(0L)
+        assertThat(old.calendarEndMillis).isEqualTo(0L)
+        assertThat(old.calendarRepeat).isEqualTo("NONE")
+        assertThat(old.calendarReminderMinutes).isEqualTo(-1)
+        for (invalid in listOf(rule.copy(calendarRepeat = "weekly"), rule.copy(calendarReminderMinutes = -2), rule.copy(calendarReminderMinutes = 40_321))) {
+            assertThat(BackupManager.parseImport(BackupManager.exportToString(listOf(invalid))).isFailure).isTrue()
+        }
+    }
+
+    @Test
+    fun calendarSelectionIsRemovedFromPlainExportsButRetainedEncrypted() {
+        val rule = createSampleRule("calendar-private", "Calendar").copy(
+            action = ActionType.CREATE_CALENDAR_EVENT, actions = listOf(ActionType.CREATE_CALENDAR_EVENT),
+            calendarAccountName = "private-account", calendarAccountType = "private-type", calendarName = "private-calendar",
+        )
+        for (json in listOf(BackupManager.exportToString(listOf(rule)), BackupManager.exportSingleToString(rule))) {
+            assertThat(json).doesNotContain("private-account")
+            assertThat(json).doesNotContain("private-type")
+            assertThat(json).doesNotContain("private-calendar")
+            val restored = BackupManager.parseImport(json).getOrThrow().single()
+            assertThat(restored.calendarAccountName).isEmpty()
+            assertThat(restored.calendarAccountType).isEmpty()
+            assertThat(restored.calendarName).isEmpty()
+        }
+        val encrypted = BackupManager.exportEncryptedToString(listOf(rule), "password")
+        val restored = BackupManager.parseEncryptedImport(encrypted, "password").getOrThrow().single()
+        assertThat(restored.calendarAccountName).isEqualTo("private-account")
+        assertThat(restored.calendarAccountType).isEqualTo("private-type")
+        assertThat(restored.calendarName).isEqualTo("private-calendar")
+    }
+
+    @Test
     fun exportToString_createsValidJsonWithBackupMetadata() {
         val rules = listOf(
             createSampleRule("r1", "Low Battery Mode"),

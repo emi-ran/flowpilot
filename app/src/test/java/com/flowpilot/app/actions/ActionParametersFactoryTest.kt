@@ -71,6 +71,27 @@ class ActionParametersFactoryTest {
     }
 
     @Test
+    fun create_rendersCalendarTemplatesOnceAndPreservesTimes() {
+        val source = rule().copy(calendarTitle = "\${notification.title}", calendarDescription = "\${notification.text}",
+            calendarLocation = "\${notification.app}", calendarStartMillis = 100L, calendarEndMillis = 200L,
+            calendarAccountName = "account", calendarAccountType = "type", calendarName = "name", calendarRepeat = "WEEKLY", calendarReminderMinutes = 15)
+        val values = context().copy(values = context().values + ("notification.text" to "\${trigger}"))
+        val parameters = ActionParametersFactory.create(source, values)
+        assertThat(parameters.calendarTitle).isEqualTo("Hello")
+        assertThat(parameters.calendarDescription).isEqualTo("\${trigger}")
+        assertThat(parameters.calendarLocation).isEqualTo("Example")
+        assertThat(parameters.calendarStartMillis).isEqualTo(100L)
+        assertThat(parameters.calendarEndMillis).isEqualTo(200L)
+        assertThat(parameters.calendarRepeat).isEqualTo("WEEKLY")
+        assertThat(parameters.calendarReminderMinutes).isEqualTo(15)
+        assertThat(parameters.calendarAccountName).isEqualTo("account")
+        assertThat(parameters.calendarAccountType).isEqualTo("type")
+        assertThat(parameters.calendarName).isEqualTo("name")
+        val diagnostics = TemplateDiagnostics.forAction(ActionType.CREATE_CALENDAR_EVENT, source, values, parameters)
+        assertThat(diagnostics.map { it.field }).containsExactly(ActionTemplateField.CALENDAR_TITLE, ActionTemplateField.CALENDAR_DESCRIPTION, ActionTemplateField.CALENDAR_LOCATION).inOrder()
+    }
+
+    @Test
     fun create_rendersEverySupportedFieldOnce() {
         val parameters = ActionParametersFactory.create(rule(), context())
 

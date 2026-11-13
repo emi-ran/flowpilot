@@ -15,6 +15,7 @@ import com.flowpilot.app.actions.WebhookExecutor
 import com.flowpilot.app.data.security.SecretCipher
 import com.flowpilot.app.actions.VariableCatalog
 import com.flowpilot.app.actions.MusicLinkValidator
+import com.flowpilot.app.actions.CalendarExecutor
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -152,6 +153,12 @@ internal object ImportValidator {
             if (ActionType.PLAY_SOUND in actions) require(r.soundDurationMs in 1..60000) { "Invalid sound duration" }
             if (ActionType.CREATE_ALARM in actions) require(r.alarmHour in 0..23 && r.alarmMinute in 0..59 && r.alarmDays.all { it in 1..7 }) { "Invalid alarm" }
             if (ActionType.START_TIMER in actions) require(r.timerDurationSeconds in 1..86400) { "Invalid timer" }
+            if (ActionType.CREATE_CALENDAR_EVENT in actions) {
+                require(CalendarExecutor.validConfiguredTimes(r.calendarStartMillis, r.calendarEndMillis)) { "Invalid calendar time" }
+                require(CalendarExecutor.validOptions(r.calendarRepeat, r.calendarReminderMinutes)) { "Invalid calendar options" }
+                val selection = listOf(r.calendarAccountName, r.calendarAccountType, r.calendarName)
+                require(selection.all { it.isBlank() } || selection.all { it.isNotBlank() }) { "Invalid calendar selection" }
+            }
             if (ActionType.SET_SCREEN_BRIGHTNESS in actions) require(r.screenBrightnessPercent in 0..100) { "Invalid brightness" }
             require(r.cooldownMinutes in 0..1440) { "Invalid cooldown" }
             require(listOf(r.webhookUrl, r.webhookHeaders, r.webhookBody).none { SecretCipher.isEncrypted(it) }) { "Device-local secret references are not portable" }

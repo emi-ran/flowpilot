@@ -185,6 +185,10 @@ class CapabilityManager(private val context: Context) {
     fun hasCallPhonePermission(): Boolean =
         context.checkSelfPermission(android.Manifest.permission.CALL_PHONE) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
+    fun hasCalendarPermission(): Boolean =
+        context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
+            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
     /** Has the app been granted SEND_SMS permission to send text messages directly? */
     fun hasSendSmsPermission(): Boolean =
         context.checkSelfPermission(android.Manifest.permission.SEND_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -246,6 +250,9 @@ class CapabilityManager(private val context: Context) {
 
         CapabilityRequirement.CALL_PHONE ->
             if (hasCallPhonePermission()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
+
+        CapabilityRequirement.CALENDAR ->
+            if (hasCalendarPermission()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
 
         CapabilityRequirement.SEND_SMS ->
             if (hasSendSmsPermission()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
