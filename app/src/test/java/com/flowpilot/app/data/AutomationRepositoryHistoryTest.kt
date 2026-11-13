@@ -12,6 +12,7 @@ import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.ExecutionStatus
 import com.flowpilot.app.data.model.resolvedResultArgs
 import com.flowpilot.app.data.model.resolvedResultCode
+import com.flowpilot.app.data.model.resolvedHttpFailureStatus
 import com.flowpilot.app.actions.ActionResult
 import com.flowpilot.app.actions.ActionResultCode
 import com.flowpilot.app.actions.ActionDiagnostic
@@ -389,6 +390,30 @@ class AutomationRepositoryHistoryTest {
         assertThat(permission.resolvedResultCode()).isEqualTo(ActionResultCode.PERMISSION_REQUIRED)
         assertThat(technicalError.resolvedResultCode()).isNull()
         assertThat(technicalError.message).isEqualTo("HTTP 503 from upstream")
+    }
+
+    @Test
+    fun webhookStatus_legacyHistorySurvivesReloadWithoutExposingUntrustedMessages() = runTest {
+        repository.rawDataStore.edit { prefs ->
+            prefs[historyKey] = """[{"id":"legacy","ruleId":"rule","ruleName":"Rule","trigger":"MANUAL","timestamp":1,"status":"FAILURE","actions":[{"actionType":"HTTP_WEBHOOK","actionLabel":"Webhook","success":false,"message":"HTTP Webhook failed: status 503"}]}]"""
+        }
+        val legacy = repository.executionHistory.first().single().actions.single()
+        assertThat(legacy.resolvedHttpFailureStatus()).isEqualTo(503)
+        assertThat(ActionExecutionRecord.create(ActionType.HTTP_WEBHOOK, false, "HTTP 503 from upstream").resolvedHttpFailureStatus()).isEqualTo(503)
+        val untrusted = listOf(
+            "HTTP Webhook failed: status 503 https://example.com/?token=secret",
+            "HTTP 503 from upstream Authorization: Bearer secret",
+            "HTTP Webhook failed: status 503 +905551234567",
+            "java.io.IOException: HTTP Webhook failed: status 503 body=secret",
+            "HTTP Webhook failed: status 200",
+            "HTTP Webhook failed: status 999",
+        )
+        untrusted.forEach { message ->
+            val action = ActionExecutionRecord(ActionType.HTTP_WEBHOOK, "Webhook", false, message)
+            assertThat(action.resolvedHttpFailureStatus()).isNull()
+        }
+        assertThat(ActionExecutionRecord(ActionType.SHOW_NOTIFICATION, "Notification", false, "HTTP 503 from upstream").resolvedHttpFailureStatus()).isNull()
+        assertThat(ActionExecutionRecord(ActionType.HTTP_WEBHOOK, "Webhook", true, "HTTP 503 from upstream").resolvedHttpFailureStatus()).isNull()
     }
 
     @Test
