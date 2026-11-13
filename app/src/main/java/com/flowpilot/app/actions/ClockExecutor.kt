@@ -11,11 +11,10 @@ import com.flowpilot.app.data.model.ActionType
  * Executes Alarm and Timer actions (CREATE_ALARM, START_TIMER).
  *
  * Uses standard Android intents:
- * - AlarmClock.ACTION_SET_ALARM (EXTRA_HOUR, EXTRA_MINUTES, EXTRA_MESSAGE)
- * - AlarmClock.ACTION_SET_TIMER (EXTRA_LENGTH, EXTRA_MESSAGE, EXTRA_SKIP_UI = true)
- * Both carry FLAG_ACTIVITY_NEW_TASK.
- * Resolves intent before starting. START_TIMER requests background execution via EXTRA_SKIP_UI = true;
- * CREATE_ALARM leaves UI behavior to the system Clock app.
+ * - AlarmClock.ACTION_SET_ALARM (EXTRA_HOUR, EXTRA_MINUTES, EXTRA_MESSAGE, EXTRA_DAYS, EXTRA_SKIP_UI)
+ * - AlarmClock.ACTION_SET_TIMER (EXTRA_LENGTH, EXTRA_MESSAGE, EXTRA_SKIP_UI)
+ * Both carry FLAG_ACTIVITY_NEW_TASK and request background execution via EXTRA_SKIP_UI.
+ * The Clock app may still display UI or handle the request differently.
  * Result accurately reports that the request was dispatched to the system Clock app.
  */
 class ClockExecutor(
@@ -41,13 +40,17 @@ class ClockExecutor(
     private fun createAlarm(parameters: ActionParameters): ActionResult {
         val hour = parameters.alarmHour
         val minute = parameters.alarmMinute
-        if (hour !in 0..23 || minute !in 0..59) {
+        if (hour !in 0..23 || minute !in 0..59 || parameters.alarmDays.any { it !in 1..7 }) {
             return ActionResult(false, "Invalid alarm time", diagnostic = ActionDiagnostic(ActionDiagnosticReason.INVALID_INPUT))
         }
 
         val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
             putExtra(AlarmClock.EXTRA_HOUR, hour)
             putExtra(AlarmClock.EXTRA_MINUTES, minute)
+            putExtra(AlarmClock.EXTRA_SKIP_UI, true)
+            if (parameters.alarmDays.isNotEmpty()) {
+                putIntegerArrayListExtra(AlarmClock.EXTRA_DAYS, ArrayList(parameters.alarmDays))
+            }
             if (parameters.alarmMessage.isNotBlank()) {
                 putExtra(AlarmClock.EXTRA_MESSAGE, parameters.alarmMessage.trim())
             }

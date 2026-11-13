@@ -67,6 +67,22 @@ class BackupManagerTest {
     }
 
     @Test
+    fun alarmDays_roundTripAndLegacyImport() {
+        val rule = createSampleRule("alarm", "Alarm").copy(
+            action = ActionType.CREATE_ALARM,
+            actions = listOf(ActionType.CREATE_ALARM),
+            alarmDays = listOf(1, 2, 7),
+        )
+        val restored = BackupManager.parseImport(BackupManager.exportToString(listOf(rule))).getOrThrow().single()
+        assertThat(restored.alarmDays).containsExactly(1, 2, 7).inOrder()
+
+        val legacy = kotlinx.serialization.json.Json { encodeDefaults = false }.encodeToString(Automation.serializer(), rule.copy(alarmDays = emptyList()))
+        assertThat(legacy).doesNotContain("alarmDays")
+        assertThat(BackupManager.parseImport(legacy).getOrThrow().single().alarmDays).isEmpty()
+        assertThat(BackupManager.parseImport(BackupManager.exportToString(listOf(rule.copy(alarmDays = listOf(8))))).isFailure).isTrue()
+    }
+
+    @Test
     fun exportToString_createsValidJsonWithBackupMetadata() {
         val rules = listOf(
             createSampleRule("r1", "Low Battery Mode"),

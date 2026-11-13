@@ -65,6 +65,12 @@ class ActionParametersFactoryTest {
     )
 
     @Test
+    fun create_preservesAlarmDays() {
+        val parameters = ActionParametersFactory.create(rule().copy(alarmDays = listOf(1, 4, 7)), context())
+        assertThat(parameters.alarmDays).containsExactly(1, 4, 7).inOrder()
+    }
+
+    @Test
     fun create_rendersEverySupportedFieldOnce() {
         val parameters = ActionParametersFactory.create(rule(), context())
 

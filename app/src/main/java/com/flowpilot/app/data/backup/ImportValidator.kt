@@ -150,7 +150,7 @@ internal object ImportValidator {
             if (ActionType.VIBRATE in actions) require(r.vibrationDurationMs in 1..60000 && r.vibrationAmplitude in 1..255) { "Invalid vibration" }
             if (ActionType.SET_MEDIA_VOLUME in actions) require(r.mediaVolumePercent in 0..100) { "Invalid volume" }
             if (ActionType.PLAY_SOUND in actions) require(r.soundDurationMs in 1..60000) { "Invalid sound duration" }
-            if (ActionType.CREATE_ALARM in actions) require(r.alarmHour in 0..23 && r.alarmMinute in 0..59) { "Invalid alarm" }
+            if (ActionType.CREATE_ALARM in actions) require(r.alarmHour in 0..23 && r.alarmMinute in 0..59 && r.alarmDays.all { it in 1..7 }) { "Invalid alarm" }
             if (ActionType.START_TIMER in actions) require(r.timerDurationSeconds in 1..86400) { "Invalid timer" }
             if (ActionType.SET_SCREEN_BRIGHTNESS in actions) require(r.screenBrightnessPercent in 0..100) { "Invalid brightness" }
             require(r.cooldownMinutes in 0..1440) { "Invalid cooldown" }
