@@ -241,7 +241,7 @@ FlowPilot, yetkili işlemleri (Mobil Veri, Uçak Modu, GPS, Koyu Tema, Uygulama 
      adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
      ```
 3. **FlowPilot'a İzin Verin:** FlowPilot'ı açın ve ekranda beliren Shizuku yetkilendirmesini onaylayın.
-4. Tüm yetkili işlemler hemen aktif hale gelecek ve sorunsuz çalışacaktır!
+4. Yetkilendirilen işlemler, cihaz ve sistem desteğine bağlı olarak kullanılabilir; yetki başarılı çalışmayı garanti etmez.
 
 ---
 
@@ -253,7 +253,7 @@ FlowPilot kullanıcı gizliliğine tavizsiz bir bağlılıkla tasarlanmıştır:
 - 🔄 **İsteğe Bağlı Güncelleme Kontrolü:** Release sürümü herkese açık GitHub Releases API'sini varsayılan olarak otomatik biçimde günde en fazla bir kez kontrol eder; hesap veya cihaz kimliği göndermez. Otomatik kontrol Ayarlar'dan kapatılabilir, manuel kontrol kullanılabilir. Debug sürümü kontrol yapmaz.
 - 📵 **Bulut Eşitlemesi Yok:** FlowPilot kuralları, günlükleri veya sırları otomatik olarak bir bulut hesabıyla eşitlemez. Kullanıcının yapılandırdığı eylemler seçilen verileri dış alıcılara gönderebilir.
 - 🛡️ **Android Keystore Koruması:** Webhook şifreleri ve özel başlıklar AES-256-GCM ile Android Keystore içinde, cihaz desteklediğinde donanım destekli olarak korunur.
-- 🙈 **Kişisel Veri ve Tanılama Gizliliği:** Telefon numaraları, URL'ler, webhook anahtarları, bildirim metinleri ve gizli başlıklar arayüzde, çalışma geçmişinde ve günlüklerde maskelenir veya hiç saklanmaz. Kalıcı tanı kayıtları yalnızca içerik taşımayan durum kodlarını ve sınırlı sayısal meta verileri tutar.
+- 🙈 **Günlük ve Tanılama Gizliliği:** Çalışma geçmişi ve günlüklerde hassas içerik maskelenir veya dışlanır; kalıcı tanı kayıtları içerik taşımayan durum kodları ve sınırlı sayısal meta veriler tutar. Telefon numaraları ve webhook alanları dahil yapılandırılmış değerler düzenleyicide görünür olabilir.
 
 ### Şeffaf İzin Açıklamaları
 FlowPilot hassas izinleri yalnızca açık otomasyon özelliklerini yerine getirebilmek için talep eder:

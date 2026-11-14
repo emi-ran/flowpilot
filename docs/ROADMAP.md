@@ -129,8 +129,7 @@ Do not bundle unrelated features. One feature family at a time.
     - Validated `http` / `https` URLs through Android `ACTION_VIEW`
     - Verified on Xiaomi 15T Pro / HyperOS 3
 8. **Create alarm or timer** (complete; Xiaomi device smoke test passed)
-   - Alarm opens system Clock UI for confirmation.
-   - Timer starts its countdown without opening Clock UI (`AlarmClock.EXTRA_SKIP_UI = true`).
+   - Alarm and timer intents request `AlarmClock.EXTRA_SKIP_UI = true`; the Clock app controls whether its UI appears and whether the request is completed.
 9. **Set media volume** (complete; Xiaomi device smoke test passed)
     - Configurable 0-100% music-stream level
     - Uses `AudioManager.setStreamVolume` and verifies resulting level
@@ -142,7 +141,7 @@ Do not bundle unrelated features. One feature family at a time.
 
 11. **Manual test run** (complete; updated for in-progress action testing in both Create and Edit screens)
     - Available in both Create automation and Edit automation screens (TopAppBar Play icon and "Test" button beside Add action). Tests current on-screen form edits without saving first, with confirmation, trigger/condition bypass, unchanged saved rule state, direct-call warning, and secret redaction.
-12. **Per-action delay** (implementation complete; Xiaomi smoke test pending)
+12. **Per-action delay** (complete; Xiaomi timing, ordering and stop-cancellation smoke tests passed)
     - Optional 0-300 second delay before each action
     - Actions remain sequential; engine stop cancels delay and records cancellation
 13. **Per-rule cooldown** (complete; Xiaomi smoke test passed)
@@ -187,10 +186,10 @@ Each must expose its required permission or Shizuku state. Do not show success u
     - `Settings.System.ACCELEROMETER_ROTATION` write (1 = on, 0 = off / portrait lock)
     - Requires user-grantable `android.permission.WRITE_SETTINGS` special access (`Settings.System.canWrite(context)`)
 9. **Create alarm or timer** (complete; Xiaomi device smoke test passed)
-    - `AlarmClock.ACTION_SET_ALARM` opens Clock UI; `AlarmClock.ACTION_SET_TIMER` starts in background with `AlarmClock.EXTRA_SKIP_UI = true`
+    - `AlarmClock.ACTION_SET_ALARM` and `AlarmClock.ACTION_SET_TIMER` request `AlarmClock.EXTRA_SKIP_UI = true`; the Clock app controls UI and completion.
 10. **Dark theme on/off** (complete; Xiaomi device smoke test passed)
     - Shizuku `cmd uimode night yes|no`; executor verifies `Settings.Secure.ui_night_mode` (2 = dark, 1 = light).
-11. **Sound profile (Normal/Vibrate/Silent)** (implementation complete; device smoke test pending)
+11. **Sound profile (Normal/Vibrate/Silent)** (basic Xiaomi smoke test passed; permission-denial path pending)
     - `AudioManager.ringerMode` (`RINGER_MODE_NORMAL` / `RINGER_MODE_VIBRATE` / `RINGER_MODE_SILENT`)
     - Requires user-grantable `android.permission.ACCESS_NOTIFICATION_POLICY` special access (`NotificationManager.isNotificationPolicyAccessGranted`)
 12. **Flashlight (Torch) on/off/toggle** (implementation complete; unit tests passed; device smoke test pending)

@@ -28,7 +28,7 @@ Use `{}` for each of these actions (no parameters):
 | `PLAY_SOUND` | none, except `uri` for `CUSTOM` | `preset`: `NOTIFICATION` (default), `ALARM`, `RINGTONE`, `CUSTOM`; integer `durationMs` 1000–60000 (3000); `uri` only with `CUSTOM`, a `content` or `android.resource` URI with nonblank authority |
 | `SET_MEDIA_VOLUME`, `SET_SCREEN_BRIGHTNESS` | integer `percent` 0–100 | none |
 | `MEDIA_PLAY`, `MEDIA_PAUSE`, `MEDIA_TOGGLE`, `MEDIA_NEXT`, `MEDIA_PREVIOUS` | none | string `targetPackage` |
-| `SPEAK_TEXT` | nonblank `text`, at most 2000 UTF-16 units | string `voiceName`; finite JSON number `speechRate` 0.5–2.0 (1.0) |
+| `SPEAK_TEXT` | nonblank `text`, at most 2000 UTF-16 units | string `voiceName`; JSON number `speechRate`, converted to finite Float in 0.5–2.0 (1.0) |
 | `CREATE_ALARM` | integer `hour` 0–23, integer `minute` 0–59 | `days`: array of up to seven distinct integers 1–7 (default `[]`); string `message` |
 | `START_TIMER` | integer `durationSeconds` 1–86400 | string `message` |
 | `LAUNCH_APP`, `FORCE_STOP_APP` | nonblank string `package` | none |
@@ -48,7 +48,7 @@ Music packages: `com.spotify.music` and `com.google.android.apps.youtube.music`.
 
 Calendar timestamps are Unix epoch milliseconds: `startMillis` must be positive and `endMillis` later. Convert the desired local time and zone to instants; the event uses the device default time zone. `repeat` is `NONE`, `DAILY`, `WEEKLY`, `MONTHLY`, or `YEARLY`; `reminderMinutes` is `-1` or 0–40320. Obtain the actual writable calendar's technical `accountName`, `accountType` and provider `NAME` through an authorized method; do not invent them or assume a fallback. The picker displays calendar labels, which may differ from provider `NAME`, and does not reliably expose all three values. If they cannot be obtained, do not construct the command. Repeated execution can create multiple events.
 
-Webhook `method` is trimmed and case-normalized to `GET`, `POST`, `PUT`, `PATCH`, `DELETE` or `HEAD`; only POST, PUT and PATCH permit a nonempty body. Headers are newline-separated `Name: Value` strings, with token-character names, no controls, and no connection-managed headers such as `Host` or `Content-Length`; blank lines and lines beginning with `#` are ignored. Never put real credentials in examples or disclose private URLs, headers, bodies, phone numbers or notification content. Sending a webhook can disclose data to its destination. Calling and messaging can incur charges or expose information; obtain the user's permission for paid operations, and distinguish opening a dialer or draft from actually placing a call or sending a message.
+Webhook `method` is trimmed and case-normalized to `GET`, `POST`, `PUT`, `PATCH`, `DELETE` or `HEAD`; only POST, PUT and PATCH permit a nonempty body. Headers are newline-separated `Name: Value` strings; after trimming, names use token characters and names and values contain no controls or connection-managed headers such as `Host` or `Content-Length`. Blank lines and lines beginning with `#` are ignored. Never put real credentials in examples or disclose private URLs, headers, bodies, phone numbers or notification content. Sending a webhook can disclose data to its destination. Calling and messaging can incur charges or expose information; obtain the user's permission for paid operations, and distinguish opening a dialer or draft from actually placing a call or sending a message.
 
 ## Configure and reply safely
 
