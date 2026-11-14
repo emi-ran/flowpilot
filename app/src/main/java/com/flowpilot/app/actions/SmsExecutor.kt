@@ -84,7 +84,7 @@ class SmsExecutor(
         return try {
             sendTextMessage(recipient, message)
             val masked = PhoneNumberUtils.mask(recipient)
-            Log.i(TAG, "Direct SMS sent successfully to $masked")
+            Log.i(TAG, "Direct SMS submitted successfully")
             ActionResult(true, "SMS sent to $masked", ActionResultCode.SMS_SENT, listOf(recipient))
         } catch (e: Exception) {
             Log.w(TAG, "Failed to send SMS (${e.javaClass.simpleName})")

@@ -40,6 +40,7 @@ class SoundProfileExecutorTest {
         val result = executor.execute(ActionType.SOUND_PROFILE_NORMAL)
 
         assertThat(result.success).isFalse()
+        assertThat(result.resultCode).isEqualTo(ActionResultCode.PERMISSION_REQUIRED)
         assertThat(result.message).contains("Notification Policy Access")
         assertThat(writeAttempted).isFalse()
     }

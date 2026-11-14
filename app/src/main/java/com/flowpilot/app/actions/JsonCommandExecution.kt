@@ -31,7 +31,7 @@ internal object JsonCommandExecution {
             val result = dispatch(parsed.action, parsed.parameters)
             val status = when {
                 result.success -> "success"
-                result.resultCode == ActionResultCode.PERMISSION_REQUIRED -> "permission_required"
+                result.resultCode == ActionResultCode.PERMISSION_REQUIRED || result.diagnostic?.reason in permissionDiagnostics -> "permission_required"
                 else -> "execution_failed"
             }
             val message = when {
@@ -43,4 +43,14 @@ internal object JsonCommandExecution {
             CommandOutcome(result.success, status, message, parsed.id.orEmpty())
         }
     }
+
+    private val permissionDiagnostics = setOf(
+        ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED,
+        ActionDiagnosticReason.BLUETOOTH_PERMISSION_REQUIRED,
+        ActionDiagnosticReason.SETTINGS_PERMISSION_REQUIRED,
+        ActionDiagnosticReason.DND_PERMISSION_REQUIRED,
+        ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED,
+        ActionDiagnosticReason.PHONE_PERMISSION_REQUIRED,
+        ActionDiagnosticReason.SMS_PERMISSION_REQUIRED,
+    )
 }

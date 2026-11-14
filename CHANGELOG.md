@@ -6,7 +6,7 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 
-- Run version 1 JSON commands from template sources for flashlight, music search/link, calendar events and notifications. Per-run command outcomes are available to subsequent webhook or SMS actions. The configured source template is limited to 4,000 characters and the rendered JSON to 16,384 UTF-16 units. See `docs/JSON_COMMANDS.md` and the installable agent skill in `docs/skills/flowpilot-json-command`.
+- Run version 1 JSON commands from template sources for all normal actions; nested `EXECUTE_JSON_COMMAND` is rejected. Existing permissions and capability checks remain in force, but the receiver does not authenticate senders: matching content can trigger SMS or calls with possible charges, network changes, or device locking. Per-run outcomes are available to subsequent webhook or SMS actions. The configured source template is limited to 4,000 characters and the rendered JSON to 16,384 UTF-16 units. See `docs/JSON_COMMANDS.md` and the installable agent skill in `docs/skills/flowpilot-json-command` for the detailed schema and safety guidance. Post-integration and device verification of this expansion are pending.
 - Notification triggers support independent title and message contains/exact filters, combined with the selected app using AND; legacy keyword matching retains its OR semantics.
 - JSON command source templates are encrypted using Android Keystore. Normal single-rule and full exports clear the source; it must be entered again after normal import. Encrypted exports preserve it.
 - Media session controls: play, pause, toggle, next and previous, with an optional target app; media playing, paused and track-changed triggers with an optional app filter. Notification access is required, and observation runs only when enabled rules need it. Sessions present when the tracker starts are silently seeded without events; a newly observed session already playing after startup produces a playing event. Media title and artist are transient template values and are not written to logs or execution history; user-configured template actions can explicitly use them.
@@ -27,6 +27,8 @@ All notable FlowPilot changes are documented here.
 
 ### Fixed
 
+- Match alphanumeric SMS sender filters by case-insensitive exact identity instead of treating them as an empty filter.
+- Stop saved-rule shortcuts from running stale or disabled rules after confirmation or between actions; editor draft tests remain available.
 - Distinguish notification access from a live listener connection in rule and permission status. When Android leaves the listener disconnected, offer system settings and explain that retries do not guarantee reconnection or replay missed notifications.
 - Show the HTTP status of recognized webhook failures in execution history without exposing stored error text; unrecognized legacy messages remain generic.
 - Trim surrounding whitespace from YouTube Music links before validating and opening them, including links resolved from templates.

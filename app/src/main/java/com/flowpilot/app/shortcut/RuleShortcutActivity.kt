@@ -154,7 +154,7 @@ private fun RuleShortcutScreen(
                     TextButton(onClick = {
                         running = true
                         scope.launch {
-                            val result = runner.run(current.rule, language)
+                            val result = runner.runSavedShortcut(current.rule, language)
                             val message = if (result.failureCount == 0) {
                                 context.getString(R.string.test_run_executed_success, result.successCount)
                             } else {

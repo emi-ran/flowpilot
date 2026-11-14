@@ -983,6 +983,18 @@ class AutomationRepository(private val context: Context) {
     private fun recoverDuplicateIds(rules: List<Automation>): List<Automation> =
         rules.distinctBy { it.id }
 
+    /** Dispatches a confirmed saved rule only while its exact revision remains enabled. */
+    suspend fun <T> dispatchSavedRuleIfAuthorized(
+        id: String,
+        revision: Long,
+        block: suspend () -> T,
+    ): T? = executionStateMutex.withLock {
+        val stored = rawDataStore.data.first()[key]
+            ?.let(::safeDecode)
+            ?.firstOrNull { it.id == id }
+        if (stored?.enabled == true && stored.executionRevision == revision) block() else null
+    }
+
     /** Serializes in-process rule mutation with final authorization and dispatch. */
     suspend fun <T> dispatchIfAuthorized(
         reservation: ExecutionReservation,

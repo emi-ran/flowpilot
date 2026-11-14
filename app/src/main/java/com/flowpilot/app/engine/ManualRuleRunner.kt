@@ -30,18 +30,24 @@ data class ManualRunResult(
 )
 
 /**
- * Executes a saved rule's actions once without evaluating its trigger or conditions.
+ * Executes a rule's actions once without evaluating its trigger or conditions.
  *
- * Manual runs deliberately bypass conditions and cooldown, do not change the rule's enabled
- * state or last-trigger time, and append a redacted history entry. The engine's pause state is
- * irrelevant; UI entry points must still reject disabled or deleted rules before calling this.
+ * Manual runs bypass conditions and cooldown, do not change the rule's enabled state or
+ * last-trigger time, and append a redacted history entry. Draft runs may be unsaved or disabled;
+ * saved shortcuts instead require the confirmed revision to remain enabled at each dispatch.
  */
 class ManualRuleRunner(
     private val context: Context,
     private val repository: AutomationRepository = AutomationRepository(context),
 ) {
 
-    suspend fun run(rule: Automation, language: String): ManualRunResult = withContext(Dispatchers.IO) {
+    suspend fun run(rule: Automation, language: String): ManualRunResult =
+        runInternal(rule, language, savedShortcut = false)
+
+    suspend fun runSavedShortcut(rule: Automation, language: String): ManualRunResult =
+        runInternal(rule, language, savedShortcut = true)
+
+    private suspend fun runInternal(rule: Automation, language: String, savedShortcut: Boolean): ManualRunResult = withContext(Dispatchers.IO) {
         val liveState = readLiveState()
         val coords = if (rule.requiresLocation()) {
             LocationFetcher.getCoordinates(context)
@@ -86,7 +92,7 @@ class ManualRuleRunner(
                 }
 
                 val actionParameters = ActionParametersFactory.create(rule, templateContext)
-                val result = if (action == com.flowpilot.app.data.model.ActionType.EXECUTE_JSON_COMMAND) {
+                suspend fun dispatch() = if (action == com.flowpilot.app.data.model.ActionType.EXECUTE_JSON_COMMAND) {
                     val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(actionParameters.jsonCommandSource) { nestedAction, nestedParameters ->
                         dispatcher.executeAsync(nestedAction, nestedParameters)
                     }
@@ -94,6 +100,23 @@ class ManualRuleRunner(
                     com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message)
                 } else {
                     dispatcher.executeAsync(action, actionParameters)
+                }
+                val result = if (savedShortcut) {
+                    repository.dispatchSavedRuleIfAuthorized(rule.id, rule.executionRevision) { dispatch() }
+                } else {
+                    dispatch()
+                }
+                if (result == null) {
+                    failureCount++
+                    val message = "Execution revoked before dispatch"
+                    failureMessages += "${localizedContext.getString(action.labelRes)}: $message"
+                    actionRecords += ActionExecutionRecord.create(
+                        actionType = action,
+                        success = false,
+                        message = message,
+                        resultCode = ActionResultCode.EXECUTION_CANCELLED,
+                    )
+                    break
                 }
                 if (result.success) {
                     successCount++

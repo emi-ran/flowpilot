@@ -36,6 +36,35 @@ class JsonCommandExecutionTest {
         assertThat(outcome.toString()).doesNotContain("secret")
     }
 
+    @Test fun permissionDiagnosticsAreClassifiedWithoutExposingExecutorMessages() = runBlocking {
+        val command = """{"version":1,"action":"TORCH_ON","params":{}}"""
+        val permissionReasons = setOf(
+            ActionDiagnosticReason.SHIZUKU_PERMISSION_REQUIRED,
+            ActionDiagnosticReason.BLUETOOTH_PERMISSION_REQUIRED,
+            ActionDiagnosticReason.SETTINGS_PERMISSION_REQUIRED,
+            ActionDiagnosticReason.DND_PERMISSION_REQUIRED,
+            ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED,
+            ActionDiagnosticReason.PHONE_PERMISSION_REQUIRED,
+            ActionDiagnosticReason.SMS_PERMISSION_REQUIRED,
+        )
+        for (reason in ActionDiagnosticReason.values()) {
+            val outcome = JsonCommandExecution.execute(command) { _, _ ->
+                ActionResult(false, "private executor details", diagnostic = ActionDiagnostic(reason))
+            }
+            val permission = reason in permissionReasons
+            assertThat(outcome.status).isEqualTo(if (permission) "permission_required" else "execution_failed")
+            assertThat(outcome.message).isEqualTo(if (permission) "Permission required" else "Command execution failed")
+            assertThat(outcome.toString()).doesNotContain("private executor details")
+        }
+        val withoutDiagnostic = JsonCommandExecution.execute(command) { _, _ -> ActionResult(false, "private details") }
+        assertThat(withoutDiagnostic.status).isEqualTo("execution_failed")
+        val success = JsonCommandExecution.execute(command) { _, _ ->
+            ActionResult(true, "private details", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SETTINGS_PERMISSION_REQUIRED))
+        }
+        assertThat(success.status).isEqualTo("success")
+        assertThat(success.message).isEqualTo("Command completed")
+    }
+
     @Test fun permissionFailureAndMusicSuccessDoNotClaimPlayback() = runBlocking {
         val torch = """{"version":1,"action":"TORCH_ON","params":{}}"""
         val denied = JsonCommandExecution.execute(torch) { _, _ -> ActionResult(false, "private exception", ActionResultCode.PERMISSION_REQUIRED) }
