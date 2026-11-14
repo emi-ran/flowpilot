@@ -468,6 +468,7 @@ class AutomationRepository(private val context: Context) {
         webhookHeaders: String = "",
         webhookBody: String = "",
         webhookTimeoutSeconds: Int = 10,
+        jsonCommandSource: String = "",
         phoneNumber: String = "",
         lightLux: Int = 10,
         shakeThreshold: Float = com.flowpilot.app.data.model.Automation.DEFAULT_SHAKE_THRESHOLD,
@@ -566,6 +567,7 @@ class AutomationRepository(private val context: Context) {
             webhookHeaders = webhookHeaders,
             webhookBody = webhookBody,
             webhookTimeoutSeconds = webhookTimeoutSeconds,
+            jsonCommandSource = jsonCommandSource,
             phoneNumber = phoneNumber,
             smsSenderFilter = smsSenderFilter,
             smsMatchMode = smsMatchMode,
@@ -1096,7 +1098,8 @@ class AutomationRepository(private val context: Context) {
             val hasPlaintext = list.any { rule ->
                 (rule.webhookUrl.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookUrl)) ||
                 (rule.webhookHeaders.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookHeaders)) ||
-                (rule.webhookBody.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookBody))
+                (rule.webhookBody.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookBody)) ||
+                (rule.jsonCommandSource.isNotEmpty() && !SecretCipher.isEncrypted(rule.jsonCommandSource))
             }
             if (hasPlaintext) {
                 val encryptedList = list.map { it.withEncryptedSecrets() }

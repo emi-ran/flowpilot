@@ -13,12 +13,13 @@ fun Automation.requiresLocation(): Boolean = effectiveActions.any { requiresLoca
 
 fun Automation.requiresLocation(action: ActionType): Boolean = when (action) {
     ActionType.HTTP_WEBHOOK -> webhookHeaders.containsLocationToken() || webhookBody.containsLocationToken()
+    ActionType.EXECUTE_JSON_COMMAND -> jsonCommandSource.containsLocationToken()
     ActionType.SEND_SMS, ActionType.DRAFT_SMS -> smsRecipient.containsLocationToken() || smsMessage.containsLocationToken()
     else -> false
 }
 
 private fun String.containsLocationToken(): Boolean =
-    Regex("""\$\{([a-zA-Z0-9_.]+)\}""").findAll(this).any { it.groupValues[1] in LOCATION_TOKENS }
+    Regex("""\$\{([a-zA-Z0-9_.]+)(?:\||\})""").findAll(this).any { it.groupValues[1] in LOCATION_TOKENS }
 
 fun isValidCachedLocation(location: Location, nowMs: Long): Boolean {
     val ageMs = nowMs - location.time

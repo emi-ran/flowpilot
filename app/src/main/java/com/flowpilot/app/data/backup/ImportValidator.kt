@@ -161,7 +161,8 @@ internal object ImportValidator {
             }
             if (ActionType.SET_SCREEN_BRIGHTNESS in actions) require(r.screenBrightnessPercent in 0..100) { "Invalid brightness" }
             require(r.cooldownMinutes in 0..1440) { "Invalid cooldown" }
-            require(listOf(r.webhookUrl, r.webhookHeaders, r.webhookBody).none { SecretCipher.isEncrypted(it) }) { "Device-local secret references are not portable" }
+            require(listOf(r.webhookUrl, r.webhookHeaders, r.webhookBody, r.jsonCommandSource).none { SecretCipher.isEncrypted(it) }) { "Device-local secret references are not portable" }
+            require(r.jsonCommandSource.length <= com.flowpilot.app.actions.TemplateRenderer.MAX_TEMPLATE_LENGTH) { "JSON command source too long" }
             when (r.triggerEvent) {
                 TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED -> require(packageName.matches(r.appPackage)) { "Invalid trigger package" }
                 TriggerEvent.NOTIFICATION_RECEIVED -> require(r.notificationAppPackage.isBlank() || packageName.matches(r.notificationAppPackage)) { "Invalid notification package" }

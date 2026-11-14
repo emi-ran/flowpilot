@@ -1076,4 +1076,20 @@
     <string name="calendar_duplicate">Seçilemez: bu takvim kimliği birden fazla kez bulunuyor.</string>
     <string name="calendar_retry">Takvimleri yenile</string>
     <string name="calendar_selection_required">Her iki takvim iznini verin ve kullanılabilir, tek bir yazılabilir takvim seçin.</string>
+    <string name="notification_legacy_keyword">Eski anahtar kelime</string>
+    <string name="notification_legacy_explanation">Eski anahtar kelime başlık VEYA mesaj içinde aranır.</string>
+    <string name="notification_title_filter">Başlık filtresi</string>
+    <string name="notification_message_filter">Mesaj filtresi</string>
+    <string name="notification_filters_explanation">Doldurulan tüm filtreler eşleşmelidir. Büyük ve küçük harf ayrımı yapılmaz.</string>
+    <string name="notification_match_contains">İçerir</string>
+    <string name="notification_match_exact">Tam eşleşir</string>
+    <string name="notification_any_app">Herhangi bir uygulama</string>
+    <string name="action_execute_json_command">JSON komutunu çalıştır</string>
+    <string name="action_execute_json_command_desc">JSON nesnesinden desteklenen bir eylemi çalıştır</string>
+    <string name="json_command_source">JSON kaynak şablonu</string>
+    <string name="json_command_warning">Eşleşen mesajlar bu cihazda eylem çalıştırabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler seçin. Kaynak şablonu kuralla birlikte şifreli saklanır.</string>
+    <string name="variable_desc_command_success">Son JSON komutunun başarılı olup olmadığı</string>
+    <string name="variable_desc_command_status">Son JSON komutunun durumu</string>
+    <string name="variable_desc_command_message">Son JSON komutunun güvenli özeti</string>
+    <string name="variable_desc_command_id">Son JSON komutunda verilen kimlik</string>
 </resources>

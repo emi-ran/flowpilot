@@ -23,6 +23,10 @@ Before save or enable, `AutomationConflictAnalyzer` compares the candidate once 
 Home list overflow duplication copies the complete rule configuration into a new disabled rule and opens Edit for immediate review. Repository cloning assigns a new UUID and creation timestamp, clears `lastTriggeredAt`, leaves source/history/geofence diagnostics untouched, and decrypts then re-encrypts webhook fields so source and clone never share ciphertext. Dynamic TTS clones keep the template and drop the cache reference; legacy clones with blank text receive an independent cache copy, and a missing source file yields a clone without audio. Existing sanitized export and encrypted backup paths are unchanged.
 
 Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request a one-shot nearby-network scan; scan results are transient, deduplicated, and never persisted. Android throttles scan frequency and may return cached results. The tracker reads SSID from Wi-Fi-specific `NetworkCallback` capabilities instead of `activeNetwork`, so Xiaomi can detect Wi-Fi transitions even when cellular remains the default data network.
+## JSON commands and notification filters
+
+`JsonCommandParser` parses a bounded version-1 envelope and maps only its explicit action allowlist into existing action parameters. `JsonCommandExecution` dispatches through the normal executor and maps outcomes to safe per-run `command.*` template values without storing command payload or ID in history. The source template is Keystore-encrypted; normal exports clear it and require re-entry after import, while encrypted exports preserve it. Subsequent webhook or SMS actions can use the outcome; music intent dispatch does not prove playback. Notification title and message filters are independent and AND with the package filter; legacy keyword matching retains OR semantics. See [JSON_COMMANDS.md](JSON_COMMANDS.md) for fields, limits, examples and trust boundaries. Device verification is pending.
+
 
 ## Media automation
 

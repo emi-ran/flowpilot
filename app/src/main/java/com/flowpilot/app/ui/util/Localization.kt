@@ -78,6 +78,7 @@ val ActionType.labelRes: Int
         ActionType.LAUNCH_APP -> R.string.action_launch_app
         ActionType.OPEN_URL -> R.string.action_open_url
         ActionType.HTTP_WEBHOOK -> R.string.action_http_webhook
+        ActionType.EXECUTE_JSON_COMMAND -> R.string.action_execute_json_command
         ActionType.OPEN_DIALER -> R.string.action_open_dialer
         ActionType.DIAL_NUMBER -> R.string.action_dial_number
         ActionType.CALL_NUMBER -> R.string.action_call_number
@@ -263,6 +264,7 @@ val ActionType.descriptionRes: Int
         ActionType.LAUNCH_APP -> R.string.action_launch_app_desc
         ActionType.OPEN_URL -> R.string.action_open_url_desc
         ActionType.HTTP_WEBHOOK -> R.string.action_http_webhook_desc
+        ActionType.EXECUTE_JSON_COMMAND -> R.string.action_execute_json_command_desc
         ActionType.OPEN_DIALER -> R.string.action_open_dialer_desc
         ActionType.DIAL_NUMBER -> R.string.action_dial_number_desc
         ActionType.CALL_NUMBER -> R.string.action_call_number_desc

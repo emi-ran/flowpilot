@@ -172,6 +172,7 @@ fun DetailScreen(
     var webhookHeaders by remember(initialRule.id) { mutableStateOf(initialRule.webhookHeaders) }
     var webhookBody by remember(initialRule.id) { mutableStateOf(initialRule.webhookBody) }
     var webhookTimeoutSeconds by remember(initialRule.id) { mutableIntStateOf(initialRule.webhookTimeoutSeconds) }
+    var jsonCommandSource by remember(initialRule.id) { mutableStateOf(initialRule.jsonCommandSource) }
     var ttsText by remember(initialRule.id) { mutableStateOf(initialRule.ttsText) }
     var ttsVoiceName by remember(initialRule.id) { mutableStateOf(initialRule.ttsVoiceName) }
     var ttsSpeechRate by remember(initialRule.id) { mutableFloatStateOf(initialRule.ttsSpeechRate) }
@@ -306,6 +307,7 @@ fun DetailScreen(
         webhookHeaders = webhookHeaders,
         webhookBody = webhookBody,
         webhookTimeoutSeconds = webhookTimeoutSeconds,
+        jsonCommandSource = jsonCommandSource,
         ttsText = ttsText,
         ttsVoiceName = ttsVoiceName,
         ttsSpeechRate = ttsSpeechRate,
@@ -325,7 +327,7 @@ fun DetailScreen(
         geofenceLatitude = geofenceLatitude,
         geofenceLongitude = geofenceLongitude,
         geofenceRadiusMeters = geofenceRadiusMeters,
-    )
+    ).withTrigger(triggerItems.first()).copy(triggerDefinitions = triggerDefinitions)
 
     if (showLaunchApps) AppPicker(select = { p, n -> launchPackage = p; launchAppName = n; showLaunchApps = false }, selectedPackage = launchPackage, onDismiss = { showLaunchApps = false })
     if (showForceStopApps) AppPicker(select = { p, n -> forceStopPackage = p; forceStopAppName = n; showForceStopApps = false }, selectedPackage = forceStopPackage, onDismiss = { showForceStopApps = false })
@@ -753,6 +755,8 @@ fun DetailScreen(
                             onWebhookHeadersChange = { webhookHeaders = it },
                             onWebhookBodyChange = { webhookBody = it },
                             onWebhookTimeoutChange = { webhookTimeoutSeconds = it },
+                            jsonCommandSource = jsonCommandSource,
+                            onJsonCommandSourceChange = { jsonCommandSource = it },
                             // TTS
                             ttsContent = {
                                 TtsSettings(
@@ -979,6 +983,7 @@ fun DetailScreen(
                             (ActionType.MUSIC_SEARCH !in actions || (MusicLinkValidator.isSupportedPackage(musicAppPackage) && musicQuery.isNotBlank())) &&
                             (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
+                            (ActionType.EXECUTE_JSON_COMMAND !in actions || (jsonCommandSource.isNotBlank() && jsonCommandSource.length <= com.flowpilot.app.actions.TemplateRenderer.MAX_TEMPLATE_LENGTH)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || canSaveTtsConfiguration(ttsText, ttsSpeechRate, ttsAudioFileName, triggerItems.map { it.event }, ttsManager)) &&
                             (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&

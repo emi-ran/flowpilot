@@ -1,8 +1,9 @@
 # FlowPilot Status
 
-Last updated: 2026-11-13
+Last updated: 2026-11-14
 
 ## Build state
+- Unreleased working-tree JSON commands and independent notification title/message filters are documented in [JSON_COMMANDS.md](JSON_COMMANDS.md), with an [agent skill](skills/flowpilot-json-command/SKILL.md). Source templates are Keystore-encrypted, removed from normal exports and retained in encrypted exports; re-enter them after normal import. Post-integration test/build and physical-device verification remain pending.
 
 - Unreleased media automation: play, pause, toggle, next and previous controls can target a media app; playing, paused and track-changed triggers support an optional app filter. Notification access is required. Media observation is demand-driven by enabled rules: sessions present when the tracker starts are silently seeded without events, while a newly observed session already playing after startup produces a playing event. Transient `${media.title}` and `${media.artist}` are not stored in logs or history, although explicitly configured template actions may use them. On 2026-11-12 the JDK 17 gate (`testDebugUnitTest lintDebug assembleDebug assembleRelease -PreleaseSigningRequired=false`) and resource contracts passed. The user reported successful phone testing; the exact installed build and scenarios for the final tracker correction were not independently confirmed.
 - Song search and service-specific song links target Spotify or YouTube Music. Automatic playback and background launches depend on the app and Android. End-to-end FlowPilot device verification is pending.

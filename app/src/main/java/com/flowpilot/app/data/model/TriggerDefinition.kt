@@ -3,6 +3,9 @@ package com.flowpilot.app.data.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 
+@Serializable
+enum class NotificationMatchMode { CONTAINS, EXACT }
+
 /** Versioned OR list. Null on Automation preserves the legacy single-trigger wire format. */
 @Serializable
 data class TriggerDefinitions(val version: Int = 1, val items: List<TriggerDefinition>) {
@@ -85,7 +88,7 @@ sealed interface TriggerDefinition {
     }
     @Serializable
     @SerialName("NOTIFICATION_RECEIVED")
-    data class Notification(val notificationAppPackage: String = "", val notificationAppName: String = "", val notificationKeyword: String = "") : TriggerDefinition {
+    data class Notification(val notificationAppPackage: String = "", val notificationAppName: String = "", val notificationKeyword: String = "", val notificationTitleFilter: String = "", val notificationTitleMatchMode: NotificationMatchMode = NotificationMatchMode.CONTAINS, val notificationMessageFilter: String = "", val notificationMessageMatchMode: NotificationMatchMode = NotificationMatchMode.CONTAINS) : TriggerDefinition {
         override val event: TriggerEvent get() = TriggerEvent.NOTIFICATION_RECEIVED
     }
     @Serializable
@@ -188,7 +191,7 @@ fun Automation.legacyTriggerDefinition(): TriggerDefinition = when (triggerEvent
     TriggerEvent.BLUETOOTH_CONNECTED -> TriggerDefinition.BluetoothConnected(bluetoothDeviceAddress, bluetoothDeviceName)
     TriggerEvent.BLUETOOTH_DISCONNECTED -> TriggerDefinition.BluetoothDisconnected(bluetoothDeviceAddress, bluetoothDeviceName)
     TriggerEvent.NFC_TAG_SCANNED -> TriggerDefinition.NfcTag(nfcTagId)
-    TriggerEvent.NOTIFICATION_RECEIVED -> TriggerDefinition.Notification(notificationAppPackage, notificationAppName, notificationKeyword)
+    TriggerEvent.NOTIFICATION_RECEIVED -> TriggerDefinition.Notification(notificationAppPackage, notificationAppName, notificationKeyword, notificationTitleFilter, notificationTitleMatchMode, notificationMessageFilter, notificationMessageMatchMode)
     TriggerEvent.MEDIA_PLAYING -> TriggerDefinition.MediaPlaying(mediaTriggerPackage)
     TriggerEvent.MEDIA_PAUSED -> TriggerDefinition.MediaPaused(mediaTriggerPackage)
     TriggerEvent.MEDIA_TRACK_CHANGED -> TriggerDefinition.MediaTrackChanged(mediaTriggerPackage)
@@ -223,7 +226,7 @@ fun Automation.withTrigger(definition: TriggerDefinition): Automation = when (de
     is TriggerDefinition.BluetoothConnected -> copy(triggerEvent = definition.event, triggerDefinitions = null, bluetoothDeviceAddress = definition.bluetoothDeviceAddress, bluetoothDeviceName = definition.bluetoothDeviceName)
     is TriggerDefinition.BluetoothDisconnected -> copy(triggerEvent = definition.event, triggerDefinitions = null, bluetoothDeviceAddress = definition.bluetoothDeviceAddress, bluetoothDeviceName = definition.bluetoothDeviceName)
     is TriggerDefinition.NfcTag -> copy(triggerEvent = definition.event, triggerDefinitions = null, nfcTagId = definition.nfcTagId)
-    is TriggerDefinition.Notification -> copy(triggerEvent = definition.event, triggerDefinitions = null, notificationAppPackage = definition.notificationAppPackage, notificationAppName = definition.notificationAppName, notificationKeyword = definition.notificationKeyword)
+    is TriggerDefinition.Notification -> copy(triggerEvent = definition.event, triggerDefinitions = null, notificationAppPackage = definition.notificationAppPackage, notificationAppName = definition.notificationAppName, notificationKeyword = definition.notificationKeyword, notificationTitleFilter = definition.notificationTitleFilter, notificationTitleMatchMode = definition.notificationTitleMatchMode, notificationMessageFilter = definition.notificationMessageFilter, notificationMessageMatchMode = definition.notificationMessageMatchMode)
     is TriggerDefinition.MediaPlaying -> copy(triggerEvent = definition.event, triggerDefinitions = null, mediaTriggerPackage = definition.mediaTriggerPackage)
     is TriggerDefinition.MediaPaused -> copy(triggerEvent = definition.event, triggerDefinitions = null, mediaTriggerPackage = definition.mediaTriggerPackage)
     is TriggerDefinition.MediaTrackChanged -> copy(triggerEvent = definition.event, triggerDefinitions = null, mediaTriggerPackage = definition.mediaTriggerPackage)

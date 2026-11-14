@@ -1076,4 +1076,20 @@
     <string name="calendar_duplicate">Cannot select: this calendar identity is duplicated.</string>
     <string name="calendar_retry">Refresh calendars</string>
     <string name="calendar_selection_required">Allow both calendar permissions and choose an available, unambiguous writable calendar.</string>
+    <string name="notification_legacy_keyword">Legacy keyword</string>
+    <string name="notification_legacy_explanation">The legacy keyword matches the title OR message.</string>
+    <string name="notification_title_filter">Title filter</string>
+    <string name="notification_message_filter">Message filter</string>
+    <string name="notification_filters_explanation">All filled filters must match. Matching ignores letter case.</string>
+    <string name="notification_match_contains">Contains</string>
+    <string name="notification_match_exact">Exact match</string>
+    <string name="notification_any_app">Any app</string>
+    <string name="action_execute_json_command">Execute JSON command</string>
+    <string name="action_execute_json_command_desc">Run a supported action from a JSON object</string>
+    <string name="json_command_source">JSON source template</string>
+    <string name="json_command_warning">Matching messages can run actions on this device. Choose trusted sources and restrictive filters. The source template is stored encrypted with the rule.</string>
+    <string name="variable_desc_command_success">Whether the latest JSON command succeeded</string>
+    <string name="variable_desc_command_status">Latest JSON command status</string>
+    <string name="variable_desc_command_message">Safe summary of the latest JSON command</string>
+    <string name="variable_desc_command_id">ID supplied by the latest JSON command</string>
 </resources>

@@ -48,12 +48,11 @@ class ManualRuleRunner(
         } else {
             null
         }
-        val templateContext = EventTemplateContext.manual(
+        var templateContext = EventTemplateContext.manual(
             liveState = liveState,
             locationLat = coords?.first,
             locationLng = coords?.second,
         ).copy(values = mapOf("rule.name" to rule.normalizedName))
-        val actionParameters = ActionParametersFactory.create(rule, templateContext)
         val dispatcher = ActionDispatcher.get(context)
         val localizedContext = context.localizedForAppLanguage(language)
         var successCount = 0
@@ -86,7 +85,16 @@ class ManualRuleRunner(
                     }
                 }
 
-                val result = dispatcher.executeAsync(action, actionParameters)
+                val actionParameters = ActionParametersFactory.create(rule, templateContext)
+                val result = if (action == com.flowpilot.app.data.model.ActionType.EXECUTE_JSON_COMMAND) {
+                    val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(actionParameters.jsonCommandSource) { nestedAction, nestedParameters ->
+                        dispatcher.executeAsync(nestedAction, nestedParameters)
+                    }
+                    templateContext = outcome.applyTo(templateContext)
+                    com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message)
+                } else {
+                    dispatcher.executeAsync(action, actionParameters)
+                }
                 if (result.success) {
                     successCount++
                 } else {

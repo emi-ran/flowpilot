@@ -82,6 +82,7 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.CREATE_CALENDAR_EVENT -> Icons.Default.Event
     ActionType.START_TIMER -> Icons.Default.HourglassEmpty
     ActionType.HTTP_WEBHOOK -> Icons.Default.Http
+    ActionType.EXECUTE_JSON_COMMAND -> Icons.Default.Http
     ActionType.SPEAK_TEXT -> Icons.Default.RecordVoiceOver
     ActionType.OPEN_DIALER, ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> Icons.Default.Phone
     ActionType.BLUETOOTH_ON, ActionType.BLUETOOTH_OFF -> Icons.Default.Bluetooth
@@ -202,6 +203,8 @@ fun ActionCardItem(
     onWebhookHeadersChange: (String) -> Unit = {},
     onWebhookBodyChange: (String) -> Unit = {},
     onWebhookTimeoutChange: (Int) -> Unit = {},
+    jsonCommandSource: String = "",
+    onJsonCommandSourceChange: (String) -> Unit = {},
     // TTS
     ttsContent: @Composable () -> Unit = {},
     // Phone
@@ -228,6 +231,7 @@ fun ActionCardItem(
 ) {
     var showDelaySlider by remember { mutableStateOf(delaySeconds > 0) }
     var showReorderMenu by remember { mutableStateOf(false) }
+    var confirmRemoveAction by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
@@ -333,7 +337,7 @@ fun ActionCardItem(
                     }
                     Spacer(Modifier.width(4.dp))
                     IconButton(
-                        onClick = onRemoveAction,
+                        onClick = { confirmRemoveAction = true },
                         modifier = Modifier.size(28.dp),
                     ) {
                         Icon(
@@ -820,6 +824,43 @@ fun ActionCardItem(
                         singleLine = true,
                     )
                 }
+                ActionType.EXECUTE_JSON_COMMAND -> {
+                    Spacer(Modifier.height(8.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(top = 1.dp).size(16.dp),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                stringResource(R.string.json_command_warning),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    TemplateTextField(
+                        value = jsonCommandSource,
+                        onValueChange = onJsonCommandSourceChange,
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.json_command_source)) },
+                        shape = RoundedCornerShape(12.dp),
+                        minLines = 2,
+                    )
+                }
                 ActionType.HTTP_WEBHOOK -> {
                     Spacer(Modifier.height(8.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1009,6 +1050,25 @@ fun ActionCardItem(
                 else -> Unit
             }
         }
+    }
+
+    if (confirmRemoveAction) {
+        AlertDialog(
+            onDismissRequest = { confirmRemoveAction = false },
+            title = { Text(stringResource(R.string.action_remove)) },
+            text = { Text(action.localizedLabel()) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmRemoveAction = false
+                    onRemoveAction()
+                }) { Text(stringResource(R.string.btn_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemoveAction = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            },
+        )
     }
 }
 

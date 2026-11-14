@@ -891,7 +891,7 @@ class AutomationEngine(
                 var actionRecords = mutableListOf<ActionExecutionRecord>()
                 try {
                     withContext(Dispatchers.IO) {
-                        val templateContext = EventTemplateContext.forRule(eventContext, candidate)
+                        var templateContext = EventTemplateContext.forRule(eventContext, candidate)
                         actionRecords = mutableListOf()
                         val actions = rule.effectiveActions
                         val delays = rule.effectiveActionDelays
@@ -940,11 +940,21 @@ class AutomationEngine(
                                         }
                                         val parameters = ActionParametersFactory.create(rule, actionContext)
                                         templateDiagnostics = TemplateDiagnostics.forAction(action, rule, actionContext, parameters)
-                                        eventAuthorization?.let { token ->
-                                            AutomationService.executeIfEventAuthorized(token) {
-                                                dispatcher.executeAsync(action, parameters)
+                                        suspend fun dispatch(): com.flowpilot.app.actions.ActionResult {
+                                            if (action != com.flowpilot.app.data.model.ActionType.EXECUTE_JSON_COMMAND) {
+                                                return dispatcher.executeAsync(action, parameters)
                                             }
-                                        } ?: dispatcher.executeAsync(action, parameters)
+                                            val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(parameters.jsonCommandSource) { nestedAction, nestedParameters ->
+                                                dispatcher.executeAsync(nestedAction, nestedParameters)
+                                            }
+                                            templateContext = outcome.applyTo(templateContext)
+                                            return com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message)
+                                        }
+                                        if (eventAuthorization != null) {
+                                            AutomationService.executeIfEventAuthorized(eventAuthorization) { dispatch() }
+                                        } else {
+                                            dispatch()
+                                        }
                                     }
                                 } catch (ce: CancellationException) {
                                     throw ce

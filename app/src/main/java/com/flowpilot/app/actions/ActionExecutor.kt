@@ -69,6 +69,8 @@ enum class ActionResultCode {
 }
 
 data class ActionParameters(
+    /** Already rendered once; transient and never included in execution history. */
+    val jsonCommandSource: String = "",
     val notificationTitle: String = "",
     val notificationBody: String = "",
     val vibrationPattern: VibrationPattern = VibrationPattern.PULSE,

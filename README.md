@@ -208,6 +208,7 @@ Chain multiple actions in any custom sequence with drag-and-drop ordering and in
 - 🚀 **Apps & Web:** Launch installed app or open web URL.
 - 💬 **Phone & SMS:** Open dialer, place direct phone call, send automated background SMS, or prepare SMS draft.
 - 🔗 **HTTPS Webhook:** Send outbound HTTP requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, JSON body, AES-256-GCM Keystore encrypted secrets, and dynamic template variables.
+- 🧾 **JSON commands:** Run a bounded, versioned command from a notification, SMS, or other template source; supported actions include flashlight, music, calendar and notifications. Optional subsequent webhook or SMS actions can report the result. Notification title and message filters support independent contains/exact matching. See the [command contract and setup](docs/JSON_COMMANDS.md), including security and SMS-cost warnings, and the [installable agent skill](docs/skills/flowpilot-json-command/SKILL.md). These features are unreleased and device verification is pending.
 - 🧩 **Template Variables:** Use `${...}` in speech, notification, webhook, SMS, phone, URL, alarm, and timer text. Every template-capable action field opens the same trigger-aware picker with filters (`trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape`). Global values include `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, and `${rule.name}`.
 
 ---

@@ -99,6 +99,7 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     LAUNCH_APP("Launch app", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_URL("Open URL", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     HTTP_WEBHOOK("Send HTTP webhook", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
+    EXECUTE_JSON_COMMAND("Execute JSON command", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_DIALER("Open dialer", ActionCategory.PHONE, CapabilityRequirement.NONE),
     DIAL_NUMBER("Dial phone number", ActionCategory.PHONE, CapabilityRequirement.NONE),
     CALL_NUMBER("Call phone number directly", ActionCategory.PHONE, CapabilityRequirement.CALL_PHONE),
@@ -328,6 +329,10 @@ data class Automation(
     val notificationAppPackage: String = "",
     val notificationAppName: String = "",
     val notificationKeyword: String = "",
+    val notificationTitleFilter: String = "",
+    val notificationTitleMatchMode: NotificationMatchMode = NotificationMatchMode.CONTAINS,
+    val notificationMessageFilter: String = "",
+    val notificationMessageMatchMode: NotificationMatchMode = NotificationMatchMode.CONTAINS,
     /** Optional media-session package filter; empty matches any player. */
     val mediaTriggerPackage: String = "",
     /** Legacy flat-AND condition list; still authoritative when [conditionTree] is null. */
@@ -383,6 +388,8 @@ data class Automation(
     val webhookHeaders: String = "",
     val webhookBody: String = "",
     val webhookTimeoutSeconds: Int = 10,
+    /** Template supplying the entire JSON command; never logged as execution output. */
+    val jsonCommandSource: String = "",
     /** Telephone number used for DIAL_NUMBER and CALL_NUMBER actions. */
     val phoneNumber: String = "",
     /** Sender filter for SMS_RECEIVED trigger (empty matches any). */
@@ -475,30 +482,32 @@ data class Automation(
         }
 
     /**
-     * Returns a copy with sensitive webhook fields encrypted for storage.
+     * Returns a copy with sensitive webhook and JSON source fields encrypted for storage.
      */
     fun withEncryptedSecrets(): Automation {
-        val needsEncryption = webhookUrl.isNotEmpty() || webhookHeaders.isNotEmpty() || webhookBody.isNotEmpty()
+        val needsEncryption = webhookUrl.isNotEmpty() || webhookHeaders.isNotEmpty() || webhookBody.isNotEmpty() || jsonCommandSource.isNotEmpty()
         if (!needsEncryption) return this
         return copy(
             webhookUrl = SecretCipher.encrypt(webhookUrl),
             webhookHeaders = SecretCipher.encrypt(webhookHeaders),
             webhookBody = SecretCipher.encrypt(webhookBody),
+            jsonCommandSource = SecretCipher.encrypt(jsonCommandSource),
         )
     }
 
     /**
-     * Returns a copy with sensitive webhook fields decrypted for runtime/UI usage.
+     * Returns a copy with sensitive webhook and JSON source fields decrypted for runtime/UI usage.
      */
     fun withDecryptedSecrets(): Automation {
         val needsDecryption = SecretCipher.isEncrypted(webhookUrl) ||
             SecretCipher.isEncrypted(webhookHeaders) ||
-            SecretCipher.isEncrypted(webhookBody)
+            SecretCipher.isEncrypted(webhookBody) || SecretCipher.isEncrypted(jsonCommandSource)
         if (!needsDecryption) return this
         return copy(
             webhookUrl = SecretCipher.decrypt(webhookUrl),
             webhookHeaders = SecretCipher.decrypt(webhookHeaders),
             webhookBody = SecretCipher.decrypt(webhookBody),
+            jsonCommandSource = SecretCipher.decrypt(jsonCommandSource),
         )
     }
 

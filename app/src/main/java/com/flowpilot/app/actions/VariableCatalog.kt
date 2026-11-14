@@ -61,6 +61,11 @@ object VariableCatalog {
                 spec("isCharging", R.string.variable_desc_is_charging, "true", "\${isCharging|default:\"false\"}"),
                 spec("wifiSsid", R.string.variable_desc_wifi_ssid, "Home_5G", "\${wifiSsid|default:\"Home_5G\"}"),
                 spec("rule.name", R.string.variable_desc_rule_name, "Morning routine", "\${rule.name|truncate:40}"),
+                spec("command.success", R.string.variable_desc_command_success, "true", "\${command.success}"),
+                spec("command.status", R.string.variable_desc_command_status, "success", "\${command.status}"),
+                spec("command.message", R.string.variable_desc_command_message, "Command completed", "\${command.message|jsonescape}"),
+                spec("command.result", R.string.variable_desc_command_message, "Command completed", "\${command.result|jsonescape}"),
+                spec("command.id", R.string.variable_desc_command_id, "example-1", "\${command.id|jsonescape}"),
             ),
         ),
         VariableGroup(

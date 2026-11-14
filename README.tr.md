@@ -208,6 +208,7 @@ Tek bir kuralda birden çok eylemi sürükle-bırak yöntemiyle dilediğiniz sı
 - 🚀 **Uygulama & Web:** Cihazdaki bir uygulamayı açma veya web bağlantısına yönlendirme.
 - 💬 **Telefon & SMS:** Arama ekranını açma, doğrudan telefon araması başlatma, doğrudan arka planda SMS gönderme veya SMS taslağı hazırlama.
 - 🔗 **HTTPS Webhook:** Canlı şablon değişkenleriyle dış sunuculara güvenli HTTP istekleri (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) gönderin; başlıklar ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir.
+- 🧾 **JSON komutları:** Bildirim, SMS veya başka bir şablon kaynağından fener, müzik, takvim ve bildirim komutları çalıştırın. Sonraki webhook veya SMS eylemi sonucu iletebilir; bildirim başlığı ve mesajı bağımsız filtrelenebilir. [Komut sözleşmesi](docs/JSON_COMMANDS.md) ve [kurulabilir ajan skill'i](docs/skills/flowpilot-json-command/SKILL.md) güvenlik ve SMS ücret uyarılarını açıklar. Özellik yayımlanmadı; cihaz doğrulaması bekliyor.
 - 🧩 **Şablon Değişkenleri:** Seslendirme, bildirim, webhook, SMS, telefon, URL, alarm ve zamanlayıcı metinlerinde `${...}` kullanın. Şablon destekleyen her eylem alanı, kuralın tetikleyicilerine göre filtrelenmiş aynı aranabilir seçiciyi ve `trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape` filtrelerini sunar. Global değerler: `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}` ve `${rule.name}`.
 
 ---

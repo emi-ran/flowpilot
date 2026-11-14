@@ -3,6 +3,8 @@
 package com.flowpilot.app.ui.components
 
 import android.content.pm.ApplicationInfo
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -11,6 +13,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -71,8 +75,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -759,6 +761,14 @@ fun ActionPicker(
                         keywords = listOf("webhook", "http", "https", "post", "get", "api", "rest", "ha", "home assistant", "discord", "ntfy", "curl"),
                     ),
                     PickerItem(
+                        value = ActionType.EXECUTE_JSON_COMMAND,
+                        title = ActionType.EXECUTE_JSON_COMMAND.label,
+                        subtitle = "Run a supported command from a JSON template",
+                        icon = Icons.Default.Http,
+                        iconTint = Color(0xFF26A69A),
+                        keywords = listOf("json", "command", "automation"),
+                    ),
+                    PickerItem(
                         value = ActionType.FORCE_STOP_APP,
                         title = ActionType.FORCE_STOP_APP.label,
                         subtitle = "Force terminate a running application (requires Shizuku)",
@@ -1183,7 +1193,7 @@ fun <T> ModernChoiceDialog(
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                     ),
@@ -1254,7 +1264,8 @@ fun <T> ModernChoiceDialog(
                         state = listState,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
+                            .weight(1f)
+                            .selectableGroup(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
@@ -1314,7 +1325,7 @@ private fun CategorySectionHeader(
             text = title.uppercase(),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            color = iconTint,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
         Surface(
@@ -1341,27 +1352,34 @@ private fun <T> PickerOptionCard(
     val context = LocalContext.current
     val itemTitle = item.displayTitle(context)
     val itemSubtitle = item.displaySubtitle(context)
-    val containerColor = if (selected) {
-        MaterialTheme.colorScheme.surfaceContainerHighest
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerLow
-    }
-
-    val borderStroke = if (selected) {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
-    } else {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
-    }
+    val containerColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.surfaceContainerHighest
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
+        animationSpec = tween(160),
+        label = "pickerOptionContainer",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+        } else {
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+        },
+        animationSpec = tween(160),
+        label = "pickerOptionBorder",
+    )
+    val borderStroke = BorderStroke(1.dp, borderColor)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .semantics {
-                this.role = Role.RadioButton
-                this.selected = selected
-                this.contentDescription = "$itemTitle, $itemSubtitle${if (selected) ", selected" else ""}"
-            },
+            .selectable(
+                selected = selected,
+                onClick = onClick,
+                role = Role.RadioButton,
+            ),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         border = borderStroke,
@@ -1422,7 +1440,7 @@ private fun <T> PickerOptionCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
-                        contentDescription = "Selected",
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(16.dp),
                     )
