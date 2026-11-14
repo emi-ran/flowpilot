@@ -60,6 +60,7 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val ignoresBatteryOptimizations by vm.ignoresBatteryOptimizations.collectAsState()
     val shizuku by vm.shizukuState.collectAsState()
     var showAdbDialog by remember { mutableStateOf(false) }
+    var overlayGranted by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var showBackgroundLocationDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -71,7 +72,10 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) vm.refreshPermissions()
+            if (event == Lifecycle.Event.ON_RESUME) {
+                vm.refreshPermissions()
+                overlayGranted = Settings.canDrawOverlays(context)
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -269,6 +273,18 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
                     data = Uri.parse("package:${context.packageName}")
                 }
+                try {
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                }
+            }
+            PermissionCard(
+                stringResource(R.string.perms_overlay_title),
+                stringResource(R.string.perms_overlay_desc),
+                overlayGranted,
+            ) {
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
                 try {
                     context.startActivity(intent)
                 } catch (_: Exception) {

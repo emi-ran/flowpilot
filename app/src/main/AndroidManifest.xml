@@ -16,6 +16,9 @@
     <!-- Notification permission (Android 13+) for the engine's ongoing status notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Optional special access for user-configured background activity launches. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <!-- Notification Policy Access for Do Not Disturb toggle. -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 

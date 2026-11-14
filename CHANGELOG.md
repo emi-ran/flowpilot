@@ -6,6 +6,7 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 
+- Add optional display-over-other-apps special access in Permissions. It can permit background app launches on supported devices, but also grants overlay capability and does not guarantee launch or playback.
 - Run version 1 JSON commands from template sources for all normal actions; nested `EXECUTE_JSON_COMMAND` is rejected. Existing permissions and capability checks remain in force, but the receiver does not authenticate senders: matching content can trigger SMS or calls with possible charges, network changes, or device locking. Per-run outcomes are available to subsequent webhook or SMS actions. The configured source template is limited to 4,000 characters and the rendered JSON to 16,384 UTF-16 units. See `docs/JSON_COMMANDS.md` and the installable agent skill in `docs/skills/flowpilot-json-command` for the detailed schema and safety guidance. Post-integration and device verification of this expansion are pending.
 - Notification triggers support independent title and message contains/exact filters, combined with the selected app using AND; legacy keyword matching retains its OR semantics.
 - JSON command source templates are encrypted using Android Keystore. Normal single-rule and full exports clear the source; it must be entered again after normal import. Encrypted exports preserve it.

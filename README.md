@@ -257,6 +257,7 @@ FlowPilot is engineered with an uncompromised commitment to user privacy:
 ### Transparent Permission Disclosures
 FlowPilot declares sensitive permissions solely to power explicit automation features:
 - `QUERY_ALL_PACKAGES`: Required to list installed apps in the App Trigger and App Launcher pickers on Android 11+.
+- `SYSTEM_ALERT_WINDOW`: Optional special access that may allow background automations to open other apps. It also permits drawing over other apps; Android or device restrictions can still block launches, and playback is not guaranteed.
 - **Notification access:** Required for notification triggers and media-session triggers and controls; enable FlowPilot in Android's notification access settings.
 - `RECEIVE_SMS` & `SEND_SMS`: Used exclusively by the SMS trigger and direct SMS responder actions.
 - `ACCESS_BACKGROUND_LOCATION`: Supports Google Play Services geofencing (`GeofencingClient`) and location values in user-configured automations; power use depends on device and conditions.

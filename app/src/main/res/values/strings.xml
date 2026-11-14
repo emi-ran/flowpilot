@@ -709,6 +709,8 @@
     <string name="perms_dnd_desc">Allows FlowPilot to turn Do Not Disturb on or off. Grant Notification Policy Access in Android settings.</string>
     <string name="perms_modify_settings_title">Modify system settings</string>
     <string name="perms_modify_settings_desc">Allows FlowPilot to change system settings such as Auto-rotate. Grant in Android special access settings.</string>
+    <string name="perms_overlay_title">Display over other apps</string>
+    <string name="perms_overlay_desc">Optional: may allow automations to open other apps while FlowPilot is in the background. This special access also permits drawing over other apps. Android or your device may still block launches.</string>
     <string name="perms_battery_opt_title">Battery restrictions</string>
     <string name="perms_battery_opt_desc">Allow FlowPilot to run without battery restrictions. Required for reliable schedules while screen is off.</string>
     <string name="perms_battery_opt_pill">Restriction active</string>

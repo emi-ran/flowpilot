@@ -257,6 +257,7 @@ FlowPilot kullanıcı gizliliğine tavizsiz bir bağlılıkla tasarlanmıştır:
 ### Şeffaf İzin Açıklamaları
 FlowPilot hassas izinleri yalnızca açık otomasyon özelliklerini yerine getirebilmek için talep eder:
 - `QUERY_ALL_PACKAGES`: Android 11+ sürümlerinde Uygulama Tetikleyici ve Uygulama Açıcı listelerini gösterebilmek için gereklidir.
+- `SYSTEM_ALERT_WINDOW`: Arka plan otomasyonlarının diğer uygulamaları açmasına yardımcı olabilen isteğe bağlı özel erişimdir. Diğer uygulamaların üzerine çizime de izin verir; Android veya cihaz kısıtlamaları açmayı yine engelleyebilir ve oynatma garanti değildir.
 - **Bildirim erişimi:** Bildirim tetikleyicileri ile medya oturumu tetikleyicileri ve kontrolleri için gereklidir; Android bildirim erişimi ayarlarında FlowPilot'a izin verin.
 - `RECEIVE_SMS` & `SEND_SMS`: Yalnızca SMS tetikleyicisi ve doğrudan SMS gönderme eylemlerinde kullanılır.
 - `ACCESS_BACKGROUND_LOCATION`: Google Play Services geofence takibini (`GeofencingClient`) ve kullanıcı tarafından yapılandırılan konum şablonlarını destekler; pil tüketimi cihaza ve koşullara bağlıdır.
