@@ -10,10 +10,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -41,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -109,6 +112,7 @@ fun DetailScreen(
     }
     BackHandler(onBack = back)
     val context = LocalContext.current
+    val view = LocalView.current
     val musicAppAvailable = rememberMusicAppAvailability()
     val calendarSelection = rememberCalendarSelectionState()
     val existingRules by vm.automations.collectAsState()
@@ -241,9 +245,42 @@ fun DetailScreen(
     }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val actionValidationTarget = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    var validationRequest by remember(initialRule.id) { mutableIntStateOf(0) }
+    var actionValidationVisible by remember(initialRule.id) { mutableStateOf(false) }
 
     var triggerItems by remember(initialRule.id) { mutableStateOf(initialRule.normalizedTriggers()) }
     val triggerDefinitions = if (triggerItems.size > 1) TriggerDefinitions(items = triggerItems) else null
+    val invalidAction = when {
+                                    ActionType.CREATE_CALENDAR_EVENT in actions && (!calendarSelection.valid(calendarAccountName, calendarAccountType, calendarName) || !com.flowpilot.app.actions.CalendarExecutor.validEditorTimes(calendarStartMillis, calendarEndMillis)) -> ActionType.CREATE_CALENDAR_EVENT
+                                    ActionType.LAUNCH_APP in actions && launchPackage.isEmpty() -> ActionType.LAUNCH_APP
+                                    ActionType.FORCE_STOP_APP in actions && forceStopPackage.isEmpty() -> ActionType.FORCE_STOP_APP
+                                    ActionType.OPEN_URL in actions && !isWebUrl(url) -> ActionType.OPEN_URL
+                                    ActionType.MUSIC_SEARCH in actions && (!musicAppAvailable(musicAppPackage) || !MusicLinkValidator.isSupportedPackage(musicAppPackage) || musicQuery.isBlank()) -> ActionType.MUSIC_SEARCH
+                                    ActionType.MUSIC_PLAY_LINK in actions && (!musicAppAvailable(musicAppPackage) || !MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) -> ActionType.MUSIC_PLAY_LINK
+                                    ActionType.HTTP_WEBHOOK in actions && (!isWebUrl(webhookUrl) || WebhookExecutor.validateHeaders(webhookHeaders) != null) -> ActionType.HTTP_WEBHOOK
+                                    ActionType.EXECUTE_JSON_COMMAND in actions && (jsonCommandSource.isBlank() || jsonCommandSource.length > com.flowpilot.app.actions.TemplateRenderer.MAX_TEMPLATE_LENGTH) -> ActionType.EXECUTE_JSON_COMMAND
+                                    ActionType.PLAY_SOUND in actions && soundPreset == SoundPreset.CUSTOM && soundUri.isEmpty() -> ActionType.PLAY_SOUND
+                                    ActionType.SPEAK_TEXT in actions && !canSaveTtsConfiguration(ttsText, ttsSpeechRate, ttsAudioFileName, triggerItems.map { it.event }, ttsManager) -> ActionType.SPEAK_TEXT
+                                    ActionType.DIAL_NUMBER in actions && phoneNumber.trim().isEmpty() -> ActionType.DIAL_NUMBER
+                                    ActionType.CALL_NUMBER in actions && phoneNumber.trim().isEmpty() -> ActionType.CALL_NUMBER
+                                    ActionType.SEND_SMS in actions && (smsRecipient.isBlank() || smsMessage.isBlank()) -> ActionType.SEND_SMS
+                                    ActionType.DRAFT_SMS in actions && smsRecipient.isBlank() && smsMessage.isBlank() -> ActionType.DRAFT_SMS
+                                    else -> null
+                                }
+    val actionValidationMessage = when (invalidAction) {
+                                    ActionType.CREATE_CALENDAR_EVENT -> R.string.validation_action_calendar
+                                    ActionType.LAUNCH_APP, ActionType.FORCE_STOP_APP -> R.string.validation_action_app
+                                    ActionType.OPEN_URL -> R.string.validation_action_url
+                                    ActionType.MUSIC_SEARCH, ActionType.MUSIC_PLAY_LINK -> R.string.validation_action_music
+                                    ActionType.HTTP_WEBHOOK -> R.string.validation_action_webhook
+                                    ActionType.EXECUTE_JSON_COMMAND -> R.string.validation_action_json
+                                    ActionType.PLAY_SOUND -> R.string.validation_action_sound
+                                    ActionType.SPEAK_TEXT -> R.string.validation_action_speech
+                                    ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> R.string.validation_action_phone
+                                    ActionType.SEND_SMS, ActionType.DRAFT_SMS -> R.string.validation_action_sms
+                                    else -> R.string.validation_action_generic
+                                }
 
     fun draftRule(ruleName: String = name.ifBlank { initialRule.name }): Automation = initialRule.copy(
         name = ruleName,
@@ -548,7 +585,8 @@ fun DetailScreen(
                 title = stringResource(R.string.section_when),
                 modifier = Modifier.padding(top = 10.dp, bottom = 10.dp),
             )
-            com.flowpilot.app.ui.components.TriggerListEditor(triggerItems) { updated ->
+            key(initialRule.id) {
+            com.flowpilot.app.ui.components.TriggerListEditor(triggerItems, validationRequest) { updated ->
                 triggerItems = updated
                 val first = Automation(id = "", name = "", createdAt = 0).withTrigger(updated.first())
                 event = first.triggerEvent
@@ -575,6 +613,7 @@ fun DetailScreen(
                     geofenceLatitude = first.geofenceLatitude
                     geofenceLongitude = first.geofenceLongitude
                     geofenceRadiusMeters = first.geofenceRadiusMeters
+            }
             }
 
             SectionHeader(
@@ -628,16 +667,25 @@ fun DetailScreen(
                 )
             }
 
+            if (actionValidationVisible && actions.isEmpty()) {
+                Text(stringResource(actionValidationMessage), color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.bringIntoViewRequester(actionValidationTarget))
+            }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 actions.forEachIndexed { index, act ->
                     key(act) {
+                        if (actionValidationVisible && act == invalidAction) {
+                            Text(stringResource(actionValidationMessage), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.bringIntoViewRequester(actionValidationTarget))
+                        }
                         ActionCardItem(
                             index = index,
                             action = act,
                             delaySeconds = actionDelays.getOrElse(index) { 0 },
                             totalActions = actions.size,
                             triggerEvents = triggerItems.map { it.event },
-                            cardModifier = Modifier.actionDragTarget(index, reorderState),
+                            cardModifier = Modifier.actionDragTarget(index, reorderState).then(
+                                if (actionValidationVisible && act == invalidAction) Modifier.border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(18.dp)) else Modifier),
                             dragModifier = Modifier.actionDragHandle({ index }, reorderState),
                             isDragging = reorderState.draggedIndex == index,
                             onMoveUp = if (index > 0) { { onReorderActions(index, index - 1) } } else null,
@@ -941,6 +989,36 @@ fun DetailScreen(
                 OutlinedButton(back, Modifier.weight(1f).height(50.dp), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.btn_cancel)) }
                 Button(
                     onClick = {
+                        val valid = triggerItems.all { it.isValidTriggerDefinition() } &&
+                            (ActionType.CREATE_CALENDAR_EVENT !in actions || (calendarSelection.valid(calendarAccountName, calendarAccountType, calendarName) && com.flowpilot.app.actions.CalendarExecutor.validEditorTimes(calendarStartMillis, calendarEndMillis))) &&
+                            (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
+                            (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
+                            (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
+                            (actions.none { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } || musicAppAvailable(musicAppPackage)) &&
+                            (ActionType.MUSIC_SEARCH !in actions || (MusicLinkValidator.isSupportedPackage(musicAppPackage) && musicQuery.isNotBlank())) &&
+                            (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) &&
+                            (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
+                            (ActionType.EXECUTE_JSON_COMMAND !in actions || (jsonCommandSource.isNotBlank() && jsonCommandSource.length <= com.flowpilot.app.actions.TemplateRenderer.MAX_TEMPLATE_LENGTH)) &&
+                            (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
+                            (ActionType.SPEAK_TEXT !in actions || canSaveTtsConfiguration(ttsText, ttsSpeechRate, ttsAudioFileName, triggerItems.map { it.event }, ttsManager)) &&
+                            (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
+                            (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
+                            (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
+                            actions.isNotEmpty()
+                        if (!valid) {
+                            if (triggerItems.any { !it.isValidTriggerDefinition() }) {
+                                validationRequest++
+                            } else {
+                                actionValidationVisible = true
+                                view.announceForAccessibility(context.getString(actionValidationMessage))
+                                scope.launch {
+                                    androidx.compose.runtime.withFrameNanos { }
+                                    actionValidationTarget.bringIntoView()
+                                }
+                            }
+                            return@Button
+                        }
+                        actionValidationVisible = false
                         val finalName = name.ifBlank {
                             automaticAutomationName(
                                 context = context,
@@ -973,23 +1051,6 @@ fun DetailScreen(
                     },
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(16.dp),
-                    enabled =
-                        triggerItems.all { it.isValidTriggerDefinition() } &&
-                            (ActionType.CREATE_CALENDAR_EVENT !in actions || (calendarSelection.valid(calendarAccountName, calendarAccountType, calendarName) && com.flowpilot.app.actions.CalendarExecutor.validEditorTimes(calendarStartMillis, calendarEndMillis))) &&
-                            (ActionType.LAUNCH_APP !in actions || launchPackage.isNotEmpty()) &&
-                            (ActionType.FORCE_STOP_APP !in actions || forceStopPackage.isNotEmpty()) &&
-                            (ActionType.OPEN_URL !in actions || isWebUrl(url)) &&
-                            (actions.none { it == ActionType.MUSIC_SEARCH || it == ActionType.MUSIC_PLAY_LINK } || musicAppAvailable(musicAppPackage)) &&
-                            (ActionType.MUSIC_SEARCH !in actions || (MusicLinkValidator.isSupportedPackage(musicAppPackage) && musicQuery.isNotBlank())) &&
-                            (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) &&
-                            (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
-                            (ActionType.EXECUTE_JSON_COMMAND !in actions || (jsonCommandSource.isNotBlank() && jsonCommandSource.length <= com.flowpilot.app.actions.TemplateRenderer.MAX_TEMPLATE_LENGTH)) &&
-                            (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
-                            (ActionType.SPEAK_TEXT !in actions || canSaveTtsConfiguration(ttsText, ttsSpeechRate, ttsAudioFileName, triggerItems.map { it.event }, ttsManager)) &&
-                            (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
-                            (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
-                            (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
-                            actions.isNotEmpty(),
                 ) {
                     Text(stringResource(R.string.btn_save_changes))
                 }

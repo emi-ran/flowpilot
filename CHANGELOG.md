@@ -28,6 +28,7 @@ All notable FlowPilot changes are documented here.
 - The calendar reminder picker now reopens an existing custom value in its largest whole unit (minutes, hours, days or weeks), keeps the selected preset or custom choice visibly marked, previews the resulting "before" time while you type, validates against the four-week limit inline, and supports keyboard Done, an initially focused amount field, scrolling on small screens, and a single accessible label for the whole selector.
 
 ### Fixed
+- Explain invalid trigger and action settings when Save is pressed, select the first invalid trigger, and highlight the relevant configuration.
 - Mark activity launch requests as unverified in history and JSON command results instead of claiming the target opened; older JSON history is conservatively unverified because its nested action was not recorded.
 
 - Match alphanumeric SMS sender filters by case-insensitive exact identity instead of treating them as an empty filter.

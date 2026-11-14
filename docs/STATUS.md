@@ -3,6 +3,7 @@
 Last updated: 2026-11-14
 
 ## Build state
+- Unreleased editor save guidance selects the first invalid trigger or highlights an invalid action and explains its configuration; device interaction verification is pending.
 - Unreleased JSON commands cover all normal actions, but reject nested `EXECUTE_JSON_COMMAND`. Existing action permission and capability checks still apply; the receiver does not authenticate senders, and matching content can cause SMS or calls (with possible charges), network changes, or device locking. The detailed schema and safety guidance are in [JSON_COMMANDS.md](JSON_COMMANDS.md) and the [agent skill](skills/flowpilot-json-command/SKILL.md). Source templates are Keystore-encrypted, removed from normal exports and retained in encrypted exports; re-enter them after normal import. Independent notification title/message filters are also available. The 2026-11-14 JDK 17 release gate passed. The user reported successful screen-off flashlight and music commands; broad action and device coverage is not established.
 
 - Notification listener connection is shown separately from access permission; a disconnected listener links to system settings. On Xiaomi, the Dev UI was observed changing from disconnected to available. Android controls binding, retry requests do not prove reconnection, and missed notifications are not replayed; recovery of the previously disconnected release listener remains unverified.
