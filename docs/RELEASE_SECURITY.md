@@ -4,7 +4,11 @@
 
 The `Build & Test` job skips Gradle and the SDK-free scripts when no Android or build inputs changed, including workflow-only changes; a successful job alone does not prove those checks ran. The release job separately runs the SDK-free scripts, unit tests, debug lint and debug assembly before building the signed release.
 
-Before tagging a new version, update the version-specific APK `versionCode` and `versionName` checks, release title and required change-section headings in `release.yml`, along with the app version, changelog section and `docs/RELEASE_NOTES_X.Y.Z.md`. The notes must contain the workflow's `{{APK_NAME}}`, `{{SHA256}}` and `{{RELEASE_COMMIT}}` markers and required headings. Validation also queries the latest published release and checks its Verification, Installation and Compatibility headings; an unavailable or nonconforming latest release stops the workflow.
+Before tagging a new version, update the version-specific APK `versionCode` and `versionName` checks, release title and required change-section headings in `release.yml`, along with the app version, changelog section and `docs/releases/RELEASE_NOTES_X.Y.Z.md`. The notes must contain the workflow's `{{APK_NAME}}`, `{{SHA256}}` and `{{RELEASE_COMMIT}}` markers and required headings. Validation also queries the latest published release and checks its Verification, Installation and Compatibility headings; an unavailable or nonconforming latest release stops the workflow.
+
+Before each release, compare the prepared release notes with the Pages source (`docs/index.html` and `docs/assets/js/app.js`) in both languages. Update feature, privacy/network, backup and installation guidance; verify release and APK links and check the deployed site after publication. A version-label or download-link check alone does not establish content freshness.
+
+Historical Markdown paths under `docs/` retain their original content for existing raw-file and fragment links. Keep those snapshots unchanged when reorganizing their current copies; version-tagged links must continue to refer to the original tagged tree.
 
 ## Required GitHub repository setup
 

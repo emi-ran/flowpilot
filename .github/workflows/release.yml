@@ -107,7 +107,7 @@ jobs:
             }
           done
 
-          notes_source="docs/RELEASE_NOTES_${GITHUB_REF_NAME#v}.md"
+          notes_source="docs/releases/RELEASE_NOTES_${GITHUB_REF_NAME#v}.md"
           [[ -s "$notes_source" ]] || { echo "ERROR: missing prepared release notes: $notes_source"; exit 1; }
           grep --fixed-strings --quiet "## [${GITHUB_REF_NAME#v}]" CHANGELOG.md || {
             echo "ERROR: CHANGELOG.md missing release section for ${GITHUB_REF_NAME#v}"
@@ -235,7 +235,7 @@ jobs:
 
           release_title="FlowPilot ${GITHUB_REF_NAME} — JSON Commands, Media & Reliability"
           release_notes_path="$RUNNER_TEMP/release-notes.md"
-          notes_source="docs/RELEASE_NOTES_${GITHUB_REF_NAME#v}.md"
+          notes_source="docs/releases/RELEASE_NOTES_${GITHUB_REF_NAME#v}.md"
           [[ -s "$notes_source" ]] || { echo "ERROR: missing prepared release notes: $notes_source"; exit 1; }
           python3 - "$notes_source" "$release_notes_path" "$release_apk_name" "$release_sha256" "$RELEASE_COMMIT" <<'PY'
           from pathlib import Path

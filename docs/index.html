@@ -247,7 +247,7 @@
         <div class="section-head reveal">
           <p class="eyebrow" data-i18n="caps_eyebrow">Kabiliyet haritası</p>
           <h2 data-i18n="caps_title">Tetikleyiciler ve eylemler, tek bakışta.</h2>
-          <p class="section-desc" data-i18n="caps_desc">Android'in yerel API sınırları içinde çalışır. Mavi işaretli eylemler Shizuku IPC gerektirir; kalanlar standart API'lerle uygulanır.</p>
+          <p class="section-desc" data-i18n="caps_desc">Android izinleri ve cihaz sınırları geçerlidir. Mavi işaretli eylemler Shizuku gerektirir; diğer eylemler için farklı izinler gerekebilir.</p>
         </div>
 
         <div class="caps-grid">
@@ -265,6 +265,8 @@
               <li data-i18n="trig_wifi_ssid">SSID eşleşmesi</li>
               <li data-i18n="trig_bt_state">Bluetooth cihazı</li>
               <li data-i18n="trig_nfc">NFC etiketi</li>
+              <li data-i18n="trig_notification">Bildirim: uygulama, başlık ve mesaj filtreleri</li>
+              <li data-i18n="trig_media">Medya oynatma / parça değişimi</li>
             </ul>
           </article>
 
@@ -280,6 +282,9 @@
               <li data-i18n="act_vol_ringer">Sessiz / titreşim</li>
               <li data-i18n="act_dnd">Rahatsız Etmeyin</li>
               <li data-i18n="act_notify">Sistem bildirimi</li>
+              <li data-i18n="act_media">Medya oturumu kontrolü / müzik arama</li>
+              <li data-i18n="act_calendar">Takvim etkinliği / hatırlatma</li>
+              <li data-i18n="act_alarm">Tekrarlı alarm isteği</li>
             </ul>
           </article>
 
@@ -296,9 +301,18 @@
               <li data-i18n="act_volume_preset">Ses profili</li>
               <li data-i18n="act_webhook">Webhook</li>
               <li data-i18n="act_sms">SMS / telefon</li>
+              <li data-i18n="act_json">JSON komutu çalıştır</li>
             </ul>
             <p class="cap-note"><span class="priv-dot" aria-hidden="true"></span><span data-i18n="caps_note">Shizuku IPC gerektirir</span></p>
           </article>
+        </div>
+        <div class="callout callout-blue reveal">
+          <h3 data-i18n="json_title">JSON komutları ve güvenlik</h3>
+          <p data-i18n="json_desc">Bir kural, bildirim metni veya SMS gövdesindeki tam sürüm 1 JSON nesnesini eyleme dönüştürebilir. Uygulama, başlık ve mesaj filtreleri birlikte çalışır; içerir veya tam eşleşme seçilebilir. Eski anahtar kelime kuralları önceki VEYA davranışını korur.</p>
+          <p data-i18n="json_security">Filtreler gönderenin kimliğini doğrulamaz; eşleşen içeriği gönderebilen biri arama, SMS veya bağlantıyı kesen eylemler başlatabilir. Güvenilir kaynaklar ve dar filtreler kullanın, yerel kurtarma yolu bırakın; ücretli arama veya SMS için açık izin alın. Komut kimliği yetkilendirme veya tekrar önleme sağlamaz.</p>
+          <p data-i18n="json_ntfy">Harici bir ajan ntfy üzerinden JSON gönderebilir; ayrıca yapılandırılmış bildirim ve FlowPilot kuralı gerekir. FlowPilot'a ajan veya ntfy entegrasyonu gömülü değildir. Teslim ve yürütme Android'e ve kural ayarlarına bağlıdır.</p>
+          <p><a href="https://github.com/emi-ran/flowpilot/blob/v2.3.0/docs/JSON_COMMANDS.md" data-i18n="json_link">JSON komut sözleşmesi ve sınırları</a></p>
+          <p data-i18n="media_limits">Medya kontrolü bildirim erişimi ve etkin oturum gerektirir. Spotify veya YouTube Music isteklerinde açılma ve oynatma garanti edilmez. Takvim için yazılabilir takvim ve izinler gerekir; alarmın davranışını saat uygulaması belirler.</p>
         </div>
       </div>
     </section>
@@ -422,7 +436,7 @@
               <tr>
                 <th scope="row" data-i18n="cmp_r4">Gizlilik</th>
                 <td><span class="mark mark-bad" data-i18n="cmp_r4_old">Crashlytics, analitik SDK'ları, hesap zorunluluğu</span></td>
-                <td class="is-us"><span class="mark mark-good" data-i18n="cmp_r4_new">Sıfır telemetri; iletişim yalnız açıkça kullandığınız özelliklerle</span></td>
+                <td class="is-us"><span class="mark mark-good" data-i18n="cmp_r4_new">Telemetri yok; isteğe bağlı GitHub güncelleme kontrolü varsayılan olarak açık</span></td>
               </tr>
               <tr>
                 <th scope="row" data-i18n="cmp_r5">Kaynak kodu</th>
@@ -440,8 +454,8 @@
       <div class="wrap">
         <div class="section-head reveal">
           <p class="eyebrow" data-i18n="inst_eyebrow">Kurulum</p>
-          <h2 data-i18n="inst_title">İki adımda çalışır durumda.</h2>
-          <p class="section-desc" data-i18n="inst_desc">Root gerekmez. Shizuku'yu Android 11+ Kablosuz Hata Ayıklama ile telefonda veya USB üzerinden başlatın.</p>
+          <h2 data-i18n="inst_title">Kurun ve gereken izinleri seçin.</h2>
+          <p class="section-desc" data-i18n="inst_desc">Root gerekmez. Shizuku yalnız onu gerektiren eylemler için kurulur ve yetkilendirilir.</p>
         </div>
 
         <div class="install-grid">
@@ -453,8 +467,8 @@
             </div>
             <div class="step-card reveal">
               <span class="step-badge">02</span>
-              <h3 data-i18n="step_2_title">Shizuku'yu başlatın</h3>
-              <p data-i18n-html="step_2_desc">Geliştirici Seçenekleri'nden <em>Kablosuz Hata Ayıklama</em> ile eşleyin; ya da cihazı USB ile bağlayıp terminalden başlatın.</p>
+              <h3 data-i18n="step_2_title">Gerekirse Shizuku'yu başlatın</h3>
+              <p data-i18n-html="step_2_desc">Ayrıcalıklı eylemler için Android 11+ üzerinde <em>Kablosuz Hata Ayıklama</em> ile eşleyin veya USB üzerinden başlatın; FlowPilot'a yetki verin.</p>
             </div>
 
             <div class="callout callout-blue reveal">
@@ -466,13 +480,13 @@
             <div class="callout callout-green reveal">
               <p class="callout-tag" data-i18n="callout_backup_tag">Yedek ve gizlilik</p>
               <h4 data-i18n="callout_backup_title">Şifreli tam yedek</h4>
-              <p data-i18n-html="callout_backup_desc">Normal JSON dışa aktarma webhook sırlarını çıkarır ve içe aktarılan kuralları devre dışı bırakır. Şifreli tam yedek tüm kural verisini AES-256-GCM ve parola ile taşır; geri yükleme etkinlik durumunu korur.</p>
+              <p data-i18n-html="callout_backup_desc">Normal JSON dışa aktarma webhook URL, başlık ve gövdelerini ve JSON komut kaynak şablonunu temizler; başka kişisel veriler kalabilir. Paylaşmadan önce inceleyin. Normal JSON ile içe aktarılan kurallar kapalıdır. Parola ile şifreli tam yedek sırları ve etkinlik durumunu korur; etkin kurallar geri yüklemeden sonra çalışabilir.</p>
             </div>
 
             <div class="callout callout-warn reveal">
               <p class="callout-tag" data-i18n="callout_oem_tag">HyperOS / MIUI</p>
               <h4 data-i18n="callout_oem_title">Cihaz optimizasyonu</h4>
-              <p data-i18n-html="callout_oem_desc">Ekran kapalıyken dakik çalışması için FlowPilot'a <strong>otomatik başlatma</strong> iznini verin ve pil tasarrufunu <strong>kısıtlama yok</strong> yapın.</p>
+              <p data-i18n-html="callout_oem_desc">Arka plan kısıtlamalarını azaltmak için FlowPilot'a <strong>otomatik başlatma</strong> izni vermeyi ve pil tasarrufunu <strong>kısıtlama yok</strong> yapmayı deneyin. Bu, zamanında çalışmayı garanti etmez.</p>
             </div>
           </div>
 
@@ -525,11 +539,11 @@
           </details>
           <details>
             <summary data-i18n="faq_3_q">Verilerim nereye gidiyor?</summary>
-            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_3_a">Kurallar cihazda saklanır. Telemetri, analitik veya hesap yoktur; dış iletişim yalnızca sizin yapılandırdığınız webhook, SMS ve paylaşım gibi özelliklerle gerçekleşir.</p></div></div>
+            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_3_a">Kurallar cihazda saklanır; telemetri veya analitik yoktur. Release sürümü GitHub Releases API'sini varsayılan olarak otomatik kontrol eder; Ayarlar'dan kapatılabilir. Yapılandırdığınız webhook, SMS ve paylaşım da veri gönderebilir.</p></div></div>
           </details>
           <details>
             <summary data-i18n="faq_4_q">Yedekleme nasıl çalışıyor?</summary>
-            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_4_a">Normal JSON dışa aktarma webhook URL, header ve gövdelerini çıkarır; içe aktarılan kurallar siz etkinleştirene kadar kapalı kalır. Şifreli tam yedek tüm veriyi parola türevli AES-256-GCM ile taşır ve geri yüklemede etkinlik durumunu korur.</p></div></div>
+            <div class="faq-body"><div class="faq-body-inner"><p data-i18n="faq_4_a">Normal JSON dışa aktarma webhook URL, başlık ve gövdelerini ve JSON komut kaynak şablonunu temizler; telefon numarası veya başka hassas veriler kalabilir. Paylaşmadan önce inceleyin ve içe aktardıktan sonra kaynak şablonunu yeniden girin. Normal JSON ile içe aktarılan kurallar kapalıdır. Parola ile AES-256-GCM şifreli tam yedek sırları ve etkinlik durumunu korur; etkin kurallar geri yüklemeden sonra çalışabilir.</p></div></div>
           </details>
           <details>
             <summary data-i18n="faq_5_q">Hangi Android sürümlerini destekliyor?</summary>
