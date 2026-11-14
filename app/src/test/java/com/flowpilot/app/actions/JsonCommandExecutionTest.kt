@@ -71,7 +71,9 @@ class JsonCommandExecutionTest {
         assertThat(denied.status).isEqualTo("permission_required")
         assertThat(denied.message).isEqualTo("Permission required")
         val music = """{"version":1,"action":"MUSIC_SEARCH","params":{"appPackage":"com.spotify.music","query":"song"}}"""
-        val result = JsonCommandExecution.execute(music) { _, _ -> ActionResult(true, "ok") }
-        assertThat(result.message).contains("playback not verified")
+        val result = JsonCommandExecution.execute(music) { _, _ -> ActionResult(true, "ok", ActionResultCode.REQUEST_UNVERIFIED) }
+        assertThat(result.status).isEqualTo("unverified")
+        assertThat(result.applyTo(TemplateContext()).values["command.success"]).isEmpty()
+        assertThat(result.message).isEqualTo("Request sent; outcome not verified")
     }
 }

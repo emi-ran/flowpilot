@@ -66,6 +66,8 @@ enum class ActionResultCode {
     SMS_SENT,
     PERMISSION_REQUIRED,
     EXECUTION_CANCELLED,
+    REQUEST_UNVERIFIED,
+    JSON_CONFIRMED,
 }
 
 data class ActionParameters(

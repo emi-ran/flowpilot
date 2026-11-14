@@ -108,9 +108,11 @@ Following actions in the same run can use `${command.success}`, `${command.statu
 | `invalid_command` | `false` | `Invalid or unsupported command` |
 | `permission_required` | `false` | `Permission required` |
 | `execution_failed` | `false` | `Command execution failed` |
-| `success` | `true` | `Command completed` (or `Music app opened; playback not verified` for music) |
+| `success` | `true` | `Command completed` |
+| `unverified` | empty | `Request sent; outcome not verified` |
 
 The command outcome is available to subsequent actions, including after ordinary command failure; it is not an acknowledgement that an external recipient received anything. Payload and command ID are not stored in command history. Configured webhook/SMS actions can deliberately send the outcome or other selected values externally.
+Music, clock, app and URL requests use `unverified` when Android accepts the call without confirming the target outcome. An empty `command.success` means unknown, not false. Older JSON history lacks the nested action and is conservatively displayed as unverified.
 
 To reply via ntfy, add a subsequent HTTPS webhook POST to your ntfy server/topic, with a plain text body such as `id=${command.id} status=${command.status} message=${command.message}` and any required authorization header configured privately. Do not publish credentials or use a public topic for private data. A successful webhook means an HTTP 2xx response, not that a subscriber received or displayed it. When constructing a JSON webhook body, apply `jsonescape` to each interpolated string, e.g. `{"id":"${command.id|jsonescape}","status":"${command.status|jsonescape}"}`. Configure your server and topic separately; FlowPilot embeds no ntfy SDK.
 

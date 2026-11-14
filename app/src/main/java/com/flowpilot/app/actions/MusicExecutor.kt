@@ -115,7 +115,7 @@ class MusicExecutor internal constructor(private val launch: (Intent) -> Unit) :
         }.setPackage(parameters.musicAppPackage).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return try {
             launch(intent)
-            ActionResult(true, if (action == ActionType.MUSIC_SEARCH) "Music search opened; playback not verified" else "Music link opened; playback not verified")
+            ActionResult(true, "Music launch requested; opening and playback not verified", ActionResultCode.REQUEST_UNVERIFIED)
         } catch (_: ActivityNotFoundException) {
             ActionResult(false, "Music app unavailable or unable to handle this action", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
         } catch (_: Exception) {

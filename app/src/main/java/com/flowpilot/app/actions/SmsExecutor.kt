@@ -115,8 +115,8 @@ class SmsExecutor(
                 return ActionResult(false, "No messaging application found", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
             }
             startActivity(intent)
-            Log.i(TAG, "SMS draft opened successfully")
-            ActionResult(true, "SMS draft opened")
+            Log.i(TAG, "SMS draft requested")
+            ActionResult(true, "SMS draft request sent; opening not verified", ActionResultCode.REQUEST_UNVERIFIED)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to draft SMS (${e.javaClass.simpleName})")
             ActionResult(false, "Failed to open SMS draft")

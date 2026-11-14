@@ -711,6 +711,9 @@
     <string name="perms_modify_settings_desc">Allows FlowPilot to change system settings such as Auto-rotate. Grant in Android special access settings.</string>
     <string name="perms_overlay_title">Display over other apps</string>
     <string name="perms_overlay_desc">Optional: may allow automations to open other apps while FlowPilot is in the background. This special access also permits drawing over other apps. Android or your device may still block launches.</string>
+    <string name="history_result_unverified">Unverified</string>
+    <string name="history_result_unverified_detail">Request sent; the final outcome was not verified and may have been blocked.</string>
+    <string name="history_result_legacy_unverified">The original command outcome cannot be verified from this older record.</string>
     <string name="perms_battery_opt_title">Battery restrictions</string>
     <string name="perms_battery_opt_desc">Allow FlowPilot to run without battery restrictions. Required for reliable schedules while screen is off.</string>
     <string name="perms_battery_opt_pill">Restriction active</string>

@@ -46,8 +46,8 @@ class PhoneExecutor(
                 return ActionResult(false, "No dialer application found", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
             }
             startActivity(intent)
-            Log.i(TAG, "Dialer opened successfully")
-            ActionResult(true, "Dialer opened")
+            Log.i(TAG, "Dialer launch requested")
+            ActionResult(true, "Dialer request sent; opening not verified", ActionResultCode.REQUEST_UNVERIFIED)
         } catch (_: Exception) {
             Log.w(TAG, "Failed to open dialer")
             ActionResult(false, "Failed to open dialer")
@@ -69,8 +69,8 @@ class PhoneExecutor(
                 return ActionResult(false, "No dialer application found", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
             }
             startActivity(intent)
-            Log.i(TAG, "Phone number prepared in dialer")
-            ActionResult(true, "Phone number prepared in dialer")
+            Log.i(TAG, "Dialer launch requested")
+            ActionResult(true, "Dialer request sent; opening not verified", ActionResultCode.REQUEST_UNVERIFIED)
         } catch (_: Exception) {
             Log.w(TAG, "Failed to prepare number in dialer")
             ActionResult(false, "Failed to prepare number in dialer")
@@ -99,8 +99,8 @@ class PhoneExecutor(
                 return ActionResult(false, "No phone calling application found", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
             }
             startActivity(intent)
-            Log.i(TAG, "Direct phone call initiated")
-            ActionResult(true, "Direct phone call initiated")
+            Log.i(TAG, "Phone call requested")
+            ActionResult(true, "Call request sent; call not verified", ActionResultCode.REQUEST_UNVERIFIED)
         } catch (_: Exception) {
             Log.w(TAG, "Failed to initiate direct phone call")
             ActionResult(false, "Failed to initiate phone call")

@@ -11,7 +11,7 @@ internal data class CommandOutcome(
 ) {
     fun applyTo(context: TemplateContext): TemplateContext = context.copy(
         values = context.values + mapOf(
-            "command.success" to success.toString(),
+            "command.success" to if (status == "unverified") "" else success.toString(),
             "command.status" to status,
             "command.message" to message,
             "command.id" to id,
@@ -30,6 +30,7 @@ internal object JsonCommandExecution {
         is JsonCommandParser.Result.Success -> {
             val result = dispatch(parsed.action, parsed.parameters)
             val status = when {
+                result.success && result.resultCode == ActionResultCode.REQUEST_UNVERIFIED -> "unverified"
                 result.success -> "success"
                 result.resultCode == ActionResultCode.PERMISSION_REQUIRED || result.diagnostic?.reason in permissionDiagnostics -> "permission_required"
                 else -> "execution_failed"
@@ -37,7 +38,7 @@ internal object JsonCommandExecution {
             val message = when {
                 !result.success && status == "permission_required" -> "Permission required"
                 !result.success -> "Command execution failed"
-                parsed.action == ActionType.MUSIC_SEARCH || parsed.action == ActionType.MUSIC_PLAY_LINK -> "Music app opened; playback not verified"
+                status == "unverified" -> "Request sent; outcome not verified"
                 else -> "Command completed"
             }
             CommandOutcome(result.success, status, message, parsed.id.orEmpty())

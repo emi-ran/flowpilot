@@ -97,7 +97,7 @@ class ManualRuleRunner(
                         dispatcher.executeAsync(nestedAction, nestedParameters)
                     }
                     templateContext = outcome.applyTo(templateContext)
-                    com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message)
+                    com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message, if (outcome.status == "unverified") com.flowpilot.app.actions.ActionResultCode.REQUEST_UNVERIFIED else if (outcome.success) com.flowpilot.app.actions.ActionResultCode.JSON_CONFIRMED else null)
                 } else {
                     dispatcher.executeAsync(action, actionParameters)
                 }

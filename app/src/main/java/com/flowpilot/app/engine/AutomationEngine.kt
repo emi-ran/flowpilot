@@ -948,7 +948,7 @@ class AutomationEngine(
                                                 dispatcher.executeAsync(nestedAction, nestedParameters)
                                             }
                                             templateContext = outcome.applyTo(templateContext)
-                                            return com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message)
+                                            return com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message, if (outcome.status == "unverified") com.flowpilot.app.actions.ActionResultCode.REQUEST_UNVERIFIED else if (outcome.success) com.flowpilot.app.actions.ActionResultCode.JSON_CONFIRMED else null)
                                         }
                                         if (eventAuthorization != null) {
                                             AutomationService.executeIfEventAuthorized(eventAuthorization) { dispatch() }
