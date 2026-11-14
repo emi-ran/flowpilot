@@ -4,6 +4,8 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-11-15
+
 ### Added
 - Keep trigger reorder and remove controls compact on narrow screens while preserving their accessibility labels.
 
