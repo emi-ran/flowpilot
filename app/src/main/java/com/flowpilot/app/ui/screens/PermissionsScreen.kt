@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
 import com.flowpilot.app.actions.ShizukuPermissionBridge
 import com.flowpilot.app.permission.ShizukuState
+import com.flowpilot.app.permission.CapabilityStatus
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.CapabilityPill
 import androidx.lifecycle.Lifecycle
@@ -44,6 +45,7 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
     val notif by vm.hasNotifications.collectAsState()
     val notifPolicy by vm.hasNotificationPolicy.collectAsState()
     val notifListener by vm.hasNotificationListener.collectAsState()
+    val listenerStatus by vm.notificationListenerStatus.collectAsState()
     val wifiPerms by vm.hasWifiPermissions.collectAsState()
     val bluetoothConnect by vm.hasBluetoothConnectPermission.collectAsState()
     val readPhoneState by vm.hasReadPhoneStatePermission.collectAsState()
@@ -134,8 +136,14 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
             }
             PermissionCard(
                 stringResource(R.string.perms_notif_listener_title),
-                stringResource(R.string.perms_notif_listener_desc),
-                notifListener,
+                if (notifListener && listenerStatus == CapabilityStatus.LISTENER_DISCONNECTED)
+                    stringResource(R.string.perms_notif_listener_disconnected_desc)
+                else stringResource(R.string.perms_notif_listener_desc),
+                listenerStatus == CapabilityStatus.AVAILABLE,
+                pillText = if (notifListener) stringResource(R.string.capability_listener_disconnected)
+                    else stringResource(R.string.capability_permission_required),
+                actionText = if (notifListener) stringResource(R.string.perms_notif_listener_settings)
+                    else stringResource(R.string.perms_btn_setup),
             ) {
                 val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

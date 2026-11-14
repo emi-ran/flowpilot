@@ -27,6 +27,7 @@ All notable FlowPilot changes are documented here.
 
 ### Fixed
 
+- Distinguish notification access from a live listener connection in rule and permission status. When Android leaves the listener disconnected, offer system settings and explain that retries do not guarantee reconnection or replay missed notifications.
 - Show the HTTP status of recognized webhook failures in execution history without exposing stored error text; unrecognized legacy messages remain generic.
 - Trim surrounding whitespace from YouTube Music links before validating and opening them, including links resolved from templates.
 - The execution-history filters now read as dropdowns instead of plain buttons: each filter shows the current selection with a chevron, fills with the primary container color while a filter is active, offers a check-marked menu and a clear button that resets both filters. A successful action no longer prints "no diagnostic information".

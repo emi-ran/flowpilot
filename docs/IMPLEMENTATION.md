@@ -231,6 +231,7 @@ on Android 13+ Nearby devices access are required for reliable SSID reading/scan
 FlowPilotNotificationListener receives notification posts only after the user grants Notification Listener
 access. It creates an in-memory event with package, title, and text only long enough to match the selected
 package and optional keyword, dedupes by post key/time, and never persists or logs notification content.
+Access permission and the listener's in-process connection callback are separate states. A rebind request is only a request, not proof of connection; Android or an OEM can leave the service unbound. The permission screen offers user-controlled notification access settings, and missed notifications are not replayed.
 
 Android can leave an allowed listener unbound after an in-place update or an OEM process kill, so rule
 reconciliation calls `FlowPilotNotificationListener.ensureBound` whenever notification demand exists, and

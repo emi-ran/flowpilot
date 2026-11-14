@@ -656,6 +656,7 @@
     <!-- Capabilities & Status -->
     <string name="capability_available">Available</string>
     <string name="capability_permission_required">Permission required</string>
+    <string name="capability_listener_disconnected">Listener disconnected</string>
     <string name="capability_shizuku_required">Shizuku required</string>
     <string name="capability_unsupported">Unsupported on this device</string>
 
@@ -682,6 +683,8 @@
     <string name="perms_send_sms_desc">Required for the Send SMS action to send automated background SMS text messages directly without manual app confirmation.</string>
     <string name="perms_notif_listener_title">Notification listener access</string>
     <string name="perms_notif_listener_desc">Allows FlowPilot to trigger automations when notifications arrive from selected apps and to monitor and control media sessions.</string>
+    <string name="perms_notif_listener_disconnected_desc">Access is granted, but the notification listener is not connected. Notification and media automations may not work. In system settings, try turning FlowPilot notification access off and on. Android may still delay reconnection; missed notifications are not replayed.</string>
+    <string name="perms_notif_listener_settings">Open settings</string>
     <string name="media_target_shared_explanation">This target is shared by all media control actions in this rule. Changing it here changes it for all of them.</string>
     <string name="perms_bluetooth_title">Bluetooth paired-device access</string>
     <string name="perms_bluetooth_desc">Required on Android 12+ to list bonded devices and receive Bluetooth device connect/disconnect events. FlowPilot never runs Bluetooth discovery or stores paired-device history.</string>

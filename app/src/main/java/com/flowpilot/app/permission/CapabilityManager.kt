@@ -17,8 +17,15 @@ import com.flowpilot.app.data.model.CapabilityRequirement
 enum class CapabilityStatus(val label: String) {
     AVAILABLE("Available"),
     PERMISSION_REQUIRED("Permission required"),
+    LISTENER_DISCONNECTED("Notification listener disconnected"),
     SHIZUKU_REQUIRED("Shizuku required"),
     UNSUPPORTED("Unsupported on this device"),
+}
+
+internal fun notificationListenerStatus(accessGranted: Boolean, connected: Boolean): CapabilityStatus = when {
+    !accessGranted -> CapabilityStatus.PERMISSION_REQUIRED
+    !connected -> CapabilityStatus.LISTENER_DISCONNECTED
+    else -> CapabilityStatus.AVAILABLE
 }
 
 /**
@@ -78,6 +85,11 @@ class CapabilityManager(private val context: Context) {
         val listener = ComponentName(context, com.flowpilot.app.engine.FlowPilotNotificationListener::class.java)
         return flat.split(":").any { ComponentName.unflattenFromString(it.trim()) == listener }
     }
+
+    fun notificationListenerStatus(): CapabilityStatus = notificationListenerStatus(
+        hasNotificationListenerAccess(),
+        com.flowpilot.app.engine.FlowPilotNotificationListener.isConnected,
+    )
 
     /** Has the app been granted fine location permission? */
     fun hasFineLocation(): Boolean =
@@ -240,8 +252,7 @@ class CapabilityManager(private val context: Context) {
         CapabilityRequirement.NOTIFICATION_POLICY ->
             if (hasNotificationPolicyAccess()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
 
-        CapabilityRequirement.NOTIFICATION_LISTENER ->
-            if (hasNotificationListenerAccess()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
+        CapabilityRequirement.NOTIFICATION_LISTENER -> notificationListenerStatus()
 
         CapabilityRequirement.VIBRATION ->
             if ((context.getSystemService(android.os.Vibrator::class.java))?.hasVibrator() == true) {

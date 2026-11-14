@@ -310,6 +310,7 @@ val com.flowpilot.app.permission.CapabilityStatus.labelRes: Int
     get() = when (this) {
         com.flowpilot.app.permission.CapabilityStatus.AVAILABLE -> R.string.capability_available
         com.flowpilot.app.permission.CapabilityStatus.PERMISSION_REQUIRED -> R.string.capability_permission_required
+        com.flowpilot.app.permission.CapabilityStatus.LISTENER_DISCONNECTED -> R.string.capability_listener_disconnected
         com.flowpilot.app.permission.CapabilityStatus.SHIZUKU_REQUIRED -> R.string.capability_shizuku_required
         com.flowpilot.app.permission.CapabilityStatus.UNSUPPORTED -> R.string.capability_unsupported
     }

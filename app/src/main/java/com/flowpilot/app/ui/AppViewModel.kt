@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -79,6 +80,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val hasNotifications = MutableStateFlow(false)
     val hasNotificationPolicy = MutableStateFlow(false)
     val hasNotificationListener = MutableStateFlow(false)
+    val notificationListenerStatus = MutableStateFlow(CapabilityStatus.PERMISSION_REQUIRED)
     val hasWifiPermissions = MutableStateFlow(false)
     val hasFineLocation = MutableStateFlow(false)
     val hasBackgroundLocation = MutableStateFlow(false)
@@ -250,6 +252,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         AutomationService.loadFailure(app)
         autoCheckForUpdatesIfDue()
         refreshPermissions()
+        viewModelScope.launch {
+            while (true) {
+                delay(2_000)
+                val status = capabilities.notificationListenerStatus()
+                if (notificationListenerStatus.value != status) {
+                    notificationListenerStatus.value = status
+                    hasNotificationListener.value = status != CapabilityStatus.PERMISSION_REQUIRED
+                    remapRules(repository.automations.first())
+                }
+            }
+        }
         try {
             rikka.shizuku.Shizuku.addBinderReceivedListenerSticky {
                 refreshPermissions()
@@ -289,6 +302,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         automations.value = rules.sortedByDescending { it.createdAt }
             .map { rule ->
                 val actionStatuses = rule.effectiveActions.map { capabilities.statusFor(it) }
+                val listenerStatus = capabilities.notificationListenerStatus()
 
                 // Check trigger/condition prerequisites for Wi-Fi, Bluetooth, NFC, notifications, media, and phone calls
                 val hasWifiTriggerOrCond = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.WIFI_CONNECTED, com.flowpilot.app.data.model.TriggerEvent.WIFI_DISCONNECTED) ||
@@ -309,7 +323,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     hasWifiTriggerOrCond && !capabilities.hasWifiPermissions() -> CapabilityStatus.PERMISSION_REQUIRED
                     hasBluetoothTrigger && !capabilities.hasBluetoothAdapter() -> CapabilityStatus.UNSUPPORTED
                     hasBluetoothTrigger && !capabilities.hasBluetoothConnectPermission() -> CapabilityStatus.PERMISSION_REQUIRED
-                    hasNotificationListenerTrigger && !capabilities.hasNotificationListenerAccess() -> CapabilityStatus.PERMISSION_REQUIRED
+                    hasNotificationListenerTrigger && listenerStatus != CapabilityStatus.AVAILABLE -> listenerStatus
                     hasNfcTagTrigger && !capabilities.hasNfcHardware() -> CapabilityStatus.UNSUPPORTED
                     hasNfcTagTrigger && !capabilities.isNfcEnabled() -> CapabilityStatus.PERMISSION_REQUIRED
                     hasCallTrigger && !capabilities.hasReadPhoneStatePermission() -> CapabilityStatus.PERMISSION_REQUIRED
@@ -323,6 +337,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     allStatuses.any { it == CapabilityStatus.UNSUPPORTED } -> CapabilityStatus.UNSUPPORTED
                     allStatuses.any { it == CapabilityStatus.SHIZUKU_REQUIRED } -> CapabilityStatus.SHIZUKU_REQUIRED
                     allStatuses.any { it == CapabilityStatus.PERMISSION_REQUIRED } -> CapabilityStatus.PERMISSION_REQUIRED
+                    allStatuses.any { it == CapabilityStatus.LISTENER_DISCONNECTED } -> CapabilityStatus.LISTENER_DISCONNECTED
                     else -> CapabilityStatus.AVAILABLE
                 }
                 AutomationUI(rule, aggregate, geofenceDiagnostics.value[rule.id])
@@ -340,6 +355,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         } else true
         hasNotificationPolicy.value = c.hasNotificationPolicyAccess()
         hasNotificationListener.value = c.hasNotificationListenerAccess()
+        notificationListenerStatus.value = c.notificationListenerStatus()
         hasWifiPermissions.value = c.hasWifiPermissions()
         hasFineLocation.value = c.hasFineLocation()
         hasBackgroundLocation.value = c.hasBackgroundLocation()

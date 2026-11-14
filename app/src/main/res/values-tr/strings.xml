@@ -656,6 +656,7 @@
     <!-- Capabilities & Status -->
     <string name="capability_available">Kullanılabilir</string>
     <string name="capability_permission_required">İzin gerekli</string>
+    <string name="capability_listener_disconnected">Dinleyici bağlı değil</string>
     <string name="capability_shizuku_required">Shizuku gerekli</string>
     <string name="capability_unsupported">Bu cihazda desteklenmiyor</string>
 
@@ -682,6 +683,8 @@
     <string name="perms_send_sms_desc">SMS gönder eyleminin manuel onay olmadan arka planda otomatik SMS gönderebilmesi için gereklidir.</string>
     <string name="perms_notif_listener_title">Bildirim dinleme erişimi</string>
     <string name="perms_notif_listener_desc">FlowPilot\'ın seçilen uygulamalardan bildirim geldiğinde otomasyonları tetiklemesini ve medya oturumlarını izlemesini ve kontrol etmesini sağlar.</string>
+    <string name="perms_notif_listener_disconnected_desc">Erişim izni verilmiş ancak bildirim dinleyicisi bağlı değil. Bildirim ve medya otomasyonları çalışmayabilir. Sistem ayarlarında FlowPilot bildirim erişimini kapatıp açmayı deneyin. Android yeniden bağlantıyı yine geciktirebilir; kaçırılan bildirimler tekrar işlenmez.</string>
+    <string name="perms_notif_listener_settings">Ayarları aç</string>
     <string name="media_target_shared_explanation">Bu hedef, bu kuraldaki tüm medya kontrolü eylemleri için ortaktır. Burada değiştirmek, tümünü etkiler.</string>
     <string name="perms_bluetooth_title">Bluetooth eşleşmiş cihaz erişimi</string>
     <string name="perms_bluetooth_desc">Android 12+ sürümlerde eşleşmiş cihazları listelemek ve bağlanma/kopma olaylarını yakalamak için gereklidir.</string>
