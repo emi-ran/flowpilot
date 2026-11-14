@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="validation_trigger_bluetooth">Choose a paired Bluetooth device. Nearby devices permission is required to list devices.</string>
+    <string name="validation_trigger_app">Choose an app for this trigger.</string>
+    <string name="validation_trigger_nfc">Scan or enter a valid NFC tag.</string>
+    <string name="validation_trigger_geofence">Choose a valid location and radius.</string>
+    <string name="validation_trigger_generic">Complete the trigger configuration before saving.</string>
+    <string name="validation_action_generic">Add at least one action before saving.</string>
+    <string name="validation_action_calendar">Choose a writable calendar and a valid start and end time.</string>
+    <string name="validation_action_app">Choose an app for the highlighted action.</string>
+    <string name="validation_action_url">Enter a valid HTTP or HTTPS URL.</string>
+    <string name="validation_action_music">Choose an available music app and enter a valid search or song link.</string>
+    <string name="validation_action_webhook">Enter a valid HTTP or HTTPS URL and valid webhook headers.</string>
+    <string name="validation_action_json">Enter a JSON command source within the template length limit.</string>
+    <string name="validation_action_sound">Choose a sound file.</string>
+    <string name="validation_action_speech">Check the speech text, voice, rate and template variables.</string>
+    <string name="validation_action_phone">Enter a phone number.</string>
+    <string name="validation_action_sms">Enter the required SMS recipient and message.</string>
     <string name="triggers_any_summary">Match ANY trigger · one shared cooldown</string>
     <string name="trigger_add">Add trigger (up to 5)</string>
     <string name="trigger_remove">Remove trigger</string>

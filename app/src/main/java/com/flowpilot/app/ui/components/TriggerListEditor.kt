@@ -12,7 +12,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,8 +26,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,15 +38,36 @@ import com.flowpilot.app.R
 import com.flowpilot.app.data.model.*
 import com.flowpilot.app.engine.NfcTagHandoff
 import com.flowpilot.app.ui.util.localizedLabel
+import kotlinx.coroutines.flow.first
 
 /** Each selected entry owns its picker state and isolated payload. */
 @Composable
-fun TriggerListEditor(items: List<TriggerDefinition>, onChange: (List<TriggerDefinition>) -> Unit) {
+fun TriggerListEditor(items: List<TriggerDefinition>, validationRequest: Int = 0, onChange: (List<TriggerDefinition>) -> Unit) {
     var selected by remember { mutableIntStateOf(0) }
     var pickingType by remember { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
     var pendingRemoval by remember { mutableStateOf<Int?>(null) }
+    var showValidation by remember { mutableStateOf(false) }
+    var pendingValidation by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    LaunchedEffect(validationRequest) {
+        if (validationRequest > 0) {
+            val invalid = items.indexOfFirst { !it.isValidTriggerDefinition() }
+            if (invalid >= 0) {
+                selected = invalid
+                showValidation = true
+                pendingValidation = validationRequest to invalid
+            } else {
+                pendingValidation = null
+            }
+        }
+    }
     val index = selected.coerceIn(items.indices)
+    LaunchedEffect(index, items[index].isValidTriggerDefinition(), pendingValidation) {
+        val request = pendingValidation
+        if (request != null && (request.second != index || items[index].isValidTriggerDefinition())) {
+            pendingValidation = null
+        }
+    }
     val base = Automation(id = "", name = "", createdAt = 0)
     val view = base.withTrigger(items[index])
     fun update(updated: Automation) {
@@ -80,8 +106,46 @@ fun TriggerListEditor(items: List<TriggerDefinition>, onChange: (List<TriggerDef
             onClick = { adding = true; pickingType = true }) {
             Icon(Icons.Default.Add, null); Text(stringResource(R.string.trigger_add))
         }
+        if (showValidation && !items[index].isValidTriggerDefinition()) {
+            val message = when (items[index].event) {
+                TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED -> R.string.validation_trigger_bluetooth
+                TriggerEvent.APP_OPENED, TriggerEvent.APP_CLOSED -> R.string.validation_trigger_app
+                TriggerEvent.NFC_TAG_SCANNED -> R.string.validation_trigger_nfc
+                TriggerEvent.GEOFENCE_ENTER, TriggerEvent.GEOFENCE_EXIT -> R.string.validation_trigger_geofence
+                else -> R.string.validation_trigger_generic
+            }
+            val requester = remember { BringIntoViewRequester() }
+            val accessibilityView = LocalView.current
+            val validationMessage = stringResource(message)
+            var positioned by remember(index, message) { mutableStateOf(false) }
+            val request = pendingValidation
+            LaunchedEffect(request, index, message) {
+                if (request != null && request.second == index) {
+                    snapshotFlow { positioned }.first { it }
+                    withFrameNanos { }
+                    accessibilityView.announceForAccessibility(validationMessage)
+                    requester.bringIntoView()
+                    if (pendingValidation == request) pendingValidation = null
+                } else if (request != null) {
+                    pendingValidation = null
+                }
+            }
+            Text(
+                stringResource(message),
+                modifier = Modifier.bringIntoViewRequester(requester)
+                    .onGloballyPositioned { positioned = true },
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
         key(index) {
-            TriggerDefinitionEditor(view, onChangeType = { adding = false; pickingType = true }, onUpdate = ::update)
+            Column(
+                modifier = if (showValidation && !items[index].isValidTriggerDefinition()) {
+                    Modifier.border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(16.dp)).padding(4.dp)
+                } else Modifier,
+            ) {
+                TriggerDefinitionEditor(view, onChangeType = { adding = false; pickingType = true }, onUpdate = ::update)
+            }
         }
     }
     pendingRemoval?.let { removeIndex ->
@@ -197,12 +261,11 @@ private fun TriggerSummaryCard(
                     animationSpec = tween(durationMillis = 180, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
                 ) + fadeOut(animationSpec = tween(100)),
             ) {
-                FlowRow(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     TriggerSummaryAction(Icons.Default.ArrowUpward, stringResource(R.string.trigger_move_up), canMoveUp, onMoveUp)
                     TriggerSummaryAction(Icons.Default.ArrowDownward, stringResource(R.string.trigger_move_down), canMoveDown, onMoveDown)
@@ -227,17 +290,14 @@ private fun TriggerSummaryAction(
     onClick: () -> Unit,
     isDestructive: Boolean = false,
 ) {
-    TextButton(
-        onClick = onClick,
-        enabled = enabled,
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-        colors = ButtonDefaults.textButtonColors(
-            contentColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-        ),
-    ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium)
+    IconButton(onClick = onClick, enabled = enabled) {
+        Icon(
+            icon,
+            contentDescription = label,
+            tint = if (!enabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                else if (isDestructive) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.primary,
+        )
     }
 }
 

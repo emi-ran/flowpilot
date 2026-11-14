@@ -5,9 +5,10 @@ All notable FlowPilot changes are documented here.
 ## [Unreleased]
 
 ### Added
+- Keep trigger reorder and remove controls compact on narrow screens while preserving their accessibility labels.
 
 - Add optional display-over-other-apps special access in Permissions. It can permit background app launches on supported devices, but also grants overlay capability and does not guarantee launch or playback.
-- Run version 1 JSON commands from template sources for all normal actions; nested `EXECUTE_JSON_COMMAND` is rejected. Existing permissions and capability checks remain in force, but the receiver does not authenticate senders: matching content can trigger SMS or calls with possible charges, network changes, or device locking. Per-run outcomes are available to subsequent webhook or SMS actions. The configured source template is limited to 4,000 characters and the rendered JSON to 16,384 UTF-16 units. See `docs/JSON_COMMANDS.md` and the installable agent skill in `docs/skills/flowpilot-json-command` for the detailed schema and safety guidance. Post-integration and device verification of this expansion are pending.
+- Run version 1 JSON commands from template sources for all normal actions; nested `EXECUTE_JSON_COMMAND` is rejected. Existing permissions and capability checks remain in force, but the receiver does not authenticate senders: matching content can trigger SMS or calls with possible charges, network changes, or device locking. Per-run outcomes are available to subsequent webhook or SMS actions. The configured source template is limited to 4,000 characters and the rendered JSON to 16,384 UTF-16 units. See `docs/JSON_COMMANDS.md` and the installable agent skill in `docs/skills/flowpilot-json-command` for the detailed schema and safety guidance. The 2026-11-14 JDK 17 release gate passed; device verification is partial.
 - Notification triggers support independent title and message contains/exact filters, combined with the selected app using AND; legacy keyword matching retains its OR semantics.
 - JSON command source templates are encrypted using Android Keystore. Normal single-rule and full exports clear the source; it must be entered again after normal import. Encrypted exports preserve it.
 - Media session controls: play, pause, toggle, next and previous, with an optional target app; media playing, paused and track-changed triggers with an optional app filter. Notification access is required, and observation runs only when enabled rules need it. Sessions present when the tracker starts are silently seeded without events; a newly observed session already playing after startup produces a playing event. Media title and artist are transient template values and are not written to logs or execution history; user-configured template actions can explicitly use them.
@@ -27,6 +28,7 @@ All notable FlowPilot changes are documented here.
 - The calendar reminder picker now reopens an existing custom value in its largest whole unit (minutes, hours, days or weeks), keeps the selected preset or custom choice visibly marked, previews the resulting "before" time while you type, validates against the four-week limit inline, and supports keyboard Done, an initially focused amount field, scrolling on small screens, and a single accessible label for the whole selector.
 
 ### Fixed
+- Explain invalid trigger and action settings when Save is pressed, select the first invalid trigger, and highlight the relevant configuration.
 - Mark activity launch requests as unverified in history and JSON command results instead of claiming the target opened; older JSON history is conservatively unverified because its nested action was not recorded.
 
 - Match alphanumeric SMS sender filters by case-insensitive exact identity instead of treating them as an empty filter.

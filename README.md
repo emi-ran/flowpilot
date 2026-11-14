@@ -197,6 +197,8 @@ Rules execute only when their conditions pass. Combine them with AND or OR, nest
 ### 3. Actions (Executors)
 Chain multiple actions in any custom sequence with drag-and-drop ordering and individual delays (0–300s):
 
+When a rule is incomplete, Save points to the invalid trigger or action and explains what to correct.
+
 - 🌐 **Connectivity (via Shizuku):** Toggle Wi-Fi, Mobile Data, Airplane Mode, Bluetooth, GPS Location, and Wi-Fi Hotspot (Android 16+).
 - 🖥️ **Display & Device:** Toggle Flashlight (Torch), Dark Theme (Shizuku), Auto-rotate, Brightness level, Lock Screen (Shizuku), and Force Stop App (Shizuku).
 - 🔊 **Sound & Alerts:** Do Not Disturb (DND) toggle, Sound Profiles (Normal / Vibrate / Silent), Media Volume (0–100%), Custom Audio playback (1–60s duration), Haptic Patterns (Pulse, Double Tap, Alert, Heartbeat, Triple Tap, SOS), and Rich Notifications.
@@ -241,7 +243,7 @@ FlowPilot uses **Shizuku** to perform elevated actions (Mobile Data, Airplane Mo
      adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
      ```
 3. **Authorize FlowPilot:** Open FlowPilot and tap **Grant** when prompted for Shizuku access.
-4. All elevated actions will now be unlocked and execute instantly!
+4. Authorized elevated actions can be used when supported by the device and system; authorization does not guarantee success.
 
 ---
 
@@ -253,7 +255,7 @@ FlowPilot is engineered with an uncompromised commitment to user privacy:
 - 🔄 **Optional Update Checks:** Release builds automatically check the public GitHub Releases API by default, at most once a day, without sending an account or device identifier. Disable automatic checks in Settings; manual checks remain available. Debug builds do not check.
 - 📵 **No Cloud Synchronization:** FlowPilot does not automatically synchronize rules, logs, or secrets to a cloud account. User-configured actions can send selected data to external recipients.
 - 🛡️ **Android Keystore Protection:** Webhook secrets, tokens, and sensitive headers are encrypted with AES-256-GCM using Android Keystore keys, hardware-backed when supported by the device.
-- 🙈 **Strict Log & Diagnostic Sanitization:** Phone numbers, URLs, webhook credentials, notification text, and sensitive headers are masked or excluded across UI screens, execution history, and audit logs. Persistent diagnostics store only non-content enums and bounded numeric metadata.
+- 🙈 **Log & Diagnostic Sanitization:** Execution history and logs mask or exclude sensitive content; persistent diagnostics store non-content enums and bounded numeric metadata. Configured values, including phone numbers and webhook fields, can remain visible in the editor.
 
 ### Transparent Permission Disclosures
 FlowPilot declares sensitive permissions solely to power explicit automation features:
