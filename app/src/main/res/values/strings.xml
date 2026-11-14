@@ -746,6 +746,7 @@
     <string name="history_result_failed">Failed</string>
     <string name="history_result_sms_sent_safe">SMS sent</string>
     <string name="history_diagnostic_unavailable">No diagnostic information available.</string>
+    <string name="history_http_status">HTTP response status: %1$d</string>
     <string name="history_diagnostic_malformed_link">The link is malformed.</string>
     <string name="history_diagnostic_link_components">The link contains unsupported components.</string>
     <string name="history_diagnostic_link_host">The link host is not supported.</string>

@@ -37,6 +37,7 @@ import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.ExecutionStatus
 import com.flowpilot.app.data.model.resolvedResultCode
+import com.flowpilot.app.data.model.resolvedHttpFailureStatus
 import com.flowpilot.app.actions.ActionResultCode
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.util.labelRes
@@ -433,6 +434,14 @@ private fun ActionOutcomeRow(action: ActionExecutionRecord, index: Int) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            val httpStatus = action.resolvedHttpFailureStatus()
+            if (httpStatus != null) {
+                Text(
+                    text = stringResource(R.string.history_http_status, httpStatus),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
             val diagnostic = action.diagnostic
             if (diagnostic != null) {
                 Text(
@@ -440,7 +449,7 @@ private fun ActionOutcomeRow(action: ActionExecutionRecord, index: Int) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
-            } else if (!action.success && action.templateDiagnostics.isEmpty() &&
+            } else if (!action.success && action.templateDiagnostics.isEmpty() && httpStatus == null &&
                 (action.resolvedResultCode() == null || action.resolvedResultCode() == ActionResultCode.COMPLETED)
             ) {
                 Text(
