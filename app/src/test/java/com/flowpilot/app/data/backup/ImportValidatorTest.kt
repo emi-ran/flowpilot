@@ -46,6 +46,27 @@ class ImportValidatorTest {
         assertRejected(alarm.copy(alarmDays = listOf(0)))
         assertRejected(alarm.copy(alarmDays = listOf(8)))
     }
+
+    @Test
+    fun calendarTimesValidateDefaultsExplicitRangesAndOverflow() {
+        val calendar = rule(actions = listOf(ActionType.CREATE_CALENDAR_EVENT))
+        ImportValidator.validate(listOf(calendar))
+        ImportValidator.validate(listOf(calendar.copy(calendarStartMillis = 100, calendarEndMillis = 200)))
+        assertRejected(calendar.copy(calendarStartMillis = -1))
+        assertRejected(calendar.copy(calendarEndMillis = -1))
+        assertRejected(calendar.copy(calendarStartMillis = 200, calendarEndMillis = 200))
+        assertRejected(calendar.copy(calendarStartMillis = 201, calendarEndMillis = 200))
+        assertRejected(calendar.copy(calendarStartMillis = Long.MAX_VALUE))
+    }
+
+    @Test
+    fun calendarSelectionAcceptsLegacyOrCompleteButRejectsPartial() {
+        val calendar = rule(actions = listOf(ActionType.CREATE_CALENDAR_EVENT))
+        ImportValidator.validate(listOf(calendar))
+        ImportValidator.validate(listOf(calendar.copy(calendarAccountName = "account", calendarAccountType = "type", calendarName = "name")))
+        assertRejected(calendar.copy(calendarAccountName = "account"))
+        assertRejected(calendar.copy(calendarAccountName = "account", calendarAccountType = "type", calendarName = " "))
+    }
     @Test
     fun musicImportRequiresMatchingServiceAndFields() {
         val search = rule(actions = listOf(ActionType.MUSIC_SEARCH)).copy(

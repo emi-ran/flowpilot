@@ -534,7 +534,8 @@ fun ActionPicker(
     select: (ActionType) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val allGroups = remember {
+    val calendarDescription = stringResource(R.string.action_create_calendar_event_desc)
+    val allGroups = remember(calendarDescription) {
         listOf(
             PickerCategoryGroup(
                 id = ActionCategory.SMS.name,
@@ -645,6 +646,14 @@ fun ActionPicker(
                         icon = Icons.Default.Alarm,
                         iconTint = Color(0xFFFFD54F),
                         keywords = listOf("alarm", "clock", "wake", "alert", "time", "set alarm"),
+                    ),
+                    PickerItem(
+                        value = ActionType.CREATE_CALENDAR_EVENT,
+                        title = ActionType.CREATE_CALENDAR_EVENT.label,
+                        subtitle = calendarDescription,
+                        icon = Icons.Default.Event,
+                        iconTint = Color(0xFFFFD54F),
+                        keywords = listOf("calendar", "event", "meeting", "takvim", "etkinlik"),
                     ),
                     PickerItem(
                         value = ActionType.START_TIMER,

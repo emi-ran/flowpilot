@@ -15,6 +15,11 @@ All notable FlowPilot changes are documented here.
 - Execution history and notification diagnostics: History groups repeated single-action failures by rule, action type, and structured `ActionDiagnosticReason` when a non-successful run has exactly one failed action with a diagnostic, while leaving multi-action failures ungrouped; each action row renders structured music-link failure reasons (including bounded expected/observed video ID lengths) and content-free template diagnostics (`ActionTemplateDiagnostic` reporting `notification.text` / `notification.bigText` missing/empty/present states, syntax errors, unknown variables, analysis failures, and empty rendered output) without persisting URLs, phone numbers, notification text, or raw error strings.
 - Extend safe action-history reasons to observed Shizuku, permission, system-command, state, target-app/handler, media-session, invalid-input and network failures. Reasons are recorded only when identified; otherwise the generic failure remains. Legacy records remain readable, and no raw error or sensitive action content is retained in diagnostics.
 - Alarm creation requests automatic setup with optional repeat weekdays; the existing label supports trigger variables. The Clock app controls UI and alarm lifecycle.
+- Create calendar events directly in an explicitly selected writable calendar, with templated details, optional recurrence and a preset or custom reminder up to four weeks before; calendar access is required, and invalid time ranges block saving and manual runs.
+
+### Changed
+
+- The calendar reminder picker now reopens an existing custom value in its largest whole unit (minutes, hours, days or weeks), keeps the selected preset or custom choice visibly marked, previews the resulting "before" time while you type, validates against the four-week limit inline, and supports keyboard Done, an initially focused amount field, scrolling on small screens, and a single accessible label for the whole selector.
 
 ### Fixed
 

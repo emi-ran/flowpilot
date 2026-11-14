@@ -21,6 +21,7 @@ class ActionDispatcher private constructor(
     private val tts: TtsExecutor,
     private val dnd: DndExecutor,
     private val clock: ClockExecutor,
+    private val calendar: CalendarExecutor,
     private val webhook: WebhookExecutor,
     private val phone: PhoneExecutor,
     private val wifi: WifiExecutor,
@@ -38,7 +39,7 @@ class ActionDispatcher private constructor(
         listOf(
             nfc, bluetooth, powerSaver, darkTheme, autoRotate, notification,
             vibration, sound, soundProfile, mediaVolume, mediaControl, music, launcher, tts, dnd,
-            clock, webhook, phone, wifi, mobileData, airplaneMode, hotspot, torch,
+            clock, calendar, webhook, phone, wifi, mobileData, airplaneMode, hotspot, torch,
             brightness, lockScreen, forceStop, location, sms,
         )
             .flatMap { e -> e.supportedTypes.map { it to e } }
@@ -93,6 +94,7 @@ class ActionDispatcher private constructor(
                     TtsExecutor(context.applicationContext),
                     DndExecutor(context.applicationContext),
                     ClockExecutor(context.applicationContext),
+                    CalendarExecutor(context.applicationContext),
                     WebhookExecutor(),
                     PhoneExecutor(context.applicationContext),
                     WifiExecutor(context.applicationContext, ShizukuShell.instance),

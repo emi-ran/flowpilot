@@ -73,6 +73,7 @@ val ActionType.labelRes: Int
         ActionType.MUSIC_PLAY_LINK -> R.string.action_music_play_link
         ActionType.SPEAK_TEXT -> R.string.action_speak_text
         ActionType.CREATE_ALARM -> R.string.action_create_alarm
+        ActionType.CREATE_CALENDAR_EVENT -> R.string.action_create_calendar_event
         ActionType.START_TIMER -> R.string.action_start_timer
         ActionType.LAUNCH_APP -> R.string.action_launch_app
         ActionType.OPEN_URL -> R.string.action_open_url
@@ -257,6 +258,7 @@ val ActionType.descriptionRes: Int
         ActionType.MUSIC_PLAY_LINK -> R.string.action_music_play_link_desc
         ActionType.SPEAK_TEXT -> R.string.action_speak_text_desc
         ActionType.CREATE_ALARM -> R.string.action_create_alarm_desc
+        ActionType.CREATE_CALENDAR_EVENT -> R.string.action_create_calendar_event_desc
         ActionType.START_TIMER -> R.string.action_start_timer_desc
         ActionType.LAUNCH_APP -> R.string.action_launch_app_desc
         ActionType.OPEN_URL -> R.string.action_open_url_desc

@@ -22,6 +22,7 @@ enum class ActionTemplateField {
     NOTIFICATION_TITLE, NOTIFICATION_BODY, MUSIC_QUERY, MUSIC_LINK, URL, TTS_TEXT,
     ALARM_MESSAGE, TIMER_MESSAGE, WEBHOOK_URL, WEBHOOK_HEADERS, WEBHOOK_BODY,
     PHONE_NUMBER, SMS_RECIPIENT, SMS_MESSAGE,
+    CALENDAR_TITLE, CALENDAR_DESCRIPTION, CALENDAR_LOCATION,
 }
 
 /** Only fixed field identifiers and content-free states are persisted. */
@@ -47,6 +48,7 @@ object TemplateDiagnostics {
             ActionType.SPEAK_TEXT -> if (rule.ttsText.isBlank() && rule.ttsAudioFileName.isNotBlank()) emptyList() else listOf(Triple(ActionTemplateField.TTS_TEXT, rule.ttsText, parameters.ttsText))
             ActionType.CREATE_ALARM -> listOf(Triple(ActionTemplateField.ALARM_MESSAGE, rule.alarmMessage, parameters.alarmMessage))
             ActionType.START_TIMER -> listOf(Triple(ActionTemplateField.TIMER_MESSAGE, rule.timerMessage, parameters.timerMessage))
+            ActionType.CREATE_CALENDAR_EVENT -> listOf(Triple(ActionTemplateField.CALENDAR_TITLE, rule.calendarTitle, parameters.calendarTitle), Triple(ActionTemplateField.CALENDAR_DESCRIPTION, rule.calendarDescription, parameters.calendarDescription), Triple(ActionTemplateField.CALENDAR_LOCATION, rule.calendarLocation, parameters.calendarLocation))
             ActionType.HTTP_WEBHOOK -> listOf(Triple(ActionTemplateField.WEBHOOK_URL, rule.webhookUrl, parameters.webhookUrl), Triple(ActionTemplateField.WEBHOOK_HEADERS, rule.webhookHeaders, parameters.webhookHeaders), Triple(ActionTemplateField.WEBHOOK_BODY, rule.webhookBody, parameters.webhookBody))
             ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> listOf(Triple(ActionTemplateField.PHONE_NUMBER, rule.phoneNumber, parameters.phoneNumber))
             ActionType.SEND_SMS, ActionType.DRAFT_SMS -> listOf(Triple(ActionTemplateField.SMS_RECIPIENT, rule.smsRecipient, parameters.smsRecipient), Triple(ActionTemplateField.SMS_MESSAGE, rule.smsMessage, parameters.smsMessage))

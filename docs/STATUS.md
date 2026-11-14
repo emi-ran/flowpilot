@@ -56,6 +56,7 @@ Last updated: 2026-11-13
 - Time schedules, charger, battery threshold, screen, Wi-Fi, and notification triggers.
 - Notifications, app launch, URL opening, alarm, timer, offline TTS, media volume, vibration, Play sound, webhook base action, NFC, Battery Saver, Auto-rotate, Do Not Disturb, and Dark theme actions.
 - Alarm creation requests UI skipping, supports repeat weekdays and templated labels; scheduling, presentation and deletion remain controlled by the Clock app.
+- Calendar events are inserted directly into a selected writable calendar, optionally recurring daily, weekly, monthly or yearly with a preset or custom reminder up to four weeks before; each trigger creates a new event or series. Reminder delivery and synchronization depend on the provider.
 - Webhook header/body template variables and unknown-token preservation.
 - Manual in-progress test run from both Create and Edit automation screens, including confirmation, direct-call warnings, immediate execution with on-screen unsaved edits, result feedback, and unchanged rule/store state.
 - Persistent run history for engine and manual executions: action-level outcomes, 100-entry newest-first retention, and redacted diagnostics.

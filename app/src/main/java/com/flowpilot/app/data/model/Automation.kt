@@ -38,6 +38,9 @@ enum class CapabilityRequirement {
     /** Needs android.permission.CALL_PHONE runtime permission to initiate phone calls directly. */
     CALL_PHONE,
 
+    /** Needs calendar read and write permissions for direct event creation. */
+    CALENDAR,
+
     /** Needs android.permission.SEND_SMS runtime permission to send SMS directly. */
     SEND_SMS,
 
@@ -92,6 +95,7 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     SPEAK_TEXT("Speak text (TTS)", ActionCategory.AUDIO, CapabilityRequirement.NONE),
     CREATE_ALARM("Create alarm", ActionCategory.CLOCK, CapabilityRequirement.NONE),
     START_TIMER("Start timer", ActionCategory.CLOCK, CapabilityRequirement.NONE),
+    CREATE_CALENDAR_EVENT("Create calendar event", ActionCategory.CLOCK, CapabilityRequirement.CALENDAR),
     LAUNCH_APP("Launch app", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_URL("Open URL", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     HTTP_WEBHOOK("Send HTTP webhook", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
@@ -364,6 +368,16 @@ data class Automation(
     val alarmMessage: String = "",
     val timerDurationSeconds: Int = 300,
     val timerMessage: String = "",
+    val calendarTitle: String = "",
+    val calendarDescription: String = "",
+    val calendarLocation: String = "",
+    val calendarAccountName: String = "",
+    val calendarAccountType: String = "",
+    val calendarName: String = "",
+    val calendarStartMillis: Long = 0L,
+    val calendarEndMillis: Long = 0L,
+    val calendarRepeat: String = "NONE",
+    val calendarReminderMinutes: Int = -1,
     val webhookMethod: String = "POST",
     val webhookUrl: String = "",
     val webhookHeaders: String = "",
