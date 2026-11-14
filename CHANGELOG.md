@@ -4,6 +4,9 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Changed
+- Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
+
 ## [2.3.0] - 2026-11-15
 
 ### Added
