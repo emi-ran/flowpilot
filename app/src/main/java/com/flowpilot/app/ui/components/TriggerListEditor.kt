@@ -197,12 +197,11 @@ private fun TriggerSummaryCard(
                     animationSpec = tween(durationMillis = 180, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
                 ) + fadeOut(animationSpec = tween(100)),
             ) {
-                FlowRow(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     TriggerSummaryAction(Icons.Default.ArrowUpward, stringResource(R.string.trigger_move_up), canMoveUp, onMoveUp)
                     TriggerSummaryAction(Icons.Default.ArrowDownward, stringResource(R.string.trigger_move_down), canMoveDown, onMoveDown)
@@ -227,17 +226,14 @@ private fun TriggerSummaryAction(
     onClick: () -> Unit,
     isDestructive: Boolean = false,
 ) {
-    TextButton(
-        onClick = onClick,
-        enabled = enabled,
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-        colors = ButtonDefaults.textButtonColors(
-            contentColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-        ),
-    ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium)
+    IconButton(onClick = onClick, enabled = enabled) {
+        Icon(
+            icon,
+            contentDescription = label,
+            tint = if (!enabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                else if (isDestructive) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.primary,
+        )
     }
 }
 
