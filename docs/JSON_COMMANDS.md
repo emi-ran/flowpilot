@@ -1,4 +1,4 @@
-# JSON commands (unreleased)
+# JSON commands (2.3.0)
 
 The configured source template is limited to 4,000 characters by `TemplateRenderer`; the rendered JSON has the separate 16,384 UTF-16-unit parser limit below. The configured source is encrypted with Android Keystore. Normal single-rule and full exports clear it, so re-enter the source after normal import; encrypted exports preserve it.
 
@@ -118,4 +118,4 @@ To reply via ntfy, add a subsequent HTTPS webhook POST to your ntfy server/topic
 
 Alternatively add a subsequent SMS action with `Command ${command.id}: ${command.status} — ${command.message}`. Sending requires Android SMS permission and can incur carrier charges; **obtain the user's explicit permission before sending any potentially billable SMS**, including tests. Successful submission is not proof of recipient delivery. Flashlight requires suitable hardware; notifications require Android notification permission where applicable; calendars need read/write permission; music depends on the target app and Android background-launch policy. These checks are not bypassed by JSON.
 
-Implementation sources: `JsonCommandParser.kt`, `JsonCommandExecution.kt`, `CalendarExecutor.kt`, `MusicExecutor.kt`. This describes the current unreleased implementation; device observations do not establish that every action or device has been tested.
+Implementation sources: `JsonCommandParser.kt`, `JsonCommandExecution.kt`, `CalendarExecutor.kt`, `MusicExecutor.kt`. This describes the 2.3.0 implementation; device observations do not establish that every action or device has been tested.
