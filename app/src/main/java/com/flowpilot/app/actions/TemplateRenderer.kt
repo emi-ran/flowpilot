@@ -464,6 +464,7 @@ object TemplateRenderer {
             "locationLng", "location.lng" -> formatCoordinate(context.locationLng)
             "location.maps_url", "maps_url" -> mapsUrl(context.locationLat, context.locationLng)
             "location.coords", "coords" -> formatCoordinates(context.locationLat, context.locationLng)
+            "command.success", "command.status", "command.message", "command.id", "command.result" -> ""
             else -> null
         }
     }

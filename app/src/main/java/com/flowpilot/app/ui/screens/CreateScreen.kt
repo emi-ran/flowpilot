@@ -178,6 +178,7 @@ fun CreateScreen(
     var webhookHeaders by remember { mutableStateOf("") }
     var webhookBody by remember { mutableStateOf("") }
     var webhookTimeoutSeconds by remember { mutableIntStateOf(10) }
+    var jsonCommandSource by remember { mutableStateOf("") }
     val newRuleId = remember { java.util.UUID.randomUUID().toString() }
     var ttsText by remember { mutableStateOf("") }
     var ttsVoiceName by remember { mutableStateOf("") }
@@ -242,7 +243,7 @@ fun CreateScreen(
     var showPresets by remember { mutableStateOf(false) }
 
     var triggerItems by remember() { mutableStateOf(listOf<TriggerDefinition>(TriggerDefinition.AppOpened())) }
-    val triggerDefinitions = if (triggerItems.size > 1) TriggerDefinitions(items = triggerItems) else null
+    val triggerDefinitions = if (triggerItems.size > 1 || (triggerItems.firstOrNull() as? TriggerDefinition.Notification)?.let { it.notificationTitleFilter.isNotEmpty() || it.notificationMessageFilter.isNotEmpty() || it.notificationTitleMatchMode != com.flowpilot.app.data.model.NotificationMatchMode.CONTAINS || it.notificationMessageMatchMode != com.flowpilot.app.data.model.NotificationMatchMode.CONTAINS } == true) TriggerDefinitions(items = triggerItems) else null
 
     val applyPreset: (com.flowpilot.app.data.model.AutomationPreset) -> Unit = { preset ->
         val t = preset.template
@@ -318,6 +319,7 @@ fun CreateScreen(
         webhookHeaders = t.webhookHeaders
         webhookBody = t.webhookBody
         webhookTimeoutSeconds = t.webhookTimeoutSeconds
+        jsonCommandSource = t.jsonCommandSource
         ttsText = t.ttsText
         ttsVoiceName = t.ttsVoiceName
         ttsSpeechRate = t.ttsSpeechRate
@@ -490,6 +492,7 @@ fun CreateScreen(
                         webhookHeaders = webhookHeaders,
                         webhookBody = webhookBody,
                         webhookTimeoutSeconds = webhookTimeoutSeconds,
+                        jsonCommandSource = jsonCommandSource,
                         ttsText = ttsText,
                         ttsVoiceName = ttsVoiceName,
                         ttsSpeechRate = ttsSpeechRate,
@@ -841,6 +844,8 @@ fun CreateScreen(
                             onWebhookHeadersChange = { webhookHeaders = it },
                             onWebhookBodyChange = { webhookBody = it },
                             onWebhookTimeoutChange = { webhookTimeoutSeconds = it },
+                            jsonCommandSource = jsonCommandSource,
+                            onJsonCommandSourceChange = { jsonCommandSource = it },
                             // TTS
                             ttsContent = {
                                 TtsSettings(
@@ -1090,6 +1095,7 @@ fun CreateScreen(
                                 webhookHeaders = webhookHeaders,
                                 webhookBody = webhookBody,
                                 webhookTimeoutSeconds = webhookTimeoutSeconds,
+                                jsonCommandSource = jsonCommandSource,
                                 phoneNumber = phoneNumber.trim(),
                                 smsSenderFilter = smsSenderFilter.trim(),
                                 smsMatchMode = smsMatchMode,
@@ -1129,6 +1135,7 @@ fun CreateScreen(
                             (ActionType.MUSIC_SEARCH !in actions || (MusicLinkValidator.isSupportedPackage(musicAppPackage) && musicQuery.isNotBlank())) &&
                             (ActionType.MUSIC_PLAY_LINK !in actions || MusicLinkValidator.isValidTemplate(musicAppPackage, musicLink)) &&
                             (ActionType.HTTP_WEBHOOK !in actions || (isWebUrl(webhookUrl) && WebhookExecutor.validateHeaders(webhookHeaders) == null)) &&
+                            (ActionType.EXECUTE_JSON_COMMAND !in actions || (jsonCommandSource.isNotBlank() && jsonCommandSource.length <= com.flowpilot.app.actions.TemplateRenderer.MAX_TEMPLATE_LENGTH)) &&
                             (ActionType.PLAY_SOUND !in actions || soundPreset != SoundPreset.CUSTOM || soundUri.isNotEmpty()) &&
                             (ActionType.SPEAK_TEXT !in actions || canSaveTtsConfiguration(ttsText, ttsSpeechRate, ttsAudioFileName, triggerItems.map { it.event }, ttsManager)) &&
                             (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&

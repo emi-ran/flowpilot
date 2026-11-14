@@ -1,15 +1,33 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+)
 package com.flowpilot.app.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
 import com.flowpilot.app.data.model.*
@@ -22,6 +40,7 @@ fun TriggerListEditor(items: List<TriggerDefinition>, onChange: (List<TriggerDef
     var selected by remember { mutableIntStateOf(0) }
     var pickingType by remember { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
+    var pendingRemoval by remember { mutableStateOf<Int?>(null) }
     val index = selected.coerceIn(items.indices)
     val base = Automation(id = "", name = "", createdAt = 0)
     val view = base.withTrigger(items[index])
@@ -37,20 +56,24 @@ fun TriggerListEditor(items: List<TriggerDefinition>, onChange: (List<TriggerDef
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.triggers_any_summary), style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
-        items.forEachIndexed { i, definition ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FilterChip(selected = i == index, onClick = { selected = i },
-                    label = { Text("${i + 1}. ${definition.event.localizedLabel()}") },
-                    modifier = Modifier.weight(1f))
-                IconButton(enabled = i > 0, onClick = {
-                    val moved = items.toMutableList(); moved.add(i - 1, moved.removeAt(i)); onChange(moved); selected = i - 1
-                }) { Icon(Icons.Default.ArrowUpward, stringResource(R.string.trigger_move_up)) }
-                IconButton(enabled = i < items.lastIndex, onClick = {
-                    val moved = items.toMutableList(); moved.add(i + 1, moved.removeAt(i)); onChange(moved); selected = i + 1
-                }) { Icon(Icons.Default.ArrowDownward, stringResource(R.string.trigger_move_down)) }
-                IconButton(enabled = items.size > 1, onClick = {
-                    onChange(items.filterIndexed { n, _ -> n != i }); selected = (i - 1).coerceAtLeast(0)
-                }) { Icon(Icons.Default.Delete, stringResource(R.string.trigger_remove)) }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items.forEachIndexed { i, definition ->
+                TriggerSummaryCard(
+                    index = i,
+                    definition = definition,
+                    selected = i == index,
+                    canMoveUp = i > 0,
+                    canMoveDown = i < items.lastIndex,
+                    canRemove = items.size > 1,
+                    onSelect = { selected = i },
+                    onMoveUp = {
+                        val moved = items.toMutableList(); moved.add(i - 1, moved.removeAt(i)); onChange(moved); selected = i - 1
+                    },
+                    onMoveDown = {
+                        val moved = items.toMutableList(); moved.add(i + 1, moved.removeAt(i)); onChange(moved); selected = i + 1
+                    },
+                    onRemove = { pendingRemoval = i },
+                )
             }
         }
         OutlinedButton(enabled = items.size < TriggerDefinitions.MAX_TRIGGERS,
@@ -60,6 +83,161 @@ fun TriggerListEditor(items: List<TriggerDefinition>, onChange: (List<TriggerDef
         key(index) {
             TriggerDefinitionEditor(view, onChangeType = { adding = false; pickingType = true }, onUpdate = ::update)
         }
+    }
+    pendingRemoval?.let { removeIndex ->
+        if (removeIndex in items.indices) {
+            val removedLabel = items[removeIndex].event.localizedLabel()
+            AlertDialog(
+                onDismissRequest = { pendingRemoval = null },
+                title = { Text(stringResource(R.string.trigger_remove)) },
+                text = { Text(removedLabel) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        onChange(items.filterIndexed { n, _ -> n != removeIndex })
+                        selected = (removeIndex - 1).coerceAtLeast(0)
+                        pendingRemoval = null
+                    }) { Text(stringResource(R.string.btn_delete)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingRemoval = null }) {
+                        Text(stringResource(R.string.btn_cancel))
+                    }
+                },
+            )
+        }
+    }
+}
+
+/** Selectable summary of one trigger; destructive removal asks for confirmation. */
+@Composable
+private fun TriggerSummaryCard(
+    index: Int,
+    definition: TriggerDefinition,
+    selected: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    canRemove: Boolean,
+    onSelect: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    val accent = triggerAccent(definition.event)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(
+            1.dp,
+            if (selected) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+            },
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) {
+                MaterialTheme.colorScheme.surfaceContainerHigh
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            },
+        ),
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(accent.copy(alpha = 0.16f), RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        triggerIcon(definition.event),
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.trigger_source_index, index + 1),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        definition.event.localizedLabel(),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (selected) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            AnimatedVisibility(
+                visible = selected,
+                enter = expandVertically(
+                    animationSpec = tween(durationMillis = 220, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
+                ) + fadeIn(animationSpec = tween(140)),
+                exit = shrinkVertically(
+                    animationSpec = tween(durationMillis = 180, easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f))
+                ) + fadeOut(animationSpec = tween(100)),
+            ) {
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    TriggerSummaryAction(Icons.Default.ArrowUpward, stringResource(R.string.trigger_move_up), canMoveUp, onMoveUp)
+                    TriggerSummaryAction(Icons.Default.ArrowDownward, stringResource(R.string.trigger_move_down), canMoveDown, onMoveDown)
+                    TriggerSummaryAction(
+                        Icons.Default.Delete,
+                        stringResource(R.string.trigger_remove),
+                        canRemove,
+                        onRemove,
+                        isDestructive = true,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TriggerSummaryAction(
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    isDestructive: Boolean = false,
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+        colors = ButtonDefaults.textButtonColors(
+            contentColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+        ),
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(label, style = MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -112,7 +290,14 @@ private fun TriggerDefinitionEditor(view: Automation, onChangeType: () -> Unit, 
         nfcTagId = view.nfcTagId, onNfcTagChange = { onUpdate(view.copy(nfcTagId = it)) },
         notificationAppPackage = view.notificationAppPackage, notificationAppName = view.notificationAppName,
         notificationKeyword = view.notificationKeyword, onOpenNotificationAppPicker = { notificationPicker = true },
+        onClearNotificationApp = { onUpdate(view.copy(notificationAppPackage = "", notificationAppName = "")) },
         onNotificationKeywordChange = { onUpdate(view.copy(notificationKeyword = it)) },
+        notificationTitleFilter = view.notificationTitleFilter, notificationTitleMatchMode = view.notificationTitleMatchMode,
+        notificationMessageFilter = view.notificationMessageFilter, notificationMessageMatchMode = view.notificationMessageMatchMode,
+        onNotificationTitleFilterChange = { onUpdate(view.copy(notificationTitleFilter = it)) },
+        onNotificationTitleMatchModeChange = { onUpdate(view.copy(notificationTitleMatchMode = it)) },
+        onNotificationMessageFilterChange = { onUpdate(view.copy(notificationMessageFilter = it)) },
+        onNotificationMessageMatchModeChange = { onUpdate(view.copy(notificationMessageMatchMode = it)) },
         mediaTriggerPackage = view.mediaTriggerPackage,
         onOpenMediaAppPicker = { mediaPicker = true },
         onClearMediaTriggerPackage = { onUpdate(view.copy(mediaTriggerPackage = "")) },

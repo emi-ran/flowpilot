@@ -305,6 +305,10 @@ object RuleEvaluator {
             !rule.isCoolingDown(nowMs) &&
             TriggerTargetMatcher.notificationPackageTargetMatches(rule.notificationAppPackage, event.packageName) &&
             TriggerTargetMatcher.notificationKeywordMatches(rule.notificationKeyword, event.title, "${event.text} ${event.bigText}") &&
+            TriggerTargetMatcher.notificationFieldMatches(rule.notificationTitleFilter, rule.notificationTitleMatchMode, event.title) &&
+            (rule.notificationMessageFilter.isBlank() ||
+                TriggerTargetMatcher.notificationFieldMatches(rule.notificationMessageFilter, rule.notificationMessageMatchMode, event.text) ||
+                TriggerTargetMatcher.notificationFieldMatches(rule.notificationMessageFilter, rule.notificationMessageMatchMode, event.bigText)) &&
             matchesRuleConditions(rule, liveState, nowMs)
     }
 

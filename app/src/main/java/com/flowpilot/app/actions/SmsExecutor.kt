@@ -84,7 +84,7 @@ class SmsExecutor(
         return try {
             sendTextMessage(recipient, message)
             val masked = PhoneNumberUtils.mask(recipient)
-            Log.i(TAG, "Direct SMS sent successfully to $masked")
+            Log.i(TAG, "Direct SMS submitted successfully")
             ActionResult(true, "SMS sent to $masked", ActionResultCode.SMS_SENT, listOf(recipient))
         } catch (e: Exception) {
             Log.w(TAG, "Failed to send SMS (${e.javaClass.simpleName})")
@@ -115,8 +115,8 @@ class SmsExecutor(
                 return ActionResult(false, "No messaging application found", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
             }
             startActivity(intent)
-            Log.i(TAG, "SMS draft opened successfully")
-            ActionResult(true, "SMS draft opened")
+            Log.i(TAG, "SMS draft requested")
+            ActionResult(true, "SMS draft request sent; opening not verified", ActionResultCode.REQUEST_UNVERIFIED)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to draft SMS (${e.javaClass.simpleName})")
             ActionResult(false, "Failed to open SMS draft")

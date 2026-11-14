@@ -23,6 +23,10 @@ Before save or enable, `AutomationConflictAnalyzer` compares the candidate once 
 Home list overflow duplication copies the complete rule configuration into a new disabled rule and opens Edit for immediate review. Repository cloning assigns a new UUID and creation timestamp, clears `lastTriggeredAt`, leaves source/history/geofence diagnostics untouched, and decrypts then re-encrypts webhook fields so source and clone never share ciphertext. Dynamic TTS clones keep the template and drop the cache reference; legacy clones with blank text receive an independent cache copy, and a missing source file yields a clone without audio. Existing sanitized export and encrypted backup paths are unchanged.
 
 Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request a one-shot nearby-network scan; scan results are transient, deduplicated, and never persisted. Android throttles scan frequency and may return cached results. The tracker reads SSID from Wi-Fi-specific `NetworkCallback` capabilities instead of `activeNetwork`, so Xiaomi can detect Wi-Fi transitions even when cellular remains the default data network.
+## JSON commands and notification filters
+
+`JsonCommandParser` parses a bounded version-1 envelope and maps all normal actions into existing action parameters; nested `EXECUTE_JSON_COMMAND` is rejected. `JsonCommandExecution` dispatches through the normal executor, preserving action permission and capability checks, and maps outcomes to safe per-run `command.*` template values without storing command payload or ID in history. The receiver does not authenticate senders: matching input can cause SMS or calls (with possible charges), network changes, or device locking, so source selection and restrictive filters matter. The source template is Keystore-encrypted; normal exports clear it and require re-entry after import, while encrypted exports preserve it. Subsequent webhook or SMS actions can use the outcome; music intent dispatch does not prove playback. Notification title and message filters are independent and AND with the package filter; legacy keyword matching retains OR semantics. See [JSON_COMMANDS.md](JSON_COMMANDS.md) and the [agent skill](skills/flowpilot-json-command/SKILL.md) for the detailed schema, limits, examples and trust boundaries. Post-integration and device verification of the expanded action coverage are pending.
+
 
 ## Media automation
 
@@ -227,6 +231,7 @@ on Android 13+ Nearby devices access are required for reliable SSID reading/scan
 FlowPilotNotificationListener receives notification posts only after the user grants Notification Listener
 access. It creates an in-memory event with package, title, and text only long enough to match the selected
 package and optional keyword, dedupes by post key/time, and never persists or logs notification content.
+Access permission and the listener's in-process connection callback are separate states. A rebind request is only a request, not proof of connection; Android or an OEM can leave the service unbound. The permission screen offers user-controlled notification access settings, and missed notifications are not replayed.
 
 Android can leave an allowed listener unbound after an in-place update or an OEM process kill, so rule
 reconciliation calls `FlowPilotNotificationListener.ensureBound` whenever notification demand exists, and

@@ -1,5 +1,7 @@
 package com.flowpilot.app.engine
 
+import com.flowpilot.app.data.model.NotificationMatchMode
+
 object TriggerTargetMatcher {
     fun wifiTargetMatches(configured: String, observed: String): Boolean =
         configured.isBlank() || configured.trim().equals(observed.trim(), ignoreCase = true)
@@ -38,6 +40,15 @@ object TriggerTargetMatcher {
         if (configured.isBlank()) return true
         val keyword = configured.trim()
         return title.contains(keyword, ignoreCase = true) || text.contains(keyword, ignoreCase = true)
+    }
+
+    fun notificationFieldMatches(configured: String, mode: NotificationMatchMode, observed: String): Boolean {
+        if (configured.isBlank()) return true
+        val filter = configured.trim()
+        return when (mode) {
+            NotificationMatchMode.CONTAINS -> observed.contains(filter, ignoreCase = true)
+            NotificationMatchMode.EXACT -> observed.equals(filter, ignoreCase = true)
+        }
     }
 
     // Any two keywords can coexist in one notification title or body.

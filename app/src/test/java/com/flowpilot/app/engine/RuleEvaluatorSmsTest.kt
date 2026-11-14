@@ -63,6 +63,19 @@ class RuleEvaluatorSmsTest {
     }
 
     @Test
+    fun evaluateSms_matches_alphanumeric_sender_exactly_ignoring_case() {
+        val rule = smsRule(senderFilter = "Bank123")
+        assertThat(RuleEvaluator.evaluateSms(listOf(rule), SmsReceivedEvent("bank123", "Hello")))
+            .containsExactly(rule)
+        assertThat(RuleEvaluator.evaluateSms(listOf(rule), SmsReceivedEvent("Other123", "Hello")))
+            .isEmpty()
+        assertThat(RuleEvaluator.evaluateSms(listOf(rule), SmsReceivedEvent("123", "Hello")))
+            .isEmpty()
+        assertThat(RuleEvaluator.evaluateSms(listOf(smsRule(senderFilter = "BANK")), SmsReceivedEvent("+905551234567", "Hello")))
+            .isEmpty()
+    }
+
+    @Test
     fun evaluateSms_contains_mode_matches_substring_case_insensitive() {
         val rule = smsRule(matchMode = SmsMatchMode.CONTAINS, keyword = "onay kodu")
         val event = SmsReceivedEvent("+905551234567", "Bankanız: Onay Kodu 482912 olarak iletilmiştir.")

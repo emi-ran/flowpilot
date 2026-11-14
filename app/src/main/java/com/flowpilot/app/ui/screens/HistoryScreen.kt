@@ -39,6 +39,7 @@ import com.flowpilot.app.data.model.ExecutionStatus
 import com.flowpilot.app.data.model.resolvedResultCode
 import com.flowpilot.app.data.model.resolvedHttpFailureStatus
 import com.flowpilot.app.actions.ActionResultCode
+import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.util.labelRes
 import com.flowpilot.app.ui.util.localizedLabel
@@ -63,7 +64,7 @@ fun HistoryScreen(
     val filteredHistory = history.filter {
         (ruleFilter == null || it.ruleId == ruleFilter) &&
             (!failuresOnly || it.status != ExecutionStatus.SUCCESS) &&
-            (statusFilter == null || it.status == statusFilter)
+            (statusFilter == null || (it.status == statusFilter && (statusFilter != ExecutionStatus.SUCCESS || it.actions.none { action -> action.isUnverifiedRequest() })))
     }
     val historyGroups = remember(filteredHistory) { groupRepeatedFailures(filteredHistory) }
 
@@ -309,6 +310,12 @@ private fun HistoryFailureGroupCard(group: HistoryGroup) {
     }
 }
 
+private fun ActionExecutionRecord.isUnverifiedRequest(): Boolean = success && (
+    resultCode == ActionResultCode.REQUEST_UNVERIFIED ||
+        (actionType in setOf(ActionType.MUSIC_SEARCH, ActionType.MUSIC_PLAY_LINK, ActionType.CREATE_ALARM, ActionType.START_TIMER, ActionType.LAUNCH_APP, ActionType.OPEN_URL, ActionType.OPEN_DIALER, ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER, ActionType.DRAFT_SMS) && resultCode != ActionResultCode.JSON_CONFIRMED) ||
+        (actionType == ActionType.EXECUTE_JSON_COMMAND && resultCode != ActionResultCode.JSON_CONFIRMED)
+    )
+
 @Composable
 private fun HistoryEntryCard(entry: ExecutionHistoryEntry) {
     var expanded by remember(entry.id) { mutableStateOf(false) }
@@ -345,7 +352,7 @@ private fun HistoryEntryCard(entry: ExecutionHistoryEntry) {
                     )
                 }
                 Spacer(Modifier.width(8.dp))
-                StatusBadge(entry.status)
+                StatusBadge(entry.status, entry.actions.any { it.isUnverifiedRequest() })
             }
 
             TextButton(onClick = { expanded = !expanded }) {
@@ -373,8 +380,10 @@ private fun HistoryEntryCard(entry: ExecutionHistoryEntry) {
 }
 
 @Composable
-private fun StatusBadge(status: ExecutionStatus) {
-    val (bgColor, textColor) = when (status) {
+private fun StatusBadge(status: ExecutionStatus, unverified: Boolean) {
+    val (bgColor, textColor) = when {
+        unverified && status == ExecutionStatus.SUCCESS -> Pair(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer)
+        else -> when (status) {
         ExecutionStatus.SUCCESS -> Pair(
             MaterialTheme.colorScheme.primaryContainer,
             MaterialTheme.colorScheme.onPrimaryContainer,
@@ -388,13 +397,14 @@ private fun StatusBadge(status: ExecutionStatus) {
             MaterialTheme.colorScheme.onErrorContainer,
         )
     }
+        }
 
     Surface(
         color = bgColor,
         shape = RoundedCornerShape(8.dp),
     ) {
         Text(
-            text = stringResource(status.labelRes),
+            text = if (unverified && status == ExecutionStatus.SUCCESS) stringResource(R.string.history_result_unverified) else stringResource(status.labelRes),
             color = textColor,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
@@ -412,9 +422,9 @@ private fun ActionOutcomeRow(action: ActionExecutionRecord, index: Int) {
         verticalAlignment = Alignment.Top,
     ) {
         Icon(
-            imageVector = if (action.success) Icons.Default.CheckCircle else Icons.Default.Cancel,
+            imageVector = if (action.isUnverifiedRequest()) Icons.Default.Info else if (action.success) Icons.Default.CheckCircle else Icons.Default.Cancel,
             contentDescription = null,
-            tint = if (action.success) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            tint = if (action.isUnverifiedRequest()) MaterialTheme.colorScheme.tertiary else if (action.success) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             modifier = Modifier
                 .size(16.dp)
                 .padding(top = 2.dp),
@@ -470,7 +480,7 @@ private fun ActionOutcomeRow(action: ActionExecutionRecord, index: Int) {
 }
 
 @Composable
-private fun ActionExecutionRecord.localizedResultText(): String = when (resolvedResultCode()) {
+private fun ActionExecutionRecord.localizedResultText(): String = if (isUnverifiedRequest()) stringResource(if (actionType == ActionType.EXECUTE_JSON_COMMAND && resultCode != ActionResultCode.REQUEST_UNVERIFIED) R.string.history_result_legacy_unverified else R.string.history_result_unverified_detail) else when (resolvedResultCode()) {
     ActionResultCode.COMPLETED -> stringResource(R.string.history_result_completed)
     ActionResultCode.STATE_ENABLED -> stringResource(R.string.history_result_enabled)
     ActionResultCode.STATE_DISABLED -> stringResource(R.string.history_result_disabled)
@@ -478,6 +488,8 @@ private fun ActionExecutionRecord.localizedResultText(): String = when (resolved
     ActionResultCode.SMS_SENT -> stringResource(R.string.history_result_sms_sent_safe)
     ActionResultCode.PERMISSION_REQUIRED -> stringResource(R.string.history_result_permission_required)
     ActionResultCode.EXECUTION_CANCELLED -> stringResource(R.string.history_result_execution_cancelled)
+    ActionResultCode.REQUEST_UNVERIFIED -> stringResource(R.string.history_result_unverified_detail)
+    ActionResultCode.JSON_CONFIRMED -> stringResource(R.string.history_result_completed)
     null -> stringResource(if (success) R.string.history_result_completed else R.string.history_result_failed)
 }
 

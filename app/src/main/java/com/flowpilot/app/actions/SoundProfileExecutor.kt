@@ -51,6 +51,7 @@ class SoundProfileExecutor(
             return ActionResult(
                 false,
                 "Sound profile requires Notification Policy Access permission",
+                resultCode = ActionResultCode.PERMISSION_REQUIRED,
             )
         }
 

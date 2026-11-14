@@ -63,7 +63,7 @@ class ClockExecutor(
 
         return try {
             activityStarter(context, intent)
-            ActionResult(true, "Alarm request sent to Clock app")
+            ActionResult(true, "Alarm request sent; scheduling not verified", ActionResultCode.REQUEST_UNVERIFIED)
         } catch (_: ActivityNotFoundException) {
             ActionResult(false, "No Clock application available to handle alarm creation", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
         } catch (_: Throwable) {
@@ -93,7 +93,7 @@ class ClockExecutor(
 
         return try {
             activityStarter(context, intent)
-            ActionResult(true, "Timer request sent to Clock app")
+            ActionResult(true, "Timer request sent; scheduling not verified", ActionResultCode.REQUEST_UNVERIFIED)
         } catch (_: ActivityNotFoundException) {
             ActionResult(false, "No Clock application available to handle timer start", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
         } catch (_: Throwable) {

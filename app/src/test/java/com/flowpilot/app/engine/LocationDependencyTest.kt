@@ -15,6 +15,14 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class LocationDependencyTest {
     @Test
+    fun jsonCommandLocationTokensRequestLocationIncludingFilters() {
+        val rule = Automation(id = "json", name = "JSON", createdAt = 1,
+            actions = listOf(ActionType.EXECUTE_JSON_COMMAND), jsonCommandSource = "\${location.lat|jsonescape}")
+        assertThat(rule.requiresLocation()).isTrue()
+        assertThat(rule.copy(jsonCommandSource = "\${notification.text}").requiresLocation()).isFalse()
+    }
+
+    @Test
     fun requiresLocation_onlyWhenWebhookOrSmsTemplateUsesLocationToken() {
         val base = Automation(id = "test", name = "test", createdAt = 1L)
         assertThat(base.requiresLocation()).isFalse()

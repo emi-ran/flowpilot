@@ -18,6 +18,8 @@ class ActionDispatcherTest {
         val dispatcher = ActionDispatcher.get(RuntimeEnvironment.getApplication())
 
         for (action in ActionType.entries) {
+            // Composite JSON commands execute in the rule runner, not as a standalone executor.
+            if (action == ActionType.EXECUTE_JSON_COMMAND) continue
             val result = dispatcher.execute(action)
             // Even if an action fails because Shizuku or hardware is missing in the test environment,
             // it must NEVER fail with "No executor for ..."

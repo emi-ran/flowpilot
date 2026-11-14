@@ -66,9 +66,13 @@ enum class ActionResultCode {
     SMS_SENT,
     PERMISSION_REQUIRED,
     EXECUTION_CANCELLED,
+    REQUEST_UNVERIFIED,
+    JSON_CONFIRMED,
 }
 
 data class ActionParameters(
+    /** Already rendered once; transient and never included in execution history. */
+    val jsonCommandSource: String = "",
     val notificationTitle: String = "",
     val notificationBody: String = "",
     val vibrationPattern: VibrationPattern = VibrationPattern.PULSE,

@@ -183,6 +183,7 @@ class FlowPilotNotificationListener : NotificationListenerService() {
     }
 
     override fun onDestroy() {
+        isConnected = false
         intakeScope.cancel()
         super.onDestroy()
     }

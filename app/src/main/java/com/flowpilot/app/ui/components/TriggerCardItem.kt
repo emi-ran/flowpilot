@@ -14,6 +14,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
 import com.flowpilot.app.data.model.SmsMatchMode
+import com.flowpilot.app.data.model.NotificationMatchMode
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.ui.util.localizedLabel
 import kotlin.math.roundToInt
@@ -127,7 +129,16 @@ fun TriggerCardItem(
     notificationAppName: String = "",
     notificationKeyword: String = "",
     onOpenNotificationAppPicker: () -> Unit = {},
+    onClearNotificationApp: () -> Unit = {},
     onNotificationKeywordChange: (String) -> Unit = {},
+    notificationTitleFilter: String = "",
+    notificationTitleMatchMode: NotificationMatchMode = NotificationMatchMode.CONTAINS,
+    notificationMessageFilter: String = "",
+    notificationMessageMatchMode: NotificationMatchMode = NotificationMatchMode.CONTAINS,
+    onNotificationTitleFilterChange: (String) -> Unit = {},
+    onNotificationTitleMatchModeChange: (NotificationMatchMode) -> Unit = {},
+    onNotificationMessageFilterChange: (String) -> Unit = {},
+    onNotificationMessageMatchModeChange: (NotificationMatchMode) -> Unit = {},
     mediaTriggerPackage: String = "",
     onOpenMediaAppPicker: () -> Unit = {},
     onClearMediaTriggerPackage: () -> Unit = {},
@@ -447,22 +458,48 @@ fun TriggerCardItem(
                             )
                             Spacer(Modifier.width(10.dp))
                             Text(
-                                if (notificationAppPackage.isEmpty()) stringResource(R.string.tap_to_select_app) else "$notificationAppName ($notificationAppPackage)",
+                                if (notificationAppPackage.isEmpty()) stringResource(R.string.notification_any_app) else "$notificationAppName ($notificationAppPackage)",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
                             Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = notificationKeyword,
-                        onValueChange = onNotificationKeywordChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.notification_keyword_filter)) },
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true,
-                    )
+                    if (notificationAppPackage.isNotEmpty()) {
+                        TextButton(onClick = onClearNotificationApp) { Text(stringResource(R.string.notification_any_app)) }
+                    }
+                    if (notificationKeyword.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = notificationKeyword,
+                            onValueChange = onNotificationKeywordChange,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(stringResource(R.string.notification_legacy_keyword)) },
+                            supportingText = { Text(stringResource(R.string.notification_legacy_explanation)) },
+                            shape = RoundedCornerShape(12.dp), singleLine = true,
+                        )
+                    }
+                    NotificationFilterField(notificationTitleFilter, onNotificationTitleFilterChange,
+                        notificationTitleMatchMode, onNotificationTitleMatchModeChange, stringResource(R.string.notification_title_filter),
+                        leadingIcon = Icons.Default.Title)
+                    NotificationFilterField(notificationMessageFilter, onNotificationMessageFilterChange,
+                        notificationMessageMatchMode, onNotificationMessageMatchModeChange, stringResource(R.string.notification_message_filter),
+                        leadingIcon = Icons.Default.Notes)
+                    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Top) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp).size(14.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            stringResource(R.string.notification_filters_explanation),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
                 TriggerEvent.DEVICE_FLIPPED_DOWN, TriggerEvent.DEVICE_FLIPPED_UP -> {
                     Spacer(Modifier.height(8.dp))
@@ -897,4 +934,45 @@ private fun shakeStrengthLabel(threshold: Float): String = when {
     threshold < 20f -> stringResource(R.string.shake_level_medium)
     threshold < 27f -> stringResource(R.string.shake_level_firm)
     else -> stringResource(R.string.shake_level_strong)
+}
+
+@Composable
+private fun NotificationFilterField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    mode: NotificationMatchMode,
+    onModeChange: (NotificationMatchMode) -> Unit,
+    label: String,
+    leadingIcon: ImageVector,
+) {
+    Spacer(Modifier.height(10.dp))
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(label) },
+        leadingIcon = { Icon(leadingIcon, contentDescription = null) },
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true,
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        NotificationMatchMode.entries.forEach { option ->
+            FilterChip(
+                selected = mode == option,
+                onClick = { onModeChange(option) },
+                label = {
+                    Text(
+                        stringResource(if (option == NotificationMatchMode.CONTAINS) R.string.notification_match_contains else R.string.notification_match_exact),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                },
+            )
+        }
+    }
 }

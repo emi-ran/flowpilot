@@ -14,6 +14,10 @@ import com.flowpilot.app.data.model.ConditionType
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.flattenConditions
+import com.flowpilot.app.data.model.NotificationMatchMode
+import com.flowpilot.app.data.model.TriggerDefinition
+import com.flowpilot.app.data.model.TriggerDefinitions
+import com.flowpilot.app.data.model.normalizedTriggers
 import com.flowpilot.app.data.security.SecretCipher
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
@@ -64,6 +68,42 @@ class BackupManagerTest {
             webhookUrl = webhookSecret,
             createdAt = 1000L,
         )
+    }
+
+    @Test
+    fun jsonSourceIsEncryptedAtRestAndOmittedFromPlainExports() = runTest {
+        val source = "private-json-source"
+        val rule = createSampleRule("json-secret", "JSON").copy(
+            actions = listOf(ActionType.EXECUTE_JSON_COMMAND), jsonCommandSource = source,
+        )
+        repository.replaceAll(listOf(rule))
+        val raw = repository.rawDataStore.data.first()[androidx.datastore.preferences.core.stringPreferencesKey("rules")]!!
+        assertThat(raw).doesNotContain(source)
+        assertThat(repository.automations.first().single().jsonCommandSource).isEqualTo(source)
+        val stored = rule.withEncryptedSecrets()
+        for (export in listOf(BackupManager.exportToString(listOf(stored)), BackupManager.exportSingleToString(stored))) {
+            assertThat(export).doesNotContain(source)
+            assertThat(BackupManager.parseImport(export).getOrThrow().single().jsonCommandSource).isEmpty()
+        }
+        val encrypted = BackupManager.exportEncryptedToString(listOf(stored), "password")
+        assertThat(encrypted).doesNotContain(source)
+        assertThat(BackupManager.parseEncryptedImport(encrypted, "password").getOrThrow().single().jsonCommandSource).isEqualTo(source)
+    }
+
+    @Test
+    fun notificationFilters_surviveBackupAndLegacyImport() {
+        val notification = TriggerDefinition.Notification(notificationAppPackage = "com.notify",
+            notificationKeyword = "legacy", notificationTitleFilter = "topic",
+            notificationTitleMatchMode = NotificationMatchMode.EXACT,
+            notificationMessageFilter = "play", notificationMessageMatchMode = NotificationMatchMode.CONTAINS)
+        val rule = createSampleRule("notify", "Notify").copy(triggerDefinitions = TriggerDefinitions(items = listOf(
+            TriggerDefinition.WifiConnected("Home"), notification)))
+        val restored = BackupManager.parseImport(BackupManager.exportToString(listOf(rule))).getOrThrow().single()
+        assertThat(restored.normalizedTriggers()).containsExactlyElementsIn(rule.normalizedTriggers()).inOrder()
+        val legacy = createSampleRule("legacy", "Legacy").copy(triggerEvent = TriggerEvent.NOTIFICATION_RECEIVED,
+            notificationKeyword = "word")
+        val imported = BackupManager.parseImport(BackupManager.exportSingleToString(legacy)).getOrThrow().single()
+        assertThat(imported.normalizedTriggers()).containsExactly(TriggerDefinition.Notification(notificationKeyword = "word"))
     }
 
     @Test

@@ -27,7 +27,7 @@ class PhoneExecutorTest {
 
         val result = executor.execute(ActionType.OPEN_DIALER)
         assertThat(result.success).isTrue()
-        assertThat(result.message).isEqualTo("Dialer opened")
+        assertThat(result.resultCode).isEqualTo(ActionResultCode.REQUEST_UNVERIFIED)
 
         assertThat(launchedIntent.action).isEqualTo(Intent.ACTION_DIAL)
         assertThat(launchedIntent.data).isNull()
@@ -92,7 +92,7 @@ class PhoneExecutorTest {
 
         val result = executor.execute(ActionType.DIAL_NUMBER, ActionParameters(phoneNumber = "+905551234567"))
         assertThat(result.success).isTrue()
-        assertThat(result.message).isEqualTo("Phone number prepared in dialer")
+        assertThat(result.resultCode).isEqualTo(ActionResultCode.REQUEST_UNVERIFIED)
         assertThat(result.message).doesNotContain("+905551234567")
         assertThat(result.message).doesNotContain("+905 •••• 567")
 
@@ -144,7 +144,7 @@ class PhoneExecutorTest {
 
         val result = executor.execute(ActionType.CALL_NUMBER, ActionParameters(phoneNumber = "+905551234567"))
         assertThat(result.success).isTrue()
-        assertThat(result.message).isEqualTo("Direct phone call initiated")
+        assertThat(result.resultCode).isEqualTo(ActionResultCode.REQUEST_UNVERIFIED)
         assertThat(result.message).doesNotContain("+905551234567")
         assertThat(result.message).doesNotContain("+905 •••• 567")
 

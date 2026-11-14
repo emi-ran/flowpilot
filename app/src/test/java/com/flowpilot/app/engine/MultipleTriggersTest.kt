@@ -25,6 +25,41 @@ class MultipleTriggersTest {
         assertThat(json.decodeFromString(Automation.serializer(), encoded)).isEqualTo(legacy)
         assertThat(listOf(legacy).triggerViews().single()).isEqualTo(legacy)
     }
+    @Test fun notificationFilters_roundTripLegacyAndMultiTriggerStorage() {
+        val legacy = Automation(id = "old", name = "Old", createdAt = 1,
+            triggerEvent = TriggerEvent.NOTIFICATION_RECEIVED, notificationKeyword = " urgent ")
+        val decodedLegacy = json.decodeFromString(Automation.serializer(), """{"id":"old","name":"Old","createdAt":1,"triggerEvent":"NOTIFICATION_RECEIVED","notificationKeyword":" urgent "}""")
+        assertThat(decodedLegacy.normalizedTriggers()).isEqualTo(legacy.normalizedTriggers())
+        val definition = TriggerDefinition.Notification(notificationAppPackage = "com.notify",
+            notificationTitleFilter = " topic ", notificationTitleMatchMode = NotificationMatchMode.EXACT,
+            notificationMessageFilter = "play", notificationMessageMatchMode = NotificationMatchMode.CONTAINS)
+        val multi = rule(TriggerDefinition.WifiConnected("Home"), definition)
+        val decoded = json.decodeFromString(Automation.serializer(), json.encodeToString(Automation.serializer(), multi))
+        assertThat(decoded.normalizedTriggers()).containsExactlyElementsIn(multi.normalizedTriggers()).inOrder()
+        assertThat(decoded.withTrigger(definition).legacyTriggerDefinition()).isEqualTo(definition)
+        assertThat(decoded.copy(triggerDefinitions = TriggerDefinitions(items = listOf(definition))).normalizeTriggerStorage().legacyTriggerDefinition()).isEqualTo(definition)
+    }
+
+    @Test fun notificationFilters_matchIndependentFieldsAndLegacyOr() {
+        val definition = TriggerDefinition.Notification(notificationAppPackage = "com.notify",
+            notificationTitleFilter = " Topic ", notificationTitleMatchMode = NotificationMatchMode.EXACT,
+            notificationMessageFilter = " PLAY ", notificationMessageMatchMode = NotificationMatchMode.CONTAINS)
+        val multi = rule(TriggerDefinition.WifiConnected("Home"), definition)
+        val event = TransientNotificationEvent(packageName = "com.notify", postTime = 1, key = "k",
+            title = "TOPIC", text = "nothing", bigText = "Please Play music")
+        assertThat(RuleEvaluator.evaluateNotification(listOf(multi), event).single().matchedTriggerIndex).isEqualTo(1)
+        assertThat(RuleEvaluator.evaluateNotification(listOf(multi), event.copy(title = " TOPIC"))).isEmpty()
+        assertThat(RuleEvaluator.evaluateNotification(listOf(multi), event.copy(packageName = "other.app"))).isEmpty()
+        assertThat(RuleEvaluator.evaluateNotification(listOf(multi), event.copy(text = "pl", bigText = "ay"))).isEmpty()
+        val exact = multi.copy(triggerDefinitions = TriggerDefinitions(items = listOf(definition.copy(notificationMessageMatchMode = NotificationMatchMode.EXACT))))
+        assertThat(RuleEvaluator.evaluateNotification(listOf(exact), event.copy(text = "PLAY", bigText = ""))).hasSize(1)
+        assertThat(RuleEvaluator.evaluateNotification(listOf(exact), event.copy(text = " PLAY ", bigText = ""))).isEmpty()
+        val legacy = Automation(id = "legacy", name = "Legacy", createdAt = 1,
+            triggerEvent = TriggerEvent.NOTIFICATION_RECEIVED, notificationKeyword = " PLAY ")
+        assertThat(RuleEvaluator.evaluateNotification(listOf(legacy), event)).hasSize(1)
+        assertThat(RuleEvaluator.evaluateNotification(listOf(legacy), event.copy(title = "play", text = "", bigText = ""))).hasSize(1)
+        assertThat(RuleEvaluator.evaluateNotification(listOf(legacy), event.copy(title = "", text = "", bigText = ""))).isEmpty()
+    }
     @Test fun multiTriggerJson_roundTripsTypedPayloads_withoutRuntimeSourceMetadata() {
         val original = rule(TriggerDefinition.AppOpened("com.example", "Example"),
             TriggerDefinition.WifiConnected("Home")).copy(matchedTriggerIndex = 1)

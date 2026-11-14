@@ -59,7 +59,6 @@ class LintResourceContractsTest(unittest.TestCase):
             "SOUND_PROFILE_SILENT", "TORCH_ON", "TORCH_OFF", "LOCATION_ON", "LOCATION_OFF",
         }
         self.assertEqual({name for name in expected_actions if f"ActionType.{name}" not in analyzer}, set())
-        self.assertNotIn("notificationTitle", analyzer)
         self.assertNotIn("notificationBody", analyzer)
         self.assertNotIn("phoneNumber", analyzer)
         self.assertNotIn("webhook", analyzer.lower())

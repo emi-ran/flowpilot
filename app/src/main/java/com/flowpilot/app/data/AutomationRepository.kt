@@ -468,6 +468,7 @@ class AutomationRepository(private val context: Context) {
         webhookHeaders: String = "",
         webhookBody: String = "",
         webhookTimeoutSeconds: Int = 10,
+        jsonCommandSource: String = "",
         phoneNumber: String = "",
         lightLux: Int = 10,
         shakeThreshold: Float = com.flowpilot.app.data.model.Automation.DEFAULT_SHAKE_THRESHOLD,
@@ -566,6 +567,7 @@ class AutomationRepository(private val context: Context) {
             webhookHeaders = webhookHeaders,
             webhookBody = webhookBody,
             webhookTimeoutSeconds = webhookTimeoutSeconds,
+            jsonCommandSource = jsonCommandSource,
             phoneNumber = phoneNumber,
             smsSenderFilter = smsSenderFilter,
             smsMatchMode = smsMatchMode,
@@ -981,6 +983,18 @@ class AutomationRepository(private val context: Context) {
     private fun recoverDuplicateIds(rules: List<Automation>): List<Automation> =
         rules.distinctBy { it.id }
 
+    /** Dispatches a confirmed saved rule only while its exact revision remains enabled. */
+    suspend fun <T> dispatchSavedRuleIfAuthorized(
+        id: String,
+        revision: Long,
+        block: suspend () -> T,
+    ): T? = executionStateMutex.withLock {
+        val stored = rawDataStore.data.first()[key]
+            ?.let(::safeDecode)
+            ?.firstOrNull { it.id == id }
+        if (stored?.enabled == true && stored.executionRevision == revision) block() else null
+    }
+
     /** Serializes in-process rule mutation with final authorization and dispatch. */
     suspend fun <T> dispatchIfAuthorized(
         reservation: ExecutionReservation,
@@ -1096,7 +1110,8 @@ class AutomationRepository(private val context: Context) {
             val hasPlaintext = list.any { rule ->
                 (rule.webhookUrl.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookUrl)) ||
                 (rule.webhookHeaders.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookHeaders)) ||
-                (rule.webhookBody.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookBody))
+                (rule.webhookBody.isNotEmpty() && !SecretCipher.isEncrypted(rule.webhookBody)) ||
+                (rule.jsonCommandSource.isNotEmpty() && !SecretCipher.isEncrypted(rule.jsonCommandSource))
             }
             if (hasPlaintext) {
                 val encryptedList = list.map { it.withEncryptedSecrets() }

@@ -76,7 +76,7 @@ class ClockExecutorTest {
         )
 
         assertThat(result.success).isTrue()
-        assertThat(result.message).isEqualTo("Alarm request sent to Clock app")
+        assertThat(result.resultCode).isEqualTo(ActionResultCode.REQUEST_UNVERIFIED)
         assertThat(startedIntent).isNotNull()
         assertThat(startedIntent!!.action).isEqualTo(AlarmClock.ACTION_SET_ALARM)
         assertThat(startedIntent!!.getIntExtra(AlarmClock.EXTRA_HOUR, -1)).isEqualTo(7)
@@ -176,7 +176,7 @@ class ClockExecutorTest {
         )
 
         assertThat(result.success).isTrue()
-        assertThat(result.message).isEqualTo("Timer request sent to Clock app")
+        assertThat(result.resultCode).isEqualTo(ActionResultCode.REQUEST_UNVERIFIED)
         assertThat(startedIntent).isNotNull()
         assertThat(startedIntent!!.action).isEqualTo(AlarmClock.ACTION_SET_TIMER)
         assertThat(startedIntent!!.getIntExtra(AlarmClock.EXTRA_LENGTH, -1)).isEqualTo(300)

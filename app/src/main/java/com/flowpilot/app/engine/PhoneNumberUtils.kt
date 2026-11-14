@@ -41,16 +41,20 @@ object PhoneNumberUtils {
     }
 
     /**
-     * Evaluates whether an incoming/outgoing call's actual number matches a configured filter.
-     * - If [filter] is blank -> matches any call (even when [actual] is null/empty).
-     * - If [filter] is filled -> requires [actual] to be non-empty and matching when normalized.
+     * Evaluates whether an SMS sender matches a configured filter.
+     * - A blank [filter] matches any sender.
+     * - Sender identities containing letters require a case-insensitive exact match after trimming.
+     * - Numeric senders use normalized number and national suffix matching.
      */
     fun matches(filter: String, actual: String?): Boolean {
-        val normFilter = normalize(filter)
-        if (normFilter.isEmpty()) return true
+        if (filter.isBlank()) return true
         if (actual.isNullOrBlank()) return false
+        if (filter.any { it.isLetter() } || actual.any { it.isLetter() }) {
+            return filter.trim().equals(actual.trim(), ignoreCase = true)
+        }
+        val normFilter = normalize(filter)
         val normActual = normalize(actual)
-        if (normActual.isEmpty()) return false
+        if (normFilter.none { it.isDigit() } || normActual.none { it.isDigit() }) return false
 
         if (normFilter == normActual) return true
 

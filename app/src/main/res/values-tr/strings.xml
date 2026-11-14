@@ -656,6 +656,7 @@
     <!-- Capabilities & Status -->
     <string name="capability_available">Kullanılabilir</string>
     <string name="capability_permission_required">İzin gerekli</string>
+    <string name="capability_listener_disconnected">Dinleyici bağlı değil</string>
     <string name="capability_shizuku_required">Shizuku gerekli</string>
     <string name="capability_unsupported">Bu cihazda desteklenmiyor</string>
 
@@ -682,6 +683,8 @@
     <string name="perms_send_sms_desc">SMS gönder eyleminin manuel onay olmadan arka planda otomatik SMS gönderebilmesi için gereklidir.</string>
     <string name="perms_notif_listener_title">Bildirim dinleme erişimi</string>
     <string name="perms_notif_listener_desc">FlowPilot\'ın seçilen uygulamalardan bildirim geldiğinde otomasyonları tetiklemesini ve medya oturumlarını izlemesini ve kontrol etmesini sağlar.</string>
+    <string name="perms_notif_listener_disconnected_desc">Erişim izni verilmiş ancak bildirim dinleyicisi bağlı değil. Bildirim ve medya otomasyonları çalışmayabilir. Sistem ayarlarında FlowPilot bildirim erişimini kapatıp açmayı deneyin. Android yeniden bağlantıyı yine geciktirebilir; kaçırılan bildirimler tekrar işlenmez.</string>
+    <string name="perms_notif_listener_settings">Ayarları aç</string>
     <string name="media_target_shared_explanation">Bu hedef, bu kuraldaki tüm medya kontrolü eylemleri için ortaktır. Burada değiştirmek, tümünü etkiler.</string>
     <string name="perms_bluetooth_title">Bluetooth eşleşmiş cihaz erişimi</string>
     <string name="perms_bluetooth_desc">Android 12+ sürümlerde eşleşmiş cihazları listelemek ve bağlanma/kopma olaylarını yakalamak için gereklidir.</string>
@@ -706,6 +709,11 @@
     <string name="perms_dnd_desc">FlowPilot\'ın Rahatsız Etmeyin modunu açıp kapatmasına olanak tanır.</string>
     <string name="perms_modify_settings_title">Sistem ayarlarını değiştirme</string>
     <string name="perms_modify_settings_desc">FlowPilot\'ın otomatik ekran döndürme gibi sistem ayarlarını değiştirmesini sağlar.</string>
+    <string name="perms_overlay_title">Diğer uygulamaların üzerinde gösterme</string>
+    <string name="perms_overlay_desc">İsteğe bağlıdır: FlowPilot arka plandayken otomasyonların diğer uygulamaları açmasına yardımcı olabilir. Bu özel erişim diğer uygulamaların üzerine çizime de izin verir. Android veya cihazınız açmayı yine de engelleyebilir.</string>
+    <string name="history_result_unverified">Doğrulanmadı</string>
+    <string name="history_result_unverified_detail">İstek gönderildi; sonuç doğrulanmadı ve engellenmiş olabilir.</string>
+    <string name="history_result_legacy_unverified">Bu eski kayıttan komutun sonucu doğrulanamıyor.</string>
     <string name="perms_battery_opt_title">Pil kısıtlamaları</string>
     <string name="perms_battery_opt_desc">FlowPilot\'ın arka planda kesintisiz çalışabilmesi için pil kısıtlamalarını kaldırın.</string>
     <string name="perms_battery_opt_pill">Kısıtlama etkin</string>
@@ -1076,4 +1084,20 @@
     <string name="calendar_duplicate">Seçilemez: bu takvim kimliği birden fazla kez bulunuyor.</string>
     <string name="calendar_retry">Takvimleri yenile</string>
     <string name="calendar_selection_required">Her iki takvim iznini verin ve kullanılabilir, tek bir yazılabilir takvim seçin.</string>
+    <string name="notification_legacy_keyword">Eski anahtar kelime</string>
+    <string name="notification_legacy_explanation">Eski anahtar kelime başlık VEYA mesaj içinde aranır.</string>
+    <string name="notification_title_filter">Başlık filtresi</string>
+    <string name="notification_message_filter">Mesaj filtresi</string>
+    <string name="notification_filters_explanation">Doldurulan tüm filtreler eşleşmelidir. Büyük ve küçük harf ayrımı yapılmaz.</string>
+    <string name="notification_match_contains">İçerir</string>
+    <string name="notification_match_exact">Tam eşleşir</string>
+    <string name="notification_any_app">Herhangi bir uygulama</string>
+    <string name="action_execute_json_command">JSON komutunu çalıştır</string>
+    <string name="action_execute_json_command_desc">JSON nesnesinden desteklenen bir eylemi çalıştır</string>
+    <string name="json_command_source">JSON kaynak şablonu</string>
+    <string name="json_command_warning">Eşleşen mesajlar bu cihazda eylem çalıştırabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler seçin. Kaynak şablonu kuralla birlikte şifreli saklanır.</string>
+    <string name="variable_desc_command_success">Son JSON komutunun başarılı olup olmadığı</string>
+    <string name="variable_desc_command_status">Son JSON komutunun durumu</string>
+    <string name="variable_desc_command_message">Son JSON komutunun güvenli özeti</string>
+    <string name="variable_desc_command_id">Son JSON komutunda verilen kimlik</string>
 </resources>

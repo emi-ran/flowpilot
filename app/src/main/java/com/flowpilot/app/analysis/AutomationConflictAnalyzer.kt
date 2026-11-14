@@ -109,7 +109,9 @@ object AutomationConflictAnalyzer {
 
     private fun triggerOverlapIsCertain(a: Automation, b: Automation): Boolean = when (a.triggerEvent) {
         TriggerEvent.NOTIFICATION_RECEIVED ->
-            TriggerTargetMatcher.notificationKeywordsCertainlyOverlap(a.notificationKeyword, b.notificationKeyword)
+            TriggerTargetMatcher.notificationKeywordsCertainlyOverlap(a.notificationKeyword, b.notificationKeyword) &&
+                a.notificationTitleFilter.isBlank() && b.notificationTitleFilter.isBlank() &&
+                a.notificationMessageFilter.isBlank() && b.notificationMessageFilter.isBlank()
         else -> true
     }
 

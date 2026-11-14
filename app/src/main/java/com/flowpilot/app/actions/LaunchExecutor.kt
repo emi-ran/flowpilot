@@ -35,8 +35,8 @@ class LaunchExecutor(
             else -> return ActionResult(false, "Unsupported launch action")
         }
         launch(intent)
-        Log.i(TAG, "Started ${action.name}")
-        ActionResult(true, if (action == ActionType.LAUNCH_APP) "App launched" else "URL opened")
+        Log.i(TAG, "Requested ${action.name}")
+        ActionResult(true, "Launch requested; opening not verified", ActionResultCode.REQUEST_UNVERIFIED)
     } catch (_: ActivityNotFoundException) {
         ActionResult(false, "No application can handle this action", diagnostic = ActionDiagnostic(ActionDiagnosticReason.HANDLER_UNAVAILABLE))
     } catch (_: Throwable) {

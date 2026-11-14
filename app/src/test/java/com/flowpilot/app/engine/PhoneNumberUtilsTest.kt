@@ -29,6 +29,19 @@ class PhoneNumberUtilsTest {
     }
 
     @Test
+    fun matches_alphanumeric_sender_only_by_exact_identity() {
+        assertThat(PhoneNumberUtils.matches(" Bank123 ", "bank123")).isTrue()
+        assertThat(PhoneNumberUtils.matches("BANK", "bank")).isTrue()
+        assertThat(PhoneNumberUtils.matches("BANK", "OTHER")).isFalse()
+        assertThat(PhoneNumberUtils.matches("BANK", "+905551234567")).isFalse()
+        assertThat(PhoneNumberUtils.matches("Bank123", "123")).isFalse()
+        assertThat(PhoneNumberUtils.matches("123", "Bank123")).isFalse()
+        assertThat(PhoneNumberUtils.matches("BANK", null)).isFalse()
+        assertThat(PhoneNumberUtils.matches("---", "123")).isFalse()
+        assertThat(PhoneNumberUtils.matches("+", "+")).isFalse()
+    }
+
+    @Test
     fun matches_exact_or_national_suffix_matches() {
         // Exact international
         assertThat(PhoneNumberUtils.matches("+905551234567", "+905551234567")).isTrue()
