@@ -37,6 +37,15 @@ class ImportValidatorTest {
             ImportValidator.validate(listOf(rule))
         }
     }
+
+    @Test
+    fun alarmDaysAcceptCalendarValuesAndRejectOutOfRangeValues() {
+        val alarm = rule(actions = listOf(ActionType.CREATE_ALARM))
+        ImportValidator.validate(listOf(alarm))
+        ImportValidator.validate(listOf(alarm.copy(alarmDays = listOf(1, 3, 7))))
+        assertRejected(alarm.copy(alarmDays = listOf(0)))
+        assertRejected(alarm.copy(alarmDays = listOf(8)))
+    }
     @Test
     fun musicImportRequiresMatchingServiceAndFields() {
         val search = rule(actions = listOf(ActionType.MUSIC_SEARCH)).copy(

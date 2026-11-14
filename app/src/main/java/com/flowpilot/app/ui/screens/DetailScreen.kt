@@ -150,6 +150,7 @@ fun DetailScreen(
     var alarmHour by remember(initialRule.id) { mutableIntStateOf(initialRule.alarmHour) }
     var alarmMinute by remember(initialRule.id) { mutableIntStateOf(initialRule.alarmMinute) }
     var alarmMessage by remember(initialRule.id) { mutableStateOf(initialRule.alarmMessage) }
+    var alarmDays by remember(initialRule.id) { mutableStateOf(initialRule.alarmDays) }
     var showAlarmTimePicker by remember { mutableStateOf(false) }
     var timerDurationSeconds by remember(initialRule.id) { mutableIntStateOf(initialRule.timerDurationSeconds) }
     var timerMessage by remember(initialRule.id) { mutableStateOf(initialRule.timerMessage) }
@@ -274,6 +275,7 @@ fun DetailScreen(
         alarmHour = alarmHour,
         alarmMinute = alarmMinute,
         alarmMessage = alarmMessage,
+        alarmDays = alarmDays,
         timerDurationSeconds = timerDurationSeconds,
         timerMessage = timerMessage,
         cooldownMinutes = cooldownMinutes,
@@ -690,8 +692,10 @@ fun DetailScreen(
                             alarmHour = alarmHour,
                             alarmMinute = alarmMinute,
                             alarmMessage = alarmMessage,
+                            alarmDays = alarmDays,
                             onChooseAlarmTime = { showAlarmTimePicker = true },
                             onAlarmMessageChange = { alarmMessage = it },
+                            onAlarmDaysChange = { alarmDays = it },
                             // Timer
                             timerDurationSeconds = timerDurationSeconds,
                             timerMessage = timerMessage,

@@ -89,8 +89,7 @@ Steps whose anchor is not registered are skipped by Next and Back and excluded f
 - Do Not Disturb and Sound Profile toggling require user-grantable Notification Policy Access
   special access checked via `NotificationManager.isNotificationPolicyAccessGranted` and opened with
   `Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS`.
-- Alarm creation and Timer start use Android's standard `AlarmClock.ACTION_SET_ALARM` and `AlarmClock.ACTION_SET_TIMER`
-  intents resolved and launched with `FLAG_ACTIVITY_NEW_TASK`. `CREATE_ALARM` omits `EXTRA_SKIP_UI` to allow confirmation, while `START_TIMER` sets `EXTRA_SKIP_UI = true` for background timer execution.
+- Alarm creation and timer start dispatch Android's `AlarmClock` intents with `FLAG_ACTIVITY_NEW_TASK` and request `EXTRA_SKIP_UI`; the receiving Clock app controls its UI and actual scheduling. Alarm requests optionally include repeat weekdays and a rendered label; Android exposes no independent post-dismissal deletion switch. Its contract recommends removing a non-repeating skip-UI alarm after dismissal, except when reusing an identical existing alarm.
 - NFC toggling is a privileged action on Android 10+; `NfcAdapter.enable()/disable()` exist but are
   restricted to system/DPC. Normal apps can only redirect the user to NFC settings. On Xiaomi 15T Pro /
   HyperOS 3, FlowPilot uses Shizuku to run `svc nfc enable|disable` as shell. `cmd nfc` crashed the target
@@ -263,9 +262,8 @@ DndExecutor sets `NotificationManager.setInterruptionFilter` to `INTERRUPTION_FI
 `android.permission.ACCESS_NOTIFICATION_POLICY` checked via `NotificationManager.isNotificationPolicyAccessGranted`
 and fails with clear messages if permission is missing, state mismatches, or system throws.
 
-ClockExecutor dispatches `AlarmClock.ACTION_SET_ALARM` with `EXTRA_HOUR`, `EXTRA_MINUTES`, and optional `EXTRA_MESSAGE` (without `EXTRA_SKIP_UI`),
-or `AlarmClock.ACTION_SET_TIMER` with `EXTRA_LENGTH` (1s-24h), optional `EXTRA_MESSAGE`, and `EXTRA_SKIP_UI = true` for background timer starts. Both use `FLAG_ACTIVITY_NEW_TASK`
-and resolve the handling component before starting. Result reports request dispatched to the system Clock app.
+ClockExecutor dispatches `AlarmClock.ACTION_SET_ALARM` with hour, minute, optional rendered message and repeat days, plus `EXTRA_SKIP_UI = true`; an empty day list requests a one-time alarm.
+It sends `ACTION_SET_TIMER` with length (1s–24h), optional message and `EXTRA_SKIP_UI = true`. Both use `FLAG_ACTIVITY_NEW_TASK` and resolve the handler before starting. Success means the request was dispatched, not that the Clock app scheduled it or skipped its UI.
 
 NotificationExecutor posts title/body configured on the rule to `automation_alerts_v2` at high importance.
 Android preserves channel importance after creation, so channel IDs are versioned when alert behavior changes.

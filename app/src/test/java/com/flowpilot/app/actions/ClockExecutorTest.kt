@@ -82,8 +82,41 @@ class ClockExecutorTest {
         assertThat(startedIntent!!.getIntExtra(AlarmClock.EXTRA_HOUR, -1)).isEqualTo(7)
         assertThat(startedIntent!!.getIntExtra(AlarmClock.EXTRA_MINUTES, -1)).isEqualTo(15)
         assertThat(startedIntent!!.getStringExtra(AlarmClock.EXTRA_MESSAGE)).isEqualTo("Morning Wakeup")
-        assertThat(startedIntent!!.hasExtra(AlarmClock.EXTRA_SKIP_UI)).isFalse()
+        assertThat(startedIntent!!.getBooleanExtra(AlarmClock.EXTRA_SKIP_UI, false)).isTrue()
+        assertThat(startedIntent!!.hasExtra(AlarmClock.EXTRA_DAYS)).isFalse()
         assertThat(startedIntent!!.flags and Intent.FLAG_ACTIVITY_NEW_TASK).isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    @Test
+    fun execute_createAlarm_repeatingDaysAreDispatched() {
+        var startedIntent: Intent? = null
+        val executor = ClockExecutor(
+            context = RuntimeEnvironment.getApplication(),
+            intentResolver = { _, _ -> ComponentName("clock", "AlarmActivity") },
+            activityStarter = { _, intent -> startedIntent = intent },
+        )
+
+        val result = executor.execute(ActionType.CREATE_ALARM, ActionParameters(alarmDays = listOf(1, 3, 7)))
+
+        assertThat(result.success).isTrue()
+        assertThat(startedIntent!!.getIntegerArrayListExtra(AlarmClock.EXTRA_DAYS)).containsExactly(1, 3, 7).inOrder()
+        assertThat(startedIntent!!.getBooleanExtra(AlarmClock.EXTRA_SKIP_UI, false)).isTrue()
+    }
+
+    @Test
+    fun execute_createAlarm_invalidDaysAreRejectedBeforeDispatch() {
+        var dispatched = false
+        val executor = ClockExecutor(
+            context = RuntimeEnvironment.getApplication(),
+            intentResolver = { _, _ -> ComponentName("clock", "AlarmActivity") },
+            activityStarter = { _, _ -> dispatched = true },
+        )
+        for (day in listOf(0, 8)) {
+            val result = executor.execute(ActionType.CREATE_ALARM, ActionParameters(alarmDays = listOf(day)))
+            assertThat(result.success).isFalse()
+            assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.INVALID_INPUT)
+        }
+        assertThat(dispatched).isFalse()
     }
 
     @Test

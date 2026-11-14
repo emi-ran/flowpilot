@@ -48,6 +48,7 @@ object ActionParametersFactory {
             ttsTemplateError = tts.error,
             alarmHour = rule.alarmHour,
             alarmMinute = rule.alarmMinute,
+            alarmDays = rule.alarmDays,
             alarmMessage = render(rule.alarmMessage, context),
             timerDurationSeconds = rule.timerDurationSeconds,
             timerMessage = render(rule.timerMessage, context),

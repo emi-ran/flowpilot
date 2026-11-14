@@ -95,6 +95,7 @@ data class ActionParameters(
     val ttsTemplateError: String? = null,
     val alarmHour: Int = 7,
     val alarmMinute: Int = 0,
+    val alarmDays: List<Int> = emptyList(),
     val alarmMessage: String = "",
     val timerDurationSeconds: Int = 300,
     val timerMessage: String = "",

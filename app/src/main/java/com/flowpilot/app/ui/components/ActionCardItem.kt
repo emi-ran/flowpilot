@@ -6,6 +6,7 @@
 package com.flowpilot.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -16,6 +17,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,9 +29,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
@@ -41,6 +45,7 @@ import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.ui.util.localizedLabel
+import java.util.Calendar
 
 fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.SHOW_NOTIFICATION -> Icons.Default.Notifications
@@ -139,8 +144,10 @@ fun ActionCardItem(
     alarmHour: Int = 8,
     alarmMinute: Int = 0,
     alarmMessage: String = "",
+    alarmDays: List<Int> = emptyList(),
     onChooseAlarmTime: () -> Unit = {},
     onAlarmMessageChange: (String) -> Unit = {},
+    onAlarmDaysChange: (List<Int>) -> Unit = {},
     // Timer
     timerDurationSeconds: Int = 300,
     timerMessage: String = "",
@@ -637,6 +644,79 @@ fun ActionCardItem(
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                     )
+                    Spacer(Modifier.height(10.dp))
+                    val dayLabels = listOf(
+                        Calendar.MONDAY to stringResource(R.string.alarm_day_monday),
+                        Calendar.TUESDAY to stringResource(R.string.alarm_day_tuesday),
+                        Calendar.WEDNESDAY to stringResource(R.string.alarm_day_wednesday),
+                        Calendar.THURSDAY to stringResource(R.string.alarm_day_thursday),
+                        Calendar.FRIDAY to stringResource(R.string.alarm_day_friday),
+                        Calendar.SATURDAY to stringResource(R.string.alarm_day_saturday),
+                        Calendar.SUNDAY to stringResource(R.string.alarm_day_sunday),
+                    )
+                    val weekdays = listOf(Calendar.MONDAY, Calendar.TUESDAY, Calendar.WEDNESDAY, Calendar.THURSDAY, Calendar.FRIDAY)
+                    val weekend = listOf(Calendar.SATURDAY, Calendar.SUNDAY)
+                    val repeatSummary = when {
+                        alarmDays.isEmpty() -> stringResource(R.string.alarm_repeat_once)
+                        alarmDays.toSet() == dayLabels.map { it.first }.toSet() -> stringResource(R.string.alarm_repeat_every_day)
+                        alarmDays.toSet() == weekdays.toSet() -> stringResource(R.string.alarm_repeat_weekdays)
+                        alarmDays.toSet() == weekend.toSet() -> stringResource(R.string.alarm_repeat_weekend)
+                        else -> dayLabels.filter { it.first in alarmDays }.joinToString(", ") { it.second }
+                    }
+                    var showRepeatPresets by remember { mutableStateOf(false) }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            stringResource(R.string.alarm_repeat_days),
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            repeatSummary,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Box {
+                            IconButton(onClick = { showRepeatPresets = true }, modifier = Modifier.size(28.dp)) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.alarm_repeat_presets),
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                            DropdownMenu(expanded = showRepeatPresets, onDismissRequest = { showRepeatPresets = false }) {
+                                listOf(
+                                    R.string.alarm_repeat_once to emptyList(),
+                                    R.string.alarm_repeat_weekdays to weekdays,
+                                    R.string.alarm_repeat_weekend to weekend,
+                                    R.string.alarm_repeat_every_day to dayLabels.map { it.first },
+                                ).forEach { (labelRes, days) ->
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(labelRes)) },
+                                        trailingIcon = if (alarmDays.toSet() == days.toSet()) {
+                                            { Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
+                                        } else null,
+                                        onClick = {
+                                            onAlarmDaysChange(days)
+                                            showRepeatPresets = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                        dayLabels.forEach { (day, label) ->
+                            AlarmDayToggle(
+                                label = label,
+                                selected = day in alarmDays,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    onAlarmDaysChange(if (day in alarmDays) alarmDays - day else (alarmDays + day).sorted())
+                                },
+                            )
+                        }
+                    }
                 }
                 ActionType.START_TIMER -> {
                     Spacer(Modifier.height(8.dp))
@@ -868,5 +948,39 @@ fun ActionCardItem(
                 else -> Unit
             }
         }
+    }
+}
+
+@Composable
+private fun AlarmDayToggle(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val container by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        animationSpec = tween(160),
+        label = "alarmDayContainer",
+    )
+    val content by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(160),
+        label = "alarmDayContent",
+    )
+    Box(
+        modifier = modifier
+            .aspectRatio(1f)
+            .clip(CircleShape)
+            .background(container)
+            .toggleable(value = selected, role = Role.Checkbox, onValueChange = { onClick() }),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = content,
+            maxLines = 1,
+        )
     }
 }

@@ -156,6 +156,7 @@ fun CreateScreen(
     var alarmHour by remember { mutableIntStateOf(7) }
     var alarmMinute by remember { mutableIntStateOf(0) }
     var alarmMessage by remember { mutableStateOf("") }
+    var alarmDays by remember { mutableStateOf<List<Int>>(emptyList()) }
     var showAlarmTimePicker by remember { mutableStateOf(false) }
     var timerDurationSeconds by remember { mutableIntStateOf(300) }
     var timerMessage by remember { mutableStateOf("") }
@@ -287,6 +288,7 @@ fun CreateScreen(
         alarmHour = t.alarmHour
         alarmMinute = t.alarmMinute
         alarmMessage = t.alarmMessage
+        alarmDays = t.alarmDays
         timerDurationSeconds = t.timerDurationSeconds
         timerMessage = t.timerMessage
         webhookMethod = t.webhookMethod
@@ -447,6 +449,7 @@ fun CreateScreen(
                         alarmHour = alarmHour,
                         alarmMinute = alarmMinute,
                         alarmMessage = alarmMessage,
+                        alarmDays = alarmDays,
                         timerDurationSeconds = timerDurationSeconds,
                         timerMessage = timerMessage,
                         cooldownMinutes = cooldownMinutes,
@@ -767,8 +770,10 @@ fun CreateScreen(
                             alarmHour = alarmHour,
                             alarmMinute = alarmMinute,
                             alarmMessage = alarmMessage,
+                            alarmDays = alarmDays,
                             onChooseAlarmTime = { showAlarmTimePicker = true },
                             onAlarmMessageChange = { alarmMessage = it },
+                            onAlarmDaysChange = { alarmDays = it },
                             // Timer
                             timerDurationSeconds = timerDurationSeconds,
                             timerMessage = timerMessage,
@@ -1016,6 +1021,7 @@ fun CreateScreen(
                                 alarmHour = alarmHour,
                                 alarmMinute = alarmMinute,
                                 alarmMessage = alarmMessage,
+                                alarmDays = alarmDays,
                                 timerDurationSeconds = timerDurationSeconds,
                                 timerMessage = timerMessage,
                                 webhookMethod = webhookMethod,
