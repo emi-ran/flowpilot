@@ -1,6 +1,6 @@
 # FlowPilot — Dynamic TTS & General Template Variables Plan
 
-Status: implemented (historical design record; current behavior is tracked in `docs/STATUS.md`)  
+Status: implemented (historical design record; current behavior is tracked in `docs/development/status.md`)
 Base: `main` @ `b90956b` (v2.1.0)  
 Date: 2026-11-03  
 Owner: main/integration agent  
@@ -874,7 +874,7 @@ Write scope:
 - `data/backup/ImportValidator.kt`
 - `res/values/strings.xml`
 - `res/values-tr/strings.xml`
-- `docs/STATUS.md`, `docs/IMPLEMENTATION.md`, `CHANGELOG.md` (final integration owner may handle)
+- `docs/development/status.md`, `docs/development/implementation.md`, `CHANGELOG.md` (final integration owner may handle)
 
 Depends on Slice B/C interfaces.  
 Deliverables:

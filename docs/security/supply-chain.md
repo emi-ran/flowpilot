@@ -197,5 +197,5 @@ repository's release workflow.
 
 Repository and environment protection cannot be enforced from committed files. The required GitHub
 settings (tag ruleset, protected `main`, `release-signing` environment with required reviewers,
-read-only default `GITHUB_TOKEN`) are listed in `docs/RELEASE_SECURITY.md` and must be verified in
+read-only default `GITHUB_TOKEN`) are listed in `docs/security/release-security.md` and must be verified in
 the repository settings after any admin change.

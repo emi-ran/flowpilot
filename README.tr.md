@@ -211,7 +211,7 @@ Kural eksikse Kaydet, geçersiz tetikleyici veya eylemi işaretleyip neyin düze
 - 🚀 **Uygulama & Web:** Cihazdaki bir uygulamayı açma veya web bağlantısına yönlendirme.
 - 💬 **Telefon & SMS:** Arama ekranını açma, doğrudan telefon araması başlatma, doğrudan arka planda SMS gönderme veya SMS taslağı hazırlama.
 - 🔗 **HTTPS Webhook:** Canlı şablon değişkenleriyle dış sunuculara güvenli HTTP istekleri (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) gönderin; başlıklar ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir.
-- 🧾 **JSON komutları:** Bildirim, SMS veya başka bir şablon kaynağından sınırlı, sürümlü komut çalıştırın. Tüm normal eylemler desteklenir; iç içe `EXECUTE_JSON_COMMAND` reddedilir. Mevcut eylem izinleri ve yetenek kontrolleri geçerlidir, ancak alıcı gönderenin kimliğini doğrulamaz: eşleşen içerik ücret doğurabilecek SMS veya arama, ağ değişikliği ya da cihaz kilitleme başlatabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler kullanın. Sonraki webhook veya SMS eylemi sonucu iletebilir; bildirim başlığı ve mesajı bağımsız filtrelenebilir. Ayrıntılı şema ve güvenlik bilgileri [komut sözleşmesinde](docs/JSON_COMMANDS.md) ve [kurulabilir ajan skill'inde](docs/skills/flowpilot-json-command/SKILL.md) yer alır. Bu genişletme yayımlanmadı; cihaz doğrulaması bekliyor.
+- 🧾 **JSON komutları:** Bildirim, SMS veya başka bir şablon kaynağından sınırlı, sürümlü komut çalıştırın. Tüm normal eylemler desteklenir; iç içe `EXECUTE_JSON_COMMAND` reddedilir. Mevcut eylem izinleri ve yetenek kontrolleri geçerlidir, ancak alıcı gönderenin kimliğini doğrulamaz: eşleşen içerik ücret doğurabilecek SMS veya arama, ağ değişikliği ya da cihaz kilitleme başlatabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler kullanın. Sonraki webhook veya SMS eylemi sonucu iletebilir; bildirim başlığı ve mesajı bağımsız filtrelenebilir. Ayrıntılı şema ve güvenlik bilgileri [komut sözleşmesinde](skills/flowpilot-json-command/references/json-commands.md) ve [kurulabilir ajan skill'inde](skills/flowpilot-json-command/SKILL.md) yer alır. Bu genişletme yayımlanmadı; cihaz doğrulaması bekliyor.
 - 🧩 **Şablon Değişkenleri:** Seslendirme, bildirim, webhook, SMS, telefon, URL, alarm ve zamanlayıcı metinlerinde `${...}` kullanın. Şablon destekleyen her eylem alanı, kuralın tetikleyicilerine göre filtrelenmiş aynı aranabilir seçiciyi ve `trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape` filtrelerini sunar. Global değerler: `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}` ve `${rule.name}`.
 
 ---
@@ -285,7 +285,7 @@ sha256sum FlowPilot-vX.Y.Z.apk
 - `apksigner verify --print-certs` çıktısında `Signer #1 certificate SHA-256 digest: f1e45d3a669954ddfb858d5d3a964a2fa7ba3d00bcb0e65b5ced1ca6d5a79f2b` görünmelidir.
 - `sha256sum` sonucu yayımlanan `.sha256` dosyası ve sürüm notlarındaki özetle eşleşmelidir.
 
-Herhangi bir kontrol başarısız olursa APK'yı yüklemeyin. Gradle bağımlılık sağlama toplamları, depo filtreleri ve tüm doğrulama adımları [`docs/SUPPLY_CHAIN.md`](docs/SUPPLY_CHAIN.md) dosyasında belgelenmiştir.
+Herhangi bir kontrol başarısız olursa APK'yı yüklemeyin. Gradle bağımlılık sağlama toplamları, depo filtreleri ve tüm doğrulama adımları [`docs/security/supply-chain.md`](docs/security/supply-chain.md) dosyasında belgelenmiştir.
 
 ---
 
