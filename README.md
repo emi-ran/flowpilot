@@ -211,7 +211,7 @@ When a rule is incomplete, Save points to the invalid trigger or action and expl
 - 🚀 **Apps & Web:** Launch installed app or open web URL.
 - 💬 **Phone & SMS:** Open dialer, place direct phone call, send automated background SMS, or prepare SMS draft.
 - 🔗 **HTTPS Webhook:** Send outbound HTTP requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, JSON body, AES-256-GCM Keystore encrypted secrets, and dynamic template variables.
-- 🧾 **JSON commands:** Run a bounded, versioned command from a notification, SMS, or another template source. All normal actions are supported; nested `EXECUTE_JSON_COMMAND` is rejected. Existing action permissions and capability checks still apply, but the receiver does not authenticate senders: matching content can trigger SMS or calls (potentially incurring charges), network changes, or device locking. Use trusted sources and restrictive filters. Subsequent webhook or SMS actions can report the result; notification title and message filters are independent. See the [command contract](docs/JSON_COMMANDS.md) and [installable agent skill](docs/skills/flowpilot-json-command/SKILL.md) for the detailed schema and safety guidance. This expansion is unreleased; device verification is pending.
+- 🧾 **JSON commands:** Run a bounded, versioned command from a notification, SMS, or another template source. All normal actions are supported; nested `EXECUTE_JSON_COMMAND` is rejected. Existing action permissions and capability checks still apply, but the receiver does not authenticate senders: matching content can trigger SMS or calls (potentially incurring charges), network changes, or device locking. Use trusted sources and restrictive filters. Subsequent webhook or SMS actions can report the result; notification title and message filters are independent. See the [command contract](skills/flowpilot-json-command/references/json-commands.md) and [installable agent skill](skills/flowpilot-json-command/SKILL.md) for the detailed schema and safety guidance. This expansion is unreleased; device verification is pending.
 - 🧩 **Template Variables:** Use `${...}` in speech, notification, webhook, SMS, phone, URL, alarm, and timer text. Every template-capable action field opens the same trigger-aware picker with filters (`trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape`). Global values include `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, and `${rule.name}`.
 
 ---
@@ -285,7 +285,7 @@ sha256sum FlowPilot-vX.Y.Z.apk
 - `apksigner verify --print-certs` must report `Signer #1 certificate SHA-256 digest: f1e45d3a669954ddfb858d5d3a964a2fa7ba3d00bcb0e65b5ced1ca6d5a79f2b`.
 - `sha256sum` must match the published `.sha256` asset and the checksum in the release notes.
 
-If any check fails, do not install the APK. Gradle dependency checksums, repository filters, and the complete procedure are documented in [`docs/SUPPLY_CHAIN.md`](docs/SUPPLY_CHAIN.md).
+If any check fails, do not install the APK. Gradle dependency checksums, repository filters, and the complete procedure are documented in [`docs/security/supply-chain.md`](docs/security/supply-chain.md).
 
 ---
 

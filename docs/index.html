@@ -256,6 +256,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
               <h3 data-i18n="caps_triggers">Tetikleyiciler</h3>
             </header>
+            <p class="cap-summary" data-i18n="caps_triggers_summary">Zaman, konum, pil ve bildirimler gibi olaylarla başlayın.</p>
+            <details class="cap-details"><summary data-i18n="caps_examples">Örnekleri gör</summary>
             <ul class="chips">
               <li data-i18n="trig_time">Belirli saat / periyot</li>
               <li data-i18n="trig_geofence">Geofence</li>
@@ -268,6 +270,7 @@
               <li data-i18n="trig_notification">Bildirim: uygulama, başlık ve mesaj filtreleri</li>
               <li data-i18n="trig_media">Medya oynatma / parça değişimi</li>
             </ul>
+            </details>
           </article>
 
           <article class="cap-card reveal">
@@ -275,6 +278,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>
               <h3 data-i18n="caps_actions">Ekran, güç ve ses</h3>
             </header>
+            <p class="cap-summary" data-i18n="caps_actions_summary">Parlaklık, ses ve Rahatsız Etmeyin ayarlarını yönetin.</p>
+            <details class="cap-details"><summary data-i18n="caps_examples">Örnekleri gör</summary>
             <ul class="chips">
               <li data-i18n="act_bright_level">Parlaklık seviyesi</li>
               <li data-i18n="act_bright_auto">Otomatik parlaklık</li>
@@ -286,6 +291,7 @@
               <li data-i18n="act_calendar">Takvim etkinliği / hatırlatma</li>
               <li data-i18n="act_alarm">Tekrarlı alarm isteği</li>
             </ul>
+            </details>
           </article>
 
           <article class="cap-card reveal">
@@ -293,6 +299,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>
               <h3 data-i18n="caps_privileged">Sistem ve donanım</h3>
             </header>
+            <p class="cap-summary" data-i18n="caps_system_summary">Bağlantıları yönetin, uygulama başlatın veya webhook gönderin.</p>
+            <details class="cap-details"><summary data-i18n="caps_examples">Örnekleri gör</summary>
             <ul class="chips">
               <li class="is-privileged" data-i18n="act_wifi_toggle">Wi-Fi aç / kapat</li>
               <li class="is-privileged" data-i18n="act_bt_toggle">Bluetooth aç / kapat</li>
@@ -303,16 +311,23 @@
               <li data-i18n="act_sms">SMS / telefon</li>
               <li data-i18n="act_json">JSON komutu çalıştır</li>
             </ul>
+            </details>
             <p class="cap-note"><span class="priv-dot" aria-hidden="true"></span><span data-i18n="caps_note">Shizuku IPC gerektirir</span></p>
           </article>
         </div>
-        <div class="callout callout-blue reveal">
-          <h3 data-i18n="json_title">JSON komutları ve güvenlik</h3>
-          <p data-i18n="json_desc">Bir kural, bildirim metni veya SMS gövdesindeki tam sürüm 1 JSON nesnesini eyleme dönüştürebilir. Uygulama, başlık ve mesaj filtreleri birlikte çalışır; içerir veya tam eşleşme seçilebilir. Eski anahtar kelime kuralları önceki VEYA davranışını korur.</p>
-          <p data-i18n="json_security">Filtreler gönderenin kimliğini doğrulamaz; eşleşen içeriği gönderebilen biri arama, SMS veya bağlantıyı kesen eylemler başlatabilir. Güvenilir kaynaklar ve dar filtreler kullanın, yerel kurtarma yolu bırakın; ücretli arama veya SMS için açık izin alın. Komut kimliği yetkilendirme veya tekrar önleme sağlamaz.</p>
-          <p data-i18n="json_ntfy">Harici bir ajan ntfy üzerinden JSON gönderebilir; ayrıca yapılandırılmış bildirim ve FlowPilot kuralı gerekir. FlowPilot'a ajan veya ntfy entegrasyonu gömülü değildir. Teslim ve yürütme Android'e ve kural ayarlarına bağlıdır.</p>
-          <p><a href="https://github.com/emi-ran/flowpilot/blob/v2.3.0/docs/JSON_COMMANDS.md" data-i18n="json_link">JSON komut sözleşmesi ve sınırları</a></p>
-          <p data-i18n="media_limits">Medya kontrolü bildirim erişimi ve etkin oturum gerektirir. Spotify veya YouTube Music isteklerinde açılma ve oynatma garanti edilmez. Takvim için yazılabilir takvim ve izinler gerekir; alarmın davranışını saat uygulaması belirler.</p>
+        <div class="callout callout-blue json-callout reveal">
+          <div>
+            <h3 data-i18n="json_title">JSON komutları ve güvenlik</h3>
+            <p data-i18n="json_short">Bir kural, bildirim veya SMS içindeki JSON komutunu çalıştırabilir.</p>
+            <p class="json-warning" data-i18n="json_warning">Filtreler göndereni doğrulamaz. Eşleşen içerik arama, SMS veya bağlantı değişikliği başlatabilir; güvenilir kaynaklar ve dar filtreler kullanın.</p>
+            <a href="https://github.com/emi-ran/flowpilot/blob/main/skills/flowpilot-json-command/references/json-commands.md" data-i18n="json_link">Komut sözleşmesi ve güvenlik ayrıntıları →</a>
+          </div>
+          <details class="json-details">
+            <summary data-i18n="json_more">Önemli sınırlar</summary>
+            <p data-i18n="json_security">Filtreler gönderenin kimliğini doğrulamaz; eşleşen içeriği gönderebilen biri arama, SMS veya bağlantıyı kesen eylemler başlatabilir. Güvenilir kaynaklar ve dar filtreler kullanın, yerel kurtarma yolu bırakın; ücretli arama veya SMS için açık izin alın. Komut kimliği yetkilendirme veya tekrar önleme sağlamaz.</p>
+            <p data-i18n="json_ntfy">Harici sistemler, ntfy gibi bildirim servisleri veya SMS üzerinden komut iletebilir; uygun bildirim ve kural yapılandırması gerekir. FlowPilot bu servisleri veya ajanları içermez. Kaynağı güvenceye almak ve olası sonuçları değerlendirmek kullanıcının sorumluluğundadır.</p>
+            <p data-i18n="media_limits">Medya kontrolü bildirim erişimi ve etkin oturum gerektirir. Spotify veya YouTube Music isteklerinde açılma ve oynatma garanti edilmez. Takvim için yazılabilir takvim ve izinler gerekir; alarmın davranışını saat uygulaması belirler.</p>
+          </details>
         </div>
       </div>
     </section>

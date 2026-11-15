@@ -4,7 +4,7 @@ The configured source template is limited to 4,000 characters by `TemplateRender
 
 ## Installing the agent skill
 
-Copy the complete `docs/skills/flowpilot-json-command` directory into a skills directory supported by your agent, for example `~/.agents/skills/flowpilot-json-command/`, then reload the agent according to its instructions. The directory must contain `SKILL.md`. Consult the full contract here when using the skill in this repository; a standalone copy includes the essential version-1 rules.
+Copy the complete `skills/flowpilot-json-command` directory into a skills directory supported by your agent, for example `~/.agents/skills/flowpilot-json-command/`, then reload the agent according to its instructions. The directory must contain `SKILL.md` and `references/json-commands.md`. Consult the full contract here when using the skill in this repository; a standalone copy includes the essential version-1 rules.
 
 The **Run JSON command** action renders its configured source template once, then parses the entire resulting text as one JSON object. Surrounding JSON whitespace is accepted; prefixes, suffixes, Markdown fences, root arrays, duplicate keys, nested objects beyond `params`, and trailing text are rejected. It does not extract a JSON fragment. A trigger can supply `${sms.body}`, `${notification.text}`, or `${notification.bigText}`; choose the field actually containing the complete object. A manual run does not have an incoming notification or SMS payload. Filters such as `trim` and `stripPrefix` can prepare a source before parsing; values inside the parsed command are not rendered again as templates.
 
@@ -58,7 +58,7 @@ For `SPEAK_TEXT`, omit `voiceName` to use the platform default if it is offline.
 ```json
 {"version":1,"action":"SPEAK_TEXT","params":{"text":"Merhaba, Türkçe ses denemesi.","voiceName":"tr-tr-x-cfs-local","speechRate":0.9}}
 ```
-For a device-specific, partial inventory of observed voice names, see [Xiaomi 15T Pro offline voices](XIAOMI_15T_PRO_OFFLINE_VOICES.md).
+For a device-specific, partial inventory of observed voice names, see the [Xiaomi 15T Pro offline voices guide](https://github.com/emi-ran/flowpilot/blob/main/docs/guides/xiaomi-15t-pro-offline-voices.md).
 
 
 Webhook methods, after trimming and uppercasing, are `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`; a nonempty body is permitted only for `POST`, `PUT` or `PATCH`. `headers` is a string of newline-separated `Name: value` lines, not a JSON object; blank and `#` comment lines are allowed. Header syntax and forbidden transport headers are validated. The HTTPS destination is subject to the executor's address safety checks, TLS verification and no redirects; an HTTP 2xx response indicates request success, not downstream delivery. JSON string bounds also apply to URL, headers and body.

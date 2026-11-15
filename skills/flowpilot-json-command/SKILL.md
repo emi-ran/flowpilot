@@ -7,7 +7,7 @@ description: Create, validate, or explain FlowPilot version 1 JSON commands for 
 
 Generate a single JSON object without Markdown or extra text when a ready-to-send payload is requested. Identify the intended action and collect all required details rather than guessing, especially a writable calendar identity, times, destination or recipient. Use placeholders only for an explicitly requested template. Never request real credentials. Ask for explicit permission before any potentially billable SMS or other paid operation, including tests; generating a payload is not permission to execute it.
 
-In the FlowPilot repository, consult `docs/JSON_COMMANDS.md` and the current `JsonCommandParser.kt` and `JsonCommandExecution.kt`; the parser is authoritative if the documentation differs. The schema below is included in this file so a standalone copy remains useful; check the installed FlowPilot version and do not assume unreleased actions exist in it. If a version's schema cannot be verified, say so rather than inventing a payload.
+In the FlowPilot repository, consult `skills/flowpilot-json-command/references/json-commands.md` and the current `JsonCommandParser.kt` and `JsonCommandExecution.kt`; the parser is authoritative if the documentation differs. The schema below summarizes the contract; the bundled [full reference](references/json-commands.md) provides details; check the installed FlowPilot version and do not assume unreleased actions exist in it. If a version's schema cannot be verified, say so rather than inventing a payload.
 
 ## Routing and envelope
 

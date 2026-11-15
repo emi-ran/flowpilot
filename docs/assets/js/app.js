@@ -68,6 +68,13 @@ const I18N = {
     caps_eyebrow: 'Kabiliyet haritası',
     caps_title: 'Tetikleyiciler ve eylemler, tek bakışta.',
     caps_desc: 'Android izinleri ve cihaz sınırları geçerlidir. Mavi işaretli eylemler Shizuku gerektirir; diğer eylemler için farklı izinler gerekebilir.',
+    caps_triggers_summary: 'Zaman, konum, pil ve bildirimler gibi olaylarla başlayın.',
+    caps_actions_summary: 'Parlaklık, ses ve Rahatsız Etmeyin ayarlarını yönetin.',
+    caps_system_summary: 'Bağlantıları yönetin, uygulama başlatın veya webhook gönderin.',
+    caps_examples: 'Örnekleri gör',
+    json_short: 'Bir kural, bildirim veya SMS içindeki JSON komutunu çalıştırabilir.',
+    json_warning: 'Filtreler göndereni doğrulamaz. Eşleşen içerik arama, SMS veya bağlantı değişikliği başlatabilir; güvenilir kaynaklar ve dar filtreler kullanın.',
+    json_more: 'Önemli sınırlar',
     caps_triggers: 'Tetikleyiciler',
     caps_actions: 'Ekran, güç ve ses',
     caps_privileged: 'Sistem ve donanım',
@@ -102,8 +109,8 @@ const I18N = {
     json_title: 'JSON komutları ve güvenlik',
     json_desc: 'Bir kural, bildirim metni veya SMS gövdesindeki tam sürüm 1 JSON nesnesini eyleme dönüştürebilir. Uygulama, başlık ve mesaj filtreleri birlikte çalışır; içerir veya tam eşleşme seçilebilir. Eski anahtar kelime kuralları önceki VEYA davranışını korur.',
     json_security: 'Filtreler gönderenin kimliğini doğrulamaz; eşleşen içeriği gönderebilen biri arama, SMS veya bağlantıyı kesen eylemler başlatabilir. Güvenilir kaynaklar ve dar filtreler kullanın, yerel kurtarma yolu bırakın; ücretli arama veya SMS için açık izin alın. Komut kimliği yetkilendirme veya tekrar önleme sağlamaz.',
-    json_ntfy: 'Harici bir ajan ntfy üzerinden JSON gönderebilir; ayrıca yapılandırılmış bildirim ve FlowPilot kuralı gerekir. FlowPilot\'a ajan veya ntfy entegrasyonu gömülü değildir. Teslim ve yürütme Android\'e ve kural ayarlarına bağlıdır.',
-    json_link: 'JSON komut sözleşmesi ve sınırları',
+    json_ntfy: 'Harici sistemler, ntfy gibi bildirim servisleri veya SMS üzerinden komut iletebilir; uygun bildirim ve kural yapılandırması gerekir. FlowPilot bu servisleri veya ajanları içermez. Kaynağı güvenceye almak ve olası sonuçları değerlendirmek kullanıcının sorumluluğundadır.',
+    json_link: 'Komut sözleşmesi ve güvenlik ayrıntıları →',
     media_limits: 'Medya kontrolü bildirim erişimi ve etkin oturum gerektirir. Spotify veya YouTube Music isteklerinde açılma ve oynatma garanti edilmez. Takvim için yazılabilir takvim ve izinler gerekir; alarmın davranışını saat uygulaması belirler.',
 
     how_eyebrow: 'Çalışma modeli',
@@ -258,6 +265,13 @@ const I18N = {
     caps_eyebrow: 'Capability map',
     caps_title: 'Triggers and actions at a glance.',
     caps_desc: 'Android permissions and device limitations apply. Blue items require Shizuku; other actions may need different permissions.',
+    caps_triggers_summary: 'Start with events such as time, location, battery and notifications.',
+    caps_actions_summary: 'Manage brightness, sound and Do Not Disturb.',
+    caps_system_summary: 'Manage connections, launch apps or send webhooks.',
+    caps_examples: 'See examples',
+    json_short: 'A rule can run a JSON command from a notification or SMS.',
+    json_warning: 'Filters do not authenticate the sender. Matching content can trigger calls, SMS or connectivity changes; use trusted sources and restrictive filters.',
+    json_more: 'Important limits',
     caps_triggers: 'Triggers',
     caps_actions: 'Display, power and audio',
     caps_privileged: 'System and hardware',
@@ -292,8 +306,8 @@ const I18N = {
     json_title: 'JSON commands and security',
     json_desc: 'A rule can turn a complete version 1 JSON object from notification text or an SMS body into an action. App, title and message filters combine, with contains or exact matching. Legacy keyword rules retain their earlier OR behavior.',
     json_security: 'Filters do not authenticate the sender: anyone able to send matching content may trigger calls, SMS or connectivity changes. Use trusted sources and restrictive filters, keep a local recovery path, and obtain explicit permission for potentially billable calls or SMS. Command IDs do not authorize or deduplicate requests.',
-    json_ntfy: 'An external agent can send JSON via ntfy; a separately configured notification and FlowPilot rule are required. FlowPilot embeds neither an agent nor an ntfy integration. Delivery and execution depend on Android and rule configuration.',
-    json_link: 'JSON command contract and limits',
+    json_ntfy: 'External systems can deliver commands via notification services such as ntfy or via SMS, with appropriate notification and rule configuration. FlowPilot does not include these services or agents. Users are responsible for securing their sources and assessing the potential consequences.',
+    json_link: 'Command contract and security details →',
     media_limits: 'Media controls require notification access and an active session. Spotify and YouTube Music requests do not guarantee launch or playback. Calendar events require a writable calendar and permissions; the clock app controls alarm behavior.',
 
     how_eyebrow: 'Execution model',
@@ -916,6 +930,45 @@ function initPreloader() {
   ]).then(finish);
 }
 
+/* Animate native disclosures without sacrificing their no-JS behavior. */
+function initCapabilityDetails() {
+  $$('.cap-details, .json-details').forEach((details) => {
+    const summary = details.querySelector('summary');
+    if (!summary || !details.animate) return;
+    const content = Array.from(details.children).filter((child) => child !== summary);
+    let animation = null;
+    let expanded = details.open;
+
+    summary.addEventListener('click', (event) => {
+      event.preventDefault();
+      const start = details.getBoundingClientRect().height;
+      expanded = !expanded;
+      if (animation) {
+        animation.cancel();
+        animation = null;
+      }
+      content.forEach((child) => { child.inert = !expanded; });
+      if (reduceMotion()) {
+        details.open = expanded;
+        details.style.overflow = '';
+        return;
+      }
+      details.open = true;
+      details.style.overflow = 'hidden';
+      const end = expanded ? details.scrollHeight : summary.offsetHeight;
+      animation = details.animate(
+        [{ height: `${start}px` }, { height: `${end}px` }],
+        { duration: 320, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+      );
+      animation.onfinish = () => {
+        details.open = expanded;
+        details.style.overflow = '';
+        animation = null;
+      };
+    });
+  });
+}
+
 /* -- faq ------------------------------------------------------------ */
 function initFaq() {
   $$('.faq details').forEach((details) => {
@@ -980,6 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTerminal();
   initGallery();
   initCopy();
+  initCapabilityDetails();
   initFaq();
   initMenu();
 

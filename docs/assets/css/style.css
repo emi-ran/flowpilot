@@ -995,9 +995,14 @@ html:not(.js) .preloader {
   transition: border-color var(--dur) ease, transform var(--dur) var(--ease);
 }
 
-.cap-card:hover {
+.cap-card:hover,
+.cap-card:focus-within {
   border-color: var(--line-strong);
   transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cap-card:hover, .cap-card:focus-within { transform: none; }
 }
 
 .cap-head {
@@ -1075,6 +1080,16 @@ html:not(.js) .preloader {
   border-radius: 50%;
   background: var(--blue);
 }
+
+/* Progressive disclosure keeps examples and caveats available without crowding. */
+.cap-summary { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+.cap-details { margin-top: 18px; }
+.cap-details summary, .json-details summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 650; }
+.cap-details .chips { margin-top: 14px; }
+.json-callout { margin-top: 20px; }
+.json-callout .json-warning { color: var(--text); }
+.json-details { margin-top: 16px; }
+.json-details p { margin-top: 12px; }
 
 /* ---------------------------------------------------------- how */
 .how-grid {
@@ -1706,7 +1721,7 @@ html.js .reveal.is-in {
 /* ---------------------------------------------------------- responsive */
 @media (max-width: 1080px) {
   .hero-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 44px;
   }
 
