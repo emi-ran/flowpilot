@@ -356,6 +356,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         hasNotificationPolicy.value = c.hasNotificationPolicyAccess()
         hasNotificationListener.value = c.hasNotificationListenerAccess()
         notificationListenerStatus.value = c.notificationListenerStatus()
+        if (notificationListenerStatus.value == CapabilityStatus.LISTENER_DISCONNECTED) {
+            com.flowpilot.app.engine.FlowPilotNotificationListener.ensureBound(app, force = true)
+        }
         hasWifiPermissions.value = c.hasWifiPermissions()
         hasFineLocation.value = c.hasFineLocation()
         hasBackgroundLocation.value = c.hasBackgroundLocation()

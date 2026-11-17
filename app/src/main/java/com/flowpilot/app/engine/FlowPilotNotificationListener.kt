@@ -79,16 +79,78 @@ class NotificationDeduplicator(private val ttlMs: Long = 60_000L, private val ma
  * an APK update or an OEM process kill; retrying too often is wasteful, but never retrying
  * leaves notification rules silently dead until the user toggles access.
  */
-internal class NotificationListenerRebindGate(private val retryIntervalMs: Long = 30_000L) {
+internal class NotificationListenerRebindGate(
+    private val baseIntervalMs: Long = 30_000L,
+    private val maxIntervalMs: Long = 300_000L,
+) {
     private var lastAttemptMs: Long? = null
+    private var consecutiveAttempts: Int = 0
 
     @Synchronized
-    fun shouldAttempt(connected: Boolean, accessGranted: Boolean, nowMs: Long): Boolean {
+    fun shouldAttempt(
+        connected: Boolean,
+        accessGranted: Boolean,
+        nowMs: Long,
+        force: Boolean = false,
+    ): Boolean {
         if (connected || !accessGranted) return false
         val last = lastAttemptMs
-        if (last != null && nowMs - last < retryIntervalMs) return false
+        if (last != null) {
+            val requiredInterval = if (force) FORCE_COOLDOWN_MS else currentIntervalMs()
+            if (nowMs - last < requiredInterval) return false
+        }
+        if (force) {
+            consecutiveAttempts = 0
+        }
         lastAttemptMs = nowMs
+        consecutiveAttempts++
         return true
+    }
+
+    @Synchronized
+    fun reset() {
+        lastAttemptMs = null
+        consecutiveAttempts = 0
+    }
+
+    private fun currentIntervalMs(): Long {
+        if (consecutiveAttempts <= 1) return baseIntervalMs
+        val shift = (consecutiveAttempts - 1).coerceAtMost(10)
+        val scaled = baseIntervalMs.shl(shift)
+        return if (scaled <= 0L || scaled > maxIntervalMs) maxIntervalMs else scaled
+    }
+
+    private companion object {
+        const val FORCE_COOLDOWN_MS = 2_000L
+    }
+}
+
+/**
+ * Tracks active [FlowPilotNotificationListener] instances by identity so an older instance's
+ * delayed [FlowPilotNotificationListener.onDestroy] cannot clobber [FlowPilotNotificationListener.isConnected]
+ * after a replacement instance has already connected.
+ */
+internal class NotificationListenerConnectionTracker {
+    private val activeTokens = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Any, Boolean>())
+
+    @Synchronized
+    fun onConnected(token: Any): Boolean {
+        activeTokens.add(token)
+        return true
+    }
+
+    @Synchronized
+    fun onDisconnected(token: Any): Boolean {
+        activeTokens.remove(token)
+        return activeTokens.isNotEmpty()
+    }
+
+    @Synchronized
+    fun isConnected(): Boolean = activeTokens.isNotEmpty()
+
+    @Synchronized
+    fun clear() {
+        activeTokens.clear()
     }
 }
 
@@ -120,11 +182,16 @@ internal fun isIgnoredNotificationPackage(candidate: String, listenerPackage: St
 class FlowPilotNotificationListener : NotificationListenerService() {
 
     private var lastWatchdogCheckMs = 0L
+    @Volatile
+    private var isDestroyed = false
     private val intakeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         checkWatchdog()
-        if (!isConnected || sbn == null) return
+        if (isDestroyed || sbn == null) return
+        if (!isConnected) {
+            markConnected(this)
+        }
         val pkg = sbn.packageName ?: return
         // Ignore own, sibling-build, and system volume UI notifications to prevent trigger loops/noise.
         if (isIgnoredNotificationPackage(pkg, packageName)) return
@@ -168,22 +235,27 @@ class FlowPilotNotificationListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        isConnected = true
+        isDestroyed = false
+        markConnected(this)
         checkWatchdog(force = true)
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
-        isConnected = false
+        val stillConnected = markDisconnected(this)
         intakeScope.coroutineContext.cancelChildren()
-        intakeScope.launch {
-            delay(1_000L)
-            ensureBound(applicationContext)
+        if (!stillConnected) {
+            val appContext = applicationContext
+            rebindScope.launch {
+                delay(1_000L)
+                ensureBound(appContext)
+            }
         }
     }
 
     override fun onDestroy() {
-        isConnected = false
+        isDestroyed = true
+        markDisconnected(this)
         intakeScope.cancel()
         super.onDestroy()
     }
@@ -215,17 +287,34 @@ class FlowPilotNotificationListener : NotificationListenerService() {
         private val queueLock = Any()
         private val eventQueue = ArrayDeque<TransientNotificationEvent>(MAX_QUEUE_SIZE)
         private val rebindGate = NotificationListenerRebindGate()
+        private val connectionTracker = NotificationListenerConnectionTracker()
+        private val rebindScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val deduplicator = NotificationDeduplicator()
+
+        private fun markConnected(instance: FlowPilotNotificationListener) {
+            isConnected = connectionTracker.onConnected(instance)
+            rebindGate.reset()
+        }
+
+        private fun markDisconnected(instance: FlowPilotNotificationListener): Boolean {
+            val stillConnected = connectionTracker.onDisconnected(instance)
+            isConnected = stillConnected
+            return stillConnected
+        }
 
         /**
          * Asks the system to bind this listener when access is granted but the process is not
          * connected (observed on HyperOS after an in-place update). Safe to call repeatedly;
          * requests are throttled and ignored while the listener is live.
          */
-        fun ensureBound(context: Context, nowMs: Long = SystemClock.elapsedRealtime()): Boolean {
+        fun ensureBound(
+            context: Context,
+            nowMs: Long = SystemClock.elapsedRealtime(),
+            force: Boolean = false,
+        ): Boolean {
             if (isConnected) return true
             val accessGranted = CapabilityManager(context).hasNotificationListenerAccess()
-            if (!rebindGate.shouldAttempt(isConnected, accessGranted, nowMs)) return false
+            if (!rebindGate.shouldAttempt(isConnected, accessGranted, nowMs, force = force)) return false
             return try {
                 Log.i(TAG, "Listener not bound; requesting system rebind")
                 NotificationListenerService.requestRebind(ComponentName(context, FlowPilotNotificationListener::class.java))
@@ -257,6 +346,7 @@ class FlowPilotNotificationListener : NotificationListenerService() {
         fun clearTransientState() = synchronized(queueLock) {
             eventQueue.clear()
             deduplicator.clear()
+            rebindGate.reset()
         }
     }
 }
