@@ -234,10 +234,14 @@ package and optional keyword, dedupes by post key/time, and never persists or lo
 Access permission and the listener's in-process connection callback are separate states. A rebind request is only a request, not proof of connection; Android or an OEM can leave the service unbound. The permission screen offers user-controlled notification access settings, and missed notifications are not replayed.
 
 Android can leave an allowed listener unbound after an in-place update or an OEM process kill, so rule
-reconciliation calls `FlowPilotNotificationListener.ensureBound` whenever notification demand exists, and
-`onListenerDisconnected` retries once after roughly one second. `NotificationListenerRebindGate` allows a
-request only while access is granted, the listener is not connected, and 30 seconds have passed since the
-last attempt, so an attempt made without access does not start the retry window. Two package families are
+reconciliation calls `FlowPilotNotificationListener.ensureBound` whenever notification or media demand exists,
+and `onListenerDisconnected` schedules a retry after roughly one second on a companion-level scope (so an
+instance's `onDestroy` does not cancel it). `NotificationListenerConnectionTracker` tracks active listener
+instances by identity so an older instance's `onDestroy` cannot clear `isConnected` after a replacement
+instance connects. `NotificationListenerRebindGate` backs off repeated requests from 30 seconds up to 5 minutes
+while disconnected, resets on connect, and allows an immediate retry (with a 2-second cooldown) when permission
+status refreshes on resume while disconnected; on Android 11+, opening notification listener settings while
+access is granted deep-links to FlowPilot's detail screen first. Two package families are
 dropped before queueing: FlowPilot's own release and debug-sibling packages, and HyperOS `com.miui.misound`
 volume/headphone UI notifications. The misound check is an exact package match, so other `com.miui.*`
 packages are matched normally.
