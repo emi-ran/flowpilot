@@ -150,6 +150,8 @@ internal object ImportValidator {
             val actions = r.effectiveActions
             if (ActionType.VIBRATE in actions) require(r.vibrationDurationMs in 1..60000 && r.vibrationAmplitude in 1..255) { "Invalid vibration" }
             if (ActionType.SET_MEDIA_VOLUME in actions) require(r.mediaVolumePercent in 0..100) { "Invalid volume" }
+            if (ActionType.SET_NOTIFICATION_VOLUME in actions) require(r.notificationVolumePercent in 0..100) { "Invalid notification volume" }
+            if (ActionType.SET_ALARM_VOLUME in actions) require(r.alarmVolumePercent in 0..100) { "Invalid alarm volume" }
             if (ActionType.PLAY_SOUND in actions) require(r.soundDurationMs in 1..60000) { "Invalid sound duration" }
             if (ActionType.CREATE_ALARM in actions) require(r.alarmHour in 0..23 && r.alarmMinute in 0..59 && r.alarmDays.all { it in 1..7 }) { "Invalid alarm" }
             if (ActionType.START_TIMER in actions) require(r.timerDurationSeconds in 1..86400) { "Invalid timer" }
