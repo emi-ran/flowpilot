@@ -4,6 +4,13 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- Run rule actions outside the engine poll loop so a delayed action no longer stalls other triggers or lets queued notification and SMS events expire unseen; runs of the same rule stay sequential.
+- Isolate engine poll steps so one failing step no longer skips the rest, and report repeated failures once.
+- Tear down geofences when the engine is disabled even if the engine job was cancelled.
+- Stamp incoming SMS with the receive time and give each SMS a unique execution ID so a skewed carrier timestamp or two messages in the same second no longer drop a trigger.
+- Log how many stale notification or SMS events were discarded (counts only).
+
 ### Changed
 - Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
 

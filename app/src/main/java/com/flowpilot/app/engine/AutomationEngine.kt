@@ -34,6 +34,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.ConcurrentHashMap
 import java.time.LocalDateTime
 import java.util.Locale
 
@@ -280,6 +282,64 @@ internal object EventTemplateContext {
 }
 
 /**
+ * Reads whether the engine is disabled during teardown. Runs non-cancellably (a cancelled job would
+ * otherwise throw before the read and skip geofence teardown) and falls back to "not disabled".
+ */
+internal suspend fun readEngineDisabledForTeardown(
+    timeoutMs: Long = 5_000L,
+    readEnabled: suspend () -> Boolean,
+): Boolean = withContext(NonCancellable) {
+    try {
+        val enabled = withTimeoutOrNull(timeoutMs) { readEnabled() }
+        enabled == false
+    } catch (e: Exception) {
+        false
+    }
+}
+
+internal fun pollStep(name: String, block: suspend () -> Unit): Pair<String, suspend () -> Unit> = name to block
+
+/** Counts consecutive failures per poll so a persistent failure surfaces once through the failure hook. */
+internal class PollFailureTracker(private val threshold: Int = 20) {
+    private val consecutive = HashMap<String, Int>()
+
+    /** Returns the count of consecutive failures after recording this one. */
+    fun recordFailure(name: String): Int {
+        val next = (consecutive[name] ?: 0) + 1
+        consecutive[name] = next
+        return next
+    }
+
+    fun recordSuccess(name: String) {
+        consecutive.remove(name)
+    }
+
+    /** True exactly once per failure streak, when the streak reaches the threshold. */
+    fun reachedThreshold(count: Int): Boolean = count == threshold
+}
+
+/**
+ * Runs each poll independently: one failing poll never skips the others. CancellationException is
+ * rethrown. Failures are reported through [onFailure] with the poll name and exception class only.
+ */
+internal suspend fun runIsolatedPolls(
+    polls: List<Pair<String, suspend () -> Unit>>,
+    failures: PollFailureTracker,
+    onFailure: (name: String, errorClass: String, count: Int) -> Unit,
+) {
+    for ((name, poll) in polls) {
+        try {
+            poll()
+            failures.recordSuccess(name)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            onFailure(name, e.javaClass.simpleName, failures.recordFailure(name))
+        }
+    }
+}
+
+/**
  * The automation engine: polls the foreground app transitions, reduces batch to final state,
  * evaluates enabled rules, dedupes, and executes matching actions.
  */
@@ -309,6 +369,10 @@ class AutomationEngine(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     @Volatile private var job: Job? = null
+    // Rule execution runs here, off the poll loop, so long action delays never stall event draining.
+    @Volatile private var executionScope: CoroutineScope? = null
+    private val ruleExecutionLocks = ConcurrentHashMap<String, Mutex>()
+    private val pollFailures = PollFailureTracker()
 
     val running: Boolean get() = job?.isActive == true
 
@@ -333,7 +397,7 @@ class AutomationEngine(
                     onFailure()
                     Log.e(TAG, "Engine failed (${e.javaClass.simpleName})")
                 } finally {
-                    val engineDisabled = runCatching { !repository.isEngineEnabled.first() }.getOrDefault(false)
+                    val engineDisabled = readEngineDisabledForTeardown { repository.isEngineEnabled.first() }
                     stopTrackers(teardownGeofences = engineDisabled)
                     onRunningChanged(false)
                 }
@@ -365,32 +429,54 @@ class AutomationEngine(
                 }
             }
         }
-        while (isActive) {
-            try {
-                val liveState = getLiveSystemState()
-                poll(liveState)
-                pollChargerEvents(liveState)
-                pollBatteryTransitions(liveState)
-                pollScreenEvents(liveState)
-                pollShakeEvents(liveState)
-                pollLightTransitions(liveState)
-                pollWifiTransitions(liveState)
-                pollBluetoothTransitions(liveState)
-                pollCallTransitions(liveState)
-                pollMediaEvents(liveState)
-                pollDeviceFlipEvents(liveState)
-                pollNfcTagEvents(liveState)
-                pollNotificationEvents(liveState)
-                pollSmsEvents(liveState)
-                pollGeofenceEvents(liveState)
-                pollSchedules(liveState)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(TAG, "Exception during engine poll (${e.javaClass.simpleName})")
+        executionScope = this
+        try {
+            while (isActive) {
+                val liveState = try {
+                    getLiveSystemState()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Live state read failed (${e.javaClass.simpleName})")
+                    null
+                }
+                if (liveState != null) {
+                    runIsolatedPolls(
+                        polls = listOf(
+                            pollStep("foreground") { poll(liveState) },
+                            pollStep("charger") { pollChargerEvents(liveState) },
+                            pollStep("battery") { pollBatteryTransitions(liveState) },
+                            pollStep("screen") { pollScreenEvents(liveState) },
+                            pollStep("shake") { pollShakeEvents(liveState) },
+                            pollStep("light") { pollLightTransitions(liveState) },
+                            pollStep("wifi") { pollWifiTransitions(liveState) },
+                            pollStep("bluetooth") { pollBluetoothTransitions(liveState) },
+                            pollStep("call") { pollCallTransitions(liveState) },
+                            pollStep("media") { pollMediaEvents(liveState) },
+                            pollStep("flip") { pollDeviceFlipEvents(liveState) },
+                            pollStep("nfc") { pollNfcTagEvents(liveState) },
+                            pollStep("notification") { pollNotificationEvents(liveState) },
+                            pollStep("sms") { pollSmsEvents(liveState) },
+                            pollStep("geofence") { pollGeofenceEvents(liveState) },
+                            pollStep("schedule") { pollSchedules(liveState) },
+                        ),
+                        failures = pollFailures,
+                        onFailure = ::handlePollFailure,
+                    )
+                }
+                delay(POLL_INTERVAL_MS)
             }
-            delay(POLL_INTERVAL_MS)
+        } finally {
+            executionScope = null
         }
+    }
+
+    private fun handlePollFailure(name: String, errorClass: String, count: Int) {
+        // Log the first failure of a streak and the escalation only; polls run every 500 ms.
+        if (count == 1 || pollFailures.reachedThreshold(count)) {
+            Log.w(TAG, "Engine poll '$name' failed ($errorClass), consecutive=$count")
+        }
+        if (pollFailures.reachedThreshold(count)) onFailure()
     }
 
     @Synchronized
@@ -832,7 +918,7 @@ class AutomationEngine(
                     rules = matches,
                     liveState = liveState,
                     eventContext = EventTemplateContext.sms(event, liveState),
-                    eventId = event.timestamp.toString(),
+                    eventId = event.executionId,
                     eventAuthorization = authorization,
                 )
             }
@@ -869,6 +955,12 @@ class AutomationEngine(
         }
     }
 
+    /**
+     * Hands rule execution to a coroutine separate from the poll loop, so action delays never hold up
+     * event draining. Executions of the same rule stay serialized (FIFO) by [ruleExecutionLocks];
+     * different rules run concurrently. Falls back to inline execution outside a running engine loop.
+     */
+    @Suppress("UNUSED_PARAMETER")
     private suspend fun executeAll(
         rules: List<com.flowpilot.app.data.model.Automation>,
         liveState: LiveSystemState = LiveSystemState(),
@@ -877,14 +969,49 @@ class AutomationEngine(
         eventAuthorization: EventExecutionAuthorization.Token? = null,
         eventId: String? = null,
     ) {
+        val activeScope = executionScope
+        if (activeScope == null) {
+            executeAllNow(rules, eventContext, geofenceTransition, eventAuthorization, eventId)
+            return
+        }
+        activeScope.launch {
+            try {
+                executeAllNow(rules, eventContext, geofenceTransition, eventAuthorization, eventId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Rule execution failed (${e.javaClass.simpleName})")
+            }
+        }
+    }
+
+    private suspend fun executeAllNow(
+        rules: List<com.flowpilot.app.data.model.Automation>,
+        eventContext: TemplateContext,
+        geofenceTransition: GeofenceTransition?,
+        eventAuthorization: EventExecutionAuthorization.Token?,
+        eventId: String?,
+    ) {
         for (candidate in rules.distinctBy { it.id }) {
             if (!triggerDeduplicator.accept(candidate.id, candidate.executionRevision, candidate.triggerEvent, candidate.matchedTriggerIndex, eventId)) continue
-            if (!reservePendingExecution(candidate.id)) continue
+            ruleExecutionLocks.getOrPut(candidate.id) { Mutex() }.withLock {
+                executeCandidate(candidate, eventContext, geofenceTransition, eventAuthorization)
+            }
+        }
+    }
+
+    private suspend fun executeCandidate(
+        candidate: com.flowpilot.app.data.model.Automation,
+        eventContext: TemplateContext,
+        geofenceTransition: GeofenceTransition?,
+        eventAuthorization: EventExecutionAuthorization.Token?,
+    ) {
+            if (!reservePendingExecution(candidate.id)) return
             try {
                 val reservation = repository.reserveExecution(
                     id = candidate.id,
                     expectedRevision = candidate.executionRevision,
-                ) ?: continue
+                ) ?: return
                 val rule = reservation.rule
                 var anySuccess = false
                 var cancelled = false
@@ -1037,7 +1164,6 @@ class AutomationEngine(
             } finally {
                 releasePendingExecution(candidate.id)
             }
-        }
     }
 
     private suspend fun reservePendingExecution(id: String): Boolean = pendingExecutionMutex.withLock {
