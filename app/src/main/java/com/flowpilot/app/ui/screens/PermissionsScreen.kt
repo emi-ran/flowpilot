@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flowpilot.app.R
 import com.flowpilot.app.actions.ShizukuPermissionBridge
+import com.flowpilot.app.permission.CapabilityManager
 import com.flowpilot.app.permission.ShizukuState
 import com.flowpilot.app.permission.CapabilityStatus
 import com.flowpilot.app.ui.AppViewModel
@@ -149,13 +150,7 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                 actionText = if (notifListener) stringResource(R.string.perms_notif_listener_settings)
                     else stringResource(R.string.perms_btn_setup),
             ) {
-                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                try {
-                    context.startActivity(intent)
-                } catch (_: Exception) {
-                    context.startActivity(Intent(Settings.ACTION_SETTINGS))
-                }
+                CapabilityManager(context).openNotificationListenerSettings()
             }
             PermissionCard(
                 stringResource(R.string.perms_bluetooth_title),
