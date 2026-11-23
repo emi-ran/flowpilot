@@ -356,6 +356,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         hasNotificationPolicy.value = c.hasNotificationPolicyAccess()
         hasNotificationListener.value = c.hasNotificationListenerAccess()
         notificationListenerStatus.value = c.notificationListenerStatus()
+        if (notificationListenerStatus.value == CapabilityStatus.LISTENER_DISCONNECTED) {
+            com.flowpilot.app.engine.FlowPilotNotificationListener.ensureBound(app, force = true)
+        }
         hasWifiPermissions.value = c.hasWifiPermissions()
         hasFineLocation.value = c.hasFineLocation()
         hasBackgroundLocation.value = c.hasBackgroundLocation()
@@ -431,6 +434,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         vibrationDurationMs: Int = 220,
         vibrationAmplitude: Int = 180,
         mediaVolumePercent: Int = 50,
+        notificationVolumePercent: Int = 50,
+        alarmVolumePercent: Int = 50,
         mediaTargetPackage: String = "",
         musicAppPackage: String = "",
         musicQuery: String = "",
@@ -515,6 +520,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 vibrationDurationMs = vibrationDurationMs,
                 vibrationAmplitude = vibrationAmplitude,
                 mediaVolumePercent = mediaVolumePercent,
+                notificationVolumePercent = notificationVolumePercent,
+                alarmVolumePercent = alarmVolumePercent,
                 mediaTargetPackage = mediaTargetPackage,
                 musicAppPackage = musicAppPackage,
                 musicQuery = musicQuery,

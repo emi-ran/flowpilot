@@ -28,6 +28,10 @@ Wi-Fi rules persist only user-selected SSIDs. Users may type an SSID or request 
 `JsonCommandParser` parses a bounded version-1 envelope and maps all normal actions into existing action parameters; nested `EXECUTE_JSON_COMMAND` is rejected. `JsonCommandExecution` dispatches through the normal executor, preserving action permission and capability checks, and maps outcomes to safe per-run `command.*` template values without storing command payload or ID in history. The receiver does not authenticate senders: matching input can cause SMS or calls (with possible charges), network changes, or device locking, so source selection and restrictive filters matter. The source template is Keystore-encrypted; normal exports clear it and require re-entry after import, while encrypted exports preserve it. Subsequent webhook or SMS actions can use the outcome; music intent dispatch does not prove playback. Notification title and message filters are independent and AND with the package filter; legacy keyword matching retains OR semantics. See [JSON_COMMANDS.md](../../skills/flowpilot-json-command/references/json-commands.md) and the [agent skill](../../skills/flowpilot-json-command/SKILL.md) for the detailed schema, limits, examples and trust boundaries. The 2026-11-14 JDK 17 release gate passed; physical-device coverage is partial.
 
 
+## Volume actions
+
+Media, notification and alarm volume actions keep separate per-rule percentages from 0 to 100. `MediaVolumeExecutor` maps each percentage to the nearest integer step of the stream's device-specific maximum (`STREAM_MUSIC`, `STREAM_NOTIFICATION`, or `STREAM_ALARM`). On Android 9 and later it checks the reported stream minimum; on older versions it uses zero. A request mapping below the minimum fails before changing the volume. After setting a valid level, the executor reads the stream back and reports unavailable or mismatched state as failure; permission restrictions can also prevent the change. Steps and minimums vary by device, and notification and ring volumes may be linked.
+
 ## Media automation
 
 Media controls comprise `MEDIA_PLAY`, `MEDIA_PAUSE`, `MEDIA_TOGGLE`, `MEDIA_NEXT` and `MEDIA_PREVIOUS`, with an optional target media app. Media session events comprise `MEDIA_PLAYING`, `MEDIA_PAUSED` and `MEDIA_TRACK_CHANGED`, with an optional app filter. Android notification access is needed for media session access; the media listener is active only when enabled rules require it. Sessions already present when the tracker starts are silently seeded without emitting events. After startup, a newly observed session that is already playing emits `MEDIA_PLAYING`. Player capabilities and active sessions determine whether a requested control can be handled.
@@ -186,7 +190,7 @@ app/src/main/java/com/flowpilot/app/
     NotificationExecutor.kt           visible user-configured automation alerts
     VibrationExecutor.kt              configurable waveform vibration
     SoundExecutor.kt                  selected system/custom sound playback with bounded duration
-    MediaVolumeExecutor.kt            percentage-to-music-stream volume mapping
+    MediaVolumeExecutor.kt            percentage-to-media/notification/alarm-stream volume mapping
     LaunchExecutor.kt                 selected app or validated HTTP(S) URL activity launch
     WebhookExecutor.kt                outbound HTTP/HTTPS webhook request with bounded timeout, secret redaction, and pre-rendered header/body values
     ActionParametersFactory.kt        builds one transient template context per action from the trigger, payload, and live state
@@ -234,10 +238,14 @@ package and optional keyword, dedupes by post key/time, and never persists or lo
 Access permission and the listener's in-process connection callback are separate states. A rebind request is only a request, not proof of connection; Android or an OEM can leave the service unbound. The permission screen offers user-controlled notification access settings, and missed notifications are not replayed.
 
 Android can leave an allowed listener unbound after an in-place update or an OEM process kill, so rule
-reconciliation calls `FlowPilotNotificationListener.ensureBound` whenever notification demand exists, and
-`onListenerDisconnected` retries once after roughly one second. `NotificationListenerRebindGate` allows a
-request only while access is granted, the listener is not connected, and 30 seconds have passed since the
-last attempt, so an attempt made without access does not start the retry window. Two package families are
+reconciliation calls `FlowPilotNotificationListener.ensureBound` whenever notification or media demand exists,
+and `onListenerDisconnected` schedules a retry after roughly one second on a companion-level scope (so an
+instance's `onDestroy` does not cancel it). `NotificationListenerConnectionTracker` tracks active listener
+instances by identity so an older instance's `onDestroy` cannot clear `isConnected` after a replacement
+instance connects. `NotificationListenerRebindGate` backs off repeated requests from 30 seconds up to 5 minutes
+while disconnected, resets on connect, and allows an immediate retry (with a 2-second cooldown) when permission
+status refreshes on resume while disconnected; on Android 11+, opening notification listener settings while
+access is granted deep-links to FlowPilot's detail screen first. Two package families are
 dropped before queueing: FlowPilot's own release and debug-sibling packages, and HyperOS `com.miui.misound`
 volume/headphone UI notifications. The misound check is an exact package match, so other `com.miui.*`
 packages are matched normally.
@@ -304,9 +312,8 @@ Execution history persists `ActionResultCode` plus safe arguments for new record
 
 Normal JSON export/share removes webhook URL, headers, and body; normal imports disable rules. Encrypted full backup uses a portable AES-256-GCM envelope with PBKDF2-HMAC-SHA256 (100,000 iterations), random 16-byte salt, random 12-byte IV, and a six-character minimum password. It preserves full rule data, including secret fields and enabled state. Format/version/KDF bounds, password, and GCM authentication are verified before import mutation; imported secrets are re-encrypted with the target device's Android Keystore. Execution history, geofence queue/diagnostics, engine state, Android permissions, Shizuku state, and TTS cache are excluded.
 
-MediaVolumeExecutor converts stored 0-100% configuration to the current device's `STREAM_MUSIC` range,
-sets volume without a system UI overlay, then reads the resulting level. A mismatch reports failure rather
-than claiming a blocked volume change succeeded.
+Volume actions use the corresponding Android audio stream without showing a system volume overlay; the
+minimum check, discrete-step conversion and readback behavior are described under Volume actions above.
 
 SoundExecutor plays the device's current notification, alarm, ringtone, or a persistently permitted
 document-picker audio URI. Create and edit screens show source duration when metadata is available,

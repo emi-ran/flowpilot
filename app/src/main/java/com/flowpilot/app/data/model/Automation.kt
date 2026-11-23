@@ -85,6 +85,8 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     SOUND_PROFILE_SILENT("Sound profile: Silent", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_POLICY),
     PLAY_SOUND("Play sound", ActionCategory.AUDIO, CapabilityRequirement.NONE),
     SET_MEDIA_VOLUME("Set media volume", ActionCategory.AUDIO, CapabilityRequirement.NONE),
+    SET_NOTIFICATION_VOLUME("Set notification volume", ActionCategory.AUDIO, CapabilityRequirement.NONE),
+    SET_ALARM_VOLUME("Set alarm volume", ActionCategory.AUDIO, CapabilityRequirement.NONE),
     MEDIA_PLAY("Play media", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
     MEDIA_PAUSE("Pause media", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
     MEDIA_TOGGLE("Toggle media playback", ActionCategory.AUDIO, CapabilityRequirement.NOTIFICATION_LISTENER),
@@ -351,6 +353,8 @@ data class Automation(
     val vibrationDurationMs: Int = 220,
     val vibrationAmplitude: Int = 180,
     val mediaVolumePercent: Int = 50,
+    val notificationVolumePercent: Int = 50,
+    val alarmVolumePercent: Int = 50,
     /** Optional media-session target; empty selects the active player. */
     val mediaTargetPackage: String = "",
     val musicAppPackage: String = "",

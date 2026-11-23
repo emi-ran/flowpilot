@@ -287,9 +287,35 @@ class CapabilityManager(private val context: Context) {
 
     /** open system Settings for Notification Listener special access */
     fun openNotificationListenerSettings() {
-        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
+        val detailIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).apply {
+                putExtra(
+                    Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                    ComponentName(context, com.flowpilot.app.engine.FlowPilotNotificationListener::class.java).flattenToString(),
+                )
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        } else {
+            null
+        }
+        val listIntent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val fallbackIntent = Intent(Settings.ACTION_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val candidates = listOfNotNull(
+            detailIntent?.takeIf { hasNotificationListenerAccess() },
+            listIntent,
+            fallbackIntent,
+        )
+        for (intent in candidates) {
+            try {
+                context.startActivity(intent)
+                return
+            } catch (_: Exception) {
+            }
+        }
     }
 
     /** open system Settings for this app's battery optimization allowlist */

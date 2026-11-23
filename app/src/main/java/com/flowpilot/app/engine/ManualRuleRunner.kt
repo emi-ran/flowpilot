@@ -3,6 +3,9 @@ package com.flowpilot.app.engine
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
+import com.flowpilot.app.R
+import com.flowpilot.app.actions.ActionDiagnosticReason
+import com.flowpilot.app.data.model.ActionType
 import android.os.BatteryManager
 import android.os.PowerManager
 import com.flowpilot.app.actions.ActionDispatcher
@@ -122,8 +125,19 @@ class ManualRuleRunner(
                     successCount++
                 } else {
                     failureCount++
-                    val redacted = WebhookExecutor.redactSensitiveText(result.message)
-                    failureMessages += "${localizedContext.getString(action.labelRes)}: $redacted"
+                    val volumeDiagnostic = if (action == ActionType.SET_MEDIA_VOLUME || action == ActionType.SET_NOTIFICATION_VOLUME || action == ActionType.SET_ALARM_VOLUME) {
+                        when (result.diagnostic?.reason) {
+                            ActionDiagnosticReason.VOLUME_PERMISSION_REQUIRED -> R.string.history_diagnostic_volume_permission_required
+                            ActionDiagnosticReason.VOLUME_BELOW_MINIMUM -> R.string.history_diagnostic_volume_below_minimum
+                            ActionDiagnosticReason.STATE_UNAVAILABLE -> R.string.history_diagnostic_state_unavailable
+                            ActionDiagnosticReason.STATE_MISMATCH -> R.string.history_diagnostic_state_mismatch
+                            ActionDiagnosticReason.SYSTEM_COMMAND_FAILED -> R.string.history_diagnostic_system_command_failed
+                            else -> null
+                        }
+                    } else null
+                    val message = volumeDiagnostic?.let(localizedContext::getString)
+                        ?: WebhookExecutor.redactSensitiveText(result.message)
+                    failureMessages += "${localizedContext.getString(action.labelRes)}: $message"
                 }
                 actionRecords += ActionExecutionRecord.create(action, result, TemplateDiagnostics.forAction(action, rule, templateContext, actionParameters))
             }
