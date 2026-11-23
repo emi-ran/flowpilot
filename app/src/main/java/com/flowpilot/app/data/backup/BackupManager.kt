@@ -158,7 +158,7 @@ object BackupManager {
         if (!isValidPassword(password)) {
             throw IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters")
         }
-        val fullRules = automations.map { it.withDecryptedSecrets() }
+        val fullRules = automations.map { it.withDecryptedSecretsStrict() }
         val backup = FlowPilotBackup(
             version = FlowPilotBackup.BACKUP_VERSION,
             exportedAt = System.currentTimeMillis(),
@@ -189,7 +189,7 @@ object BackupManager {
         if (!isValidPassword(password)) {
             throw IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters")
         }
-        val fullRule = rule.withDecryptedSecrets()
+        val fullRule = rule.withDecryptedSecretsStrict()
         val plaintext = prettyJson.encodeToString(Automation.serializer(), fullRule)
         return encryptPayload(plaintext, password, iterations)
     }

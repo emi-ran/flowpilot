@@ -490,7 +490,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         geofenceRadiusMeters: Int = 150,
         ruleId: String = UUID.randomUUID().toString(),
     ) {
-        viewModelScope.launch {
+        launchRulesWrite {
             repository.add(
                 name = name.orEmpty(),
                 triggerEvent = triggerEvent,
@@ -580,8 +580,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun setEnabled(id: String, enabled: Boolean) {
+    /** Runs a rules write; unreadable stored rules refuse the write (raw data is backed up) instead of crashing. */
+    private fun launchRulesWrite(block: suspend () -> Unit) {
         viewModelScope.launch {
+            try {
+                block()
+            } catch (_: AutomationRepository.CorruptRulesException) {
+                android.util.Log.w("AppViewModel", "Rules write refused: stored rules unreadable")
+            }
+        }
+    }
+
+    fun setEnabled(id: String, enabled: Boolean) {
+        launchRulesWrite {
             repository.setEnabled(id, enabled)
             refreshPermissions()
             if (enabled) startEngine()
@@ -599,18 +610,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun updateRule(rule: Automation) {
-        viewModelScope.launch {
+        launchRulesWrite {
             repository.update(rule)
             refreshPermissions()
         }
     }
 
     fun delete(id: String) {
-        viewModelScope.launch { repository.delete(id) }
+        launchRulesWrite { repository.delete(id) }
     }
 
     fun deleteMany(ids: Set<String>) {
-        viewModelScope.launch { repository.deleteMany(ids) }
+        launchRulesWrite { repository.deleteMany(ids) }
     }
 
     fun clearHistory() {
