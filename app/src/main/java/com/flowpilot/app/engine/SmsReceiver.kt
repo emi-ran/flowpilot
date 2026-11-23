@@ -34,7 +34,8 @@ class SmsReceiver : BroadcastReceiver() {
             val fullBody = messages.joinToString("") { msg ->
                 msg.displayMessageBody ?: msg.messageBody.orEmpty()
             }
-            val timestamp = if (firstMessage.timestampMillis > 0L) firstMessage.timestampMillis else System.currentTimeMillis()
+            // Receipt time, not SMSC time: carrier timestamps can fall outside the engine's freshness window.
+            val timestamp = System.currentTimeMillis()
 
             if (sender.isNotBlank() || fullBody.isNotBlank()) {
                 val pendingResult = goAsync()
