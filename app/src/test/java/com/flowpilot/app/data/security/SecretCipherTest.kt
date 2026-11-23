@@ -129,4 +129,49 @@ class SecretCipherTest {
         assertThat(decrypted.webhookHeaders).isEqualTo("Content-Type: application/json")
         assertThat(decrypted.webhookBody).isEqualTo("{\"legacy\": true}")
     }
+
+    @Test
+    fun encrypt_plaintextStartingWithPrefix_isEncryptedAndRoundTrips() {
+        val tricky = "enc:v1:not-really-ciphertext"
+        assertThat(SecretCipher.isEncrypted(tricky)).isFalse()
+
+        val encrypted = SecretCipher.encrypt(tricky)
+
+        assertThat(encrypted).isNotEqualTo(tricky)
+        assertThat(SecretCipher.isEncrypted(encrypted)).isTrue()
+        assertThat(SecretCipher.decrypt(encrypted)).isEqualTo(tricky)
+    }
+
+    @Test
+    fun decryptOrNull_undecryptableCiphertext_returnsNullAndStrictThrows() {
+        val encrypted = SecretCipher.encrypt("SuperSecretPayload")
+        val otherKey = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        SecretCipher.secretKeyProvider = { otherKey }
+
+        assertThat(SecretCipher.decryptOrNull(encrypted)).isNull()
+        assertThat(SecretCipher.decrypt(encrypted)).isEmpty()
+        val error = runCatching { SecretCipher.decryptStrict(encrypted) }.exceptionOrNull()
+        assertThat(error).isInstanceOf(SecretDecryptionException::class.java)
+        assertThat(error!!.message).doesNotContain("SuperSecretPayload")
+    }
+
+    @Test
+    fun automation_undecryptableSecrets_strictThrowsAndPreservingKeepsCiphertext() {
+        val rule = Automation(
+            id = "r1",
+            name = "Hook",
+            triggerEvent = TriggerEvent.CHARGER_CONNECTED,
+            action = ActionType.HTTP_WEBHOOK,
+            webhookUrl = "https://example.com/hook",
+            createdAt = 1L,
+        ).withEncryptedSecrets()
+        val otherKey = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        SecretCipher.secretKeyProvider = { otherKey }
+
+        assertThat(runCatching { rule.withDecryptedSecretsStrict() }.exceptionOrNull())
+            .isInstanceOf(SecretDecryptionException::class.java)
+        val preserved = rule.withDecryptedSecretsPreservingUndecryptable()
+        assertThat(preserved.webhookUrl).isEqualTo(rule.webhookUrl)
+        assertThat(preserved.withEncryptedSecrets().webhookUrl).isEqualTo(rule.webhookUrl)
+    }
 }
