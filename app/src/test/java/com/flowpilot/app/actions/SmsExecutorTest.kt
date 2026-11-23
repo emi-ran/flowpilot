@@ -111,6 +111,7 @@ class SmsExecutorTest {
         )
 
         assertThat(result.success).isTrue()
+        assertThat(result.resultCode).isEqualTo(ActionResultCode.REQUEST_UNVERIFIED)
         assertThat(capturedRecipient).isEqualTo("+905551234567")
         assertThat(capturedMessage).isEqualTo("Hello World")
     }

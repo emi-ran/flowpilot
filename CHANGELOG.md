@@ -4,6 +4,11 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- Stop leaking Shizuku user-service connections and orphaned `:command` processes: failed or timed-out binds are now unbound and cancelled, only one bind runs at a time, and spawned shell processes are destroyed on every exit path.
+- Report Mobile Data toggles as failed when the resulting state cannot be read, matching Wi-Fi and Location.
+- Report sent SMS as an unverified request, since Android only confirms that the request was accepted.
+
 ### Changed
 - Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
 

@@ -12,6 +12,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import moe.shizuku.server.IRemoteProcess
 import moe.shizuku.server.IShizukuService
 import rikka.shizuku.Shizuku
 
@@ -32,20 +33,47 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
     @Volatile private var userServiceUnavailableUntilMs = 0L
     private val bindLock = Any()
     @Volatile private var bindLatch: CountDownLatch? = null
+    /** The single in-flight or established UserService binding; guarded by [bindLock]. */
+    private var activeConnection: ServiceConnection? = null
 
-    private val connection = object : ServiceConnection {
+    private fun newConnection(): ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-            commandService = ICommandService.Stub.asInterface(binder)
             synchronized(bindLock) {
+                // A connection that was already torn down (timeout, failure) must not leak a service.
+                if (activeConnection !== this) return
+                commandService = ICommandService.Stub.asInterface(binder)
                 bindLatch?.countDown()
                 bindLatch = null
             }
         }
         override fun onServiceDisconnected(name: ComponentName) {
-            synchronized(bindLock) {
-                commandService = null
-                bindLatch?.countDown()
-                bindLatch = null
+            resetBind(this)
+        }
+    }
+
+    private fun userServiceArgs(): Shizuku.UserServiceArgs = Shizuku.UserServiceArgs(
+        ComponentName(BuildConfig.APPLICATION_ID, CommandUserService::class.java.name),
+    ).daemon(false).tag("flowpilot-command").version(BuildConfig.VERSION_CODE).debuggable(BuildConfig.DEBUG).processNameSuffix("command")
+
+    /**
+     * Clears bind state and unbinds the Shizuku UserService (remove=true) so the
+     * `:command` process does not outlive the binding. When [only] is given, acts only if it is still current.
+     */
+    private fun resetBind(only: ServiceConnection? = null) {
+        val stale: ServiceConnection?
+        synchronized(bindLock) {
+            if (only != null && activeConnection !== only) return
+            stale = activeConnection
+            activeConnection = null
+            commandService = null
+            bindLatch?.countDown()
+            bindLatch = null
+        }
+        if (stale != null) {
+            try {
+                Shizuku.unbindUserService(userServiceArgs(), stale, true)
+            } catch (_: Throwable) {
+                // Shizuku may be gone already; its death also ends the user service.
             }
         }
     }
@@ -62,11 +90,7 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
                 } catch (_: Throwable) {}
             }
             Shizuku.addBinderDeadListener {
-                synchronized(bindLock) {
-                    commandService = null
-                    bindLatch?.countDown()
-                    bindLatch = null
-                }
+                resetBind()
             }
         } catch (_: Throwable) {}
     }
@@ -117,11 +141,7 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
             pair
         } catch (_: Throwable) {
             android.util.Log.e("ShizukuShell", "Command execution failed")
-            synchronized(bindLock) {
-                commandService = null
-                bindLatch?.countDown()
-                bindLatch = null
-            }
+            resetBind()
             -1 to "Shizuku command execution failed"
         }
     }
@@ -144,40 +164,19 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
             return -1 to "Application context unavailable"
         }
 
-        return try {
-            val binder = Shizuku.getBinder() ?: return -1 to "Shizuku not running"
-            val process = IShizukuService.Stub.asInterface(binder).newProcess(
-                arrayOf(
-                    APP_PROCESS,
-                    "-Djava.class.path=$apkPath",
-                    "/system/bin",
-                    HOTSPOT_BRIDGE_CLASS,
-                    if (enabled) "on" else "off",
-                ),
-                null,
-                null,
-            )
-            val output = StringBuilder()
-            val outThread = Thread { readStream(process.inputStream, output) }
-            val errThread = Thread { readStream(process.errorStream, output) }
-            outThread.start()
-            errThread.start()
-
-            val finished = process.waitForTimeout(HOTSPOT_TIMEOUT_SECONDS, TimeUnit.SECONDS.name)
-            outThread.join(1000)
-            errThread.join(1000)
-
-            if (!finished) {
-                process.destroy()
-                return 124 to "hotspot bridge timed out"
-            }
-            val exitCode = process.exitValue()
-            android.util.Log.i("ShizukuShell", "Hotspot bridge completed: exitCode=$exitCode")
-            exitCode to synchronized(output) { output.toString().trim() }
-        } catch (t: Throwable) {
-            android.util.Log.e("ShizukuShell", "Hotspot bridge execution failed: ${t.javaClass.simpleName}")
-            -1 to "Shizuku hotspot execution failed"
-        }
+        return runRemoteProcess(
+            arrayOf(
+                APP_PROCESS,
+                "-Djava.class.path=$apkPath",
+                "/system/bin",
+                HOTSPOT_BRIDGE_CLASS,
+                if (enabled) "on" else "off",
+            ),
+            HOTSPOT_TIMEOUT_SECONDS,
+            "Hotspot bridge",
+            "hotspot bridge timed out",
+            "Shizuku hotspot execution failed",
+        )
     }
 
     /**
@@ -188,30 +187,55 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
         if (!CommandUserService.isCommandAllowed(command)) {
             return 126 to "command not allowed"
         }
+        // The allowlist has no shell metacharacters, so `exec` makes sh become the command
+        // and process.destroy() reaches the real process instead of only the wrapper shell.
+        return runRemoteProcess(
+            arrayOf("sh", "-c", "exec $command"),
+            COMMAND_TIMEOUT_SECONDS,
+            "Fallback command",
+            "command timed out",
+            "Shizuku command execution failed",
+        )
+    }
+
+    /** Runs a Shizuku remote process; the process is always destroyed on every exit path. */
+    private fun runRemoteProcess(
+        argv: Array<String>,
+        timeoutSeconds: Long,
+        logLabel: String,
+        timeoutMessage: String,
+        failureMessage: String,
+    ): Pair<Int, String> {
+        var process: IRemoteProcess? = null
         return try {
             val binder = Shizuku.getBinder() ?: return -1 to "Shizuku not running"
-            val process = IShizukuService.Stub.asInterface(binder)
-                .newProcess(arrayOf("sh", "-c", command), null, null)
+            val started = IShizukuService.Stub.asInterface(binder).newProcess(argv, null, null)
+            process = started
             val output = StringBuilder()
-            val outThread = Thread { readStream(process.inputStream, output) }
-            val errThread = Thread { readStream(process.errorStream, output) }
+            val outThread = Thread { readStream(started.inputStream, output) }.apply { isDaemon = true }
+            val errThread = Thread { readStream(started.errorStream, output) }.apply { isDaemon = true }
             outThread.start()
             errThread.start()
 
-            val finished = process.waitForTimeout(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS.name)
+            val finished = started.waitForTimeout(timeoutSeconds, TimeUnit.SECONDS.name)
+            if (!finished) {
+                started.destroy()
+            }
             outThread.join(1000)
             errThread.join(1000)
 
             if (!finished) {
-                process.destroy()
-                return 124 to "command timed out"
+                return 124 to timeoutMessage
             }
-            val exitCode = process.exitValue()
-            android.util.Log.i("ShizukuShell", "Fallback command completed: exitCode=$exitCode")
+            val exitCode = started.exitValue()
+            android.util.Log.i("ShizukuShell", "$logLabel completed: exitCode=$exitCode")
             exitCode to synchronized(output) { output.toString().trim() }
-        } catch (_: Throwable) {
-            android.util.Log.e("ShizukuShell", "Fallback command execution failed")
-            -1 to "Shizuku command execution failed"
+        } catch (t: Throwable) {
+            if (t is InterruptedException) Thread.currentThread().interrupt()
+            android.util.Log.e("ShizukuShell", "$logLabel execution failed: ${t.javaClass.simpleName}")
+            -1 to failureMessage
+        } finally {
+            try { process?.destroy() } catch (_: Throwable) {}
         }
     }
 
@@ -232,23 +256,12 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
     private fun bindAndGetService(): ICommandService? {
         val latch = bindIfNeeded() ?: return null
         try {
-            val bound = latch.await(2, TimeUnit.SECONDS)
-            if (!bound) {
-                synchronized(bindLock) {
-                    if (commandService == null) {
-                        bindLatch?.countDown()
-                        bindLatch = null
-                    }
-                }
+            if (!latch.await(2, TimeUnit.SECONDS)) {
+                cancelPendingBind(latch)
             }
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
-            synchronized(bindLock) {
-                if (commandService == null) {
-                    bindLatch?.countDown()
-                    bindLatch = null
-                }
-            }
+            cancelPendingBind(latch)
         }
         return commandService.also {
             if (it == null) {
@@ -257,21 +270,32 @@ class ShizukuShell private constructor() : ShizukuShellCompatible {
         }
     }
 
-    private fun bindIfNeeded(): CountDownLatch? = synchronized(bindLock) {
-        if (!isShizukuRunning() || !hasPermission()) return@synchronized null
-        if (System.currentTimeMillis() < userServiceUnavailableUntilMs) return@synchronized null
-        commandService?.let { return@synchronized CountDownLatch(0) }
-        bindLatch?.let { return@synchronized it }
-        val latch = CountDownLatch(1)
-        bindLatch = latch
-        try {
-            val args = Shizuku.UserServiceArgs(
-                ComponentName(BuildConfig.APPLICATION_ID, CommandUserService::class.java.name),
-            ).daemon(false).tag("flowpilot-command").version(BuildConfig.VERSION_CODE).debuggable(BuildConfig.DEBUG).processNameSuffix("command")
-            Shizuku.bindUserService(args, connection)
+    /** Cancels a bind that did not complete in time so the pending request cannot connect later and leak. */
+    private fun cancelPendingBind(latch: CountDownLatch) {
+        val pending = synchronized(bindLock) {
+            if (commandService == null && bindLatch === latch) activeConnection else null
+        }
+        if (pending != null) resetBind(pending)
+    }
+
+    private fun bindIfNeeded(): CountDownLatch? {
+        val connection: ServiceConnection
+        val latch: CountDownLatch
+        synchronized(bindLock) {
+            if (!isShizukuRunning() || !hasPermission()) return null
+            if (System.currentTimeMillis() < userServiceUnavailableUntilMs) return null
+            commandService?.let { return CountDownLatch(0) }
+            bindLatch?.let { return it }
+            connection = newConnection()
+            latch = CountDownLatch(1)
+            activeConnection = connection
+            bindLatch = latch
+        }
+        return try {
+            Shizuku.bindUserService(userServiceArgs(), connection)
             latch
         } catch (_: Throwable) {
-            bindLatch = null
+            resetBind(connection)
             android.util.Log.e("ShizukuShell", "User service binding failed")
             null
         }
