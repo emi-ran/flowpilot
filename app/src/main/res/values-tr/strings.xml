@@ -282,6 +282,8 @@
     <string name="action_sound_profile_silent">Ses profili: Sessiz</string>
     <string name="action_play_sound">Ses çal</string>
     <string name="action_set_media_volume">Medya sesini ayarla</string>
+    <string name="action_set_notification_volume">Bildirim sesini ayarla</string>
+    <string name="action_set_alarm_volume">Alarm sesini ayarla</string>
     <string name="action_speak_text">Metni seslendir (TTS)</string>
     <string name="action_create_alarm">Alarm kur</string>
     <string name="action_start_timer">Zamanlayıcı başlat</string>
@@ -479,6 +481,11 @@
     <string name="action_sound_profile_silent_desc">Ses profilini sessize alır (tüm sesler kapalı)</string>
     <string name="action_play_sound_desc">Özel ses dosyası veya sistem uyarı sesi çalar</string>
     <string name="action_set_media_volume_desc">Medya ses düzeyini ayarlar</string>
+    <string name="action_set_notification_volume_desc">Bildirim ses düzeyini ayarlar</string>
+    <string name="action_set_alarm_volume_desc">Alarm ses düzeyini ayarlar</string>
+    <string name="notification_volume_linked_hint">Bazı cihazlarda bildirim ve zil sesi düzeyleri birbirine bağlıdır; biri değiştiğinde diğeri de değişebilir.</string>
+    <string name="history_diagnostic_volume_permission_required">Ses düzeyini değiştirmek için sistem izni veya Rahatsız Etmeyin erişimi gereklidir.</string>
+    <string name="history_diagnostic_volume_below_minimum">İstenen ses düzeyi, bu cihazın izin verdiği en düşük düzeyin altında.</string>
     <string name="action_speak_text_desc">Metni sesli okuma (TTS) ile seslendirir</string>
     <string name="action_launch_app_desc">Yüklü bir uygulamayı ön planda açar</string>
     <string name="action_open_url_desc">Web sitesini veya bağlantıyı tarayıcıda açar</string>

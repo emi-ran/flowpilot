@@ -4,6 +4,9 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Added
+- Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+
 ### Fixed
 - Stop leaking Shizuku user-service connections and orphaned `:command` processes: failed or timed-out binds are now unbound and cancelled, only one bind runs at a time, and spawned shell processes are destroyed on every exit path.
 - Report Mobile Data toggles as failed when the resulting state cannot be read, matching Wi-Fi and Location.

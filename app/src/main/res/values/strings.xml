@@ -282,6 +282,8 @@
     <string name="action_sound_profile_silent">Sound profile: Silent</string>
     <string name="action_play_sound">Play sound</string>
     <string name="action_set_media_volume">Set media volume</string>
+    <string name="action_set_notification_volume">Set notification volume</string>
+    <string name="action_set_alarm_volume">Set alarm volume</string>
     <string name="action_speak_text">Speak text (TTS)</string>
     <string name="action_create_alarm">Create alarm</string>
     <string name="action_start_timer">Start timer</string>
@@ -479,6 +481,11 @@
     <string name="action_sound_profile_silent_desc">Set sound profile to silent (mute calls and notifications)</string>
     <string name="action_play_sound_desc">Play custom audio file or system tone</string>
     <string name="action_set_media_volume_desc">Adjust media stream volume percentage</string>
+    <string name="action_set_notification_volume_desc">Adjust notification volume</string>
+    <string name="action_set_alarm_volume_desc">Adjust alarm volume</string>
+    <string name="notification_volume_linked_hint">On some devices, notification and ringtone volumes are linked, so changing one may also change the other.</string>
+    <string name="history_diagnostic_volume_permission_required">Changing volume requires system permission or Do Not Disturb access.</string>
+    <string name="history_diagnostic_volume_below_minimum">The requested volume is below the minimum allowed by this device.</string>
     <string name="action_speak_text_desc">Synthesize and speak voice text with TTS</string>
     <string name="action_launch_app_desc">Start an installed app into the foreground</string>
     <string name="action_open_url_desc">Open website or deep link in default browser</string>

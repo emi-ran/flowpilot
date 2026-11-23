@@ -60,8 +60,11 @@ import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.ui.util.localizedLabel
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.media.AudioManager
+import android.os.Build
 import android.text.format.DateFormat
 import androidx.compose.ui.platform.LocalContext
+import kotlin.math.roundToInt
 import java.util.Calendar
 
 fun actionIcon(action: ActionType): ImageVector = when (action) {
@@ -69,6 +72,8 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.VIBRATE -> Icons.Default.Vibration
     ActionType.PLAY_SOUND -> Icons.Default.MusicNote
     ActionType.SET_MEDIA_VOLUME -> Icons.AutoMirrored.Filled.VolumeUp
+    ActionType.SET_NOTIFICATION_VOLUME -> Icons.Default.Notifications
+    ActionType.SET_ALARM_VOLUME -> Icons.Default.Alarm
     ActionType.MEDIA_PLAY -> Icons.Default.PlayArrow
     ActionType.MEDIA_PAUSE -> Icons.Default.Pause
     ActionType.MEDIA_TOGGLE -> Icons.Default.PlayCircle
@@ -143,6 +148,10 @@ fun ActionCardItem(
     // Volume
     mediaVolumePercent: Int = 70,
     onMediaVolumeChange: (Int) -> Unit = {},
+    notificationVolumePercent: Int = 50,
+    onNotificationVolumeChange: (Int) -> Unit = {},
+    alarmVolumePercent: Int = 50,
+    onAlarmVolumeChange: (Int) -> Unit = {},
     mediaTargetPackage: String = "",
     onChooseMediaTarget: () -> Unit = {},
     onClearMediaTarget: () -> Unit = {},
@@ -545,19 +554,50 @@ fun ActionCardItem(
                         }
                     }
                 }
-                ActionType.SET_MEDIA_VOLUME -> {
+                ActionType.SET_MEDIA_VOLUME, ActionType.SET_NOTIFICATION_VOLUME, ActionType.SET_ALARM_VOLUME -> {
+                    val volumePercent = when (action) {
+                        ActionType.SET_NOTIFICATION_VOLUME -> notificationVolumePercent
+                        ActionType.SET_ALARM_VOLUME -> alarmVolumePercent
+                        else -> mediaVolumePercent
+                    }
+                    val onVolumeChange = when (action) {
+                        ActionType.SET_NOTIFICATION_VOLUME -> onNotificationVolumeChange
+                        ActionType.SET_ALARM_VOLUME -> onAlarmVolumeChange
+                        else -> onMediaVolumeChange
+                    }
+                    val context = LocalContext.current
+                    val alarmMinimum = remember(context, action) {
+                        if (action == ActionType.SET_ALARM_VOLUME && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            val audio = context.getSystemService(AudioManager::class.java)
+                            val max = audio?.getStreamMaxVolume(AudioManager.STREAM_ALARM) ?: 0
+                            val min = audio?.getStreamMinVolume(AudioManager.STREAM_ALARM) ?: 0
+                            if (max > 0 && min in 1..max) {
+                                (0..100).first { (max * it / 100f).roundToInt() >= min }
+                            } else 0
+                        } else 0
+                    }
+                    val displayedVolume = volumePercent.coerceIn(0, 100)
+                    // Keep previously saved values visible without silently changing them.
+                    val sliderMinimum = minOf(alarmMinimum, displayedVolume)
                     Spacer(Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("$mediaVolumePercent%", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(48.dp))
+                        Text("$displayedVolume%", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(48.dp))
                         Slider(
-                            value = mediaVolumePercent.toFloat(),
-                            onValueChange = { onMediaVolumeChange(it.toInt()) },
-                            valueRange = 0f..100f,
+                            value = displayedVolume.toFloat(),
+                            onValueChange = { onVolumeChange(it.toInt()) },
+                            valueRange = sliderMinimum.toFloat()..100f,
                             steps = 0,
                             modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (action == ActionType.SET_NOTIFICATION_VOLUME) {
+                        Text(
+                            text = stringResource(R.string.notification_volume_linked_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }

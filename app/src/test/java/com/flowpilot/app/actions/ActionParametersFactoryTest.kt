@@ -64,6 +64,13 @@ class ActionParametersFactoryTest {
         ),
     )
 
+    @Test fun create_preservesIndependentVolumeLevels() {
+        val parameters = ActionParametersFactory.create(rule().copy(mediaVolumePercent = 15, notificationVolumePercent = 45, alarmVolumePercent = 85))
+        assertThat(parameters.mediaVolumePercent).isEqualTo(15)
+        assertThat(parameters.notificationVolumePercent).isEqualTo(45)
+        assertThat(parameters.alarmVolumePercent).isEqualTo(85)
+    }
+
     @Test
     fun create_preservesAlarmDays() {
         val parameters = ActionParametersFactory.create(rule().copy(alarmDays = listOf(1, 4, 7)), context())

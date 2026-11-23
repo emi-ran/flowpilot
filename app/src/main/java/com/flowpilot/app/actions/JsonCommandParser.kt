@@ -112,10 +112,15 @@ object JsonCommandParser {
                 } else if (p.containsKey("uri")) return null
                 ActionParameters(soundPreset = preset, soundUri = uri, soundDurationMs = number("durationMs", 3000, 1000..60000) ?: return null)
             }
-            ActionType.SET_MEDIA_VOLUME, ActionType.SET_SCREEN_BRIGHTNESS -> {
+            ActionType.SET_MEDIA_VOLUME, ActionType.SET_NOTIFICATION_VOLUME, ActionType.SET_ALARM_VOLUME, ActionType.SET_SCREEN_BRIGHTNESS -> {
                 if (!fields(setOf("percent"))) return null
                 val percent = number("percent", 0, 0..100) ?: return null
-                if (action == ActionType.SET_MEDIA_VOLUME) ActionParameters(mediaVolumePercent = percent) else ActionParameters(screenBrightnessPercent = percent)
+                when (action) {
+                    ActionType.SET_MEDIA_VOLUME -> ActionParameters(mediaVolumePercent = percent)
+                    ActionType.SET_NOTIFICATION_VOLUME -> ActionParameters(notificationVolumePercent = percent)
+                    ActionType.SET_ALARM_VOLUME -> ActionParameters(alarmVolumePercent = percent)
+                    else -> ActionParameters(screenBrightnessPercent = percent)
+                }
             }
             ActionType.MEDIA_PLAY, ActionType.MEDIA_PAUSE, ActionType.MEDIA_TOGGLE, ActionType.MEDIA_NEXT, ActionType.MEDIA_PREVIOUS -> {
                 if (!fields(emptySet(), setOf("targetPackage"))) return null

@@ -36,7 +36,7 @@ All other supported actions use these fields:
 | --- | --- | --- |
 | `VIBRATE` | none | `pattern`: `PULSE` (default), `DOUBLE_TAP`, `ALERT`, `HEARTBEAT`, `TRIPLE_TAP`, `SOS`; integer `durationMs` 80..800 (220); integer `amplitude` 1..255 (180) |
 | `PLAY_SOUND` | `uri` for `CUSTOM` | `preset`: `NOTIFICATION` (default), `ALARM`, `RINGTONE`, `CUSTOM`; integer `durationMs` 1000..60000 (3000). For `CUSTOM`, `uri` is a string with `content` or `android.resource` scheme and nonblank authority; for other presets `uri` must be omitted. Actual file access is checked at execution. |
-| `SET_MEDIA_VOLUME`, `SET_SCREEN_BRIGHTNESS` | integer `percent` 0..100 | none |
+| `SET_MEDIA_VOLUME`, `SET_NOTIFICATION_VOLUME`, `SET_ALARM_VOLUME`, `SET_SCREEN_BRIGHTNESS` | integer `percent` 0..100 | none |
 | `MEDIA_PLAY`, `MEDIA_PAUSE`, `MEDIA_TOGGLE`, `MEDIA_NEXT`, `MEDIA_PREVIOUS` | none | string `targetPackage` (default empty, selecting an active session) |
 | `SPEAK_TEXT` | nonblank string `text`, at most 2,000 UTF-16 units | string `voiceName` (default empty); JSON number `speechRate`, converted to finite Float in 0.5..2.0 (default 1.0) |
 | `CREATE_ALARM` | integer `hour` 0..23, integer `minute` 0..59 | `days`: array of up to seven distinct integers 1..7 (default `[]`); string `message` (default empty) |
@@ -51,6 +51,20 @@ All other supported actions use these fields:
 | `MUSIC_PLAY_LINK` | string `appPackage`, nonblank valid string `link` | none |
 | `SHOW_NOTIFICATION` | strings `title`, `body` (may be empty at parsing) | none |
 | `CREATE_CALENDAR_EVENT` | nonblank strings `title`, `accountName`, `accountType`, `calendarName`; integers `startMillis`, `endMillis` | strings `description`, `location` (default empty); string `repeat` (default `NONE`); integer `reminderMinutes` (default `-1`) |
+
+`SET_NOTIFICATION_VOLUME` and `SET_ALARM_VOLUME` control the Android notification and alarm streams respectively. For example:
+
+```json
+{"version":1,"action":"SET_NOTIFICATION_VOLUME","params":{"percent":35}}
+```
+
+```json
+{"version":1,"action":"SET_ALARM_VOLUME","params":{"percent":50}}
+```
+
+Each required `percent` is an integer from 0 through 100, with no other parameters. The executor scales it against the device's stream maximum and rounds to a volume step, so the actual percentage may differ. If that step is below the device-reported minimum, execution fails before changing the volume; alarm minima vary across devices and must not be assumed to be a fixed percentage. On Android before 9, the executor assumes a minimum of zero. Notification and ringtone volume may be linked by the device.
+
+After setting the stream, FlowPilot reads its level back. An unavailable or invalid readback, or a level different from the requested step, produces `execution_failed`; a failed readback does not establish that the setting remained unchanged. Permission or Do Not Disturb restrictions can instead produce `permission_required`. JSON replies provide the generic status and message, not the detailed volume diagnostic.
 
 Alarm `days` uses Android `Calendar` numbering: Sunday = 1, Monday = 2, through Saturday = 7; an empty list requests a one-time alarm. The clock app controls the actual alarm UI and behavior.
 For `SPEAK_TEXT`, omit `voiceName` to use the platform default if it is offline. If it is missing or requires a network, FlowPilot selects the highest-quality offline voice in the default voice's language (or the device locale's language if there is no default), then the highest-quality offline voice in any language. The text's language is not detected, so the fallback may speak in another language. To select a specific voice, open the offline voice picker in FlowPilot's speech action and use the exact, case-sensitive identifier in parentheses; preview it there first. A requested missing or network-only voice fails rather than silently falling back. Voice availability depends on the TTS engine, installed voice data and device. For example, `tr-tr-x-cfs-local` was confirmed by the user on a Xiaomi 15T Pro, but is not guaranteed elsewhere:

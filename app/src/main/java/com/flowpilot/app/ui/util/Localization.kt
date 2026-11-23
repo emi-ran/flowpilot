@@ -64,6 +64,8 @@ val ActionType.labelRes: Int
         ActionType.SOUND_PROFILE_SILENT -> R.string.action_sound_profile_silent
         ActionType.PLAY_SOUND -> R.string.action_play_sound
         ActionType.SET_MEDIA_VOLUME -> R.string.action_set_media_volume
+        ActionType.SET_NOTIFICATION_VOLUME -> R.string.action_set_notification_volume
+        ActionType.SET_ALARM_VOLUME -> R.string.action_set_alarm_volume
         ActionType.MEDIA_PLAY -> R.string.action_media_play
         ActionType.MEDIA_PAUSE -> R.string.action_media_pause
         ActionType.MEDIA_TOGGLE -> R.string.action_media_toggle
@@ -250,6 +252,8 @@ val ActionType.descriptionRes: Int
         ActionType.SOUND_PROFILE_SILENT -> R.string.action_sound_profile_silent_desc
         ActionType.PLAY_SOUND -> R.string.action_play_sound_desc
         ActionType.SET_MEDIA_VOLUME -> R.string.action_set_media_volume_desc
+        ActionType.SET_NOTIFICATION_VOLUME -> R.string.action_set_notification_volume_desc
+        ActionType.SET_ALARM_VOLUME -> R.string.action_set_alarm_volume_desc
         ActionType.MEDIA_PLAY -> R.string.action_media_play_desc
         ActionType.MEDIA_PAUSE -> R.string.action_media_pause_desc
         ActionType.MEDIA_TOGGLE -> R.string.action_media_toggle_desc
