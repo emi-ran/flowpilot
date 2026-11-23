@@ -6,6 +6,18 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+### Fixed
+- Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.
+- Back up the original rules JSON before duplicate-ID rules are dropped on the next write.
+- Fail encrypted export and rule duplication when a stored secret cannot be decrypted (for example after losing the Keystore key), and keep the encrypted value on save instead of replacing it with an empty secret.
+- Store plaintext that happens to start with `enc:v1:` correctly instead of treating it as ciphertext.
+
+### Fixed
+- Run rule actions outside the engine poll loop so a delayed action no longer stalls other triggers or lets queued notification and SMS events expire unseen; runs of the same rule stay sequential.
+- Isolate engine poll steps so one failing step no longer skips the rest, and report repeated failures once.
+- Tear down geofences when the engine is disabled even if the engine job was cancelled.
+- Stamp incoming SMS with the receive time and give each SMS a unique execution ID so a skewed carrier timestamp or two messages in the same second no longer drop a trigger.
+- Log how many stale notification or SMS events were discarded (counts only).
 
 ### Fixed
 - Stop leaking Shizuku user-service connections and orphaned `:command` processes: failed or timed-out binds are now unbound and cancelled, only one bind runs at a time, and spawned shell processes are destroyed on every exit path.

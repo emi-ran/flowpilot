@@ -21,7 +21,7 @@ for reset in (
     "lastTriggeredAt = 0L",
 ):
     require(REPOSITORY, reset)
-require(REPOSITORY, "firstOrNull { it.id == sourceId }?.withDecryptedSecrets()")
+require(REPOSITORY, "firstOrNull { it.id == sourceId }?.withDecryptedSecretsStrict()")
 require(REPOSITORY, "clone!!.withEncryptedSecrets()")
 for repository_contract in (
     "catch (error: java.io.IOException)",

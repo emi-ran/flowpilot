@@ -86,25 +86,17 @@ object SecretCipher {
      * If input does not start with prefix (i.e. legacy plaintext), returns plaintext as-is.
      * If decryption fails, returns empty string or fallback value to prevent crashes.
      */
-    fun decrypt(text: String): String {
+    fun decrypt(text: String): String = decryptOrNull(text) ?: ""
+
+    /**
+     * Decrypts encrypted string, or returns null when the text is a well-formed ciphertext that
+     * cannot be decrypted (key lost, corrupted, device restored without keys).
+     * Plaintext (including text that merely starts with the prefix) is returned as-is.
+     * Callers that persist or export the result must treat null as an error, never as "".
+     */
+    fun decryptOrNull(text: String): String? {
         if (text.isEmpty()) return ""
-        if (!isEncrypted(text)) return text
-
-        val payload = text.removePrefix(PREFIX_V1)
-        val raw = try {
-            Base64.getDecoder().decode(payload)
-        } catch (_: Exception) {
-            return text
-        }
-
-        if (raw.size <= 1 + IV_LENGTH_BYTES) {
-            return text
-        }
-
-        val version = raw[0]
-        if (version != VERSION_BYTE) {
-            return text
-        }
+        val raw = decodePayload(text) ?: return text
 
         val iv = ByteArray(IV_LENGTH_BYTES)
         System.arraycopy(raw, 1, iv, 0, IV_LENGTH_BYTES)
@@ -119,12 +111,32 @@ object SecretCipher {
             cipher.init(Cipher.DECRYPT_MODE, key, spec)
             String(cipher.doFinal(cipherBytes), Charsets.UTF_8)
         } catch (e: Exception) {
-            // Decryption failure (key lost, corrupted, device restored without keys)
-            ""
+            null
         }
     }
 
-    fun isEncrypted(text: String): Boolean {
-        return text.startsWith(PREFIX_V1)
+    /** Like [decrypt] but throws [SecretDecryptionException] instead of returning an empty value. */
+    fun decryptStrict(text: String): String =
+        decryptOrNull(text) ?: throw SecretDecryptionException()
+
+    /**
+     * True only for a structurally valid ciphertext (prefix, valid Base64, known version byte and
+     * enough bytes for IV + tag). Plaintext that merely starts with the prefix is not encrypted,
+     * so it gets encrypted on write and round-trips unchanged.
+     */
+    fun isEncrypted(text: String): Boolean = decodePayload(text) != null
+
+    private fun decodePayload(text: String): ByteArray? {
+        if (!text.startsWith(PREFIX_V1)) return null
+        val raw = try {
+            Base64.getDecoder().decode(text.substring(PREFIX_V1.length))
+        } catch (_: IllegalArgumentException) {
+            return null
+        }
+        if (raw.size <= 1 + IV_LENGTH_BYTES || raw[0] != VERSION_BYTE) return null
+        return raw
     }
 }
+
+/** Fixed-message failure so secrets or ciphertext never reach logs or UI. */
+class SecretDecryptionException : Exception("Stored secret could not be decrypted")

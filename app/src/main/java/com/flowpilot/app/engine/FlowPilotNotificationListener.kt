@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.ArrayDeque
@@ -243,7 +242,7 @@ class FlowPilotNotificationListener : NotificationListenerService() {
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         val stillConnected = markDisconnected(this)
-        intakeScope.coroutineContext.cancelChildren()
+        // In-flight intake jobs only resolve a label and enqueue; let them finish so events are not lost.
         if (!stillConnected) {
             val appContext = applicationContext
             rebindScope.launch {
@@ -333,14 +332,19 @@ class FlowPilotNotificationListener : NotificationListenerService() {
         }
 
         fun drainEvents(currentTime: Long = System.currentTimeMillis()): List<TransientNotificationEvent> = synchronized(queueLock) {
-            buildList {
+            var dropped = 0
+            val accepted = buildList {
                 while (eventQueue.isNotEmpty()) {
                     val event = eventQueue.removeFirst()
                     if (event.postTime <= currentTime && event.postTime >= currentTime - MAX_EVENT_AGE_MS) {
                         add(event)
+                    } else {
+                        dropped++
                     }
                 }
             }
+            logDroppedTransientEvents(TAG, dropped)
+            accepted
         }
 
         fun clearTransientState() = synchronized(queueLock) {
