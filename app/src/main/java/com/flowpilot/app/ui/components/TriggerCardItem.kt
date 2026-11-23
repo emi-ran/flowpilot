@@ -557,9 +557,10 @@ fun TriggerCardItem(
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
-                            if (liveAmbientLux != null) {
+                            val ambientLux = liveAmbientLux
+                            if (ambientLux != null) {
                                 SecondaryActionButton(
-                                    onClick = { onLightLuxChange(liveAmbientLux!!.toInt().coerceIn(1, 1000)) },
+                                    onClick = { onLightLuxChange(ambientLux.toInt().coerceIn(1, 1000)) },
                                     shape = RoundedCornerShape(10.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                 ) {

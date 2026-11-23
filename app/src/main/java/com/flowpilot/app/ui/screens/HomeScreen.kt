@@ -224,9 +224,10 @@ fun HomeScreen(
                 .padding(horizontal = 20.dp)
         ) {
             // Hero Status Card for Automation Engine
-            if (updateAvailable != null && !updateBannerDismissed) {
+            val availableUpdate = updateAvailable
+            if (availableUpdate != null && !updateBannerDismissed) {
                 UpdateBanner(
-                    update = updateAvailable!!,
+                    update = availableUpdate,
                     onUpdate = vm::openUpdateDialog,
                     onDismiss = vm::dismissUpdateBanner,
                 )

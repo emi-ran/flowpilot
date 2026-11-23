@@ -61,11 +61,12 @@ fun SettingsScreen(
     val updateChecking by vm.updateChecking.collectAsState()
     val updateAvailable by vm.updateAvailable.collectAsState()
     val updateStatus by vm.updateStatus.collectAsState()
+    val availableUpdate = updateAvailable
     val updateSubtitle = when {
         updateChecking -> stringResource(R.string.settings_update_checking)
-        updateAvailable != null -> stringResource(
+        availableUpdate != null -> stringResource(
             R.string.settings_update_available,
-            updateAvailable!!.versionLabel,
+            availableUpdate.versionLabel,
         )
         updateStatus == UpdateCheckStatus.UP_TO_DATE -> stringResource(R.string.settings_update_up_to_date)
         updateStatus == UpdateCheckStatus.FAILED -> stringResource(R.string.settings_update_check_failed)
@@ -105,7 +106,7 @@ fun SettingsScreen(
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, context.getString(R.string.backup_export_failed), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -144,14 +145,13 @@ fun SettingsScreen(
                                 Toast.makeText(context, context.getString(R.string.backup_import_empty), Toast.LENGTH_SHORT).show()
                             }
                         } else {
-                            val error = parseResult.exceptionOrNull()?.message ?: "Invalid format"
-                            Toast.makeText(context, context.getString(R.string.backup_import_error, error), Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.backup_import_error, context.getString(R.string.backup_import_invalid_format)), Toast.LENGTH_LONG).show()
                         }
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, context.getString(R.string.backup_import_error, e.message ?: ""), Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, context.getString(R.string.backup_import_failed), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -392,8 +392,7 @@ fun SettingsScreen(
                             Toast.makeText(context, context.getString(R.string.backup_import_success, imported.count), Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        val err = result.exceptionOrNull()?.message ?: ""
-                        Toast.makeText(context, context.getString(R.string.backup_import_error, err), Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.backup_import_failed), Toast.LENGTH_LONG).show()
                     }
                 }
                 showImportDialog = false

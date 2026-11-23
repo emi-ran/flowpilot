@@ -96,7 +96,7 @@ fun HistoryScreen(
             title = { Text(stringResource(R.string.history_title), fontWeight = FontWeight.Bold) },
             navigationIcon = {
                 IconButton(onClick = back) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_desc_back))
                 }
             },
             actions = {
