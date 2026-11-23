@@ -6,6 +6,11 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+### Fixed
+- Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.
+- Back up the original rules JSON before duplicate-ID rules are dropped on the next write.
+- Fail encrypted export and rule duplication when a stored secret cannot be decrypted (for example after losing the Keystore key), and keep the encrypted value on save instead of replacing it with an empty secret.
+- Store plaintext that happens to start with `enc:v1:` correctly instead of treating it as ciphertext.
 
 ### Changed
 - Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
