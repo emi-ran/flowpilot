@@ -539,7 +539,9 @@ fun ActionPicker(
 ) {
     val calendarDescription = stringResource(R.string.action_create_calendar_event_desc)
     val context = LocalContext.current
-    val allGroups = remember(calendarDescription) {
+    val notificationVolumeDescription = stringResource(R.string.action_set_notification_volume_desc)
+    val alarmVolumeDescription = stringResource(R.string.action_set_alarm_volume_desc)
+    val allGroups = remember(calendarDescription, notificationVolumeDescription, alarmVolumeDescription) {
         listOf(
             PickerCategoryGroup(
                 id = ActionCategory.SMS.name,
@@ -721,6 +723,22 @@ fun ActionPicker(
                         icon = Icons.AutoMirrored.Filled.VolumeUp,
                         iconTint = Color(0xFF4FC3F7),
                         keywords = listOf("volume", "sound", "media", "level", "audio", "loudness", "mute"),
+                    ),
+                    PickerItem(
+                        value = ActionType.SET_NOTIFICATION_VOLUME,
+                        title = ActionType.SET_NOTIFICATION_VOLUME.label,
+                        subtitle = notificationVolumeDescription,
+                        icon = Icons.Default.Notifications,
+                        iconTint = Color(0xFF4FC3F7),
+                        keywords = listOf("volume", "sound", "notification", "ringtone", "bildirim", "ses", "zil"),
+                    ),
+                    PickerItem(
+                        value = ActionType.SET_ALARM_VOLUME,
+                        title = ActionType.SET_ALARM_VOLUME.label,
+                        subtitle = alarmVolumeDescription,
+                        icon = Icons.Default.Alarm,
+                        iconTint = Color(0xFF4FC3F7),
+                        keywords = listOf("volume", "sound", "alarm", "ses"),
                     ),
                     PickerItem(
                         value = ActionType.SPEAK_TEXT,

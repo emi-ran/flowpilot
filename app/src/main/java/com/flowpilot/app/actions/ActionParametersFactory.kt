@@ -33,6 +33,8 @@ object ActionParametersFactory {
             vibrationDurationMs = rule.vibrationDurationMs,
             vibrationAmplitude = rule.vibrationAmplitude,
             mediaVolumePercent = rule.mediaVolumePercent,
+            notificationVolumePercent = rule.notificationVolumePercent,
+            alarmVolumePercent = rule.alarmVolumePercent,
             mediaTargetPackage = rule.mediaTargetPackage,
             musicAppPackage = rule.musicAppPackage,
             musicQuery = render(rule.musicQuery, context),

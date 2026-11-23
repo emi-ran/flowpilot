@@ -507,6 +507,8 @@ private fun ActionDiagnosticReason.labelRes(): Int = when (this) {
     ActionDiagnosticReason.BLUETOOTH_PERMISSION_REQUIRED -> R.string.history_diagnostic_bluetooth_permission_required
     ActionDiagnosticReason.SETTINGS_PERMISSION_REQUIRED -> R.string.history_diagnostic_settings_permission_required
     ActionDiagnosticReason.DND_PERMISSION_REQUIRED -> R.string.history_diagnostic_dnd_permission_required
+    ActionDiagnosticReason.VOLUME_PERMISSION_REQUIRED -> R.string.history_diagnostic_volume_permission_required
+    ActionDiagnosticReason.VOLUME_BELOW_MINIMUM -> R.string.history_diagnostic_volume_below_minimum
     ActionDiagnosticReason.SYSTEM_COMMAND_FAILED -> R.string.history_diagnostic_system_command_failed
     ActionDiagnosticReason.STATE_UNAVAILABLE -> R.string.history_diagnostic_state_unavailable
     ActionDiagnosticReason.STATE_MISMATCH -> R.string.history_diagnostic_state_mismatch

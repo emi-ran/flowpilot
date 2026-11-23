@@ -4,6 +4,9 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Added
+- Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+
 ### Fixed
 - Localize remaining hardcoded English text in the rule editor and pickers (Turkish users saw English trigger, action and webhook descriptions); trigger pickers now search the localized descriptions.
 - Stop showing raw exception messages in backup export and import errors; show localized messages instead.

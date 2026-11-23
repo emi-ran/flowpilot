@@ -146,6 +146,8 @@ fun DetailScreen(
     var vibrationDurationMs by remember(initialRule.id) { mutableIntStateOf(initialRule.vibrationDurationMs) }
     var vibrationAmplitude by remember(initialRule.id) { mutableIntStateOf(initialRule.vibrationAmplitude) }
     var mediaVolumePercent by remember(initialRule.id) { mutableIntStateOf(initialRule.mediaVolumePercent) }
+    var notificationVolumePercent by remember(initialRule.id) { mutableIntStateOf(initialRule.notificationVolumePercent) }
+    var alarmVolumePercent by remember(initialRule.id) { mutableIntStateOf(initialRule.alarmVolumePercent) }
     var soundPreset by remember(initialRule.id) { mutableStateOf(initialRule.soundPreset) }
     var soundUri by remember(initialRule.id) { mutableStateOf(initialRule.soundUri) }
     var soundName by remember(initialRule.id) { mutableStateOf(initialRule.soundName) }
@@ -315,6 +317,8 @@ fun DetailScreen(
         vibrationDurationMs = vibrationDurationMs,
         vibrationAmplitude = vibrationAmplitude,
         mediaVolumePercent = mediaVolumePercent,
+        notificationVolumePercent = notificationVolumePercent,
+        alarmVolumePercent = alarmVolumePercent,
         soundPreset = soundPreset,
         soundUri = soundUri,
         soundName = soundName,
@@ -744,6 +748,10 @@ fun DetailScreen(
                             // Volume
                             mediaVolumePercent = mediaVolumePercent,
                             onMediaVolumeChange = { mediaVolumePercent = it },
+                            notificationVolumePercent = notificationVolumePercent,
+                            onNotificationVolumeChange = { notificationVolumePercent = it },
+                            alarmVolumePercent = alarmVolumePercent,
+                            onAlarmVolumeChange = { alarmVolumePercent = it },
                             // Launch app
                             launchAppName = launchAppName,
                             launchPackage = launchPackage,
