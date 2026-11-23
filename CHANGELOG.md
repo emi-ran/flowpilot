@@ -12,6 +12,9 @@ All notable FlowPilot changes are documented here.
 ### Changed
 - Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
 
+### Fixed
+- Prevent overlapping `FlowPilotNotificationListener` teardown (`onDestroy`) or `intakeScope` cancellation from clearing the live connection state of a replacement instance or cancelling delayed post-disconnect rebinds; back off repeated `NotificationListenerService.requestRebind()` attempts (30s up to 5m), attempt rebind for active media rules, and deep-link to FlowPilot's Notification Access detail screen on Android 11+ with an immediate rebind attempt on resume.
+
 ## [2.3.0] - 2026-11-15
 
 ### Added
