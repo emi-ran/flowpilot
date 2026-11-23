@@ -59,15 +59,17 @@ fun BluetoothDevicePickerField(
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         if (it) showPicker = true
     }
-    val title = name.ifBlank { if (address.isBlank()) "Bluetooth device" else address }
-    val subtitle = if (address.isBlank()) "Choose paired device" else address
+    val defaultDeviceName = stringResource(R.string.bt_picker_default_name)
+    val chooseDeviceHint = stringResource(R.string.bt_picker_choose_paired)
+    val title = name.ifBlank { if (address.isBlank()) defaultDeviceName else address }
+    val subtitle = if (address.isBlank()) chooseDeviceHint else address
 
     SelectionRow(title, subtitle) {
         if (hasPermission) showPicker = true else permissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
     }
     if (!hasPermission) {
         Text(
-            "Nearby devices permission required to list bonded Bluetooth devices and detect ACL changes.",
+            stringResource(R.string.bt_picker_permission_required),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(top = 6.dp),

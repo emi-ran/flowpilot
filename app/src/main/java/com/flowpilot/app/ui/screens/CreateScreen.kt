@@ -150,7 +150,8 @@ fun CreateScreen(
     var conditionTree by remember { mutableStateOf<ConditionNode?>(null) }
     var showConditionPicker by remember { mutableStateOf(false) }
     var notificationTitle by remember { mutableStateOf("FlowPilot") }
-    var notificationBody by remember { mutableStateOf("Automation ran") }
+    val defaultNotificationBody = stringResource(R.string.default_notification_body)
+    var notificationBody by remember { mutableStateOf(defaultNotificationBody) }
     var vibrationPattern by remember { mutableStateOf(VibrationPattern.PULSE) }
     var vibrationDurationMs by remember { mutableIntStateOf(220) }
     var vibrationAmplitude by remember { mutableIntStateOf(180) }
@@ -582,7 +583,7 @@ fun CreateScreen(
         ) {
             TopAppBar(
                 title = { Text(stringResource(R.string.create_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(done) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
+                navigationIcon = { IconButton(done) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.content_desc_back)) } },
                 actions = {
                     IconButton({ showPresets = true }) {
                         Icon(Icons.Default.AutoAwesome, stringResource(R.string.presets_sheet_title), tint = MaterialTheme.colorScheme.primary)
@@ -666,7 +667,7 @@ fun CreateScreen(
                     .bringIntoViewOnFocusOrChange(name),
                 shape = RoundedCornerShape(16.dp),
                 label = { Text(stringResource(R.string.automation_name_label)) },
-                placeholder = { Text(if (appName.isNotEmpty()) "When $appName opened..." else "${event.localizedLabel()}...") },
+                placeholder = { Text(if (appName.isNotEmpty()) stringResource(R.string.create_app_opened_placeholder, appName) else "${event.localizedLabel()}...") },
                 singleLine = true,
             )
 
@@ -1229,7 +1230,7 @@ fun PhoneCallTriggerExplanation() {
             )
             Spacer(Modifier.width(12.dp))
             Text(
-                "Phone-number filters are unavailable. Android 12+ does not provide outgoing numbers to normal apps; this trigger matches every call of this state.",
+                stringResource(R.string.create_phone_filter_unavailable),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1257,12 +1258,12 @@ fun DeviceFlipTriggerSettings(
             ) {
                 Column(Modifier.weight(1f).padding(end = 12.dp)) {
                     Text(
-                        "Allow detection when screen is off",
+                        stringResource(R.string.create_allow_screen_off_title),
                         style = MaterialTheme.typography.titleSmall,
                     )
                     Text(
-                        if (allowScreenOff) "Sensors will evaluate flip orientation while screen is locked."
-                        else "Sensors only listen while screen is on to save battery (Recommended).",
+                        if (allowScreenOff) stringResource(R.string.create_screen_off_on_desc)
+                        else stringResource(R.string.create_screen_off_off_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1298,7 +1299,7 @@ fun PhoneActionSettings(
     onPhoneNumberChange: (String) -> Unit,
 ) {
     Text(
-        if (actionType == ActionType.CALL_NUMBER) "Call recipient" else "Dialer number",
+        if (actionType == ActionType.CALL_NUMBER) stringResource(R.string.create_call_recipient) else stringResource(R.string.create_dialer_number),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 16.dp),
@@ -1534,18 +1535,18 @@ private fun WebhookTemplateVariablesDialog(onDismiss: () -> Unit) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    "Use these in request headers or body. URL variables are not supported.",
+                    stringResource(R.string.create_webhook_vars_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                WebhookVariableRow("\${trigger}", "CHARGER_CONNECTED", "Event that ran this rule")
-                WebhookVariableRow("\${batteryPercent}", "72", "Current battery percentage")
-                WebhookVariableRow("\${isCharging}", "true", "Whether charger is connected")
-                WebhookVariableRow("\${wifiSsid}", "Home_5G", "Current Wi-Fi name")
-                WebhookVariableRow("\${time}", "2026-09-01T12:34:56Z", "ISO-8601 event time")
-                WebhookVariableRow("\${timestamp}", "1788266096000", "Epoch milliseconds")
+                WebhookVariableRow("\${trigger}", "CHARGER_CONNECTED", stringResource(R.string.webhook_var_trigger_desc))
+                WebhookVariableRow("\${batteryPercent}", "72", stringResource(R.string.webhook_var_battery_desc))
+                WebhookVariableRow("\${isCharging}", "true", stringResource(R.string.webhook_var_charging_desc))
+                WebhookVariableRow("\${wifiSsid}", "Home_5G", stringResource(R.string.webhook_var_wifi_desc))
+                WebhookVariableRow("\${time}", "2026-09-01T12:34:56Z", stringResource(R.string.webhook_var_time_desc))
+                WebhookVariableRow("\${timestamp}", "1788266096000", stringResource(R.string.webhook_var_timestamp_desc))
                 Text(
-                    "Unknown variables stay unchanged. Variables expand once only.",
+                    stringResource(R.string.webhook_vars_footer),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1565,7 +1566,7 @@ private fun WebhookVariableRow(token: String, example: String, description: Stri
     ) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(token, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-            Text("Example: $example", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.webhook_var_example, example), style = MaterialTheme.typography.bodySmall)
             Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -1590,10 +1591,10 @@ private fun ConditionEditorCard(
                     val selectedMinute = pickerState.hour * 60 + pickerState.minute
                     onUpdate(if (isStart) cond.copy(startMinute = selectedMinute) else cond.copy(endMinute = selectedMinute))
                     timePickerTarget = null
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.btn_ok)) }
             },
             dismissButton = {
-                TextButton({ timePickerTarget = null }) { Text("Cancel") }
+                TextButton({ timePickerTarget = null }) { Text(stringResource(R.string.btn_cancel)) }
             },
             text = { TimePicker(pickerState) },
         )
@@ -2221,8 +2222,8 @@ fun AlarmSettings(
     chooseTime: () -> Unit,
     setMessage: (String) -> Unit,
 ) {
-    Text("Alarm", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
-    SelectionRow("Alarm time", "%02d:%02d".format(hour, minute), chooseTime)
+    Text(stringResource(R.string.create_alarm_section), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    SelectionRow(stringResource(R.string.create_alarm_time), "%02d:%02d".format(hour, minute), chooseTime)
     OutlinedTextField(
         value = message,
         onValueChange = setMessage,
@@ -2231,7 +2232,7 @@ fun AlarmSettings(
             .padding(top = 8.dp)
             .bringIntoViewOnFocusOrChange(message),
         shape = RoundedCornerShape(16.dp),
-        label = { Text("Label (optional)") },
+        label = { Text(stringResource(R.string.create_label_optional)) },
         singleLine = true,
     )
 }
@@ -2244,8 +2245,8 @@ fun TimerSettings(
     setMessage: (String) -> Unit,
 ) {
     val minutes = durationSeconds / 60
-    Text("Timer", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
-    Text("Duration  ${if (minutes >= 60) "${minutes / 60}h ${minutes % 60}m" else "$minutes min"}", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 4.dp))
+    Text(stringResource(R.string.create_timer_section), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.create_timer_duration, if (minutes >= 60) "${minutes / 60}h ${minutes % 60}m" else stringResource(R.string.create_minutes_short, minutes)), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 4.dp))
 
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -2277,14 +2278,14 @@ fun TimerSettings(
             .padding(top = 8.dp)
             .bringIntoViewOnFocusOrChange(message),
         shape = RoundedCornerShape(16.dp),
-        label = { Text("Label (optional)") },
+        label = { Text(stringResource(R.string.create_label_optional)) },
         singleLine = true,
     )
 }
 
 @Composable
 private fun BatteryThresholdSettings(level: Int, setLevel: (Int) -> Unit) {
-    Text("Threshold", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(stringResource(R.string.create_threshold), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Text("$level%", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 4.dp))
     Slider(
         value = level.toFloat(),
@@ -2301,7 +2302,7 @@ private fun NotificationSettings(
     setTitle: (String) -> Unit,
     setBody: (String) -> Unit,
 ) {
-    Text("Notification", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.create_notification_section), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     OutlinedTextField(
         value = title,
         onValueChange = setTitle,
@@ -2309,7 +2310,7 @@ private fun NotificationSettings(
             .fillMaxWidth()
             .padding(top = 8.dp)
             .bringIntoViewOnFocusOrChange(title),
-        label = { Text("Title") },
+        label = { Text(stringResource(R.string.create_title_label)) },
         singleLine = true,
     )
     OutlinedTextField(
@@ -2319,7 +2320,7 @@ private fun NotificationSettings(
             .fillMaxWidth()
             .padding(top = 8.dp)
             .bringIntoViewOnFocusOrChange(body),
-        label = { Text("Message") },
+        label = { Text(stringResource(R.string.action_notif_body_label)) },
         minLines = 2,
     )
 }
@@ -2334,7 +2335,7 @@ private fun VibrationSettings(
     setAmplitude: (Int) -> Unit,
     preview: (VibrationPattern, Int, Int) -> Unit,
 ) {
-    Text("Vibration", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.create_vibration_section), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -2344,7 +2345,7 @@ private fun VibrationSettings(
             FilterChip(selected = pattern == option, onClick = { setPattern(option); preview(option, durationMs, amplitude) }, label = { Text(option.label) })
         }
     }
-    Text("Duration  $durationMs ms", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
+    Text(stringResource(R.string.create_vibration_duration, durationMs), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
     Slider(
         value = durationMs.toFloat(),
         onValueChange = { setDuration(it.toInt()) },
@@ -2353,11 +2354,11 @@ private fun VibrationSettings(
         steps = 0,
     )
     val strength = when {
-        amplitude < 100 -> "Soft"
-        amplitude < 200 -> "Normal"
-        else -> "Strong"
+        amplitude < 100 -> stringResource(R.string.create_strength_soft)
+        amplitude < 200 -> stringResource(R.string.create_strength_normal)
+        else -> stringResource(R.string.create_strength_strong)
     }
-    Text("Strength  $strength", style = MaterialTheme.typography.bodyMedium)
+    Text(stringResource(R.string.create_strength_value, strength), style = MaterialTheme.typography.bodyMedium)
     Slider(
         value = amplitude.toFloat(),
         onValueChange = { setAmplitude(it.toInt()) },
@@ -2369,7 +2370,7 @@ private fun VibrationSettings(
 
 @Composable
 private fun MediaVolumeSettings(percent: Int, setPercent: (Int) -> Unit) {
-    Text("Media volume", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.create_media_volume), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     Text("$percent%", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 4.dp))
     Slider(
         value = percent.toFloat(),
@@ -2411,21 +2412,21 @@ fun SoundSettings(
     stopPreview: () -> Unit,
     chooseFile: () -> Unit,
 ) {
-    Text("Sound", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
+    Text(stringResource(R.string.create_sound_section), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp))
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
         SoundPreset.entries.forEach { option ->
             FilterChip(selected = preset == option, onClick = { setPreset(option) }, label = { Text(option.label) })
         }
     }
     if (preset == SoundPreset.CUSTOM) {
-        Text(if (customName.isBlank()) "No audio file selected" else customName, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
-        OutlinedButton(onClick = chooseFile, modifier = Modifier.padding(top = 8.dp)) { Text("Choose MP3 or WAV") }
+        Text(if (customName.isBlank()) stringResource(R.string.create_no_audio_file) else customName, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
+        OutlinedButton(onClick = chooseFile, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.create_choose_audio)) }
     }
-    sourceDurationMs?.let { Text("Source length  ${it / 1000}s", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp)) }
-    Text("Play for  ${durationMs / 1000}s", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
+    sourceDurationMs?.let { Text(stringResource(R.string.create_source_length, it / 1000), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp)) }
+    Text(stringResource(R.string.create_play_for, durationMs / 1000), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
     Slider(value = durationMs.toFloat(), onValueChange = { setDurationMs(it.toInt()) }, valueRange = 1_000f..60_000f, steps = 59)
-    OutlinedButton(onClick = preview, modifier = Modifier.padding(top = 8.dp)) { Text("Preview") }
-    TextButton(onClick = stopPreview) { Text("Stop preview") }
+    OutlinedButton(onClick = preview, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.tts_btn_preview)) }
+    TextButton(onClick = stopPreview) { Text(stringResource(R.string.create_stop_preview)) }
 }
 
 @Composable
@@ -2434,7 +2435,7 @@ fun RuleCooldownSettings(
     onCooldownChange: (Int) -> Unit,
 ) {
     Text(
-        "Cooldown",
+        stringResource(R.string.create_cooldown),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 16.dp),
@@ -2446,7 +2447,7 @@ fun RuleCooldownSettings(
         modifier = Modifier.padding(top = 8.dp),
     ) {
         options.forEach { minutes ->
-            val label = if (minutes == 0) "None" else "${minutes}m"
+            val label = if (minutes == 0) stringResource(R.string.cooldown_none) else stringResource(R.string.create_cooldown_minutes, minutes)
             FilterChip(
                 selected = cooldownMinutes == minutes,
                 onClick = { onCooldownChange(minutes) },
@@ -2455,8 +2456,8 @@ fun RuleCooldownSettings(
         }
     }
     Text(
-        text = if (cooldownMinutes == 0) "Rule triggers on every matching event."
-        else "Rule will wait $cooldownMinutes minute${if (cooldownMinutes > 1) "s" else ""} after a successful run before triggering automatically again.",
+        text = if (cooldownMinutes == 0) stringResource(R.string.create_cooldown_none_desc)
+        else stringResource(R.string.create_cooldown_wait_desc, cooldownMinutes),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp),
@@ -2472,11 +2473,11 @@ private fun ScheduleSettings(
 ) {
     val hour = scheduledMinute / 60
     val minute = scheduledMinute % 60
-    SelectionRow("Time", "%02d:%02d".format(hour, minute), chooseTime)
-    Text("Repeat", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+    SelectionRow(stringResource(R.string.create_time_label), "%02d:%02d".format(hour, minute), chooseTime)
+    Text(stringResource(R.string.calendar_repeat), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(selected = scheduledDays.isEmpty(), onClick = { setDays(emptySet()) }, label = { Text("Daily") })
-        FilterChip(selected = scheduledDays == setOf(1, 2, 3, 4, 5), onClick = { setDays(setOf(1, 2, 3, 4, 5)) }, label = { Text("Weekdays") })
+        FilterChip(selected = scheduledDays.isEmpty(), onClick = { setDays(emptySet()) }, label = { Text(stringResource(R.string.schedule_daily)) })
+        FilterChip(selected = scheduledDays == setOf(1, 2, 3, 4, 5), onClick = { setDays(setOf(1, 2, 3, 4, 5)) }, label = { Text(stringResource(R.string.schedule_weekdays)) })
     }
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
         listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { index, label ->

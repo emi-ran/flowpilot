@@ -142,6 +142,7 @@ fun <T> PickerCategoryGroup<T>.displayLabel(context: Context): String {
 /** Full-screen modal picker for triggers, grouped by category with search and icons. */
 @Composable
 fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDismiss: () -> Unit) {
+    val context = LocalContext.current
     val groups = remember {
         listOf(
             PickerCategoryGroup(
@@ -153,7 +154,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.APP_OPENED,
                         title = TriggerEvent.APP_OPENED.label,
-                        subtitle = "When selected foreground app starts",
+                        subtitle = context.getString(TriggerEvent.APP_OPENED.descriptionRes),
                         icon = Icons.Default.Apps,
                         iconTint = Color(0xFF8AB4F8),
                         keywords = listOf("launch", "open", "start", "foreground", "package", "application"),
@@ -161,7 +162,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.APP_CLOSED,
                         title = TriggerEvent.APP_CLOSED.label,
-                        subtitle = "When selected foreground app exits",
+                        subtitle = context.getString(TriggerEvent.APP_CLOSED.descriptionRes),
                         icon = Icons.Default.Close,
                         iconTint = Color(0xFFF28B82),
                         keywords = listOf("exit", "close", "leave", "background", "quit", "application"),
@@ -188,7 +189,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CALL_RINGING,
                         title = TriggerEvent.CALL_RINGING.label,
-                        subtitle = "When an incoming call starts ringing",
+                        subtitle = context.getString(TriggerEvent.CALL_RINGING.descriptionRes),
                         icon = Icons.Default.PhoneInTalk,
                         iconTint = Color(0xFF81C784),
                         keywords = listOf("phone", "call", "incoming", "ringing", "ring", "caller", "telephony"),
@@ -196,7 +197,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CALL_ANSWERED,
                         title = TriggerEvent.CALL_ANSWERED.label,
-                        subtitle = "When an incoming call is picked up (off-hook)",
+                        subtitle = context.getString(TriggerEvent.CALL_ANSWERED.descriptionRes),
                         icon = Icons.Default.Phone,
                         iconTint = Color(0xFF66BB6A),
                         keywords = listOf("phone", "call", "answered", "answer", "offhook", "pickup", "in-call"),
@@ -204,7 +205,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CALL_OUTGOING,
                         title = TriggerEvent.CALL_OUTGOING.label,
-                        subtitle = "When an outgoing phone call is placed / dialed",
+                        subtitle = context.getString(TriggerEvent.CALL_OUTGOING.descriptionRes),
                         icon = Icons.Default.PhoneForwarded,
                         iconTint = Color(0xFF4CAF50),
                         keywords = listOf("phone", "call", "outgoing", "dialed", "dial", "place", "started"),
@@ -212,7 +213,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CALL_ENDED,
                         title = TriggerEvent.CALL_ENDED.label,
-                        subtitle = "When an active or ringing call ends (returns to idle)",
+                        subtitle = context.getString(TriggerEvent.CALL_ENDED.descriptionRes),
                         icon = Icons.Default.CallEnd,
                         iconTint = Color(0xFFE57373),
                         keywords = listOf("phone", "call", "ended", "hangup", "idle", "disconnect", "finished"),
@@ -228,7 +229,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CHARGER_CONNECTED,
                         title = TriggerEvent.CHARGER_CONNECTED.label,
-                        subtitle = "When device is plugged into AC or USB charger",
+                        subtitle = context.getString(TriggerEvent.CHARGER_CONNECTED.descriptionRes),
                         icon = Icons.Default.Power,
                         iconTint = Color(0xFF81C784),
                         keywords = listOf("charger", "plug", "charging", "connected", "power", "ac", "usb"),
@@ -236,7 +237,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CHARGER_DISCONNECTED,
                         title = TriggerEvent.CHARGER_DISCONNECTED.label,
-                        subtitle = "When device is unplugged from power source",
+                        subtitle = context.getString(TriggerEvent.CHARGER_DISCONNECTED.descriptionRes),
                         icon = Icons.Default.PowerOff,
                         iconTint = Color(0xFFFFB74D),
                         keywords = listOf("charger", "unplug", "disconnected", "battery", "off"),
@@ -244,7 +245,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.BATTERY_BELOW,
                         title = TriggerEvent.BATTERY_BELOW.label,
-                        subtitle = "When battery drops to or below configured percentage",
+                        subtitle = context.getString(TriggerEvent.BATTERY_BELOW.descriptionRes),
                         icon = Icons.Default.BatteryAlert,
                         iconTint = Color(0xFFE57373),
                         keywords = listOf("battery", "level", "percentage", "low", "drain", "below", "percent"),
@@ -252,7 +253,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.BATTERY_ABOVE,
                         title = TriggerEvent.BATTERY_ABOVE.label,
-                        subtitle = "When battery charges to or above configured percentage",
+                        subtitle = context.getString(TriggerEvent.BATTERY_ABOVE.descriptionRes),
                         icon = Icons.Default.BatteryFull,
                         iconTint = Color(0xFF81C784),
                         keywords = listOf("battery", "level", "percentage", "high", "full", "above", "percent"),
@@ -268,7 +269,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.BLUETOOTH_CONNECTED,
                         title = TriggerEvent.BLUETOOTH_CONNECTED.label,
-                        subtitle = "When a specific paired Bluetooth device connects",
+                        subtitle = context.getString(TriggerEvent.BLUETOOTH_CONNECTED.descriptionRes),
                         icon = Icons.Default.Bluetooth,
                         iconTint = Color(0xFF80CBC4),
                         keywords = listOf("bluetooth", "bt", "device", "connect", "paired", "headphones", "speaker", "car"),
@@ -276,7 +277,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.BLUETOOTH_DISCONNECTED,
                         title = TriggerEvent.BLUETOOTH_DISCONNECTED.label,
-                        subtitle = "When a specific paired Bluetooth device disconnects",
+                        subtitle = context.getString(TriggerEvent.BLUETOOTH_DISCONNECTED.descriptionRes),
                         icon = Icons.Default.BluetoothDisabled,
                         iconTint = Color(0xFFB2DFDB),
                         keywords = listOf("bluetooth", "bt", "device", "disconnect", "unpair", "leave", "off"),
@@ -292,7 +293,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.NFC_TAG_SCANNED,
                         title = TriggerEvent.NFC_TAG_SCANNED.label,
-                        subtitle = "When a physical NFC tag is scanned against the phone",
+                        subtitle = context.getString(TriggerEvent.NFC_TAG_SCANNED.descriptionRes),
                         icon = Icons.Default.Nfc,
                         iconTint = Color(0xFFB39DDB),
                         keywords = listOf("nfc", "tag", "scan", "rfid", "contactless", "tap", "card"),
@@ -308,7 +309,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.SCREEN_ON,
                         title = TriggerEvent.SCREEN_ON.label,
-                        subtitle = "When screen turns on or device wakes up",
+                        subtitle = context.getString(TriggerEvent.SCREEN_ON.descriptionRes),
                         icon = Icons.Default.StayCurrentPortrait,
                         iconTint = Color(0xFF4DD0E1),
                         keywords = listOf("screen", "display", "wake", "unlock", "on", "light"),
@@ -316,7 +317,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.SCREEN_OFF,
                         title = TriggerEvent.SCREEN_OFF.label,
-                        subtitle = "When screen locks or turns off",
+                        subtitle = context.getString(TriggerEvent.SCREEN_OFF.descriptionRes),
                         icon = Icons.Default.StayCurrentLandscape,
                         iconTint = Color(0xFF80DEEA),
                         keywords = listOf("screen", "display", "sleep", "lock", "off", "dim"),
@@ -324,7 +325,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.DEVICE_UNLOCKED,
                         title = TriggerEvent.DEVICE_UNLOCKED.label,
-                        subtitle = "When device is unlocked with PIN, fingerprint or face",
+                        subtitle = context.getString(TriggerEvent.DEVICE_UNLOCKED.descriptionRes),
                         icon = Icons.Default.LockOpen,
                         iconTint = Color(0xFF80CBC4),
                         keywords = listOf("unlock", "unlocked", "lockscreen", "fingerprint", "pin", "biometric", "face"),
@@ -332,7 +333,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.LIGHT_BELOW,
                         title = TriggerEvent.LIGHT_BELOW.label,
-                        subtitle = "When ambient light falls to or below configured lux",
+                        subtitle = context.getString(TriggerEvent.LIGHT_BELOW.descriptionRes),
                         icon = Icons.Default.LightMode,
                         iconTint = Color(0xFFFFD54F),
                         keywords = listOf("light", "dark", "lux", "ambient", "sensor", "below", "dim"),
@@ -340,7 +341,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.LIGHT_ABOVE,
                         title = TriggerEvent.LIGHT_ABOVE.label,
-                        subtitle = "When ambient light rises to or above configured lux",
+                        subtitle = context.getString(TriggerEvent.LIGHT_ABOVE.descriptionRes),
                         icon = Icons.Default.LightMode,
                         iconTint = Color(0xFFFFB74D),
                         keywords = listOf("light", "bright", "lux", "ambient", "sensor", "above", "sun"),
@@ -356,7 +357,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.TIME_SCHEDULE,
                         title = TriggerEvent.TIME_SCHEDULE.label,
-                        subtitle = "At specific time of day and selected days",
+                        subtitle = context.getString(TriggerEvent.TIME_SCHEDULE.descriptionRes),
                         icon = Icons.Default.Schedule,
                         iconTint = Color(0xFFCE93D8),
                         keywords = listOf("time", "clock", "alarm", "schedule", "daily", "days", "cron", "minute"),
@@ -372,7 +373,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.WIFI_CONNECTED,
                         title = TriggerEvent.WIFI_CONNECTED.label,
-                        subtitle = "When device connects to a configured Wi-Fi SSID",
+                        subtitle = context.getString(TriggerEvent.WIFI_CONNECTED.descriptionRes),
                         icon = Icons.Default.Wifi,
                         iconTint = Color(0xFF4FC3F7),
                         keywords = listOf("wifi", "wi-fi", "wireless", "network", "connect", "ssid", "wlan", "internet"),
@@ -380,7 +381,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.WIFI_DISCONNECTED,
                         title = TriggerEvent.WIFI_DISCONNECTED.label,
-                        subtitle = "When device disconnects from a configured Wi-Fi SSID",
+                        subtitle = context.getString(TriggerEvent.WIFI_DISCONNECTED.descriptionRes),
                         icon = Icons.Default.WifiOff,
                         iconTint = Color(0xFF81D4FA),
                         keywords = listOf("wifi", "wi-fi", "wireless", "network", "disconnect", "ssid", "wlan", "leave"),
@@ -396,7 +397,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.NOTIFICATION_RECEIVED,
                         title = TriggerEvent.NOTIFICATION_RECEIVED.label,
-                        subtitle = "When a notification arrives from selected app (optional keyword)",
+                        subtitle = context.getString(TriggerEvent.NOTIFICATION_RECEIVED.descriptionRes),
                         icon = Icons.Default.NotificationsActive,
                         iconTint = Color(0xFFFFB74D),
                         keywords = listOf("notification", "alert", "message", "push", "keyword", "title", "text", "received"),
@@ -412,7 +413,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.DEVICE_FLIPPED_DOWN,
                         title = TriggerEvent.DEVICE_FLIPPED_DOWN.label,
-                        subtitle = "When device is placed face down on a table or surface",
+                        subtitle = context.getString(TriggerEvent.DEVICE_FLIPPED_DOWN.descriptionRes),
                         icon = Icons.Default.StayCurrentLandscape,
                         iconTint = Color(0xFFFF8A65),
                         keywords = listOf("flip", "face down", "down", "sensor", "motion", "dnd", "mute", "table", "surface"),
@@ -420,7 +421,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.DEVICE_FLIPPED_UP,
                         title = TriggerEvent.DEVICE_FLIPPED_UP.label,
-                        subtitle = "When device is turned face up back to normal position",
+                        subtitle = context.getString(TriggerEvent.DEVICE_FLIPPED_UP.descriptionRes),
                         icon = Icons.Default.StayCurrentPortrait,
                         iconTint = Color(0xFFFFAB91),
                         keywords = listOf("flip", "face up", "up", "sensor", "motion", "normal", "lift"),
@@ -428,7 +429,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.DEVICE_SHAKE,
                         title = TriggerEvent.DEVICE_SHAKE.label,
-                        subtitle = "When device is firmly shaken back and forth",
+                        subtitle = context.getString(TriggerEvent.DEVICE_SHAKE.descriptionRes),
                         icon = Icons.Default.Vibration,
                         iconTint = Color(0xFFFF7043),
                         keywords = listOf("shake", "motion", "accelerometer", "gesture", "movement", "vibrate"),
@@ -444,7 +445,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.SMS_RECEIVED,
                         title = TriggerEvent.SMS_RECEIVED.label,
-                        subtitle = "When an incoming SMS text message is received (filter sender & content)",
+                        subtitle = context.getString(TriggerEvent.SMS_RECEIVED.descriptionRes),
                         icon = Icons.Default.Sms,
                         iconTint = Color(0xFF4FC3F7),
                         keywords = listOf("sms", "text", "message", "sender", "incoming", "received", "code", "otp"),
@@ -460,7 +461,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CALL_RINGING,
                         title = TriggerEvent.CALL_RINGING.label,
-                        subtitle = "When an incoming phone call starts ringing",
+                        subtitle = context.getString(TriggerEvent.CALL_RINGING.descriptionRes),
                         icon = Icons.Default.PhoneInTalk,
                         iconTint = Color(0xFF81C784),
                         keywords = listOf("phone", "call", "ring", "ringing", "incoming call"),
@@ -468,7 +469,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CALL_ANSWERED,
                         title = TriggerEvent.CALL_ANSWERED.label,
-                        subtitle = "When an incoming or outgoing call is answered / active",
+                        subtitle = context.getString(TriggerEvent.CALL_ANSWERED.descriptionRes),
                         icon = Icons.Default.Call,
                         iconTint = Color(0xFF66BB6A),
                         keywords = listOf("phone", "call", "answered", "active", "talk"),
@@ -476,7 +477,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CALL_OUTGOING,
                         title = TriggerEvent.CALL_OUTGOING.label,
-                        subtitle = "When an outgoing phone call is initiated",
+                        subtitle = context.getString(TriggerEvent.CALL_OUTGOING.descriptionRes),
                         icon = Icons.Default.PhoneForwarded,
                         iconTint = Color(0xFF4CAF50),
                         keywords = listOf("phone", "call", "outgoing", "dialed"),
@@ -484,7 +485,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.CALL_ENDED,
                         title = TriggerEvent.CALL_ENDED.label,
-                        subtitle = "When an active or ringing phone call ends or is rejected",
+                        subtitle = context.getString(TriggerEvent.CALL_ENDED.descriptionRes),
                         icon = Icons.Default.CallEnd,
                         iconTint = Color(0xFFE57373),
                         keywords = listOf("phone", "call", "ended", "hang up", "reject", "finish"),
@@ -500,7 +501,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.GEOFENCE_ENTER,
                         title = TriggerEvent.GEOFENCE_ENTER.label,
-                        subtitle = "When device enters a designated geographical area",
+                        subtitle = context.getString(TriggerEvent.GEOFENCE_ENTER.descriptionRes),
                         icon = Icons.Default.LocationOn,
                         iconTint = Color(0xFF26A69A),
                         keywords = listOf("location", "geofence", "gps", "enter", "arrive", "home", "work", "area"),
@@ -508,7 +509,7 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                     PickerItem(
                         value = TriggerEvent.GEOFENCE_EXIT,
                         title = TriggerEvent.GEOFENCE_EXIT.label,
-                        subtitle = "When device leaves a designated geographical area",
+                        subtitle = context.getString(TriggerEvent.GEOFENCE_EXIT.descriptionRes),
                         icon = Icons.Default.LocationOff,
                         iconTint = Color(0xFFEF5350),
                         keywords = listOf("location", "geofence", "gps", "exit", "leave", "depart", "home", "work", "area"),
@@ -537,6 +538,7 @@ fun ActionPicker(
     onDismiss: () -> Unit,
 ) {
     val calendarDescription = stringResource(R.string.action_create_calendar_event_desc)
+    val context = LocalContext.current
     val allGroups = remember(calendarDescription) {
         listOf(
             PickerCategoryGroup(
@@ -548,7 +550,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.SEND_SMS,
                         title = ActionType.SEND_SMS.label,
-                        subtitle = "Directly sends an SMS in background (requires SEND_SMS)",
+                        subtitle = context.getString(ActionType.SEND_SMS.descriptionRes),
                         icon = Icons.Default.Send,
                         iconTint = Color(0xFF00E676),
                         keywords = listOf("sms", "text", "message", "send", "auto sms", "background"),
@@ -556,7 +558,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.DRAFT_SMS,
                         title = ActionType.DRAFT_SMS.label,
-                        subtitle = "Prepares SMS draft in default SMS app for review",
+                        subtitle = context.getString(ActionType.DRAFT_SMS.descriptionRes),
                         icon = Icons.Default.Drafts,
                         iconTint = Color(0xFF4FC3F7),
                         keywords = listOf("sms", "text", "message", "draft", "prepare", "compose"),
@@ -572,7 +574,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.OPEN_DIALER,
                         title = ActionType.OPEN_DIALER.label,
-                        subtitle = "Open default phone dialer app",
+                        subtitle = context.getString(ActionType.OPEN_DIALER.descriptionRes),
                         icon = Icons.Default.Phone,
                         iconTint = Color(0xFF81C784),
                         keywords = listOf("phone", "dialer", "call", "keypad", "open dialer"),
@@ -580,7 +582,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.DIAL_NUMBER,
                         title = ActionType.DIAL_NUMBER.label,
-                        subtitle = "Prepare number in dialer for user confirmation",
+                        subtitle = context.getString(ActionType.DIAL_NUMBER.descriptionRes),
                         icon = Icons.Default.PhoneInTalk,
                         iconTint = Color(0xFF66BB6A),
                         keywords = listOf("phone", "dial", "number", "keypad", "prepare", "fill"),
@@ -588,7 +590,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.CALL_NUMBER,
                         title = ActionType.CALL_NUMBER.label,
-                        subtitle = "Directly initiates a phone call automatically (requires CALL_PHONE)",
+                        subtitle = context.getString(ActionType.CALL_NUMBER.descriptionRes),
                         icon = Icons.Default.Call,
                         iconTint = Color(0xFF4CAF50),
                         keywords = listOf("phone", "call", "direct", "call phone", "auto call"),
@@ -604,7 +606,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.SHOW_NOTIFICATION,
                         title = ActionType.SHOW_NOTIFICATION.label,
-                        subtitle = "Post a heads-up or status notification",
+                        subtitle = context.getString(ActionType.SHOW_NOTIFICATION.descriptionRes),
                         icon = Icons.Default.Notifications,
                         iconTint = Color(0xFFFFB74D),
                         keywords = listOf("notify", "notification", "banner", "message", "alert", "push"),
@@ -612,7 +614,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.DND_ON,
                         title = ActionType.DND_ON.label,
-                        subtitle = "Mute all interruptions and enable Do Not Disturb",
+                        subtitle = context.getString(ActionType.DND_ON.descriptionRes),
                         icon = Icons.Default.DoNotDisturb,
                         iconTint = Color(0xFFE57373),
                         keywords = listOf("dnd", "do not disturb", "mute", "silence", "quiet", "dnd on", "zen"),
@@ -620,7 +622,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.DND_OFF,
                         title = ActionType.DND_OFF.label,
-                        subtitle = "Allow normal interruptions and disable Do Not Disturb",
+                        subtitle = context.getString(ActionType.DND_OFF.descriptionRes),
                         icon = Icons.Default.DoNotDisturbOff,
                         iconTint = Color(0xFF81C784),
                         keywords = listOf("dnd", "do not disturb", "unmute", "normal", "dnd off", "zen off"),
@@ -628,7 +630,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.VIBRATE,
                         title = ActionType.VIBRATE.label,
-                        subtitle = "Vibrate device with custom pattern and strength",
+                        subtitle = context.getString(ActionType.VIBRATE.descriptionRes),
                         icon = Icons.Default.Vibration,
                         iconTint = Color(0xFFFFCC80),
                         keywords = listOf("vibration", "haptic", "buzz", "pulse", "shake", "vibrate"),
@@ -644,7 +646,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.CREATE_ALARM,
                         title = ActionType.CREATE_ALARM.label,
-                        subtitle = "Create an alarm in the system Clock app",
+                        subtitle = context.getString(ActionType.CREATE_ALARM.descriptionRes),
                         icon = Icons.Default.Alarm,
                         iconTint = Color(0xFFFFD54F),
                         keywords = listOf("alarm", "clock", "wake", "alert", "time", "set alarm"),
@@ -660,7 +662,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.START_TIMER,
                         title = ActionType.START_TIMER.label,
-                        subtitle = "Start a countdown timer in the system Clock app",
+                        subtitle = context.getString(ActionType.START_TIMER.descriptionRes),
                         icon = Icons.Default.HourglassEmpty,
                         iconTint = Color(0xFFFFCA28),
                         keywords = listOf("timer", "countdown", "clock", "stopwatch", "seconds", "minutes", "start timer"),
@@ -683,7 +685,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.SOUND_PROFILE_NORMAL,
                         title = ActionType.SOUND_PROFILE_NORMAL.label,
-                        subtitle = "Set sound profile to normal (ring and notifications audible)",
+                        subtitle = context.getString(ActionType.SOUND_PROFILE_NORMAL.descriptionRes),
                         icon = Icons.AutoMirrored.Filled.VolumeUp,
                         iconTint = Color(0xFF81D4FA),
                         keywords = listOf("sound", "profile", "ringer", "normal", "ring", "unmute", "audio"),
@@ -691,7 +693,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.SOUND_PROFILE_VIBRATE,
                         title = ActionType.SOUND_PROFILE_VIBRATE.label,
-                        subtitle = "Set sound profile to vibrate (silent with vibration)",
+                        subtitle = context.getString(ActionType.SOUND_PROFILE_VIBRATE.descriptionRes),
                         icon = Icons.Default.Vibration,
                         iconTint = Color(0xFFFFCC80),
                         keywords = listOf("sound", "profile", "ringer", "vibrate", "vibration", "buzz"),
@@ -699,7 +701,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.SOUND_PROFILE_SILENT,
                         title = ActionType.SOUND_PROFILE_SILENT.label,
-                        subtitle = "Set sound profile to silent (mute calls and notifications)",
+                        subtitle = context.getString(ActionType.SOUND_PROFILE_SILENT.descriptionRes),
                         icon = Icons.Default.DoNotDisturb,
                         iconTint = Color(0xFFE57373),
                         keywords = listOf("sound", "profile", "ringer", "silent", "mute", "silence"),
@@ -707,7 +709,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.PLAY_SOUND,
                         title = ActionType.PLAY_SOUND.label,
-                        subtitle = "Play custom audio file or system tone",
+                        subtitle = context.getString(ActionType.PLAY_SOUND.descriptionRes),
                         icon = Icons.Default.MusicNote,
                         iconTint = Color(0xFF81D4FA),
                         keywords = listOf("audio", "sound", "ringtone", "alarm", "music", "tone", "play"),
@@ -715,7 +717,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.SET_MEDIA_VOLUME,
                         title = ActionType.SET_MEDIA_VOLUME.label,
-                        subtitle = "Adjust media stream volume percentage",
+                        subtitle = context.getString(ActionType.SET_MEDIA_VOLUME.descriptionRes),
                         icon = Icons.AutoMirrored.Filled.VolumeUp,
                         iconTint = Color(0xFF4FC3F7),
                         keywords = listOf("volume", "sound", "media", "level", "audio", "loudness", "mute"),
@@ -723,7 +725,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.SPEAK_TEXT,
                         title = ActionType.SPEAK_TEXT.label,
-                        subtitle = "Synthesize and speak voice text with TTS",
+                        subtitle = context.getString(ActionType.SPEAK_TEXT.descriptionRes),
                         icon = Icons.Default.RecordVoiceOver,
                         iconTint = Color(0xFF29B6F6),
                         keywords = listOf("tts", "speech", "voice", "talk", "speak", "text to speech", "read"),
@@ -739,7 +741,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.LAUNCH_APP,
                         title = ActionType.LAUNCH_APP.label,
-                        subtitle = "Start an installed app into the foreground",
+                        subtitle = context.getString(ActionType.LAUNCH_APP.descriptionRes),
                         icon = Icons.Default.Apps,
                         iconTint = Color(0xFF80CBC4),
                         keywords = listOf("launch", "open", "app", "application", "package", "start", "run"),
@@ -747,7 +749,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.OPEN_URL,
                         title = ActionType.OPEN_URL.label,
-                        subtitle = "Open website or deep link in default browser",
+                        subtitle = context.getString(ActionType.OPEN_URL.descriptionRes),
                         icon = Icons.Default.Language,
                         iconTint = Color(0xFF4DB6AC),
                         keywords = listOf("url", "link", "web", "browser", "http", "https", "site", "open"),
@@ -755,7 +757,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.HTTP_WEBHOOK,
                         title = ActionType.HTTP_WEBHOOK.label,
-                        subtitle = "Send HTTPS request (Home Assistant, Discord, ntfy)",
+                        subtitle = context.getString(ActionType.HTTP_WEBHOOK.descriptionRes),
                         icon = Icons.Default.Http,
                         iconTint = Color(0xFF26A69A),
                         keywords = listOf("webhook", "http", "https", "post", "get", "api", "rest", "ha", "home assistant", "discord", "ntfy", "curl"),
@@ -763,7 +765,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.EXECUTE_JSON_COMMAND,
                         title = ActionType.EXECUTE_JSON_COMMAND.label,
-                        subtitle = "Run a supported command from a JSON template",
+                        subtitle = context.getString(ActionType.EXECUTE_JSON_COMMAND.descriptionRes),
                         icon = Icons.Default.Http,
                         iconTint = Color(0xFF26A69A),
                         keywords = listOf("json", "command", "automation"),
@@ -771,7 +773,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.FORCE_STOP_APP,
                         title = ActionType.FORCE_STOP_APP.label,
-                        subtitle = "Force terminate a running application (requires Shizuku)",
+                        subtitle = context.getString(ActionType.FORCE_STOP_APP.descriptionRes),
                         icon = Icons.Default.Cancel,
                         iconTint = Color(0xFFEF5350),
                         keywords = listOf("force stop", "kill", "close", "terminate", "app", "application", "shizuku"),
@@ -787,7 +789,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.DARK_THEME_ON,
                         title = ActionType.DARK_THEME_ON.label,
-                        subtitle = "Enable system-wide dark theme (requires Shizuku)",
+                        subtitle = context.getString(ActionType.DARK_THEME_ON.descriptionRes),
                         icon = Icons.Default.DarkMode,
                         iconTint = Color(0xFF90CAF9),
                         keywords = listOf("dark", "dark mode", "dark theme", "night", "night mode", "uimode", "theme"),
@@ -795,7 +797,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.DARK_THEME_OFF,
                         title = ActionType.DARK_THEME_OFF.label,
-                        subtitle = "Disable dark theme / switch to light mode (requires Shizuku)",
+                        subtitle = context.getString(ActionType.DARK_THEME_OFF.descriptionRes),
                         icon = Icons.Default.LightMode,
                         iconTint = Color(0xFFFFD54F),
                         keywords = listOf("light", "light mode", "light theme", "day", "day mode", "uimode", "theme"),
@@ -803,7 +805,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.AUTO_ROTATE_ON,
                         title = ActionType.AUTO_ROTATE_ON.label,
-                        subtitle = "Enable automatic screen rotation based on orientation",
+                        subtitle = context.getString(ActionType.AUTO_ROTATE_ON.descriptionRes),
                         icon = Icons.Default.ScreenRotation,
                         iconTint = Color(0xFF4DD0E1),
                         keywords = listOf("rotate", "rotation", "auto rotate", "orientation", "landscape", "portrait", "screen"),
@@ -811,7 +813,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.AUTO_ROTATE_OFF,
                         title = ActionType.AUTO_ROTATE_OFF.label,
-                        subtitle = "Lock screen orientation to portrait / disable auto-rotate",
+                        subtitle = context.getString(ActionType.AUTO_ROTATE_OFF.descriptionRes),
                         icon = Icons.Default.StayCurrentPortrait,
                         iconTint = Color(0xFF80DEEA),
                         keywords = listOf("rotate", "rotation", "lock rotation", "portrait lock", "orientation", "screen lock", "disable auto rotate"),
@@ -819,7 +821,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.SET_SCREEN_BRIGHTNESS,
                         title = ActionType.SET_SCREEN_BRIGHTNESS.label,
-                        subtitle = "Adjust screen brightness level (0% - 100%)",
+                        subtitle = context.getString(ActionType.SET_SCREEN_BRIGHTNESS.descriptionRes),
                         icon = Icons.Default.BrightnessMedium,
                         iconTint = Color(0xFFFFD54F),
                         keywords = listOf("brightness", "screen", "display", "dim", "bright", "level", "percent"),
@@ -827,7 +829,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.AUTO_BRIGHTNESS_ON,
                         title = ActionType.AUTO_BRIGHTNESS_ON.label,
-                        subtitle = "Turn on adaptive / automatic screen brightness",
+                        subtitle = context.getString(ActionType.AUTO_BRIGHTNESS_ON.descriptionRes),
                         icon = Icons.Default.BrightnessAuto,
                         iconTint = Color(0xFFFFB74D),
                         keywords = listOf("auto brightness", "automatic brightness", "adaptive brightness", "screen", "display", "light"),
@@ -835,7 +837,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.AUTO_BRIGHTNESS_OFF,
                         title = ActionType.AUTO_BRIGHTNESS_OFF.label,
-                        subtitle = "Turn off adaptive brightness / lock to manual level",
+                        subtitle = context.getString(ActionType.AUTO_BRIGHTNESS_OFF.descriptionRes),
                         icon = Icons.Default.BrightnessMedium,
                         iconTint = Color(0xFFFFCC80),
                         keywords = listOf("auto brightness", "manual brightness", "screen", "display", "disable auto brightness"),
@@ -843,7 +845,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.LOCK_SCREEN,
                         title = ActionType.LOCK_SCREEN.label,
-                        subtitle = "Lock screen and turn off display (requires Shizuku)",
+                        subtitle = context.getString(ActionType.LOCK_SCREEN.descriptionRes),
                         icon = Icons.Default.Lock,
                         iconTint = Color(0xFFE57373),
                         keywords = listOf("lock", "screen", "display", "power", "turn off", "sleep", "shizuku"),
@@ -851,7 +853,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.TORCH_ON,
                         title = ActionType.TORCH_ON.label,
-                        subtitle = "Turn camera flash on as flashlight",
+                        subtitle = context.getString(ActionType.TORCH_ON.descriptionRes),
                         icon = Icons.Default.FlashlightOn,
                         iconTint = Color(0xFFFFD54F),
                         keywords = listOf("flashlight", "torch", "flash", "light", "camera", "on", "enable"),
@@ -859,7 +861,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.TORCH_OFF,
                         title = ActionType.TORCH_OFF.label,
-                        subtitle = "Turn camera flash / flashlight off",
+                        subtitle = context.getString(ActionType.TORCH_OFF.descriptionRes),
                         icon = Icons.Default.FlashlightOff,
                         iconTint = Color(0xFFFFF59D),
                         keywords = listOf("flashlight", "torch", "flash", "light", "camera", "off", "disable"),
@@ -867,7 +869,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.TORCH_TOGGLE,
                         title = ActionType.TORCH_TOGGLE.label,
-                        subtitle = "Turn the flashlight on if it is off, off if it is on",
+                        subtitle = context.getString(ActionType.TORCH_TOGGLE.descriptionRes),
                         icon = Icons.Default.FlashlightOn,
                         iconTint = Color(0xFFFFE082),
                         keywords = listOf("flashlight", "torch", "flash", "light", "camera", "toggle", "switch", "flip"),
@@ -883,7 +885,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.BATTERY_SAVER_ON,
                         title = ActionType.BATTERY_SAVER_ON.label,
-                        subtitle = "Enable Android low-power saver mode",
+                        subtitle = context.getString(ActionType.BATTERY_SAVER_ON.descriptionRes),
                         icon = Icons.Default.BatterySaver,
                         iconTint = Color(0xFFAED581),
                         keywords = listOf("battery", "power saver", "battery saver", "save power", "energy", "saver on"),
@@ -891,7 +893,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.BATTERY_SAVER_OFF,
                         title = ActionType.BATTERY_SAVER_OFF.label,
-                        subtitle = "Disable Android low-power saver mode",
+                        subtitle = context.getString(ActionType.BATTERY_SAVER_OFF.descriptionRes),
                         icon = Icons.Default.Bolt,
                         iconTint = Color(0xFFFFD54F),
                         keywords = listOf("battery", "power saver", "battery saver", "normal power", "energy", "saver off"),
@@ -927,7 +929,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.NFC_ON,
                         title = ActionType.NFC_ON.label,
-                        subtitle = "Turn NFC radio on (requires Shizuku)",
+                        subtitle = context.getString(ActionType.NFC_ON.descriptionRes),
                         icon = Icons.Default.Nfc,
                         iconTint = Color(0xFFB39DDB),
                         keywords = listOf("nfc", "contactless", "beam", "tag", "nfc on", "enable"),
@@ -935,7 +937,7 @@ fun ActionPicker(
                     PickerItem(
                         value = ActionType.NFC_OFF,
                         title = ActionType.NFC_OFF.label,
-                        subtitle = "Turn NFC radio off (requires Shizuku)",
+                        subtitle = context.getString(ActionType.NFC_OFF.descriptionRes),
                         icon = Icons.Default.Nfc,
                         iconTint = Color(0xFF9575CD),
                         keywords = listOf("nfc", "contactless", "beam", "tag", "nfc off", "disable"),
@@ -970,18 +972,19 @@ fun ConditionPicker(
     onAdd: (RuleCondition) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
     val groups = remember {
         listOf(
             PickerCategoryGroup(
                 id = "TIME",
-                label = "Time & Schedule",
+                label = context.getString(R.string.picker_group_time_schedule),
                 icon = Icons.Default.Schedule,
                 iconTint = Color(0xFF64B5F6),
                 items = listOf(
                     PickerItem(
                         value = ConditionType.TIME_BETWEEN,
                         title = ConditionType.TIME_BETWEEN.label,
-                        subtitle = "Run only during a specific time interval (e.g. 23:00 to 07:00)",
+                        subtitle = context.getString(ConditionType.TIME_BETWEEN.descriptionRes),
                         icon = Icons.Default.Schedule,
                         iconTint = Color(0xFF64B5F6),
                         keywords = listOf("time", "hour", "minute", "between", "window", "night", "overnight", "clock", "saat"),
@@ -989,7 +992,7 @@ fun ConditionPicker(
                     PickerItem(
                         value = ConditionType.DAYS_OF_WEEK,
                         title = ConditionType.DAYS_OF_WEEK.label,
-                        subtitle = "Run only on selected days (weekdays, weekends, or custom days)",
+                        subtitle = context.getString(ConditionType.DAYS_OF_WEEK.descriptionRes),
                         icon = Icons.Default.Tune,
                         iconTint = Color(0xFF81C784),
                         keywords = listOf("day", "days", "week", "weekdays", "weekends", "monday", "sunday", "schedule", "gün"),
@@ -998,14 +1001,14 @@ fun ConditionPicker(
             ),
             PickerCategoryGroup(
                 id = "POWER",
-                label = "Power & Battery",
+                label = context.getString(R.string.picker_group_power_battery),
                 icon = Icons.Default.Bolt,
                 iconTint = Color(0xFFFFD54F),
                 items = listOf(
                     PickerItem(
                         value = ConditionType.BATTERY_BELOW,
                         title = ConditionType.BATTERY_BELOW.label,
-                        subtitle = "Run only when battery level is at or below percentage",
+                        subtitle = context.getString(ConditionType.BATTERY_BELOW.descriptionRes),
                         icon = Icons.Default.BatteryAlert,
                         iconTint = Color(0xFFE57373),
                         keywords = listOf("battery", "level", "percentage", "low", "below", "pil"),
@@ -1013,7 +1016,7 @@ fun ConditionPicker(
                     PickerItem(
                         value = ConditionType.BATTERY_ABOVE,
                         title = ConditionType.BATTERY_ABOVE.label,
-                        subtitle = "Run only when battery level is at or above percentage",
+                        subtitle = context.getString(ConditionType.BATTERY_ABOVE.descriptionRes),
                         icon = Icons.Default.BatteryFull,
                         iconTint = Color(0xFF81C784),
                         keywords = listOf("battery", "level", "percentage", "high", "above", "pil"),
@@ -1021,7 +1024,7 @@ fun ConditionPicker(
                     PickerItem(
                         value = ConditionType.CHARGER_CONNECTED,
                         title = ConditionType.CHARGER_CONNECTED.label,
-                        subtitle = "Run only while phone is plugged into power",
+                        subtitle = context.getString(ConditionType.CHARGER_CONNECTED.descriptionRes),
                         icon = Icons.Default.BatteryChargingFull,
                         iconTint = Color(0xFFFFD54F),
                         keywords = listOf("charger", "plugged", "charging", "power", "connected", "şarj"),
@@ -1029,7 +1032,7 @@ fun ConditionPicker(
                     PickerItem(
                         value = ConditionType.CHARGER_DISCONNECTED,
                         title = ConditionType.CHARGER_DISCONNECTED.label,
-                        subtitle = "Run only while phone is unplugged and discharging",
+                        subtitle = context.getString(ConditionType.CHARGER_DISCONNECTED.descriptionRes),
                         icon = Icons.Default.PowerOff,
                         iconTint = Color(0xFFFFB74D),
                         keywords = listOf("charger", "unplugged", "discharging", "battery", "disconnected", "şarj"),
@@ -1038,14 +1041,14 @@ fun ConditionPicker(
             ),
             PickerCategoryGroup(
                 id = "DISPLAY",
-                label = "Display",
+                label = context.getString(R.string.picker_group_display),
                 icon = Icons.Default.ScreenRotation,
                 iconTint = Color(0xFF4DD0E1),
                 items = listOf(
                     PickerItem(
                         value = ConditionType.SCREEN_ON,
                         title = ConditionType.SCREEN_ON.label,
-                        subtitle = "Run only while device screen is on or awake",
+                        subtitle = context.getString(ConditionType.SCREEN_ON.descriptionRes),
                         icon = Icons.Default.StayCurrentPortrait,
                         iconTint = Color(0xFF4DD0E1),
                         keywords = listOf("screen", "display", "on", "awake", "unlocked", "ekran"),
@@ -1053,7 +1056,7 @@ fun ConditionPicker(
                     PickerItem(
                         value = ConditionType.SCREEN_OFF,
                         title = ConditionType.SCREEN_OFF.label,
-                        subtitle = "Run only while screen is turned off or locked",
+                        subtitle = context.getString(ConditionType.SCREEN_OFF.descriptionRes),
                         icon = Icons.Default.StayCurrentLandscape,
                         iconTint = Color(0xFF80DEEA),
                         keywords = listOf("screen", "display", "off", "locked", "sleep", "ekran"),
@@ -1062,14 +1065,14 @@ fun ConditionPicker(
             ),
             PickerCategoryGroup(
                 id = "NETWORK",
-                label = "Network",
+                label = context.getString(R.string.picker_group_network),
                 icon = Icons.Default.Wifi,
                 iconTint = Color(0xFF81D4FA),
                 items = listOf(
                     PickerItem(
                         value = ConditionType.WIFI_CONNECTED,
                         title = ConditionType.WIFI_CONNECTED.label,
-                        subtitle = "Run only when connected to Wi-Fi (optional specific SSID)",
+                        subtitle = context.getString(ConditionType.WIFI_CONNECTED.descriptionRes),
                         icon = Icons.Default.Wifi,
                         iconTint = Color(0xFF4FC3F7),
                         keywords = listOf("wifi", "wi-fi", "ssid", "wireless", "connected", "network", "wlan"),
@@ -1077,7 +1080,7 @@ fun ConditionPicker(
                     PickerItem(
                         value = ConditionType.WIFI_DISCONNECTED,
                         title = ConditionType.WIFI_DISCONNECTED.label,
-                        subtitle = "Run only when disconnected from Wi-Fi or specific SSID",
+                        subtitle = context.getString(ConditionType.WIFI_DISCONNECTED.descriptionRes),
                         icon = Icons.Default.WifiOff,
                         iconTint = Color(0xFF81D4FA),
                         keywords = listOf("wifi", "wi-fi", "ssid", "disconnected", "off", "network", "wlan"),
@@ -1146,7 +1149,7 @@ fun <T> ModernChoiceDialog(
                             onClick = onDismiss,
                             modifier = Modifier.semantics { contentDescription = closeDesc },
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = null)
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.content_desc_close))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -1539,7 +1542,7 @@ fun AppPicker(
             Column(Modifier.fillMaxSize()) {
                 TopAppBar(
                     title = { Text(stringResource(R.string.choose_app_title), fontWeight = FontWeight.Bold) },
-                    navigationIcon = { IconButton(onDismiss) { Icon(Icons.Default.Close, null) } },
+                    navigationIcon = { IconButton(onDismiss) { Icon(Icons.Default.Close, stringResource(R.string.content_desc_close)) } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 )
                 OutlinedTextField(
@@ -1578,7 +1581,7 @@ fun AppPicker(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            "No apps found",
+                            stringResource(R.string.no_apps_found),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyMedium,
                         )

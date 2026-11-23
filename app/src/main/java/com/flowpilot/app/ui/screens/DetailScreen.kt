@@ -522,7 +522,7 @@ fun DetailScreen(
         ) {
             TopAppBar(
                 title = { Text(stringResource(R.string.edit_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
+                navigationIcon = { IconButton(back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.content_desc_back)) } },
                 actions = {
                     IconButton(
                         onClick = {
