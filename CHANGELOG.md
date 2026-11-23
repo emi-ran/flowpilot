@@ -19,6 +19,12 @@ All notable FlowPilot changes are documented here.
 - Stamp incoming SMS with the receive time and give each SMS a unique execution ID so a skewed carrier timestamp or two messages in the same second no longer drop a trigger.
 - Log how many stale notification or SMS events were discarded (counts only).
 
+### Fixed
+- Localize remaining hardcoded English text in the rule editor and pickers (Turkish users saw English trigger, action and webhook descriptions); trigger pickers now search the localized descriptions.
+- Stop showing raw exception messages in backup export and import errors; show localized messages instead.
+- Add Back and Close accessibility labels to the editor, detail, history and picker dialogs.
+- Remove unsafe non-null assertions on the live light level and the available update.
+
 ### Changed
 - Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
 
