@@ -43,6 +43,7 @@ class JsonCommandExecutionTest {
             ActionDiagnosticReason.BLUETOOTH_PERMISSION_REQUIRED,
             ActionDiagnosticReason.SETTINGS_PERMISSION_REQUIRED,
             ActionDiagnosticReason.DND_PERMISSION_REQUIRED,
+            ActionDiagnosticReason.VOLUME_PERMISSION_REQUIRED,
             ActionDiagnosticReason.NOTIFICATION_PERMISSION_REQUIRED,
             ActionDiagnosticReason.PHONE_PERMISSION_REQUIRED,
             ActionDiagnosticReason.SMS_PERMISSION_REQUIRED,

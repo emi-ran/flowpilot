@@ -520,7 +520,9 @@ class AutomationEngine(
             clearMediaEvents()
         }
         tracker.updatePackages(demand.appPackages)
-        if (demand.needs(TriggerEvent.NOTIFICATION_RECEIVED)) FlowPilotNotificationListener.ensureBound(appContext)
+        if (demand.needs(TriggerEvent.NOTIFICATION_RECEIVED) || demand.needsMedia) {
+            FlowPilotNotificationListener.ensureBound(appContext)
+        }
     }
     private fun getLiveSystemState(): LiveSystemState {
         val batteryPercent = batteryTracker.currentLevel

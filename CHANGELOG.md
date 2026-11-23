@@ -4,6 +4,9 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Added
+- Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+
 ### Fixed
 - Run rule actions outside the engine poll loop so a delayed action no longer stalls other triggers or lets queued notification and SMS events expire unseen; runs of the same rule stay sequential.
 - Isolate engine poll steps so one failing step no longer skips the rest, and report repeated failures once.
@@ -13,6 +16,9 @@ All notable FlowPilot changes are documented here.
 
 ### Changed
 - Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
+
+### Fixed
+- Prevent overlapping `FlowPilotNotificationListener` teardown (`onDestroy`) or `intakeScope` cancellation from clearing the live connection state of a replacement instance or cancelling delayed post-disconnect rebinds; back off repeated `NotificationListenerService.requestRebind()` attempts (30s up to 5m), attempt rebind for active media rules, and deep-link to FlowPilot's Notification Access detail screen on Android 11+ with an immediate rebind attempt on resume.
 
 ## [2.3.0] - 2026-11-15
 

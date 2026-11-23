@@ -26,7 +26,7 @@ Use `{}` for each of these actions (no parameters):
 | --- | --- | --- |
 | `VIBRATE` | none | `pattern`: `PULSE` (default), `DOUBLE_TAP`, `ALERT`, `HEARTBEAT`, `TRIPLE_TAP`, `SOS`; integer `durationMs` 80–800 (220); integer `amplitude` 1–255 (180) |
 | `PLAY_SOUND` | none, except `uri` for `CUSTOM` | `preset`: `NOTIFICATION` (default), `ALARM`, `RINGTONE`, `CUSTOM`; integer `durationMs` 1000–60000 (3000); `uri` only with `CUSTOM`, a `content` or `android.resource` URI with nonblank authority |
-| `SET_MEDIA_VOLUME`, `SET_SCREEN_BRIGHTNESS` | integer `percent` 0–100 | none |
+| `SET_MEDIA_VOLUME`, `SET_NOTIFICATION_VOLUME`, `SET_ALARM_VOLUME`, `SET_SCREEN_BRIGHTNESS` | integer `percent` 0–100 | none |
 | `MEDIA_PLAY`, `MEDIA_PAUSE`, `MEDIA_TOGGLE`, `MEDIA_NEXT`, `MEDIA_PREVIOUS` | none | string `targetPackage` |
 | `SPEAK_TEXT` | nonblank `text`, at most 2000 UTF-16 units | string `voiceName`; JSON number `speechRate`, converted to finite Float in 0.5–2.0 (1.0) |
 | `CREATE_ALARM` | integer `hour` 0–23, integer `minute` 0–59 | `days`: array of up to seven distinct integers 1–7 (default `[]`); string `message` |
@@ -41,6 +41,8 @@ Use `{}` for each of these actions (no parameters):
 | `MUSIC_PLAY_LINK` | strings `appPackage`, nonblank valid `link` | none |
 | `SHOW_NOTIFICATION` | strings `title`, `body` (may be empty at parsing) | none |
 | `CREATE_CALENDAR_EVENT` | nonblank strings `title`, `accountName`, `accountType`, `calendarName`; integer `startMillis`, `endMillis` | strings `description`, `location`, `repeat` (default `NONE`); integer `reminderMinutes` (default `-1`) |
+
+`SET_NOTIFICATION_VOLUME` and `SET_ALARM_VOLUME` set the corresponding Android stream, for example `{"version":1,"action":"SET_NOTIFICATION_VOLUME","params":{"percent":35}}` or `{"version":1,"action":"SET_ALARM_VOLUME","params":{"percent":50}}`. The percentage is converted to a rounded device volume step, so the resulting level may not be the exact percentage. An alarm request below the device-reported minimum fails; the minimum varies by device, and on Android before 9 the executor assumes zero. Notification and ringtone volumes may be linked by the device. If the level cannot be read back or differs from the requested step, the command fails; a failed readback does not prove the setting was unchanged. Permission or Do Not Disturb restrictions can also prevent a change.
 
 For `SPEAK_TEXT`, if the user accepts the default, omit `voiceName`: FlowPilot uses the platform default if offline, otherwise the highest-quality offline voice in the default voice's language (or device locale's language if no default), then the highest-quality offline voice in any language. It does not infer language from the text. For a specific language or voice, ask for the exact case-sensitive identifier in parentheses in FlowPilot's offline voice picker; the user can preview it there. Explicit missing or network-only voices fail rather than falling back. Availability depends on the device and TTS engine. `tr-tr-x-cfs-local` worked on one Xiaomi 15T Pro, not necessarily elsewhere; never assume it exists. Example when confirmed available: `{"version":1,"action":"SPEAK_TEXT","params":{"text":"Merhaba","voiceName":"tr-tr-x-cfs-local","speechRate":0.9}}`.
 

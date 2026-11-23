@@ -155,6 +155,8 @@ fun CreateScreen(
     var vibrationDurationMs by remember { mutableIntStateOf(220) }
     var vibrationAmplitude by remember { mutableIntStateOf(180) }
     var mediaVolumePercent by remember { mutableIntStateOf(50) }
+    var notificationVolumePercent by remember { mutableIntStateOf(50) }
+    var alarmVolumePercent by remember { mutableIntStateOf(50) }
     var soundPreset by remember { mutableStateOf(SoundPreset.NOTIFICATION) }
     var soundUri by remember { mutableStateOf("") }
     var soundName by remember { mutableStateOf("") }
@@ -328,6 +330,8 @@ fun CreateScreen(
         vibrationDurationMs = t.vibrationDurationMs
         vibrationAmplitude = t.vibrationAmplitude
         mediaVolumePercent = t.mediaVolumePercent
+        notificationVolumePercent = t.notificationVolumePercent
+        alarmVolumePercent = t.alarmVolumePercent
         soundPreset = t.soundPreset
         soundUri = t.soundUri
         soundName = t.soundName
@@ -500,6 +504,8 @@ fun CreateScreen(
                         vibrationDurationMs = vibrationDurationMs,
                         vibrationAmplitude = vibrationAmplitude,
                         mediaVolumePercent = mediaVolumePercent,
+                        notificationVolumePercent = notificationVolumePercent,
+                        alarmVolumePercent = alarmVolumePercent,
                         soundPreset = soundPreset,
                         soundUri = soundUri,
                         soundName = soundName,
@@ -831,6 +837,10 @@ fun CreateScreen(
                             // Volume
                             mediaVolumePercent = mediaVolumePercent,
                             onMediaVolumeChange = { mediaVolumePercent = it },
+                            notificationVolumePercent = notificationVolumePercent,
+                            onNotificationVolumeChange = { notificationVolumePercent = it },
+                            alarmVolumePercent = alarmVolumePercent,
+                            onAlarmVolumeChange = { alarmVolumePercent = it },
                             // Launch app
                             launchAppName = launchAppName,
                             launchPackage = launchPackage,
@@ -1139,6 +1149,8 @@ fun CreateScreen(
                                 vibrationDurationMs = vibrationDurationMs,
                                 vibrationAmplitude = vibrationAmplitude,
                                 mediaVolumePercent = mediaVolumePercent,
+                                notificationVolumePercent = notificationVolumePercent,
+                                alarmVolumePercent = alarmVolumePercent,
                                 soundPreset = soundPreset,
                                 soundUri = soundUri,
                                 soundName = soundName,
