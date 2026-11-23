@@ -511,6 +511,32 @@ data class Automation(
         )
     }
 
+    /**
+     * Like [withDecryptedSecrets] but an undecryptable field keeps its stored ciphertext instead of
+     * becoming empty, so a later save re-stores the original value rather than erasing it.
+     * Use for UI/state loading.
+     */
+    fun withDecryptedSecretsPreservingUndecryptable(): Automation {
+        fun open(value: String): String = SecretCipher.decryptOrNull(value) ?: value
+        return copy(
+            webhookUrl = open(webhookUrl),
+            webhookHeaders = open(webhookHeaders),
+            webhookBody = open(webhookBody),
+            jsonCommandSource = open(jsonCommandSource),
+        )
+    }
+
+    /**
+     * Like [withDecryptedSecrets] but throws [com.flowpilot.app.data.security.SecretDecryptionException]
+     * when any secret cannot be decrypted. Use before export, clone, or any persisted rewrite.
+     */
+    fun withDecryptedSecretsStrict(): Automation = copy(
+        webhookUrl = SecretCipher.decryptStrict(webhookUrl),
+        webhookHeaders = SecretCipher.decryptStrict(webhookHeaders),
+        webhookBody = SecretCipher.decryptStrict(webhookBody),
+        jsonCommandSource = SecretCipher.decryptStrict(jsonCommandSource),
+    )
+
     companion object {
         /** Softest usable shake force handed to the detector. */
         const val MIN_SHAKE_THRESHOLD = 6f

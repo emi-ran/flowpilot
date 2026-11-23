@@ -59,6 +59,8 @@ class AutomationRepository(private val context: Context) {
     private val geofenceDiagnosticListSerializer = ListSerializer(GeofenceDiagnostic.serializer())
 
     private val key = stringPreferencesKey("rules")
+    private val corruptBackupKey = stringPreferencesKey("rules_backup_unreadable")
+    private val duplicateBackupKey = stringPreferencesKey("rules_backup_duplicate_ids")
     private val executionRevisionKey = longPreferencesKey("execution_revision")
     private val historyKey = stringPreferencesKey("execution_history")
     private val geofenceQueueKey = stringPreferencesKey("geofence_event_queue")
@@ -193,7 +195,7 @@ class AutomationRepository(private val context: Context) {
         prefs[key]?.let { raw ->
             val list = safeDecode(raw)
             list.map { stored ->
-                stored.withDecryptedSecrets().copy(name = stored.normalizedName)
+                stored.withDecryptedSecretsPreservingUndecryptable().copy(name = stored.normalizedName)
             }
         } ?: emptyList()
     }
@@ -591,9 +593,9 @@ class AutomationRepository(private val context: Context) {
             createdAt = System.currentTimeMillis(),
         )
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
+        editRules { prefs ->
             migrateHistory(prefs)
-            val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
+            val current = loadRulesForWrite(prefs) ?: emptyList()
             rule = rule.normalizeTriggerStorage().copy(executionRevision = nextExecutionRevision(prefs))
             val encryptedRule = rule.withEncryptedSecrets()
             check(current.none { it.id == rule.id }) { "Duplicate automation ID" }
@@ -617,10 +619,10 @@ class AutomationRepository(private val context: Context) {
         var createdCloneTtsFile: java.io.File? = null
         try {
             executionStateMutex.withLock {
-            context.dataStore.edit { prefs ->
+            editRules { prefs ->
                 migrateHistory(prefs)
-                val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
-                val source = current.firstOrNull { it.id == sourceId }?.withDecryptedSecrets() ?: return@edit
+                val current = loadRulesForWrite(prefs) ?: return@editRules
+                val source = current.firstOrNull { it.id == sourceId }?.withDecryptedSecretsStrict() ?: return@editRules
                 val ttsManager = com.flowpilot.app.actions.TtsManager(context)
                 val cloneTtsFileName = if (source.ttsText.isNotBlank()) {
                     // Dynamic rules synthesize on demand; never duplicate audio.
@@ -678,9 +680,9 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun update(rule: Automation) {
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
+        editRules { prefs ->
             migrateHistory(prefs)
-            val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
+            val current = loadRulesForWrite(prefs) ?: emptyList()
             val revision = nextExecutionRevision(prefs)
             val updated = current.map {
                 if (it.id == rule.id) {
@@ -698,9 +700,9 @@ class AutomationRepository(private val context: Context) {
     }
 
     suspend fun patchLastTriggeredAt(id: String, at: Long) {
-        context.dataStore.edit { prefs ->
+        editRules(failSilently = true) { prefs ->
             migrateHistory(prefs)
-            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val current = loadRulesForWrite(prefs) ?: return@editRules
             val updated = current.map {
                 val base = if (it.id == id) it.copy(lastTriggeredAt = at) else it
                 base.withEncryptedSecrets()
@@ -717,16 +719,16 @@ class AutomationRepository(private val context: Context) {
     ): ExecutionReservation? {
         var reservation: ExecutionReservation? = null
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
-            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+        editRules(failSilently = true) { prefs ->
+            val current = loadRulesForWrite(prefs) ?: return@editRules
             val index = current.indexOfFirst { it.id == id }
-            if (index < 0) return@edit
+            if (index < 0) return@editRules
             val stored = current[index]
             val rule = stored.withDecryptedSecrets()
             if (!rule.enabled || rule.executionRevision != expectedRevision ||
                 rule.isCoolingDown(at) || rule.executionLeaseExpiresAt > at
             ) {
-                return@edit
+                return@editRules
             }
             val token = UUID.randomUUID().toString()
             val updated = current.toMutableList()
@@ -754,8 +756,8 @@ class AutomationRepository(private val context: Context) {
     /** Releases a reservation only when its exact durable lease token still owns the rule. */
     suspend fun releaseExecutionReservation(reservation: ExecutionReservation, successful: Boolean) {
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
-            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+        editRules(failSilently = true) { prefs ->
+            val current = loadRulesForWrite(prefs) ?: return@editRules
             val updated = current.map { stored ->
                 if (stored.id == reservation.rule.id &&
                     stored.executionRevision == reservation.revision &&
@@ -780,8 +782,8 @@ class AutomationRepository(private val context: Context) {
     ): Boolean {
         var renewed = false
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
-            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+        editRules(failSilently = true) { prefs ->
+            val current = loadRulesForWrite(prefs) ?: return@editRules
             val updated = current.map { stored ->
                 if (stored.id == reservation.rule.id &&
                     stored.enabled &&
@@ -809,9 +811,9 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun setEnabled(id: String, enabled: Boolean) {
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
+        editRules { prefs ->
             migrateHistory(prefs)
-            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val current = loadRulesForWrite(prefs) ?: return@editRules
             val revision = if (current.any { it.id == id && it.enabled != enabled }) {
                 nextExecutionRevision(prefs)
             } else null
@@ -829,9 +831,9 @@ class AutomationRepository(private val context: Context) {
 
     suspend fun delete(id: String) {
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
+        editRules { prefs ->
             migrateHistory(prefs)
-            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val current = loadRulesForWrite(prefs) ?: return@editRules
             val updated = current.filterNot { it.id == id }.map { it.withEncryptedSecrets() }
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
@@ -843,9 +845,9 @@ class AutomationRepository(private val context: Context) {
     suspend fun deleteMany(ids: Set<String>) {
         if (ids.isEmpty()) return
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
+        editRules { prefs ->
             migrateHistory(prefs)
-            val current = prefs[key]?.let { safeDecode(it) } ?: return@edit
+            val current = loadRulesForWrite(prefs) ?: return@editRules
             val updated = current.filterNot { it.id in ids }.map { it.withEncryptedSecrets() }
             prefs[key] = json.encodeToString(listSerializer, updated)
         }
@@ -891,9 +893,9 @@ class AutomationRepository(private val context: Context) {
         }
         try {
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
+        editRules { prefs ->
             migrateHistory(prefs)
-            val current = prefs[key]?.let { safeDecode(it) } ?: emptyList()
+            val current = loadRulesForWrite(prefs) ?: emptyList()
             val finalRules = when (strategy) {
                 com.flowpilot.app.data.backup.ImportStrategy.MERGE -> {
                     val remapped = imported.map { rule ->
@@ -938,8 +940,9 @@ class AutomationRepository(private val context: Context) {
     suspend fun replaceAll(rules: List<Automation>) {
         requireUniqueIds(rules)
         executionStateMutex.withLock {
-        context.dataStore.edit { prefs ->
+        editRules { prefs ->
             migrateHistory(prefs)
+            backupUnreadableRules(prefs)
             val encrypted = rules.map { rule ->
                 revokePendingExecution(rule.copy(
                     name = rule.normalizedName,
@@ -959,11 +962,61 @@ class AutomationRepository(private val context: Context) {
         } catch (_: Throwable) {}
     }
 
+    /** Read path: tolerant. Unreadable data shows as an empty list but is never written back. */
     private fun safeDecode(raw: String): List<Automation> = try {
-        recoverDuplicateIds(json.decodeFromString(listSerializer, raw)).map { it.normalizeTriggerStorage() }
+        decodeRules(raw)
     } catch (_: Exception) {
         emptyList()
     }
+
+    private fun decodeRules(raw: String): List<Automation> =
+        recoverDuplicateIds(json.decodeFromString(listSerializer, raw)).map { it.normalizeTriggerStorage() }
+
+    /** Thrown instead of overwriting rules that cannot be decoded; message is fixed and secret-free. */
+    class CorruptRulesException : IllegalStateException("Stored rules are unreadable; write refused")
+
+    /**
+     * Write path: strict. Returns null when no rules are stored. Unreadable data throws
+     * [CorruptRulesException] (the raw value is preserved by [editRules]); duplicate IDs are
+     * re-IDed deterministically and the original raw value is backed up in the same transaction.
+     */
+    private fun loadRulesForWrite(prefs: MutablePreferences): List<Automation>? {
+        val raw = prefs[key] ?: return null
+        val parsed = try {
+            json.decodeFromString(listSerializer, raw)
+        } catch (_: Exception) {
+            throw CorruptRulesException()
+        }
+        if (parsed.map { it.id }.toSet().size != parsed.size && prefs[duplicateBackupKey] == null) {
+            prefs[duplicateBackupKey] = raw
+        }
+        return recoverDuplicateIds(parsed).map { it.normalizeTriggerStorage() }
+    }
+
+    /** Preserves unreadable raw rules before an intentional full replacement. */
+    private fun backupUnreadableRules(prefs: MutablePreferences) {
+        val raw = prefs[key] ?: return
+        val readable = try {
+            json.decodeFromString(listSerializer, raw)
+            true
+        } catch (_: Exception) {
+            false
+        }
+        if (!readable && prefs[corruptBackupKey] == null) prefs[corruptBackupKey] = raw
+    }
+
+    /** Edits preferences; on [CorruptRulesException] the raw rules are backed up, nothing else changes. */
+    private suspend fun editRules(
+        failSilently: Boolean = false,
+        transform: suspend (MutablePreferences) -> Unit,
+    ): Preferences =
+        try {
+            context.dataStore.edit(transform)
+        } catch (error: CorruptRulesException) {
+            val backedUp = context.dataStore.edit { backupUnreadableRules(it) }
+            if (!failSilently) throw error
+            backedUp
+        }
 
     private fun nextExecutionRevision(prefs: MutablePreferences): Long {
         val next = (prefs[executionRevisionKey] ?: 0L) + 1L
@@ -980,6 +1033,10 @@ class AutomationRepository(private val context: Context) {
         require(rules.map { it.id }.toSet().size == rules.size) { "Duplicate automation ID" }
     }
 
+    /**
+     * Fails closed to the first rule per ID (existing contract). The original raw JSON is backed up
+     * under [duplicateBackupKey] before any write can drop the later duplicates.
+     */
     private fun recoverDuplicateIds(rules: List<Automation>): List<Automation> =
         rules.distinctBy { it.id }
 
@@ -1122,6 +1179,11 @@ class AutomationRepository(private val context: Context) {
 
     private suspend fun cleanupOrphanTtsFiles() {
         try {
+            // Never treat unreadable stored rules as "no rules": that would delete every audio file.
+            val storedRaw = rawDataStore.data.first()[key]
+            if (storedRaw != null) {
+                try { decodeRules(storedRaw) } catch (_: Exception) { return }
+            }
             val rules = automations.first()
             val usedFiles = rules.mapNotNull { it.ttsAudioFileName.takeIf { f -> f.isNotBlank() } }.toSet()
             com.flowpilot.app.actions.TtsManager(context).cleanup(activeFileNames = usedFiles)
