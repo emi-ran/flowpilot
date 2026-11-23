@@ -12,6 +12,13 @@ All notable FlowPilot changes are documented here.
 - Fail encrypted export and rule duplication when a stored secret cannot be decrypted (for example after losing the Keystore key), and keep the encrypted value on save instead of replacing it with an empty secret.
 - Store plaintext that happens to start with `enc:v1:` correctly instead of treating it as ciphertext.
 
+### Fixed
+- Run rule actions outside the engine poll loop so a delayed action no longer stalls other triggers or lets queued notification and SMS events expire unseen; runs of the same rule stay sequential.
+- Isolate engine poll steps so one failing step no longer skips the rest, and report repeated failures once.
+- Tear down geofences when the engine is disabled even if the engine job was cancelled.
+- Stamp incoming SMS with the receive time and give each SMS a unique execution ID so a skewed carrier timestamp or two messages in the same second no longer drop a trigger.
+- Log how many stale notification or SMS events were discarded (counts only).
+
 ### Changed
 - Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
 
