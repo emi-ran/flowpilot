@@ -30,7 +30,7 @@ class JsonCommandAllActionsTest {
     @Test fun allActionTypesAreClassified() {
         val parameterized = setOf(
             ActionType.SHOW_NOTIFICATION, ActionType.VIBRATE, ActionType.PLAY_SOUND,
-            ActionType.SET_MEDIA_VOLUME, ActionType.MEDIA_PLAY, ActionType.MEDIA_PAUSE,
+            ActionType.SET_MEDIA_VOLUME, ActionType.SET_NOTIFICATION_VOLUME, ActionType.SET_ALARM_VOLUME, ActionType.MEDIA_PLAY, ActionType.MEDIA_PAUSE,
             ActionType.MEDIA_TOGGLE, ActionType.MEDIA_NEXT, ActionType.MEDIA_PREVIOUS,
             ActionType.MUSIC_SEARCH, ActionType.MUSIC_PLAY_LINK, ActionType.SPEAK_TEXT,
             ActionType.CREATE_ALARM, ActionType.START_TIMER, ActionType.CREATE_CALENDAR_EVENT,
@@ -58,6 +58,8 @@ class JsonCommandAllActionsTest {
     @Test fun parameterizedActionsRejectWrongFieldTypes() {
         val cases = listOf(
             ActionType.SET_MEDIA_VOLUME to """{"percent":"50"}""",
+            ActionType.SET_NOTIFICATION_VOLUME to """{"percent":"50"}""",
+            ActionType.SET_ALARM_VOLUME to """{"percent":"50"}""",
             ActionType.SET_SCREEN_BRIGHTNESS to """{"percent":"50"}""",
             ActionType.MEDIA_PLAY to """{"targetPackage":123}""",
             ActionType.MEDIA_PAUSE to """{"targetPackage":123}""",
@@ -107,6 +109,10 @@ class JsonCommandAllActionsTest {
     @Test fun commonDeviceParametersMapToExecutorFields() {
         val volume = JsonCommandParser.parse(command(ActionType.SET_MEDIA_VOLUME, """{"percent":37}""")) as JsonCommandParser.Result.Success
         assertThat(volume.parameters.mediaVolumePercent).isEqualTo(37)
+        val notification = JsonCommandParser.parse(command(ActionType.SET_NOTIFICATION_VOLUME, """{"percent":23}""")) as JsonCommandParser.Result.Success
+        assertThat(notification.parameters.notificationVolumePercent).isEqualTo(23)
+        val alarm = JsonCommandParser.parse(command(ActionType.SET_ALARM_VOLUME, """{"percent":81}""")) as JsonCommandParser.Result.Success
+        assertThat(alarm.parameters.alarmVolumePercent).isEqualTo(81)
         val brightness = JsonCommandParser.parse(command(ActionType.SET_SCREEN_BRIGHTNESS, """{"percent":63}""")) as JsonCommandParser.Result.Success
         assertThat(brightness.parameters.screenBrightnessPercent).isEqualTo(63)
         for (action in listOf(ActionType.MEDIA_PLAY, ActionType.MEDIA_PAUSE, ActionType.MEDIA_TOGGLE, ActionType.MEDIA_NEXT, ActionType.MEDIA_PREVIOUS)) {
@@ -162,7 +168,7 @@ class JsonCommandAllActionsTest {
             assertThat(result.action).isEqualTo(action)
             assertThat(result.parameters).isEqualTo(expected)
         }
-        for (action in listOf(ActionType.SET_MEDIA_VOLUME, ActionType.SET_SCREEN_BRIGHTNESS)) {
+        for (action in listOf(ActionType.SET_MEDIA_VOLUME, ActionType.SET_NOTIFICATION_VOLUME, ActionType.SET_ALARM_VOLUME, ActionType.SET_SCREEN_BRIGHTNESS)) {
             for (value in listOf(0, 100)) {
                 assertThat(JsonCommandParser.parse(command(action, """{"percent":$value}""")))
                     .isInstanceOf(JsonCommandParser.Result.Success::class.java)
@@ -186,6 +192,8 @@ class JsonCommandAllActionsTest {
             ActionType.CREATE_ALARM to """{"hour":0,"minute":0,"days":["1"]}""", ActionType.CREATE_ALARM to """{"hour":0,"minute":0,"days":[1.5]}""",
             ActionType.START_TIMER to """{"durationSeconds":0}""", ActionType.START_TIMER to """{"durationSeconds":86401}""",
             ActionType.SET_MEDIA_VOLUME to """{"percent":-1}""", ActionType.SET_MEDIA_VOLUME to """{"percent":101}""",
+            ActionType.SET_NOTIFICATION_VOLUME to """{"percent":-1}""", ActionType.SET_NOTIFICATION_VOLUME to """{"percent":101}""",
+            ActionType.SET_ALARM_VOLUME to """{"percent":-1}""", ActionType.SET_ALARM_VOLUME to """{"percent":101}""",
             ActionType.SET_SCREEN_BRIGHTNESS to """{"percent":-1}""", ActionType.SET_SCREEN_BRIGHTNESS to """{"percent":101}""",
             ActionType.HTTP_WEBHOOK to """{"url":"http://example.com"}""", ActionType.HTTP_WEBHOOK to """{"url":"https://example.com","method":"INVALID"}""",
             ActionType.HTTP_WEBHOOK to """{"url":"https://example.com","method":"GET","body":"x"}""", ActionType.HTTP_WEBHOOK to """{"url":"https://example.com","headers":"bad header"}""",

@@ -38,6 +38,17 @@ class ImportValidatorTest {
         }
     }
 
+    @Test fun volumeFieldsAreValidatedIndependently() {
+        val volumes = rule(actions = listOf(ActionType.SET_MEDIA_VOLUME, ActionType.SET_NOTIFICATION_VOLUME, ActionType.SET_ALARM_VOLUME))
+            .copy(mediaVolumePercent = 20, notificationVolumePercent = 40, alarmVolumePercent = 80)
+        ImportValidator.validate(listOf(volumes))
+        ImportValidator.validate(listOf(volumes.copy(notificationVolumePercent = 0, alarmVolumePercent = 100)))
+        assertRejected(volumes.copy(notificationVolumePercent = -1))
+        assertRejected(volumes.copy(notificationVolumePercent = 101))
+        assertRejected(volumes.copy(alarmVolumePercent = -1))
+        assertRejected(volumes.copy(alarmVolumePercent = 101))
+    }
+
     @Test
     fun alarmDaysAcceptCalendarValuesAndRejectOutOfRangeValues() {
         val alarm = rule(actions = listOf(ActionType.CREATE_ALARM))

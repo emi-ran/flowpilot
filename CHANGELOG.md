@@ -4,6 +4,9 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Added
+- Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+
 ### Changed
 - Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
 

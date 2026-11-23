@@ -2,30 +2,45 @@ package com.flowpilot.app.actions
 
 import android.content.Context
 import android.media.AudioManager
+import android.os.Build
 import com.flowpilot.app.data.model.ActionType
 import kotlin.math.roundToInt
 
-/** Sets music stream volume as a percentage of device-specific maximum volume. */
+/** Sets a stream volume as a percentage of its device-specific maximum. */
 class MediaVolumeExecutor(
     context: Context,
-    private val maxVolume: () -> Int = { context.getSystemService(AudioManager::class.java)?.getStreamMaxVolume(AudioManager.STREAM_MUSIC) ?: 0 },
-    private val currentVolume: () -> Int = { context.getSystemService(AudioManager::class.java)?.getStreamVolume(AudioManager.STREAM_MUSIC) ?: -1 },
-    private val setVolume: (Int) -> Unit = { level -> context.getSystemService(AudioManager::class.java)?.setStreamVolume(AudioManager.STREAM_MUSIC, level, 0) },
+    private val maxVolume: (Int) -> Int = { stream -> context.getSystemService(AudioManager::class.java)?.getStreamMaxVolume(stream) ?: 0 },
+    private val minVolume: (Int) -> Int = { stream ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) context.getSystemService(AudioManager::class.java)?.getStreamMinVolume(stream) ?: 0 else 0
+    },
+    private val currentVolume: (Int) -> Int = { stream -> context.getSystemService(AudioManager::class.java)?.getStreamVolume(stream) ?: -1 },
+    private val setVolume: (Int, Int) -> Unit = { stream, level -> context.getSystemService(AudioManager::class.java)?.setStreamVolume(stream, level, 0) },
 ) : ActionExecutor {
-    override val supportedTypes = setOf(ActionType.SET_MEDIA_VOLUME)
+    override val supportedTypes = setOf(ActionType.SET_MEDIA_VOLUME, ActionType.SET_NOTIFICATION_VOLUME, ActionType.SET_ALARM_VOLUME)
 
     override fun execute(action: ActionType, parameters: ActionParameters): ActionResult {
-        if (action != ActionType.SET_MEDIA_VOLUME) return ActionResult(false, "Unsupported action for media volume")
-        val max = maxVolume()
-        if (max <= 0) return ActionResult(false, "Media volume is unavailable")
-        val percent = parameters.mediaVolumePercent.coerceIn(0, 100)
-        val target = (max * percent / 100f).roundToInt()
+        val (stream, percent, name) = when (action) {
+            ActionType.SET_MEDIA_VOLUME -> Triple(AudioManager.STREAM_MUSIC, parameters.mediaVolumePercent, "Media")
+            ActionType.SET_NOTIFICATION_VOLUME -> Triple(AudioManager.STREAM_NOTIFICATION, parameters.notificationVolumePercent, "Notification")
+            ActionType.SET_ALARM_VOLUME -> Triple(AudioManager.STREAM_ALARM, parameters.alarmVolumePercent, "Alarm")
+            else -> return ActionResult(false, "Unsupported action for volume")
+        }
         return try {
-            setVolume(target)
-            if (currentVolume() != target) return ActionResult(false, "Media volume change was blocked")
-            ActionResult(true, "Media volume set to $percent%")
-        } catch (t: Throwable) {
-            ActionResult(false, t.message ?: t.javaClass.simpleName)
+            val max = maxVolume(stream)
+            val min = minVolume(stream)
+            if (max <= 0 || min !in 0..max) return ActionResult(false, "$name volume is unavailable", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
+            val requestedPercent = percent.coerceIn(0, 100)
+            val requested = (max * requestedPercent / 100f).roundToInt()
+            if (requested < min) return ActionResult(false, "$name volume is below the device minimum", diagnostic = ActionDiagnostic(ActionDiagnosticReason.VOLUME_BELOW_MINIMUM))
+            setVolume(stream, requested)
+            val actual = currentVolume(stream)
+            if (actual !in min..max) return ActionResult(false, "$name volume is unavailable", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
+            if (actual != requested) return ActionResult(false, "$name volume change was blocked or limited", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_MISMATCH))
+            ActionResult(true, "$name volume set to $requestedPercent%")
+        } catch (_: SecurityException) {
+            ActionResult(false, "$name volume change requires system permission or Do Not Disturb access", ActionResultCode.PERMISSION_REQUIRED, diagnostic = ActionDiagnostic(ActionDiagnosticReason.VOLUME_PERMISSION_REQUIRED))
+        } catch (_: Exception) {
+            ActionResult(false, "$name volume change failed", diagnostic = ActionDiagnostic(ActionDiagnosticReason.SYSTEM_COMMAND_FAILED))
         }
     }
 }
