@@ -30,7 +30,10 @@ class BackupDisclosureContractTest {
             val imported = BackupManager.parseImport(json).getOrThrow().single()
             assertThat(imported).isEqualTo(rule.copy(
                 enabled = false, webhookUrl = "", webhookHeaders = "", webhookBody = "",
+                phoneNumber = "[REDACTED]", smsRecipient = "[REDACTED]",
             ))
+            assertThat(json).doesNotContain("+15550102030")
+            assertThat(json).doesNotContain("+15550104050")
             assertThat(json).doesNotContain("private-token")
             assertThat(json).doesNotContain("private-secret")
             assertThat(json).doesNotContain("private-payload")

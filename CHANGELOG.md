@@ -4,6 +4,9 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Security
+- Standard (non-encrypted) rule export now redacts phone numbers (dial/call numbers, SMS recipients and SMS sender filters, including multi-trigger SMS definitions) in addition to webhook URL/headers/body and JSON command source. Redacted values import as `[REDACTED]` and must be re-entered; template variables such as `${sms.sender}` are kept. Encrypted export and restore validation are unchanged.
+
 ### Added
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 ### Fixed
