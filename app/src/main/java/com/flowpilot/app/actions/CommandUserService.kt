@@ -16,38 +16,52 @@ class CommandUserService : ICommandService.Stub {
         if (!isCommandAllowed(command)) {
             return "126\ncommand not allowed"
         }
+        var process: Process? = null
         return try {
-            val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
+            // Allowlisted commands contain no shell metacharacters; `exec` replaces sh with the
+            // command so destroying the process also ends the real command, not only the wrapper.
+            val started = Runtime.getRuntime().exec(arrayOf("sh", "-c", "exec $command"))
+            process = started
             val output = StringBuilder()
             val inThread = Thread {
                 try {
-                    BufferedReader(InputStreamReader(process.inputStream)).use { r ->
+                    BufferedReader(InputStreamReader(started.inputStream)).use { r ->
                         r.forEachLine { synchronized(output) { output.appendLine(it) } }
                     }
                 } catch (_: Throwable) {}
-            }
+            }.apply { isDaemon = true }
             val errThread = Thread {
                 try {
-                    BufferedReader(InputStreamReader(process.errorStream)).use { r ->
+                    BufferedReader(InputStreamReader(started.errorStream)).use { r ->
                         r.forEachLine { synchronized(output) { output.appendLine(it) } }
                     }
                 } catch (_: Throwable) {}
-            }
+            }.apply { isDaemon = true }
             inThread.start()
             errThread.start()
 
-            val finished = process.waitFor(10, TimeUnit.SECONDS)
+            val finished = started.waitFor(10, TimeUnit.SECONDS)
+            if (!finished) {
+                started.destroyForcibly()
+            }
             inThread.join(1000)
             errThread.join(1000)
 
             if (!finished) {
-                process.destroyForcibly()
                 return "124\ncommand timed out"
             }
             val text = synchronized(output) { output.toString().trim() }
-            "${process.exitValue()}\n$text"
+            "${started.exitValue()}\n$text"
         } catch (t: Throwable) {
+            if (t is InterruptedException) Thread.currentThread().interrupt()
             "125\n${t.message ?: t.javaClass.simpleName}"
+        } finally {
+            process?.let { p ->
+                try { p.destroyForcibly() } catch (_: Throwable) {}
+                try { p.inputStream.close() } catch (_: Throwable) {}
+                try { p.errorStream.close() } catch (_: Throwable) {}
+                try { p.outputStream.close() } catch (_: Throwable) {}
+            }
         }
     }
 

@@ -76,4 +76,20 @@ class MobileDataExecutorTest {
         assertThat(result.success).isFalse()
         assertThat(result.message).contains("Mobile Data state mismatch")
     }
+
+    @Test
+    fun unreadable_state_after_command_is_not_reported_as_success() {
+        var elapsed = 0L
+        val shell = FakeShell(results = mapOf("svc data enable" to (0 to "")))
+        val result = MobileDataExecutor(
+            context = RuntimeEnvironment.getApplication(),
+            shell = shell,
+            enabledStateReader = { null },
+            waitMillis = { elapsed += it },
+            elapsedRealtimeMillis = { elapsed },
+        ).execute(ActionType.MOBILE_DATA_ON)
+
+        assertThat(result.success).isFalse()
+        assertThat(result.diagnostic?.reason).isEqualTo(ActionDiagnosticReason.STATE_UNAVAILABLE)
+    }
 }

@@ -61,7 +61,10 @@ class MobileDataExecutor(
             }
 
             val enabled = awaitExpectedState(expectedEnabled)
-            if (enabled != null && enabled != expectedEnabled) {
+            if (enabled == null) {
+                return ActionResult(false, "Mobile Data state became unavailable", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
+            }
+            if (enabled != expectedEnabled) {
                 return ActionResult(false, "Mobile Data state mismatch: expected ${if (expectedEnabled) "on" else "off"} but read ${if (enabled) "on" else "off"}", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_MISMATCH))
             }
             ActionResult(true, "Mobile Data turned $label")

@@ -24,6 +24,9 @@ All notable FlowPilot changes are documented here.
 - Stop showing raw exception messages in backup export and import errors; show localized messages instead.
 - Add Back and Close accessibility labels to the editor, detail, history and picker dialogs.
 - Remove unsafe non-null assertions on the live light level and the available update.
+- Stop leaking Shizuku user-service connections and orphaned `:command` processes: failed or timed-out binds are now unbound and cancelled, only one bind runs at a time, and spawned shell processes are destroyed on every exit path.
+- Report Mobile Data toggles as failed when the resulting state cannot be read, matching Wi-Fi and Location.
+- Report sent SMS as an unverified request, since Android only confirms that the request was accepted.
 
 ### Changed
 - Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
