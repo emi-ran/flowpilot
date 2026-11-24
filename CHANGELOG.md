@@ -6,6 +6,7 @@ All notable FlowPilot changes are documented here.
 
 ### Security
 - Add an optional shared-secret check for JSON commands. Start the rule's source template with a line `@token=YOUR_SECRET` (kept in the encrypted source and removed before rendering) and include the same value as the root `"token"` string of each command; commands with a missing or different token are rejected with an `unauthorized` outcome, compared in constant time. Existing rules without the line behave exactly as before (opt-in, no migration needed); the envelope now also accepts an optional `token` string that is ignored when no token is configured. There is no broadcast or Android permission to harden: the action runs only from the rule's own notification or SMS trigger.
+- Strengthen encrypted backups: new exports use PBKDF2-HMAC-SHA256 with 600,000 iterations (backup format version 2) and require a password of at least 8 characters. Existing version 1 backups (100,000 iterations, 6+ character passwords) still restore; password length and iteration limits are checked before key derivation and before any rules are changed.
 
 ### Added
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
