@@ -794,7 +794,7 @@ class BackupManagerTest {
         // Unsupported version
         val badVersionJson = kotlinx.serialization.json.Json.encodeToString(
             FlowPilotEncryptedBackup.serializer(),
-            envelope.copy(version = 2)
+            envelope.copy(version = 3)
         )
         val badVersionResult = BackupManager.parseEncryptedImport(badVersionJson, "Password123")
         assertThat(badVersionResult.isFailure).isTrue()
@@ -846,28 +846,28 @@ class BackupManagerTest {
     }
 
     @Test
-    fun passwordValidation_enforcesSixCharacterMinimum_anyCharactersAllowed() {
-        assertThat(BackupManager.isValidPassword("12345")).isFalse()
+    fun passwordValidation_enforcesEightCharacterMinimum_anyCharactersAllowed() {
+        assertThat(BackupManager.isValidPassword("1234567")).isFalse()
         assertThat(BackupManager.isValidPassword("")).isFalse()
         assertThat(BackupManager.isValidPassword(null as String?)).isFalse()
 
-        assertThat(BackupManager.isValidPassword("123456")).isTrue()
-        assertThat(BackupManager.isValidPassword("  a!  ")).isTrue()
-        assertThat(BackupManager.isValidPassword("密碼1234")).isTrue()
+        assertThat(BackupManager.isValidPassword("12345678")).isTrue()
+        assertThat(BackupManager.isValidPassword("  a!    ")).isTrue()
+        assertThat(BackupManager.isValidPassword("密碼12345")).isTrue()
 
         val rule = createSampleRule("r-pass", "Pass Rule")
 
-        // Under 6 chars throws on export
+        // Under 8 chars throws on export
         assertThrows(IllegalArgumentException::class.java) {
-            BackupManager.exportEncryptedToString(listOf(rule), "12345")
+            BackupManager.exportEncryptedToString(listOf(rule), "1234567")
         }
         assertThrows(IllegalArgumentException::class.java) {
-            BackupManager.exportEncryptedSingleToString(rule, "12345")
+            BackupManager.exportEncryptedSingleToString(rule, "1234567")
         }
 
-        // Under 6 chars fails on parse import
-        val validJson = BackupManager.exportEncryptedToString(listOf(rule), "123456")
-        val shortResult = BackupManager.parseEncryptedImport(validJson, "12345")
+        // Under 8 chars fails on parse import
+        val validJson = BackupManager.exportEncryptedToString(listOf(rule), "12345678")
+        val shortResult = BackupManager.parseEncryptedImport(validJson, "1234567")
         assertThat(shortResult.isFailure).isTrue()
         assertThat(shortResult.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
     }
@@ -997,8 +997,8 @@ class BackupManagerTest {
 
         assertThat(BackupManager.isValidPassword(null as CharSequence?)).isFalse()
         assertThat(BackupManager.isValidPassword("")).isFalse()
-        assertThat(BackupManager.isValidPassword("12345")).isFalse()
-        assertThat(BackupManager.isValidPassword("123456")).isTrue()
+        assertThat(BackupManager.isValidPassword("1234567")).isFalse()
+        assertThat(BackupManager.isValidPassword("12345678")).isTrue()
         assertThat(BackupManager.isValidPassword("secure-password-!@#$")).isTrue()
     }
 
@@ -1009,7 +1009,7 @@ class BackupManagerTest {
 
         // Reject iterations below MIN_PBKDF2_ITERATIONS (including zero and negative)
         val tooLowJson = validJson.replace(
-            "\"iterations\": 100000",
+            "\"iterations\": 600000",
             "\"iterations\": 9999"
         )
         val lowResult = BackupManager.parseEncryptedImport(tooLowJson, "ValidPass123")
@@ -1018,7 +1018,7 @@ class BackupManagerTest {
         assertThat(lowResult.exceptionOrNull()?.message).contains("Iteration count out of allowed range")
 
         val negativeJson = validJson.replace(
-            "\"iterations\": 100000",
+            "\"iterations\": 600000",
             "\"iterations\": -1"
         )
         val negResult = BackupManager.parseEncryptedImport(negativeJson, "ValidPass123")
@@ -1028,13 +1028,82 @@ class BackupManagerTest {
 
         // Reject iterations above MAX_PBKDF2_ITERATIONS to prevent CPU DoS
         val tooHighJson = validJson.replace(
-            "\"iterations\": 100000",
-            "\"iterations\": 500001"
+            "\"iterations\": 600000",
+            "\"iterations\": 1000001"
         )
         val highResult = BackupManager.parseEncryptedImport(tooHighJson, "ValidPass123")
         assertThat(highResult.isFailure).isTrue()
         assertThat(highResult.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
         assertThat(highResult.exceptionOrNull()?.message).contains("Iteration count out of allowed range")
+    }
+
+    @Test
+    fun encryptedExport_usesCurrentVersionAndIterations_roundTrips() {
+        val rule = createSampleRule("r-v2", "V2 Rule")
+        val json = BackupManager.exportEncryptedToString(listOf(rule), "ValidPass123")
+        assertThat(json).contains("\"version\": 2")
+        assertThat(json).contains("\"iterations\": 600000")
+        val result = BackupManager.parseEncryptedImport(json, "ValidPass123")
+        assertThat(result.isSuccess).isTrue()
+        assertThat(result.getOrThrow().single().id).isEqualTo("r-v2")
+    }
+
+    @Test
+    fun legacyEncryptedBackup_version1With100kIterationsAnd6CharPassword_stillDecrypts() {
+        val rule = createSampleRule("r-legacy", "Legacy Rule")
+        val legacyJson = legacyEncrypt(rule, "legacy", 100_000)
+        val result = BackupManager.parseEncryptedImport(legacyJson, "legacy")
+        assertThat(result.isSuccess).isTrue()
+        assertThat(result.getOrThrow().single().id).isEqualTo("r-legacy")
+        // Wrong password still fails
+        assertThat(BackupManager.parseEncryptedImport(legacyJson, "wrong1").isFailure).isTrue()
+    }
+
+    @Test
+    fun currentVersionBackup_rejectsPasswordUnderEightCharacters_beforeKeyDerivation() {
+        val rule = createSampleRule("r-short", "Short")
+        val json = BackupManager.exportEncryptedToString(listOf(rule), "ValidPass123")
+        val result = BackupManager.parseEncryptedImport(json, "sixsix")
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()?.message).contains("at least 8")
+    }
+
+    @Test
+    fun legacyEncryptedBackup_rejectsIterationsAboveLegacyMax() {
+        val rule = createSampleRule("r-legacy-hi", "Legacy")
+        val json = legacyEncrypt(rule, "legacy", 100_000)
+            .replace("\"iterations\": 100000", "\"iterations\": 600000")
+        val result = BackupManager.parseEncryptedImport(json, "legacy")
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()?.message).contains("Iteration count out of allowed range")
+    }
+
+    private fun legacyEncrypt(rule: Automation, password: String, iterations: Int): String {
+        val plaintext = kotlinx.serialization.json.Json { encodeDefaults = true }.encodeToString(
+            FlowPilotBackup.serializer(),
+            FlowPilotBackup(automations = listOf(rule)),
+        )
+        val random = java.security.SecureRandom()
+        val salt = ByteArray(16).also { random.nextBytes(it) }
+        val iv = ByteArray(12).also { random.nextBytes(it) }
+        val spec = javax.crypto.spec.PBEKeySpec(password.toCharArray(), salt, iterations, 256)
+        val key = javax.crypto.spec.SecretKeySpec(
+            javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded, "AES")
+        val cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, key, javax.crypto.spec.GCMParameterSpec(128, iv))
+        val ct = java.util.Base64.getEncoder().encodeToString(cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8)))
+        val enc = java.util.Base64.getEncoder()
+        return """{
+  "format": "flowpilot_encrypted_backup",
+  "version": 1,
+  "iterations": $iterations,
+  "salt": "${enc.encodeToString(salt)}",
+  "iv": "${enc.encodeToString(iv)}",
+  "ciphertext": "$ct",
+  "data": "$ct",
+  "exportedAt": 1,
+  "appVersion": "0"
+}"""
     }
 
     @Test
