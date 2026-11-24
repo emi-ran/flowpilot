@@ -16,6 +16,7 @@
     <string name="validation_action_speech">Check the speech text, voice, rate and template variables.</string>
     <string name="validation_action_phone">Enter a phone number.</string>
     <string name="validation_action_sms">Enter the required SMS recipient and message.</string>
+    <string name="validation_action_clipboard">Enter the text to copy (up to 4000 characters).</string>
     <string name="triggers_any_summary">Match ANY trigger · one shared cooldown</string>
     <string name="trigger_add">Add trigger (up to 5)</string>
     <string name="trigger_remove">Remove trigger</string>
@@ -289,6 +290,7 @@
     <string name="action_start_timer">Start timer</string>
     <string name="action_launch_app">Launch app</string>
     <string name="action_open_url">Open URL</string>
+    <string name="action_copy_to_clipboard">Copy to clipboard</string>
     <string name="action_http_webhook">Send HTTPS webhook</string>
     <string name="action_open_dialer">Open dialer</string>
     <string name="action_dial_number">Dial phone number</string>
@@ -489,6 +491,7 @@
     <string name="action_speak_text_desc">Synthesize and speak voice text with TTS</string>
     <string name="action_launch_app_desc">Start an installed app into the foreground</string>
     <string name="action_open_url_desc">Open website or deep link in default browser</string>
+    <string name="action_copy_to_clipboard_desc">Copies text to the clipboard. Variables such as OTP codes are filled in first</string>
     <string name="action_http_webhook_desc">Send HTTPS request (Home Assistant, Discord, ntfy)</string>
     <string name="action_force_stop_app_desc">Force terminate a running application (requires Shizuku)</string>
     <string name="action_dark_theme_on_desc">Enable system-wide dark theme (requires Shizuku)</string>
@@ -646,6 +649,9 @@
     <string name="phone_direct_call_warning">⚠️ Direct call: Places a real phone call immediately when triggered.</string>
     <string name="sms_recipient_label">Recipient phone number</string>
     <string name="sms_message_text_label">SMS message text</string>
+    <string name="clipboard_text_label">Text to copy</string>
+    <string name="clipboard_text_placeholder">e.g. Code: ${sms.otp}</string>
+    <string name="clipboard_copy_hint">Copied text is never written to logs or history. Android 13 and later hide it in clipboard previews.</string>
     <string name="sms_direct_send_warning">⚠️ Direct SMS: Sends a background text message immediately. Standard carrier rates may apply.</string>
     <string name="action_force_stop_prompt">Tap to choose app to force stop</string>
     <string name="time_start">Start time</string>

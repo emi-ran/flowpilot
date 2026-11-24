@@ -43,6 +43,7 @@ All other supported actions use these fields:
 | `START_TIMER` | integer `durationSeconds` 1..86400 | string `message` (default empty) |
 | `LAUNCH_APP`, `FORCE_STOP_APP` | nonblank string `package` | none |
 | `OPEN_URL` | nonblank string `url`, trimmed for validation, with `http` or `https` scheme and nonblank host | none |
+| `COPY_TO_CLIPBOARD` | nonblank string `text`, at most 4000 characters | none |
 | `HTTP_WEBHOOK` | string `url` with HTTPS scheme and host | string `method` (default `POST`), string `headers` and `body` (default empty), integer `timeoutSeconds` 1..60 (default 10); see webhook constraints below |
 | `DIAL_NUMBER`, `CALL_NUMBER` | nonblank string `number` | none |
 | `SEND_SMS` | nonblank strings `recipient`, `message` | none |

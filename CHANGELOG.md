@@ -5,6 +5,7 @@ All notable FlowPilot changes are documented here.
 ## [Unreleased]
 
 ### Added
+- Add a Copy to clipboard action (Apps & Links) that copies rendered text, such as `${sms.otp}`, to the clipboard. The clip is marked sensitive on Android 13+, and copied text is never logged or stored in history. Also available as a JSON command (`text` parameter).
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 ### Fixed
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.

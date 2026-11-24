@@ -27,6 +27,7 @@
     <string name="history_template_field_phone_number">Phone number</string>
     <string name="history_template_field_sms_recipient">SMS recipient</string>
     <string name="history_template_field_sms_message">SMS message</string>
+    <string name="history_template_field_clipboard_text">Clipboard text</string>
     <string name="history_diagnostic_shizuku_not_running">Shizuku is not running. Start Shizuku and try again.</string>
     <string name="history_diagnostic_shizuku_permission_required">FlowPilot needs Shizuku permission for this action.</string>
     <string name="history_diagnostic_bluetooth_permission_required">Bluetooth permission is required for this action.</string>

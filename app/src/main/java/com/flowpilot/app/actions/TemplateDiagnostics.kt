@@ -22,7 +22,7 @@ enum class ActionTemplateField {
     NOTIFICATION_TITLE, NOTIFICATION_BODY, MUSIC_QUERY, MUSIC_LINK, URL, TTS_TEXT,
     ALARM_MESSAGE, TIMER_MESSAGE, WEBHOOK_URL, WEBHOOK_HEADERS, WEBHOOK_BODY,
     PHONE_NUMBER, SMS_RECIPIENT, SMS_MESSAGE,
-    CALENDAR_TITLE, CALENDAR_DESCRIPTION, CALENDAR_LOCATION,
+    CALENDAR_TITLE, CALENDAR_DESCRIPTION, CALENDAR_LOCATION, CLIPBOARD_TEXT,
 }
 
 /** Only fixed field identifiers and content-free states are persisted. */
@@ -52,6 +52,7 @@ object TemplateDiagnostics {
             ActionType.HTTP_WEBHOOK -> listOf(Triple(ActionTemplateField.WEBHOOK_URL, rule.webhookUrl, parameters.webhookUrl), Triple(ActionTemplateField.WEBHOOK_HEADERS, rule.webhookHeaders, parameters.webhookHeaders), Triple(ActionTemplateField.WEBHOOK_BODY, rule.webhookBody, parameters.webhookBody))
             ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> listOf(Triple(ActionTemplateField.PHONE_NUMBER, rule.phoneNumber, parameters.phoneNumber))
             ActionType.SEND_SMS, ActionType.DRAFT_SMS -> listOf(Triple(ActionTemplateField.SMS_RECIPIENT, rule.smsRecipient, parameters.smsRecipient), Triple(ActionTemplateField.SMS_MESSAGE, rule.smsMessage, parameters.smsMessage))
+            ActionType.COPY_TO_CLIPBOARD -> listOf(Triple(ActionTemplateField.CLIPBOARD_TEXT, rule.clipboardText, parameters.clipboardText))
             else -> emptyList()
         }
         return fields.map { (field, template, rendered) ->

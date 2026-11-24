@@ -15,6 +15,7 @@ fun Automation.requiresLocation(action: ActionType): Boolean = when (action) {
     ActionType.HTTP_WEBHOOK -> webhookHeaders.containsLocationToken() || webhookBody.containsLocationToken()
     ActionType.EXECUTE_JSON_COMMAND -> jsonCommandSource.containsLocationToken()
     ActionType.SEND_SMS, ActionType.DRAFT_SMS -> smsRecipient.containsLocationToken() || smsMessage.containsLocationToken()
+    ActionType.COPY_TO_CLIPBOARD -> clipboardText.containsLocationToken()
     else -> false
 }
 

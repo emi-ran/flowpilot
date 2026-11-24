@@ -773,6 +773,14 @@ fun ActionPicker(
                         keywords = listOf("url", "link", "web", "browser", "http", "https", "site", "open"),
                     ),
                     PickerItem(
+                        value = ActionType.COPY_TO_CLIPBOARD,
+                        title = ActionType.COPY_TO_CLIPBOARD.label,
+                        subtitle = context.getString(ActionType.COPY_TO_CLIPBOARD.descriptionRes),
+                        icon = Icons.Default.ContentCopy,
+                        iconTint = Color(0xFF4DB6AC),
+                        keywords = listOf("copy", "clipboard", "paste", "text", "otp", "code", "panel", "pano", "kopyala"),
+                    ),
+                    PickerItem(
                         value = ActionType.HTTP_WEBHOOK,
                         title = ActionType.HTTP_WEBHOOK.label,
                         subtitle = context.getString(ActionType.HTTP_WEBHOOK.descriptionRes),
