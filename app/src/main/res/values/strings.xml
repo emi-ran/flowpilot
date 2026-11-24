@@ -860,7 +860,7 @@
     <string name="backup_encrypted_warning">Encrypted full backup includes webhook and personal data. Lost password means no recovery.</string>
     <string name="backup_password_label">Password</string>
     <string name="backup_confirm_password_label">Confirm password</string>
-    <string name="backup_password_too_short">Password must be at least 6 characters</string>
+    <string name="backup_password_too_short">Password must be at least 8 characters</string>
     <string name="backup_password_mismatch">Passwords do not match</string>
     <string name="backup_decrypt_dialog_title">Encrypted Backup</string>
     <string name="backup_decrypt_dialog_desc">This backup is password-protected. Enter the password to decrypt and restore automations.</string>
@@ -1118,7 +1118,7 @@
     <string name="action_execute_json_command">Execute JSON command</string>
     <string name="action_execute_json_command_desc">Run a supported action from a JSON object</string>
     <string name="json_command_source">JSON source template</string>
-    <string name="json_command_warning">Matching messages can run actions on this device. Choose trusted sources and restrictive filters. The source template is stored encrypted with the rule.</string>
+    <string name="json_command_warning">Matching messages can run actions on this device. Choose trusted sources and restrictive filters. The source template is stored encrypted with the rule. To require a shared secret, start the template with a line @token=YOUR_SECRET and send the same value as \"token\" in each command.</string>
     <string name="variable_desc_command_success">Whether the latest JSON command succeeded</string>
     <string name="variable_desc_command_status">Latest JSON command status</string>
     <string name="variable_desc_command_message">Safe summary of the latest JSON command</string>
