@@ -51,10 +51,13 @@ data class FlowPilotEncryptedBackup(
 ) {
     companion object {
         const val ENCRYPTED_BACKUP_FORMAT = "flowpilot_encrypted_backup"
-        const val ENCRYPTED_BACKUP_VERSION = 1
-        const val DEFAULT_PBKDF2_ITERATIONS = 100_000
+        const val LEGACY_ENCRYPTED_BACKUP_VERSION = 1
+        const val ENCRYPTED_BACKUP_VERSION = 2
+        const val LEGACY_PBKDF2_ITERATIONS = 100_000
+        const val LEGACY_MAX_PBKDF2_ITERATIONS = 500_000
+        const val DEFAULT_PBKDF2_ITERATIONS = 600_000
         const val MIN_PBKDF2_ITERATIONS = 10_000
-        const val MAX_PBKDF2_ITERATIONS = 500_000
+        const val MAX_PBKDF2_ITERATIONS = 1_000_000
     }
 }
 
@@ -87,7 +90,11 @@ object BackupManager {
         require(content.length <= MAX_DOCUMENT_BYTES && content.toByteArray(Charsets.UTF_8).size <= MAX_DOCUMENT_BYTES) { "Backup document too large" }
     }
 
-    const val MIN_PASSWORD_LENGTH = 6
+    const val MIN_PASSWORD_LENGTH = 8
+    /** Minimum password length accepted when decrypting legacy (version 1) backups. */
+    const val LEGACY_MIN_PASSWORD_LENGTH = 6
+    const val LEGACY_ENCRYPTED_BACKUP_VERSION = FlowPilotEncryptedBackup.LEGACY_ENCRYPTED_BACKUP_VERSION
+    const val LEGACY_MAX_PBKDF2_ITERATIONS = FlowPilotEncryptedBackup.LEGACY_MAX_PBKDF2_ITERATIONS
     const val ENCRYPTED_BACKUP_FORMAT = FlowPilotEncryptedBackup.ENCRYPTED_BACKUP_FORMAT
     const val ENCRYPTED_BACKUP_VERSION = FlowPilotEncryptedBackup.ENCRYPTED_BACKUP_VERSION
     const val DEFAULT_PBKDF2_ITERATIONS = FlowPilotEncryptedBackup.DEFAULT_PBKDF2_ITERATIONS
@@ -245,8 +252,10 @@ object BackupManager {
         jsonContent: String,
         password: CharArray,
     ): Result<List<Automation>> {
-        if (!isValidPassword(password)) {
-            return Result.failure(IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters"))
+        // Cheap pre-check at the legacy minimum; the version-specific minimum is enforced
+        // in decryptPayload once the envelope version is known (still before key derivation).
+        if (password.size < LEGACY_MIN_PASSWORD_LENGTH) {
+            return Result.failure(IllegalArgumentException("Password must be at least $LEGACY_MIN_PASSWORD_LENGTH characters"))
         }
         return runCatching { validateDocument(jsonContent); decryptPayload(jsonContent, password).getOrThrow() }
     }
@@ -282,11 +291,17 @@ object BackupManager {
             return Result.failure(IllegalArgumentException("Unsupported backup format: ${envelope.format}"))
         }
 
-        if (envelope.version != ENCRYPTED_BACKUP_VERSION) {
+        val isLegacy = envelope.version == LEGACY_ENCRYPTED_BACKUP_VERSION
+        if (!isLegacy && envelope.version != ENCRYPTED_BACKUP_VERSION) {
             return Result.failure(IllegalArgumentException("Unsupported backup version: ${envelope.version}"))
         }
 
-        if (envelope.iterations !in MIN_PBKDF2_ITERATIONS..MAX_PBKDF2_ITERATIONS) {
+        if (!isLegacy && password.size < MIN_PASSWORD_LENGTH) {
+            return Result.failure(IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters"))
+        }
+
+        val maxIterations = if (isLegacy) LEGACY_MAX_PBKDF2_ITERATIONS else MAX_PBKDF2_ITERATIONS
+        if (envelope.iterations !in MIN_PBKDF2_ITERATIONS..maxIterations) {
             return Result.failure(IllegalArgumentException("Iteration count out of allowed range: ${envelope.iterations}"))
         }
 
