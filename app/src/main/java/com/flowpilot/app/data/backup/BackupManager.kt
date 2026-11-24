@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.flowpilot.app.BuildConfig
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.TriggerDefinition
 import com.flowpilot.app.data.model.normalizeTriggerStorage
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -125,8 +126,38 @@ object BackupManager {
         encodeDefaults = true
     }
 
+    /** Marker that keeps imports valid (non-blank) but is not a dialable number or a usable sender match. */
+    internal const val REDACTED_PLACEHOLDER = "[REDACTED]"
+    private val templateOnlyValue = Regex("""^\$\{[A-Za-z0-9_.]+}$""")
+
+    private fun redactPhoneValue(value: String): String =
+        if (value.isBlank() || templateOnlyValue.matches(value.trim())) value else REDACTED_PLACEHOLDER
+
+    /** Removes webhook/JSON secrets, calendar account identity and phone numbers from a plain export. */
+    internal fun sanitizeForPlainExport(rule: Automation): Automation = rule.copy(
+        webhookUrl = "",
+        webhookHeaders = "",
+        webhookBody = "",
+        jsonCommandSource = "",
+        calendarAccountName = "",
+        calendarAccountType = "",
+        calendarName = "",
+        phoneNumber = redactPhoneValue(rule.phoneNumber),
+        smsRecipient = redactPhoneValue(rule.smsRecipient),
+        smsSenderFilter = redactPhoneValue(rule.smsSenderFilter),
+        triggerDefinitions = rule.triggerDefinitions?.let { defs ->
+            defs.copy(items = defs.items.map { trigger ->
+                if (trigger is TriggerDefinition.Sms) {
+                    trigger.copy(smsSenderFilter = redactPhoneValue(trigger.smsSenderFilter))
+                } else {
+                    trigger
+                }
+            })
+        },
+    )
+
     fun exportToString(automations: List<Automation>): String {
-        val safeRules = automations.map { it.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "", jsonCommandSource = "", calendarAccountName = "", calendarAccountType = "", calendarName = "") }
+        val safeRules = automations.map(::sanitizeForPlainExport)
         val backup = FlowPilotBackup(
             version = FlowPilotBackup.BACKUP_VERSION,
             exportedAt = System.currentTimeMillis(),
@@ -136,7 +167,7 @@ object BackupManager {
     }
 
     fun exportSingleToString(rule: Automation): String {
-        val safeRule = rule.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "", jsonCommandSource = "", calendarAccountName = "", calendarAccountType = "", calendarName = "")
+        val safeRule = sanitizeForPlainExport(rule)
         return prettyJson.encodeToString(Automation.serializer(), safeRule)
     }
 

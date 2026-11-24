@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="backup_disclosure_title">Choose backup type</string>
-    <string name="backup_disclosure_body">Standard backup omits webhook details and cannot fully restore rules. Phone, SMS, Wi-Fi, and other rule data remain. Share only with people you trust.</string>
+    <string name="backup_disclosure_body">Standard backup omits webhook details and replaces phone numbers and SMS sender filters with a placeholder, so it cannot fully restore rules. SMS text, Wi-Fi, and other rule data remain. Share only with people you trust.</string>
     <string name="backup_disclosure_continue">Continue</string>
     <string name="backup_import_omissions">FlowPilot exports omit webhook URLs, headers, and bodies. Re-enter missing fields after import. Imported rules remain disabled until you enable them.</string>
     <string name="backup_replace_warning">Replace all permanently deletes your existing rules and their saved webhook settings. Missing URLs, headers, credentials, and bodies cannot be recovered from a sanitized export. Re-enter them manually. Merge instead to keep existing rules.</string>
