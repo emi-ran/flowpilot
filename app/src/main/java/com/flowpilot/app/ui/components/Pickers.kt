@@ -614,6 +614,14 @@ fun ActionPicker(
                         keywords = listOf("notify", "notification", "banner", "message", "alert", "push"),
                     ),
                     PickerItem(
+                        value = ActionType.DISMISS_NOTIFICATION,
+                        title = ActionType.DISMISS_NOTIFICATION.label,
+                        subtitle = context.getString(ActionType.DISMISS_NOTIFICATION.descriptionRes),
+                        icon = Icons.Default.NotificationsOff,
+                        iconTint = Color(0xFFFFB74D),
+                        keywords = listOf("dismiss", "clear", "remove", "cancel", "notification", "swipe"),
+                    ),
+                    PickerItem(
                         value = ActionType.DND_ON,
                         title = ActionType.DND_ON.label,
                         subtitle = context.getString(ActionType.DND_ON.descriptionRes),

@@ -44,4 +44,6 @@
     <string name="history_diagnostic_media_session_unavailable">No suitable active media session is available.</string>
     <string name="history_diagnostic_network_timeout">The network request timed out.</string>
     <string name="history_diagnostic_network_failure">The network request failed.</string>
+    <string name="history_diagnostic_not_notification_trigger">This action only works for rules triggered by a received notification.</string>
+    <string name="history_diagnostic_listener_disconnected">Notification access is not connected. Re-enable notification access.</string>
 </resources>

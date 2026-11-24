@@ -44,4 +44,6 @@
     <string name="history_diagnostic_media_session_unavailable">Uygun bir etkin medya oturumu bulunamadı.</string>
     <string name="history_diagnostic_network_timeout">Ağ isteğinin süresi doldu.</string>
     <string name="history_diagnostic_network_failure">Ağ isteği başarısız oldu.</string>
+    <string name="history_diagnostic_not_notification_trigger">Bu eylem yalnızca alınan bildirimle tetiklenen kurallarda çalışır.</string>
+    <string name="history_diagnostic_listener_disconnected">Bildirim erişimi bağlı değil. Bildirim erişimini yeniden etkinleştirin.</string>
 </resources>

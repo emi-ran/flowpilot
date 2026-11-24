@@ -5,6 +5,7 @@ All notable FlowPilot changes are documented here.
 ## [Unreleased]
 
 ### Added
+- Add a Dismiss notification action for notification-triggered rules: dismiss the triggering notification or all active notifications from its app through the notification listener. Requires notification access and a Notification received trigger; the notification key is transient and never stored or logged.
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 ### Fixed
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.

@@ -203,6 +203,7 @@ fun DetailScreen(
     var screenBrightnessPercent by remember(initialRule.id) { mutableIntStateOf(initialRule.screenBrightnessPercent) }
     var forceStopPackage by remember(initialRule.id) { mutableStateOf(initialRule.forceStopPackage) }
     var forceStopAppName by remember(initialRule.id) { mutableStateOf(initialRule.forceStopAppName) }
+    var dismissScope by remember(initialRule.id) { mutableStateOf(initialRule.dismissScope) }
     var showForceStopApps by remember { mutableStateOf(false) }
     var smsSenderFilter by remember(initialRule.id) { mutableStateOf(initialRule.smsSenderFilter) }
     var smsMatchMode by remember(initialRule.id) { mutableStateOf(initialRule.smsMatchMode) }
@@ -268,6 +269,7 @@ fun DetailScreen(
                                     ActionType.CALL_NUMBER in actions && phoneNumber.trim().isEmpty() -> ActionType.CALL_NUMBER
                                     ActionType.SEND_SMS in actions && (smsRecipient.isBlank() || smsMessage.isBlank()) -> ActionType.SEND_SMS
                                     ActionType.DRAFT_SMS in actions && smsRecipient.isBlank() && smsMessage.isBlank() -> ActionType.DRAFT_SMS
+                                    ActionType.DISMISS_NOTIFICATION in actions && triggerItems.none { it.event == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED } -> ActionType.DISMISS_NOTIFICATION
                                     else -> null
                                 }
     val actionValidationMessage = when (invalidAction) {
@@ -281,6 +283,7 @@ fun DetailScreen(
                                     ActionType.SPEAK_TEXT -> R.string.validation_action_speech
                                     ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> R.string.validation_action_phone
                                     ActionType.SEND_SMS, ActionType.DRAFT_SMS -> R.string.validation_action_sms
+                                    ActionType.DISMISS_NOTIFICATION -> R.string.validation_action_dismiss_notification
                                     else -> R.string.validation_action_generic
                                 }
 
@@ -364,6 +367,7 @@ fun DetailScreen(
         screenBrightnessPercent = screenBrightnessPercent,
         forceStopPackage = forceStopPackage,
         forceStopAppName = forceStopAppName,
+        dismissScope = dismissScope,
         geofenceName = geofenceName,
         geofenceLatitude = geofenceLatitude,
         geofenceLongitude = geofenceLongitude,
@@ -837,6 +841,8 @@ fun DetailScreen(
                             // Force stop app
                             forceStopAppName = forceStopAppName,
                             forceStopPackage = forceStopPackage,
+                            dismissScope = dismissScope,
+                            onDismissScopeChange = { dismissScope = it },
                             onOpenForceStopAppPicker = { showForceStopApps = true },
                             // SMS
                             smsRecipient = smsRecipient,
@@ -1012,6 +1018,7 @@ fun DetailScreen(
                             (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
                             (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
                             (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
+                            (ActionType.DISMISS_NOTIFICATION !in actions || triggerItems.any { it.event == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED }) &&
                             actions.isNotEmpty()
                         if (!valid) {
                             if (triggerItems.any { !it.isValidTriggerDefinition() }) {

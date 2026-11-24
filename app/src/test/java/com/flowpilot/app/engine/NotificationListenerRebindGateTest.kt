@@ -114,4 +114,23 @@ class NotificationListenerRebindGateTest {
         assertThat(tracker.onDisconnected(newInstance)).isFalse()
         assertThat(tracker.isConnected()).isFalse()
     }
+
+    @Test
+    fun currentTracksLatestLiveInstanceAndClearsOnDisconnect() {
+        val tracker = NotificationListenerConnectionTracker()
+        val first = Any()
+        val second = Any()
+        assertThat(tracker.current()).isNull()
+        tracker.onConnected(first)
+        assertThat(tracker.current()).isSameInstanceAs(first)
+        tracker.onConnected(second)
+        assertThat(tracker.current()).isSameInstanceAs(second)
+        tracker.onDisconnected(first)
+        assertThat(tracker.current()).isSameInstanceAs(second)
+        tracker.onDisconnected(second)
+        assertThat(tracker.current()).isNull()
+        tracker.onConnected(first)
+        tracker.clear()
+        assertThat(tracker.current()).isNull()
+    }
 }

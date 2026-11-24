@@ -34,6 +34,7 @@ class ActionDispatcher private constructor(
     private val forceStop: ForceStopExecutor,
     private val location: LocationExecutor,
     private val sms: SmsExecutor,
+    private val dismissNotification: DismissNotificationExecutor,
 ) {
     private val map: Map<ActionType, ActionExecutor> by lazy {
         listOf(
@@ -41,6 +42,7 @@ class ActionDispatcher private constructor(
             vibration, sound, soundProfile, mediaVolume, mediaControl, music, launcher, tts, dnd,
             clock, calendar, webhook, phone, wifi, mobileData, airplaneMode, hotspot, torch,
             brightness, lockScreen, forceStop, location, sms,
+            dismissNotification,
         )
             .flatMap { e -> e.supportedTypes.map { it to e } }
             .toMap()
@@ -107,6 +109,7 @@ class ActionDispatcher private constructor(
                     ForceStopExecutor(ShizukuShell.instance),
                     LocationExecutor(context.applicationContext, ShizukuShell.instance),
                     SmsExecutor(context.applicationContext),
+                    DismissNotificationExecutor(context.applicationContext),
                 ).also { instance = it }
             }
     }

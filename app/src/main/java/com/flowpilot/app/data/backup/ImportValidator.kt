@@ -108,6 +108,18 @@ internal object ImportValidator {
         }
     }
 
+    /**
+     * DISMISS_NOTIFICATION needs the triggering notification, so a rule using it must have at
+     * least one NOTIFICATION_RECEIVED trigger. Mixed-trigger rules stay valid; non-notification
+     * events fail the action at run time with a clear error.
+     */
+    private fun validateDismissNotification(rule: Automation) {
+        if (ActionType.DISMISS_NOTIFICATION !in rule.effectiveActions) return
+        require(rule.normalizedTriggers().any { it.event == TriggerEvent.NOTIFICATION_RECEIVED }) {
+            "Dismiss notification requires a notification trigger"
+        }
+    }
+
     fun validate(rules: List<Automation>, validateTtsFields: Boolean = true) {
         require(rules.size <= MAX_RULES) { "Too many rules" }
         require(rules.all { it.id.isNotBlank() } && rules.map { it.id }.toSet().size == rules.size) {
@@ -122,7 +134,10 @@ internal object ImportValidator {
         }
         rules.forEach { r ->
             checkStrings(json.encodeToJsonElement(Automation.serializer(), r))
-            if (validateTtsFields) validateTts(r)
+            if (validateTtsFields) {
+                validateTts(r)
+                validateDismissNotification(r)
+            }
             r.triggerDefinitions?.let { definitions ->
                 require(definitions.version == 1) { "Unsupported trigger version" }
                 require(definitions.items.size in 1..TriggerDefinitions.MAX_TRIGGERS) { "Invalid trigger count" }
