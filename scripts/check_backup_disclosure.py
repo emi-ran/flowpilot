@@ -23,7 +23,7 @@ for locale in ("values", "values-tr"):
     assert all(strings.values())
     if locale == "values":
         body = strings["backup_disclosure_body"]
-        for phrase in ("webhook details", "cannot fully restore", "Phone", "SMS", "Wi-Fi", "trust"):
+        for phrase in ("webhook details", "cannot fully restore", "phone numbers", "SMS", "Wi-Fi", "trust"):
             assert phrase in body, phrase
         for phrase in ("webhook URLs", "headers", "bodies", "disabled"):
             assert phrase in strings["backup_import_omissions"], phrase

@@ -860,7 +860,7 @@
     <string name="backup_encrypted_warning">Şifreli tam yedek webhook ve kişisel verileri içerir. Parolayı unutursanız geri yükleyemezsiniz.</string>
     <string name="backup_password_label">Şifre</string>
     <string name="backup_confirm_password_label">Şifreyi onayla</string>
-    <string name="backup_password_too_short">Şifre en az 6 karakter olmalıdır</string>
+    <string name="backup_password_too_short">Şifre en az 8 karakter olmalıdır</string>
     <string name="backup_password_mismatch">Şifreler eşleşmiyor</string>
     <string name="backup_decrypt_dialog_title">Şifreli Yedekleme</string>
     <string name="backup_decrypt_dialog_desc">Bu yedekleme şifre korumalıdır. Otomasyonların şifresini çözüp geri yüklemek için şifreyi girin.</string>
@@ -1119,7 +1119,7 @@
     <string name="action_execute_json_command">JSON komutunu çalıştır</string>
     <string name="action_execute_json_command_desc">JSON nesnesinden desteklenen bir eylemi çalıştır</string>
     <string name="json_command_source">JSON kaynak şablonu</string>
-    <string name="json_command_warning">Eşleşen mesajlar bu cihazda eylem çalıştırabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler seçin. Kaynak şablonu kuralla birlikte şifreli saklanır.</string>
+    <string name="json_command_warning">Eşleşen mesajlar bu cihazda eylem çalıştırabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler seçin. Kaynak şablonu kuralla birlikte şifreli saklanır. Ortak sır istemek için şablonu @token=SIRRINIZ satırıyla başlatın ve her komutta aynı değeri \"token\" olarak gönderin.</string>
     <string name="variable_desc_command_success">Son JSON komutunun başarılı olup olmadığı</string>
     <string name="variable_desc_command_status">Son JSON komutunun durumu</string>
     <string name="variable_desc_command_message">Son JSON komutunun güvenli özeti</string>
@@ -1175,4 +1175,16 @@
     <string name="backup_export_failed">Dışa aktarma başarısız</string>
     <string name="backup_import_invalid_format">Geçersiz biçim</string>
     <string name="backup_import_failed">İçe aktarma başarısız. Dosyanın geçerli bir FlowPilot yedeği olduğunu kontrol edin.</string>
+    <string name="nfc_tag_scanned_toast">NFC etiketi okundu</string>
+    <string name="shizuku_permission_granted">Shizuku izni verildi</string>
+    <string name="shizuku_permission_denied">Shizuku izni reddedildi</string>
+    <string name="notif_channel_automation_alerts">Otomasyon uyarıları</string>
+    <string name="notif_default_body">Otomasyon çalıştı</string>
+    <string name="bt_picker_device_unpaired">Seçilen cihaz artık eşleşmiş değil. Eşleşmiş bir cihaz seçene kadar bu kural eşleşmeyecek.</string>
+    <string name="loading_applications">Uygulamalar yükleniyor...</string>
+    <string name="battery_notice_text">⚠️ Pil uyarısı: Arka plan sensör dinleme, pil tüketimini azaltmak için SENSOR_DELAY_NORMAL (~5Hz) kullanır. HyperOS üzerinde güvenilir çalışma için FlowPilot\'u pil optimizasyonundan muaf tutun.</string>
+    <string name="phone_call_action_warning">⚠️ Gerçek bir telefon görüşmesini otomatik başlatır. Telefon görüşmesi yapma izni gerektirir.</string>
+    <string name="wifi_selected_cd">Seçili</string>
+    <string name="sms_recipient_placeholder">Örn. +90555... veya ${sms.sender}</string>
+    <string name="sms_message_placeholder">Örn. Alınan kod: ${sms.otp}</string>
 </resources>
