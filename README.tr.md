@@ -190,6 +190,8 @@ Kurallar yalnızca koşulları sağlandığında çalışır. Koşulları VE vey
 - ⚡ **Şarj Durumu:** Cihazın şarjda veya pilde olması koşulu.
 - 📲 **Ekran Durumu:** Ekranın açık veya kilitli olması koşulu.
 - 📶 **Wi-Fi Ağı:** Yalnızca belirli bir Wi-Fi ağına (SSID) bağlıyken çalış.
+- 🎧 **Bluetooth Cihazı / Kulaklık:** Seçili (veya herhangi bir) Bluetooth cihazının ya da kablolu/USB/Bluetooth kulaklığın bağlı olması.
+- 🔕 **Rahatsız Etmeyin, Zil Modu, Uçak Modu:** DND'nin açık olması, zil modunun normal/titreşim/sessiz olması veya Uçak modunun açık olması.
 - 🧩 **İç İçe Mantık:** Koşulları grup başına VE/VEYA ile birleştir, bir grubu tersine çevir ve dört seviyeye kadar iç içe kur.
 
 ---

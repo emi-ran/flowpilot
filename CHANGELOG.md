@@ -5,6 +5,7 @@ All notable FlowPilot changes are documented here.
 ## [Unreleased]
 
 ### Added
+- Add rule conditions for a connected Bluetooth device (selectable), headset connected, Do Not Disturb on, ringer mode (normal, vibrate, silent) and Airplane mode on. They work in AND/OR/NOT trees and backups, and their state is read only when an enabled rule uses it.
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 ### Fixed
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.

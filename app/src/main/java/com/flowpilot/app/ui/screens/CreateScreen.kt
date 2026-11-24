@@ -65,6 +65,7 @@ import com.flowpilot.app.data.model.AutomationPreset
 import com.flowpilot.app.data.model.ConditionCombinator
 import com.flowpilot.app.data.model.ConditionNode
 import com.flowpilot.app.data.model.ConditionType
+import com.flowpilot.app.data.model.RingerModeCondition
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.flattenConditions
 import com.flowpilot.app.data.model.ActionType
@@ -1644,6 +1645,37 @@ private fun ConditionEditorCard(
                             onSsidChange = { onUpdate(cond.copy(wifiSsid = it)) },
                             label = stringResource(R.string.wifi_ssid_label),
                         )
+                    } else if (cond.type == ConditionType.BLUETOOTH_DEVICE_CONNECTED) {
+                        Column(Modifier.padding(top = 4.dp)) {
+                            BluetoothDevicePickerField(
+                                address = cond.bluetoothDeviceAddress,
+                                name = cond.bluetoothDeviceName.ifBlank {
+                                    if (cond.bluetoothDeviceAddress.isBlank()) stringResource(R.string.cond_bluetooth_any_device) else ""
+                                },
+                                onDeviceSelected = { address, name ->
+                                    onUpdate(cond.copy(bluetoothDeviceAddress = address, bluetoothDeviceName = name))
+                                },
+                            )
+                            if (cond.bluetoothDeviceAddress.isNotBlank()) {
+                                TextButton({ onUpdate(cond.copy(bluetoothDeviceAddress = "", bluetoothDeviceName = "")) }) {
+                                    Text(stringResource(R.string.cond_bluetooth_any_device))
+                                }
+                            }
+                        }
+                    } else if (cond.type == ConditionType.RINGER_MODE) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                            listOf(
+                                RingerModeCondition.NORMAL to R.string.cond_ringer_normal,
+                                RingerModeCondition.VIBRATE to R.string.cond_ringer_vibrate,
+                                RingerModeCondition.SILENT to R.string.cond_ringer_silent,
+                            ).forEach { (mode, labelRes) ->
+                                FilterChip(
+                                    selected = cond.ringerMode == mode,
+                                    onClick = { onUpdate(cond.copy(ringerMode = mode)) },
+                                    label = { Text(stringResource(labelRes)) },
+                                )
+                            }
+                        }
                     } else if (cond.type == ConditionType.TIME_BETWEEN) {
                         val startH = cond.startMinute / 60
                         val startM = cond.startMinute % 60

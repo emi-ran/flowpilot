@@ -190,6 +190,8 @@ Rules execute only when their conditions pass. Combine them with AND or OR, nest
 - ⚡ **Charging State:** Require device to be currently charging or discharging.
 - 📲 **Screen State:** Require screen to be on or off.
 - 📶 **Wi-Fi Network:** Require connection to a specific Wi-Fi network (SSID).
+- 🎧 **Bluetooth Device / Headset:** Require a chosen (or any) Bluetooth device, or wired/USB/Bluetooth headphones, to be connected.
+- 🔕 **Do Not Disturb, Ringer Mode, Airplane Mode:** Require DND to be on, the ringer to be normal/vibrate/silent, or Airplane mode to be on.
 - 🧩 **Nested Logic:** Group conditions with per-group AND/OR, negate a group, and nest up to four levels.
 
 ---

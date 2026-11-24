@@ -1105,6 +1105,54 @@ fun ConditionPicker(
                     ),
                 ),
             ),
+            PickerCategoryGroup(
+                id = "SYSTEM_STATE",
+                label = context.getString(R.string.picker_group_system_state),
+                icon = Icons.Default.Tune,
+                iconTint = Color(0xFFBA68C8),
+                items = listOf(
+                    PickerItem(
+                        value = ConditionType.BLUETOOTH_DEVICE_CONNECTED,
+                        title = context.getString(ConditionType.BLUETOOTH_DEVICE_CONNECTED.labelRes),
+                        subtitle = context.getString(ConditionType.BLUETOOTH_DEVICE_CONNECTED.descriptionRes),
+                        icon = Icons.Default.Bluetooth,
+                        iconTint = Color(0xFF80CBC4),
+                        keywords = listOf("bluetooth", "device", "paired", "connected", "bt"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.HEADSET_CONNECTED,
+                        title = context.getString(ConditionType.HEADSET_CONNECTED.labelRes),
+                        subtitle = context.getString(ConditionType.HEADSET_CONNECTED.descriptionRes),
+                        icon = Icons.Default.Headset,
+                        iconTint = Color(0xFFBA68C8),
+                        keywords = listOf("headset", "headphones", "earphones", "usb", "wired", "audio", "kulaklık"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.DND_ON,
+                        title = context.getString(ConditionType.DND_ON.labelRes),
+                        subtitle = context.getString(ConditionType.DND_ON.descriptionRes),
+                        icon = Icons.Default.DoNotDisturb,
+                        iconTint = Color(0xFFE57373),
+                        keywords = listOf("dnd", "do not disturb", "silence", "focus", "rahatsız"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.RINGER_MODE,
+                        title = context.getString(ConditionType.RINGER_MODE.labelRes),
+                        subtitle = context.getString(ConditionType.RINGER_MODE.descriptionRes),
+                        icon = Icons.Default.Notifications,
+                        iconTint = Color(0xFFFFB74D),
+                        keywords = listOf("ringer", "ring", "vibrate", "silent", "sound", "profile", "zil", "sessiz"),
+                    ),
+                    PickerItem(
+                        value = ConditionType.AIRPLANE_MODE_ON,
+                        title = context.getString(ConditionType.AIRPLANE_MODE_ON.labelRes),
+                        subtitle = context.getString(ConditionType.AIRPLANE_MODE_ON.descriptionRes),
+                        icon = Icons.Default.AirplanemodeActive,
+                        iconTint = Color(0xFF90CAF9),
+                        keywords = listOf("airplane", "flight", "aeroplane", "radio", "uçak"),
+                    ),
+                ),
+            ),
         )
     }
 

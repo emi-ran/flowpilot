@@ -119,6 +119,11 @@ val ConditionType.labelRes: Int
         ConditionType.WIFI_DISCONNECTED -> R.string.cond_wifi_disconnected
         ConditionType.TIME_BETWEEN -> R.string.cond_time_between
         ConditionType.DAYS_OF_WEEK -> R.string.cond_days_of_week
+        ConditionType.BLUETOOTH_DEVICE_CONNECTED -> R.string.cond_bluetooth_device_connected
+        ConditionType.HEADSET_CONNECTED -> R.string.cond_headset_connected
+        ConditionType.DND_ON -> R.string.cond_dnd_on
+        ConditionType.RINGER_MODE -> R.string.cond_ringer_mode
+        ConditionType.AIRPLANE_MODE_ON -> R.string.cond_airplane_mode_on
     }
 
 @get:StringRes
@@ -307,6 +312,11 @@ val ConditionType.descriptionRes: Int
         ConditionType.WIFI_DISCONNECTED -> R.string.cond_wifi_disconnected_desc
         ConditionType.TIME_BETWEEN -> R.string.cond_time_between_desc
         ConditionType.DAYS_OF_WEEK -> R.string.cond_days_of_week_desc
+        ConditionType.BLUETOOTH_DEVICE_CONNECTED -> R.string.cond_bluetooth_device_connected_desc
+        ConditionType.HEADSET_CONNECTED -> R.string.cond_headset_connected_desc
+        ConditionType.DND_ON -> R.string.cond_dnd_on_desc
+        ConditionType.RINGER_MODE -> R.string.cond_ringer_mode_desc
+        ConditionType.AIRPLANE_MODE_ON -> R.string.cond_airplane_mode_on_desc
     }
 
 @get:StringRes
