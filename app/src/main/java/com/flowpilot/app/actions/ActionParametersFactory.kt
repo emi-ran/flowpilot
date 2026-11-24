@@ -25,8 +25,10 @@ object ActionParametersFactory {
 
     fun create(rule: Automation, context: TemplateContext = TemplateContext()): ActionParameters {
         val tts = renderTts(rule, context)
+        val jsonSource = JsonCommandToken.split(rule.jsonCommandSource)
         return ActionParameters(
-            jsonCommandSource = render(rule.jsonCommandSource, context),
+            jsonCommandSource = render(jsonSource.template, context),
+            jsonCommandToken = jsonSource.token,
             notificationTitle = render(rule.notificationTitle, context),
             notificationBody = render(rule.notificationBody, context),
             vibrationPattern = rule.vibrationPattern,
