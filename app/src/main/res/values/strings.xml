@@ -860,7 +860,7 @@
     <string name="backup_encrypted_warning">Encrypted full backup includes webhook and personal data. Lost password means no recovery.</string>
     <string name="backup_password_label">Password</string>
     <string name="backup_confirm_password_label">Confirm password</string>
-    <string name="backup_password_too_short">Password must be at least 6 characters</string>
+    <string name="backup_password_too_short">Password must be at least 8 characters</string>
     <string name="backup_password_mismatch">Passwords do not match</string>
     <string name="backup_decrypt_dialog_title">Encrypted Backup</string>
     <string name="backup_decrypt_dialog_desc">This backup is password-protected. Enter the password to decrypt and restore automations.</string>

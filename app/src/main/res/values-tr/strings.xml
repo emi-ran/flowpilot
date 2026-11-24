@@ -860,7 +860,7 @@
     <string name="backup_encrypted_warning">Şifreli tam yedek webhook ve kişisel verileri içerir. Parolayı unutursanız geri yükleyemezsiniz.</string>
     <string name="backup_password_label">Şifre</string>
     <string name="backup_confirm_password_label">Şifreyi onayla</string>
-    <string name="backup_password_too_short">Şifre en az 6 karakter olmalıdır</string>
+    <string name="backup_password_too_short">Şifre en az 8 karakter olmalıdır</string>
     <string name="backup_password_mismatch">Şifreler eşleşmiyor</string>
     <string name="backup_decrypt_dialog_title">Şifreli Yedekleme</string>
     <string name="backup_decrypt_dialog_desc">Bu yedekleme şifre korumalıdır. Otomasyonların şifresini çözüp geri yüklemek için şifreyi girin.</string>
