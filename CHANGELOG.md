@@ -4,6 +4,9 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Security
+- Strengthen encrypted backups: new exports use PBKDF2-HMAC-SHA256 with 600,000 iterations (backup format version 2) and require a password of at least 8 characters. Existing version 1 backups (100,000 iterations, 6+ character passwords) still restore; password length and iteration limits are checked before key derivation and before any rules are changed.
+
 ### Added
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 ### Fixed
