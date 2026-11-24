@@ -26,7 +26,7 @@ object ActionParametersFactory {
     fun create(rule: Automation, context: TemplateContext = TemplateContext()): ActionParameters {
         val tts = renderTts(rule, context)
         return ActionParameters(
-            jsonCommandSource = render(rule.jsonCommandSource, context),
+            jsonCommandSource = TemplateRenderer.render(rule.jsonCommandSource, context, RenderMode.LENIENT, jsonEscapeValues = true),
             notificationTitle = render(rule.notificationTitle, context),
             notificationBody = render(rule.notificationBody, context),
             vibrationPattern = rule.vibrationPattern,
@@ -68,7 +68,7 @@ object ActionParametersFactory {
             webhookMethod = rule.webhookMethod,
             webhookUrl = render(rule.webhookUrl, context),
             webhookHeaders = renderHeaders(rule.webhookHeaders, context),
-            webhookBody = render(rule.webhookBody, context),
+            webhookBody = renderWebhookBody(rule.webhookBody, context),
             webhookTimeoutSeconds = rule.webhookTimeoutSeconds,
             phoneNumber = render(rule.phoneNumber, context),
             screenBrightnessPercent = rule.screenBrightnessPercent,
@@ -80,6 +80,13 @@ object ActionParametersFactory {
 
     private fun render(template: String, context: TemplateContext): String =
         TemplateRenderer.render(template, context, RenderMode.LENIENT)
+
+    /** JSON-looking bodies get JSON-escaped values so variables cannot inject keys; other bodies are untouched. */
+    private fun renderWebhookBody(body: String, context: TemplateContext): String {
+        val first = body.trimStart().firstOrNull()
+        val isJson = first == '{' || first == '['
+        return TemplateRenderer.render(body, context, RenderMode.LENIENT, jsonEscapeValues = isJson)
+    }
 
     /**
      * Headers are rendered one configured line at a time so a variable value cannot introduce a

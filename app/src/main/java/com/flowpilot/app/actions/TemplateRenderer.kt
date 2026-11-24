@@ -37,6 +37,8 @@ data class RenderResult(
  * - Quoted filter arguments may contain spaces, braces, pipes and `\"` / `\\` escapes.
  * - [RenderMode.LENIENT] leaves unknown variables untouched; [RenderMode.STRICT] additionally reports them.
  * - Malformed expressions are never partially rendered: the original token is kept and a parse error is reported.
+ * - With `jsonEscapeValues`, every substituted value is JSON string-escaped (unless the expression already
+ *   uses `jsonescape`) so values cannot break out of JSON strings or inject keys. Template text is untouched.
  * - A null [TemplateContext] disables substitution and returns the template unchanged.
  */
 object TemplateRenderer {
@@ -86,12 +88,14 @@ object TemplateRenderer {
         template: String,
         context: TemplateContext?,
         mode: RenderMode = RenderMode.LENIENT,
-    ): String = renderResult(template, context, mode).text
+        jsonEscapeValues: Boolean = false,
+    ): String = renderResult(template, context, mode, jsonEscapeValues).text
 
     fun renderResult(
         template: String,
         context: TemplateContext?,
         mode: RenderMode = RenderMode.LENIENT,
+        jsonEscapeValues: Boolean = false,
     ): RenderResult {
         if (context == null || template.isEmpty()) {
             return RenderResult(template)
@@ -144,7 +148,10 @@ object TemplateRenderer {
                             if (mode == RenderMode.STRICT) unknownVariables += parsed.name
                             out.append(raw)
                         } else {
-                            out.append(applyFilters(value, parsed.filters))
+                            val filtered = applyFilters(value, parsed.filters)
+                            // Explicit `jsonescape` filters are honored as-is to avoid double escaping.
+                            val needsEscape = jsonEscapeValues && parsed.filters.none { it.name == "jsonescape" }
+                            out.append(if (needsEscape) jsonEscape(filtered) else filtered)
                         }
                     }
                     is ExpressionOutcome.Failure -> {
