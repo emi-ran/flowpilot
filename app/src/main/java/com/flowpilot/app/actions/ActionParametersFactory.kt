@@ -26,7 +26,12 @@ object ActionParametersFactory {
     fun create(rule: Automation, context: TemplateContext = TemplateContext()): ActionParameters {
         val tts = renderTts(rule, context)
         return ActionParameters(
-            jsonCommandSource = TemplateRenderer.render(rule.jsonCommandSource, context, RenderMode.LENIENT, jsonEscapeValues = true),
+            jsonCommandSource = TemplateRenderer.render(
+                rule.jsonCommandSource,
+                context,
+                RenderMode.LENIENT,
+                jsonEscapeValues = !isWholePayloadVariable(rule.jsonCommandSource),
+            ),
             notificationTitle = render(rule.notificationTitle, context),
             notificationBody = render(rule.notificationBody, context),
             vibrationPattern = rule.vibrationPattern,
@@ -76,6 +81,16 @@ object ActionParametersFactory {
             smsRecipient = resolveSmsRecipient(rule, context),
             smsMessage = render(rule.smsMessage, context),
         )
+    }
+
+    /**
+     * A source that is exactly one `${...}` expression (for example `${notification.bigText}`) takes the
+     * whole command from the event; escaping it would turn the JSON into an escaped string and break
+     * every command.
+     */
+    internal fun isWholePayloadVariable(template: String): Boolean {
+        val t = template.trim()
+        return t.startsWith("\${") && t.endsWith("}") && t.indexOf("}") == t.length - 1 && t.count { it == '$' } == 1
     }
 
     private fun render(template: String, context: TemplateContext): String =

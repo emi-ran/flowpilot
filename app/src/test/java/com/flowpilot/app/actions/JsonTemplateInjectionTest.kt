@@ -70,4 +70,17 @@ class JsonTemplateInjectionTest {
         assertThat(json.keys).containsExactly("action", "body")
         assertThat(json.getValue("body").jsonPrimitive.content).isEqualTo(malicious)
     }
+
+    @Test
+    fun wholePayloadVariableIsNotEscaped() {
+        assertThat(ActionParametersFactory.isWholePayloadVariable(" \${notification.bigText} ")).isTrue()
+        assertThat(ActionParametersFactory.isWholePayloadVariable("{\"t\":\"\${sms.body}\"}")).isFalse()
+        assertThat(ActionParametersFactory.isWholePayloadVariable("\${a}\${b}")).isFalse()
+        val payload = "{\"version\":1}"
+        val out = ActionParametersFactory.create(
+            rule(jsonCommandSource = "\${sms.body}"),
+            TemplateContext(smsBody = payload),
+        ).jsonCommandSource
+        assertThat(out).isEqualTo(payload)
+    }
 }
