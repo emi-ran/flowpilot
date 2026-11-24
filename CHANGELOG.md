@@ -6,6 +6,7 @@ All notable FlowPilot changes are documented here.
 
 ### Security
 - Standard (non-encrypted) rule export now redacts phone numbers (dial/call numbers, SMS recipients and SMS sender filters, including multi-trigger SMS definitions) in addition to webhook URL/headers/body and JSON command source. Redacted values import as `[REDACTED]` and must be re-entered; template variables such as `${sms.sender}` are kept. Encrypted export and restore validation are unchanged.
+- Add an optional shared-secret check for JSON commands. Start the rule's source template with a line `@token=YOUR_SECRET` (kept in the encrypted source and removed before rendering) and include the same value as the root `"token"` string of each command; commands with a missing or different token are rejected with an `unauthorized` outcome, compared in constant time. Existing rules without the line behave exactly as before (opt-in, no migration needed); the envelope now also accepts an optional `token` string that is ignored when no token is configured. There is no broadcast or Android permission to harden: the action runs only from the rule's own notification or SMS trigger.
 - Strengthen encrypted backups: new exports use PBKDF2-HMAC-SHA256 with 600,000 iterations (backup format version 2) and require a password of at least 8 characters. Existing version 1 backups (100,000 iterations, 6+ character passwords) still restore; password length and iteration limits are checked before key derivation and before any rules are changed.
 
 ### Added
@@ -15,6 +16,7 @@ All notable FlowPilot changes are documented here.
 - Back up the original rules JSON before duplicate-ID rules are dropped on the next write.
 - Fail encrypted export and rule duplication when a stored secret cannot be decrypted (for example after losing the Keystore key), and keep the encrypted value on save instead of replacing it with an empty secret.
 - Store plaintext that happens to start with `enc:v1:` correctly instead of treating it as ciphertext.
+- Bound SMS regex trigger matching: a catastrophic user pattern is aborted after a 100 ms budget and treated as no match, and SMS bodies are capped at 4096 characters before matching, so a crafted pattern can no longer stall the engine.
 
 ### Fixed
 - Run rule actions outside the engine poll loop so a delayed action no longer stalls other triggers or lets queued notification and SMS events expire unseen; runs of the same rule stay sequential.
