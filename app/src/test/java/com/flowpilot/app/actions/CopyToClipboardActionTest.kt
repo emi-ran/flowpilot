@@ -33,6 +33,7 @@ class CopyToClipboardActionTest {
     private fun rule(clipboardText: String) = Automation(
         id = "rule-clip",
         name = "Clipboard rule",
+        createdAt = 1L,
         triggerEvent = TriggerEvent.SMS_RECEIVED,
         action = ActionType.COPY_TO_CLIPBOARD,
         actions = listOf(ActionType.COPY_TO_CLIPBOARD),
