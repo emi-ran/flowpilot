@@ -17,6 +17,7 @@ class JsonTemplateInjectionTest {
     private fun rule(webhookBody: String = "", jsonCommandSource: String = "") = Automation(
         id = "r",
         name = "n",
+        createdAt = 1L,
         triggerEvent = TriggerEvent.SMS_RECEIVED,
         action = ActionType.HTTP_WEBHOOK,
         webhookMethod = "POST",
