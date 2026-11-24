@@ -1,5 +1,6 @@
 package com.flowpilot.app.ui.screens
 
+import com.flowpilot.app.data.backup.BackupManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -60,8 +61,8 @@ internal fun BackupDisclosureDialog(
     var showPassword by remember { mutableStateOf(false) }
     var showConfirmPassword by remember { mutableStateOf(false) }
 
-    val isPasswordValid = password.length >= 6 && password == confirmPassword
-    val passwordTooShort = password.isNotEmpty() && password.length < 6
+    val isPasswordValid = password.length >= BackupManager.MIN_PASSWORD_LENGTH && password == confirmPassword
+    val passwordTooShort = password.isNotEmpty() && password.length < BackupManager.MIN_PASSWORD_LENGTH
     val passwordMismatch = confirmPassword.isNotEmpty() && password != confirmPassword
 
     AlertDialog(
@@ -244,7 +245,7 @@ internal fun DecryptBackupDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = password.length >= 6,
+                enabled = password.length >= BackupManager.MIN_PASSWORD_LENGTH,
                 onClick = { onDecrypt(password) },
             ) {
                 Text(stringResource(R.string.backup_decrypt_button))

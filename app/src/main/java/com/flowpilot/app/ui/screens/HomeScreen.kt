@@ -83,6 +83,7 @@ fun HomeScreen(
     val updateBannerDismissed by vm.updateBannerDismissed.collectAsState()
     val geofenceReceiverError = geofenceDiagnostics[AutomationRepository.GEOFENCE_RECEIVER_DIAGNOSTIC_ID]
     val context = LocalContext.current
+    val siblingInstalled = remember { com.flowpilot.app.ui.util.SiblingBuild.isInstalled(context) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var selectedRuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -296,6 +297,14 @@ fun HomeScreen(
                     }
                     FollowSwitch(engineEnabled, { if (it) vm.startEngine() else vm.stopEngine() })
                 }
+            }
+            if (siblingInstalled && engineEnabled) {
+                Text(
+                    text = stringResource(R.string.home_sibling_build_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 12.dp),
+                )
             }
 
             if (rules.isEmpty()) {
