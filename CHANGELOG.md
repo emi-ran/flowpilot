@@ -11,6 +11,7 @@ All notable FlowPilot changes are documented here.
 - Back up the original rules JSON before duplicate-ID rules are dropped on the next write.
 - Fail encrypted export and rule duplication when a stored secret cannot be decrypted (for example after losing the Keystore key), and keep the encrypted value on save instead of replacing it with an empty secret.
 - Store plaintext that happens to start with `enc:v1:` correctly instead of treating it as ciphertext.
+- Bound SMS regex trigger matching: a catastrophic user pattern is aborted after a 100 ms budget and treated as no match, and SMS bodies are capped at 4096 characters before matching, so a crafted pattern can no longer stall the engine.
 
 ### Fixed
 - Run rule actions outside the engine poll loop so a delayed action no longer stalls other triggers or lets queued notification and SMS events expire unseen; runs of the same rule stay sequential.

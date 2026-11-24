@@ -377,11 +377,7 @@ object RuleEvaluator {
                 }
                 com.flowpilot.app.data.model.SmsMatchMode.REGEX -> {
                     if (keyword.isBlank()) true
-                    else try {
-                        Regex(keyword, RegexOption.IGNORE_CASE).containsMatchIn(event.body)
-                    } catch (_: Exception) {
-                        false
-                    }
+                    else SafeRegex.containsMatch(keyword, event.body)
                 }
             }
             if (!contentMatches) return@matchingTriggerViews false
