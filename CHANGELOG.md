@@ -6,6 +6,7 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+- Add a run-history details view and a "Copy report" action: each entry explains what its status means (including why "Unverified"), and each action shows what was attempted, the observed result, a stable reason code (for example JSON parse error, missing permission, Shizuku not running, revoked run) and a suggested fix. The sanitized Markdown report adds app/Android/device info and the rule structure and never includes phone numbers, message or notification text, webhook data, JSON command text, tokens or network identifiers. Older history records still load.
 ### Fixed
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.
 - Back up the original rules JSON before duplicate-ID rules are dropped on the next write.

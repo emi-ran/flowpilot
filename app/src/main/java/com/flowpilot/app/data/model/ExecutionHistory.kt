@@ -6,6 +6,8 @@ import com.flowpilot.app.actions.ActionResultCode
 import com.flowpilot.app.actions.ActionDiagnostic
 import com.flowpilot.app.actions.ActionTemplateDiagnostic
 import com.flowpilot.app.engine.PhoneNumberUtils
+import com.flowpilot.app.diagnostics.DiagnosticText
+import com.flowpilot.app.diagnostics.ReasonCode
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -33,9 +35,25 @@ data class ActionExecutionRecord(
     val resultArgs: List<String> = emptyList(),
     val diagnostic: ActionDiagnostic? = null,
     val templateDiagnostics: List<ActionTemplateDiagnostic> = emptyList(),
+    /** [ReasonCode] name; null on records written before diagnostics existed. */
+    val reasonCode: String? = null,
+    /** Sanitized, bounded, payload-free detail (e.g. "exception=SecurityException"). */
+    val detail: String? = null,
+    /** Sanitized summary of what the action was configured to do (no personal data). */
+    val attempted: String? = null,
+    /** Configured delay before this action, in seconds. */
+    val delaySeconds: Int? = null,
 ) {
+    val reason: ReasonCode? get() = ReasonCode.fromName(reasonCode)
+
     companion object {
-        fun create(actionType: ActionType, result: ActionResult, templateDiagnostics: List<ActionTemplateDiagnostic> = emptyList()): ActionExecutionRecord = create(
+        fun create(
+            actionType: ActionType,
+            result: ActionResult,
+            templateDiagnostics: List<ActionTemplateDiagnostic> = emptyList(),
+            attempted: String? = null,
+            delaySeconds: Int? = null,
+        ): ActionExecutionRecord = create(
             actionType = actionType,
             success = result.success,
             message = result.message,
@@ -43,6 +61,10 @@ data class ActionExecutionRecord(
             resultArgs = result.resultArgs,
             diagnostic = result.diagnostic,
             templateDiagnostics = templateDiagnostics,
+            reasonCode = result.reasonCode?.name,
+            detail = result.detail,
+            attempted = attempted,
+            delaySeconds = delaySeconds,
         )
 
         fun create(
@@ -53,6 +75,10 @@ data class ActionExecutionRecord(
             resultArgs: List<String> = emptyList(),
             diagnostic: ActionDiagnostic? = null,
             templateDiagnostics: List<ActionTemplateDiagnostic> = emptyList(),
+            reasonCode: String? = null,
+            detail: String? = null,
+            attempted: String? = null,
+            delaySeconds: Int? = null,
         ): ActionExecutionRecord {
             val safeMessage = sanitizeMessage(message, success, actionType)
             val safeArgs = resultArgs.map(WebhookExecutor::redactSensitiveText).map { arg ->
@@ -67,6 +93,11 @@ data class ActionExecutionRecord(
                 resultArgs = safeArgs,
                 diagnostic = diagnostic,
                 templateDiagnostics = templateDiagnostics,
+                reasonCode = (ReasonCode.fromName(reasonCode)
+                    ?: ReasonCode.derive(success, resultCode, diagnostic?.reason))?.name,
+                detail = DiagnosticText.sanitize(detail),
+                attempted = DiagnosticText.sanitize(attempted),
+                delaySeconds = delaySeconds?.coerceIn(0, 300),
             )
         }
 
@@ -110,6 +141,19 @@ data class ActionExecutionRecord(
     }
 }
 
+/** True when Android accepted the request but no readback can confirm the final outcome. */
+fun ActionExecutionRecord.isUnverifiedRequest(): Boolean = success && (
+    resultCode == ActionResultCode.REQUEST_UNVERIFIED ||
+        (actionType in UNVERIFIED_BY_DEFAULT && resultCode != ActionResultCode.JSON_CONFIRMED) ||
+        (actionType == ActionType.EXECUTE_JSON_COMMAND && resultCode != ActionResultCode.JSON_CONFIRMED)
+    )
+
+private val UNVERIFIED_BY_DEFAULT = setOf(
+    ActionType.MUSIC_SEARCH, ActionType.MUSIC_PLAY_LINK, ActionType.CREATE_ALARM, ActionType.START_TIMER,
+    ActionType.LAUNCH_APP, ActionType.OPEN_URL, ActionType.OPEN_DIALER, ActionType.DIAL_NUMBER,
+    ActionType.CALL_NUMBER, ActionType.DRAFT_SMS,
+)
+
 /** Converts only known, non-technical legacy outcome text into current structured results. */
 fun ActionExecutionRecord.resolvedResultCode(): ActionResultCode? = resultCode ?: when {
     !success -> null
@@ -147,6 +191,12 @@ data class ExecutionHistoryEntry(
     val actions: List<ActionExecutionRecord>,
     /** One-based ordered OR source; null for legacy/manual entries. Contains no payload. */
     val triggerSourceIndex: Int? = null,
+    /** Epoch millis when the run began; null for older entries. */
+    val startedAt: Long? = null,
+    /** Run duration including configured delays; null for older entries. */
+    val durationMs: Long? = null,
+    /** Condition type names (no values) the rule had at run time. */
+    val conditionTypes: List<String> = emptyList(),
 ) {
     /** Normalize only legacy generated SMS snapshots, never today's rule name. */
     val normalizedRuleName: String
@@ -170,12 +220,20 @@ data class ExecutionHistoryEntry(
                 resultArgs = action.resultArgs,
                 diagnostic = action.diagnostic,
                 templateDiagnostics = action.templateDiagnostics,
+                reasonCode = action.reasonCode,
+                detail = action.detail,
+                attempted = action.attempted,
+                delaySeconds = action.delaySeconds,
             )
         }
         return copy(
             ruleName = safeRuleName,
             trigger = safeTrigger,
             actions = sanitizedActions,
+            durationMs = durationMs?.coerceIn(0L, 86_400_000L),
+            conditionTypes = conditionTypes
+                .filter { name -> com.flowpilot.app.data.model.ConditionType.entries.any { it.name == name } }
+                .take(20),
         )
     }
 
@@ -188,6 +246,9 @@ data class ExecutionHistoryEntry(
             timestamp: Long = System.currentTimeMillis(),
             actions: List<ActionExecutionRecord>,
             triggerSourceIndex: Int? = null,
+            startedAt: Long? = null,
+            durationMs: Long? = null,
+            conditionTypes: List<String> = emptyList(),
         ): ExecutionHistoryEntry {
             val successCount = actions.count { it.success }
             val failureCount = actions.count { !it.success }
@@ -201,6 +262,9 @@ data class ExecutionHistoryEntry(
                 status = status,
                 actions = actions,
                 triggerSourceIndex = triggerSourceIndex,
+                startedAt = startedAt,
+                durationMs = durationMs,
+                conditionTypes = conditionTypes,
             )
             return entry.sanitized()
         }

@@ -17,6 +17,8 @@ import com.flowpilot.app.data.AutomationRepository
 import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
+import com.flowpilot.app.diagnostics.ReasonCode
+import com.flowpilot.app.diagnostics.RuleDiagnostics
 import com.flowpilot.app.ui.util.labelRes
 import com.flowpilot.app.ui.util.localizedForAppLanguage
 import kotlinx.coroutines.CancellationException
@@ -68,6 +70,7 @@ class ManualRuleRunner(
         var failureCount = 0
         val failureMessages = mutableListOf<String>()
         val actionRecords = mutableListOf<ActionExecutionRecord>()
+        val runStartedAt = System.currentTimeMillis()
 
         val actions = rule.effectiveActions
         val delays = rule.effectiveActionDelays
@@ -89,6 +92,8 @@ class ManualRuleRunner(
                             success = false,
                             message = message,
                             resultCode = ActionResultCode.EXECUTION_CANCELLED,
+                            attempted = RuleDiagnostics.attemptedSummary(rule, action),
+                            delaySeconds = delaySeconds,
                         )
                         throw ce
                     }
@@ -100,7 +105,7 @@ class ManualRuleRunner(
                         dispatcher.executeAsync(nestedAction, nestedParameters)
                     }
                     templateContext = outcome.applyTo(templateContext)
-                    com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message, if (outcome.status == "unverified") com.flowpilot.app.actions.ActionResultCode.REQUEST_UNVERIFIED else if (outcome.success) com.flowpilot.app.actions.ActionResultCode.JSON_CONFIRMED else null)
+                    outcome.toActionResult()
                 } else {
                     dispatcher.executeAsync(action, actionParameters)
                 }
@@ -118,6 +123,9 @@ class ManualRuleRunner(
                         success = false,
                         message = message,
                         resultCode = ActionResultCode.EXECUTION_CANCELLED,
+                        reasonCode = ReasonCode.EXECUTION_REVOKED.name,
+                        attempted = RuleDiagnostics.attemptedSummary(rule, action),
+                        delaySeconds = delaySeconds,
                     )
                     break
                 }
@@ -139,7 +147,11 @@ class ManualRuleRunner(
                         ?: WebhookExecutor.redactSensitiveText(result.message)
                     failureMessages += "${localizedContext.getString(action.labelRes)}: $message"
                 }
-                actionRecords += ActionExecutionRecord.create(action, result, TemplateDiagnostics.forAction(action, rule, templateContext, actionParameters))
+                actionRecords += ActionExecutionRecord.create(
+                    action, result, TemplateDiagnostics.forAction(action, rule, templateContext, actionParameters),
+                    attempted = RuleDiagnostics.attemptedSummary(rule, action),
+                    delaySeconds = delaySeconds,
+                )
             }
         } catch (ce: CancellationException) {
             cancellation = ce
@@ -149,6 +161,9 @@ class ManualRuleRunner(
                 ruleName = rule.normalizedName,
                 trigger = "MANUAL",
                 timestamp = System.currentTimeMillis(),
+                startedAt = runStartedAt,
+                durationMs = System.currentTimeMillis() - runStartedAt,
+                conditionTypes = RuleDiagnostics.conditionTypes(rule),
                 actions = actionRecords,
             )
             withContext(NonCancellable) {

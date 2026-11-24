@@ -12,6 +12,10 @@ data class ActionResult(
     val resultCode: ActionResultCode? = null,
     val resultArgs: List<String> = emptyList(),
     val diagnostic: ActionDiagnostic? = null,
+    /** Optional stable reason; derived from [diagnostic]/[resultCode] when absent. */
+    val reasonCode: com.flowpilot.app.diagnostics.ReasonCode? = null,
+    /** Optional short, payload-free detail (sanitized again before storage). */
+    val detail: String? = null,
 )
 
 /** Payload-free diagnostic metadata. Lengths are capped to avoid retaining unbounded input data. */

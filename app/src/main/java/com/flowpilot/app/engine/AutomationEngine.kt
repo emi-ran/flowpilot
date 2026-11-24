@@ -1015,6 +1015,7 @@ class AutomationEngine(
                     expectedRevision = candidate.executionRevision,
                 ) ?: return
                 val rule = reservation.rule
+                val runStartedAt = System.currentTimeMillis()
                 var anySuccess = false
                 var cancelled = false
                 var actionRecords = mutableListOf<ActionExecutionRecord>()
@@ -1041,6 +1042,9 @@ class AutomationEngine(
                                                 success = false,
                                                 message = "Execution revoked before dispatch",
                                                 resultCode = com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED,
+                                                reasonCode = com.flowpilot.app.diagnostics.ReasonCode.EXECUTION_REVOKED.name,
+                                                attempted = com.flowpilot.app.diagnostics.RuleDiagnostics.attemptedSummary(rule, action),
+                                                delaySeconds = delaySec,
                                             )
                                         )
                                         currentAction = null
@@ -1077,7 +1081,7 @@ class AutomationEngine(
                                                 dispatcher.executeAsync(nestedAction, nestedParameters)
                                             }
                                             templateContext = outcome.applyTo(templateContext)
-                                            return com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message, if (outcome.status == "unverified") com.flowpilot.app.actions.ActionResultCode.REQUEST_UNVERIFIED else if (outcome.success) com.flowpilot.app.actions.ActionResultCode.JSON_CONFIRMED else null)
+                                            return outcome.toActionResult()
                                         }
                                         if (eventAuthorization != null) {
                                             AutomationService.executeIfEventAuthorized(eventAuthorization) { dispatch() }
@@ -1087,10 +1091,12 @@ class AutomationEngine(
                                     }
                                 } catch (ce: CancellationException) {
                                     throw ce
-                                } catch (_: Throwable) {
+                                } catch (t: Throwable) {
                                     com.flowpilot.app.actions.ActionResult(
                                         success = false,
                                         message = "Execution failed",
+                                        reasonCode = com.flowpilot.app.diagnostics.ReasonCode.UNEXPECTED_EXCEPTION,
+                                        detail = "exception=" + t.javaClass.simpleName,
                                     )
                                 }
                                 if (result == null) {
@@ -1100,6 +1106,9 @@ class AutomationEngine(
                                             success = false,
                                             message = "Execution revoked before dispatch",
                                             resultCode = com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED,
+                                            reasonCode = com.flowpilot.app.diagnostics.ReasonCode.EXECUTION_REVOKED.name,
+                                            attempted = com.flowpilot.app.diagnostics.RuleDiagnostics.attemptedSummary(rule, action),
+                                            delaySeconds = delaySec,
                                         )
                                     )
                                     currentAction = null
@@ -1108,7 +1117,11 @@ class AutomationEngine(
                                 Log.i(TAG, "Rule action result: action=${action.name}, success=${result.success}")
                                 anySuccess = anySuccess || result.success
                                 actionRecords.add(
-                                    ActionExecutionRecord.create(action, result, templateDiagnostics)
+                                    ActionExecutionRecord.create(
+                                        action, result, templateDiagnostics,
+                                        attempted = com.flowpilot.app.diagnostics.RuleDiagnostics.attemptedSummary(rule, action),
+                                        delaySeconds = delaySec,
+                                    )
                                 )
                                 currentAction = null
                             }
@@ -1120,6 +1133,7 @@ class AutomationEngine(
                                         success = false,
                                         message = "Execution cancelled",
                                         resultCode = com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED,
+                                        attempted = com.flowpilot.app.diagnostics.RuleDiagnostics.attemptedSummary(rule, action),
                                     )
                                 )
                             }
@@ -1138,6 +1152,9 @@ class AutomationEngine(
                                 trigger = candidate.triggerEvent.name,
                                 triggerSourceIndex = candidate.matchedTriggerIndex + 1,
                                 timestamp = System.currentTimeMillis(),
+                                startedAt = runStartedAt,
+                                durationMs = System.currentTimeMillis() - runStartedAt,
+                                conditionTypes = com.flowpilot.app.diagnostics.RuleDiagnostics.conditionTypes(rule),
                                 actions = actionRecords.ifEmpty {
                                     listOf(
                                         ActionExecutionRecord.create(
@@ -1147,6 +1164,7 @@ class AutomationEngine(
                                             resultCode = if (cancelled) {
                                                 com.flowpilot.app.actions.ActionResultCode.EXECUTION_CANCELLED
                                             } else null,
+                                            reasonCode = if (cancelled) null else com.flowpilot.app.diagnostics.ReasonCode.FAILED_BEFORE_DISPATCH.name,
                                         )
                                     )
                                 },

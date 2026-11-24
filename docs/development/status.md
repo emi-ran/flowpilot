@@ -66,6 +66,7 @@ Last updated: 2026-11-15
 - Webhook header/body template variables and unknown-token preservation.
 - Manual in-progress test run from both Create and Edit automation screens, including confirmation, direct-call warnings, immediate execution with on-screen unsaved edits, result feedback, and unchanged rule/store state.
 - Persistent run history for engine and manual executions: action-level outcomes, 100-entry newest-first retention, and redacted diagnostics.
+- Run history details and report (implemented, JVM tests added; not yet compiled or run on a device): optional stable `ReasonCode` plus bounded sanitized `detail`/`attempted`/`delaySeconds` per action and `startedAt`/`durationMs`/`conditionTypes` per run, all defaulted so older stored history still decodes; full-screen detail dialog and a "Copy report" action (pure `RunReportFormatter`, clipboard not marked sensitive) in the history list. Tests: `RunReportFormatterTest`, `JsonCommandReasonTest`.
 - Bluetooth bonded-device connected/disconnected triggers and Bluetooth on/off Shizuku actions, including delayed adapter-state readback.
 - Per-rule cooldown: matching trigger runs once, suppresses repeated matching event during cooldown, and runs again after expiry.
 - Create/Edit keyboard behavior: keyboard opens only for focused fields, form scroll remains available, and a focused field returns above the IME when typing after manual scrolling.

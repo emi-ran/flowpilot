@@ -37,10 +37,13 @@ import com.flowpilot.app.data.model.ActionExecutionRecord
 import com.flowpilot.app.data.model.ExecutionHistoryEntry
 import com.flowpilot.app.data.model.ExecutionStatus
 import com.flowpilot.app.data.model.resolvedResultCode
+import com.flowpilot.app.data.model.isUnverifiedRequest
 import com.flowpilot.app.data.model.resolvedHttpFailureStatus
 import com.flowpilot.app.actions.ActionResultCode
 import com.flowpilot.app.data.model.ActionType
 import com.flowpilot.app.ui.AppViewModel
+import com.flowpilot.app.ui.util.RunReportClipboard
+import com.flowpilot.app.ui.util.explanationRes
 import com.flowpilot.app.ui.util.labelRes
 import com.flowpilot.app.ui.util.localizedLabel
 import java.time.Instant
@@ -310,15 +313,11 @@ private fun HistoryFailureGroupCard(group: HistoryGroup) {
     }
 }
 
-private fun ActionExecutionRecord.isUnverifiedRequest(): Boolean = success && (
-    resultCode == ActionResultCode.REQUEST_UNVERIFIED ||
-        (actionType in setOf(ActionType.MUSIC_SEARCH, ActionType.MUSIC_PLAY_LINK, ActionType.CREATE_ALARM, ActionType.START_TIMER, ActionType.LAUNCH_APP, ActionType.OPEN_URL, ActionType.OPEN_DIALER, ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER, ActionType.DRAFT_SMS) && resultCode != ActionResultCode.JSON_CONFIRMED) ||
-        (actionType == ActionType.EXECUTE_JSON_COMMAND && resultCode != ActionResultCode.JSON_CONFIRMED)
-    )
-
 @Composable
 private fun HistoryEntryCard(entry: ExecutionHistoryEntry) {
     var expanded by remember(entry.id) { mutableStateOf(false) }
+    var showDetail by remember(entry.id) { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
     val dateTimeStr = remember(entry.timestamp) {
         val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm:ss", Locale.getDefault())
         Instant.ofEpochMilli(entry.timestamp)
@@ -355,9 +354,18 @@ private fun HistoryEntryCard(entry: ExecutionHistoryEntry) {
                 StatusBadge(entry.status, entry.actions.any { it.isUnverifiedRequest() })
             }
 
-            TextButton(onClick = { expanded = !expanded }) {
-                Text(stringResource(if (expanded) R.string.history_hide_details else R.string.history_show_details))
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { expanded = !expanded }) {
+                    Text(stringResource(if (expanded) R.string.history_hide_details else R.string.history_show_details))
+                }
+                TextButton(onClick = { showDetail = true }) {
+                    Text(stringResource(R.string.history_btn_details))
+                }
+                IconButton(onClick = { RunReportClipboard.copy(context, entry) }) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.history_btn_copy_report), modifier = Modifier.size(20.dp))
+                }
             }
+            if (showDetail) HistoryDetailDialog(entry, onDismiss = { showDetail = false })
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically() + fadeIn(),
@@ -463,7 +471,7 @@ private fun ActionOutcomeRow(action: ActionExecutionRecord, index: Int) {
                 (action.resolvedResultCode() == null || action.resolvedResultCode() == ActionResultCode.COMPLETED)
             ) {
                 Text(
-                    text = stringResource(R.string.history_diagnostic_unavailable),
+                    text = stringResource(action.reason?.explanationRes ?: R.string.history_diagnostic_unavailable),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -480,7 +488,7 @@ private fun ActionOutcomeRow(action: ActionExecutionRecord, index: Int) {
 }
 
 @Composable
-private fun ActionExecutionRecord.localizedResultText(): String = if (isUnverifiedRequest()) stringResource(if (actionType == ActionType.EXECUTE_JSON_COMMAND && resultCode != ActionResultCode.REQUEST_UNVERIFIED) R.string.history_result_legacy_unverified else R.string.history_result_unverified_detail) else when (resolvedResultCode()) {
+internal fun ActionExecutionRecord.localizedResultText(): String = if (isUnverifiedRequest()) stringResource(if (actionType == ActionType.EXECUTE_JSON_COMMAND && resultCode != ActionResultCode.REQUEST_UNVERIFIED) R.string.history_result_legacy_unverified else R.string.history_result_unverified_detail) else when (resolvedResultCode()) {
     ActionResultCode.COMPLETED -> stringResource(R.string.history_result_completed)
     ActionResultCode.STATE_ENABLED -> stringResource(R.string.history_result_enabled)
     ActionResultCode.STATE_DISABLED -> stringResource(R.string.history_result_disabled)
@@ -493,7 +501,7 @@ private fun ActionExecutionRecord.localizedResultText(): String = if (isUnverifi
     null -> stringResource(if (success) R.string.history_result_completed else R.string.history_result_failed)
 }
 
-private fun ActionDiagnosticReason.labelRes(): Int = when (this) {
+internal fun ActionDiagnosticReason.labelRes(): Int = when (this) {
     ActionDiagnosticReason.MALFORMED_LINK -> R.string.history_diagnostic_malformed_link
     ActionDiagnosticReason.INVALID_LINK_COMPONENTS -> R.string.history_diagnostic_link_components
     ActionDiagnosticReason.UNSUPPORTED_LINK_HOST -> R.string.history_diagnostic_link_host
