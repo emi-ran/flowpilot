@@ -10,6 +10,7 @@ All notable FlowPilot changes are documented here.
 - Strengthen encrypted backups: new exports use PBKDF2-HMAC-SHA256 with 600,000 iterations (backup format version 2) and require a password of at least 8 characters. Existing version 1 backups (100,000 iterations, 6+ character passwords) still restore; password length and iteration limits are checked before key derivation and before any rules are changed.
 
 ### Added
+- Show Autostart guidance on Xiaomi, Redmi and POCO (MIUI/HyperOS) devices when notification access is granted but the listener is disconnected, with a button that opens the MIUI Autostart settings (falls back to app details).
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 - Warn on the home screen when both the release and debug FlowPilot builds are installed and the engine is on, since each build runs its own engine and the same rule can fire twice. Detection is install-only; builds do not communicate.
 ### Changed
