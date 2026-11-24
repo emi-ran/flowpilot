@@ -218,6 +218,14 @@ internal object EventTemplateContext {
             .copy(isCharging = event == ChargerEvent.CONNECTED)
     }
 
+    fun headset(event: HeadsetEvent, liveState: LiveSystemState): TemplateContext {
+        val trigger = when (event) {
+            HeadsetEvent.CONNECTED -> TriggerEvent.HEADSET_CONNECTED
+            HeadsetEvent.DISCONNECTED -> TriggerEvent.HEADSET_DISCONNECTED
+        }
+        return base(trigger.name, System.currentTimeMillis(), liveState)
+    }
+
     /** Events without event-specific values; the trigger itself comes from [forRule]. */
     fun live(
         liveState: LiveSystemState,
@@ -351,6 +359,7 @@ class AutomationEngine(
     private val screenTracker: ScreenStateTracker = ScreenStateTracker(context.applicationContext),
     private val wifiTracker: WifiStateTracker = WifiStateTracker(context.applicationContext),
     private val bluetoothTracker: BluetoothDeviceTracker = BluetoothDeviceTracker(context.applicationContext),
+    private val headsetTracker: HeadsetDeviceTracker = HeadsetDeviceTracker(context.applicationContext),
     private val callTracker: CallStateTracker = CallStateTracker(context.applicationContext),
     private val flipTracker: DeviceFlipTracker = DeviceFlipTracker(context.applicationContext),
     private val shakeTracker: DeviceShakeTracker = DeviceShakeTracker(context.applicationContext),
@@ -451,6 +460,7 @@ class AutomationEngine(
                             pollStep("light") { pollLightTransitions(liveState) },
                             pollStep("wifi") { pollWifiTransitions(liveState) },
                             pollStep("bluetooth") { pollBluetoothTransitions(liveState) },
+                            pollStep("headset") { pollHeadsetEvents(liveState) },
                             pollStep("call") { pollCallTransitions(liveState) },
                             pollStep("media") { pollMediaEvents(liveState) },
                             pollStep("flip") { pollDeviceFlipEvents(liveState) },
@@ -488,7 +498,7 @@ class AutomationEngine(
     private fun stopTrackers(teardownGeofences: Boolean = false) {
         listOf<() -> Unit>(
             chargerTracker::stop, batteryTracker::stop, screenTracker::stop,
-            wifiTracker::stop, bluetoothTracker::stop, callTracker::stop,
+            wifiTracker::stop, bluetoothTracker::stop, headsetTracker::stop, callTracker::stop,
             flipTracker::stop, shakeTracker::stop, lightTracker::stop,
             mediaTracker::stop,
         ).forEach { stop ->
@@ -512,6 +522,7 @@ class AutomationEngine(
         if (demand.needsScreen) screenTracker.start() else screenTracker.stop()
         if (demand.needsWifi) wifiTracker.start() else wifiTracker.stop()
         if (demand.needs(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED)) bluetoothTracker.start() else bluetoothTracker.stop()
+        if (demand.needsHeadset) headsetTracker.start() else headsetTracker.stop()
         if (demand.needs(TriggerEvent.CALL_RINGING, TriggerEvent.CALL_ANSWERED, TriggerEvent.CALL_OUTGOING, TriggerEvent.CALL_ENDED)) callTracker.start() else callTracker.stop()
         if (demand.needsMedia) {
             if (!mediaTracker.start()) clearMediaEvents()
@@ -658,6 +669,23 @@ class AutomationEngine(
                     matches,
                     liveState = effectiveState,
                     eventContext = EventTemplateContext.live(effectiveState),
+                )
+            }
+        }
+    }
+
+    private suspend fun pollHeadsetEvents(liveState: LiveSystemState) {
+        val events = headsetTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (event in events) {
+            val matches = RuleEvaluator.evaluateHeadset(rules, event, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing $event headset rules (${matches.size} rule(s))")
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.headset(event, liveState),
                 )
             }
         }

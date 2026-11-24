@@ -285,6 +285,30 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                 ),
             ),
             PickerCategoryGroup(
+                id = TriggerCategory.AUDIO.name,
+                label = TriggerCategory.AUDIO.label,
+                icon = Icons.Default.Headphones,
+                iconTint = Color(0xFF9FA8DA),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.HEADSET_CONNECTED,
+                        title = TriggerEvent.HEADSET_CONNECTED.label,
+                        subtitle = context.getString(TriggerEvent.HEADSET_CONNECTED.descriptionRes),
+                        icon = Icons.Default.Headphones,
+                        iconTint = Color(0xFF9FA8DA),
+                        keywords = listOf("headset", "headphones", "earphones", "earbuds", "audio", "wired", "usb", "bluetooth", "plug", "connected"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.HEADSET_DISCONNECTED,
+                        title = TriggerEvent.HEADSET_DISCONNECTED.label,
+                        subtitle = context.getString(TriggerEvent.HEADSET_DISCONNECTED.descriptionRes),
+                        icon = Icons.Default.HeadsetOff,
+                        iconTint = Color(0xFFC5CAE9),
+                        keywords = listOf("headset", "headphones", "earphones", "earbuds", "audio", "unplug", "disconnected", "removed"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
                 id = TriggerCategory.NFC_TAG.name,
                 label = TriggerCategory.NFC_TAG.label,
                 icon = Icons.Default.Nfc,

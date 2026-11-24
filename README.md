@@ -168,6 +168,7 @@ A rule can combine up to five independently configured triggers with OR semantic
 - 💡 **Screen & State:** Screen turned on/off, device unlocked.
 - ⏰ **Schedule & Time:** Daily, weekdays, weekends, or specific days and exact times.
 - 📶 **Connectivity:** Wi-Fi connected/disconnected (any or target SSID), Bluetooth device connected/disconnected.
+- 🎧 **Headset:** Headset connected/disconnected for wired, USB and Bluetooth audio outputs. Fires when the first headset output appears and when the last one is removed (extra devices and the built-in speaker are ignored); no permission needed and nothing is replayed at startup.
 - 🔄 **Sensors & Motion:**
   - **Device Flip:** Face-down on table or turned face-up (Proximity + Gravity Z-axis with 500ms debounce).
   - **Shake:** Shake detection with a per-rule strength slider (6–32 m/s²) under the trigger settings; one shake produces one trigger.
