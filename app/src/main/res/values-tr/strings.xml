@@ -1019,6 +1019,7 @@
     <string name="about_btn_github">GitHub Deposu</string>
     <string name="about_btn_issues">Sorun Bildir / Geri Bildirim</string>
     <string name="engine_not_running">Motor çalışmıyor</string>
+    <string name="home_sibling_build_warning">FlowPilot\u0027ın başka bir sürümü (release veya debug) de yüklü. Onun motoru da açıksa aynı kural iki kez çalışabilir. Motoru birinde kapatın.</string>
     <string name="cat_media">Medya</string>
     <string name="trigger_media_playing">Medya oynatılmaya başladı</string>
     <string name="trigger_media_paused">Medya duraklatıldı</string>

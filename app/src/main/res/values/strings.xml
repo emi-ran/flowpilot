@@ -1019,6 +1019,7 @@
     <string name="about_btn_github">GitHub Repository</string>
     <string name="about_btn_issues">Report Issue / Feedback</string>
     <string name="engine_not_running">Engine is not running</string>
+    <string name="home_sibling_build_warning">Another FlowPilot build (release or debug) is installed. If its engine is also on, the same rule can run twice. Turn the engine off in one of them.</string>
     <string name="cat_media">Media</string>
     <string name="trigger_media_playing">Media started playing</string>
     <string name="trigger_media_paused">Media paused</string>

@@ -11,6 +11,7 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+- Warn on the home screen when both the release and debug FlowPilot builds are installed and the engine is on, since each build runs its own engine and the same rule can fire twice. Detection is install-only; builds do not communicate.
 ### Changed
 - Move remaining hardcoded English and Turkish UI, notification and accessibility text into localized string resources (EN/TR).
 ### Fixed
