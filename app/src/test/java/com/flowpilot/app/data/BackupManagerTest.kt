@@ -669,7 +669,7 @@ class BackupManagerTest {
         // Verify valid envelope structure
         assertThat(BackupManager.isEncryptedBackup(encryptedJson)).isTrue()
         assertThat(encryptedJson).contains("\"format\": \"flowpilot_encrypted_backup\"")
-        assertThat(encryptedJson).contains("\"version\": 1")
+        assertThat(encryptedJson).contains("\"version\": 2")
 
         // Decrypt
         val restoreResult = BackupManager.parseEncryptedImport(encryptedJson, password)
@@ -853,7 +853,7 @@ class BackupManagerTest {
 
         assertThat(BackupManager.isValidPassword("12345678")).isTrue()
         assertThat(BackupManager.isValidPassword("  a!    ")).isTrue()
-        assertThat(BackupManager.isValidPassword("密碼12345")).isTrue()
+        assertThat(BackupManager.isValidPassword("密碼123456")).isTrue()
 
         val rule = createSampleRule("r-pass", "Pass Rule")
 
