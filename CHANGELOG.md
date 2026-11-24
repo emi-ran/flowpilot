@@ -5,6 +5,7 @@ All notable FlowPilot changes are documented here.
 ## [Unreleased]
 
 ### Added
+- Show Autostart guidance on Xiaomi, Redmi and POCO (MIUI/HyperOS) devices when notification access is granted but the listener is disconnected, with a button that opens the MIUI Autostart settings (falls back to app details).
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 ### Fixed
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.

@@ -743,6 +743,10 @@
     <string name="perms_hyperos_title">HyperOS Autostart</string>
     <string name="perms_hyperos_desc">HyperOS does not expose this setting for apps to read. Open list to verify FlowPilot is enabled, then set Battery saver to No restrictions.</string>
     <string name="perms_hyperos_pill">Check in HyperOS</string>
+    <string name="perms_miui_autostart_title">Autostart may be blocked</string>
+    <string name="perms_miui_autostart_desc">Notification access is granted but the listener is not connected. On Xiaomi, Redmi and POCO devices this usually means Autostart is turned off for FlowPilot. Open Autostart settings and enable FlowPilot.</string>
+    <string name="perms_miui_autostart_pill">Listener blocked</string>
+    <string name="perms_miui_autostart_action">Open Autostart</string>
     <string name="perms_secure_settings_title">Secure settings</string>
     <string name="perms_secure_settings_ready">Battery Saver actions can run through Shizuku. ADB grant is optional direct access.</string>
     <string name="perms_secure_settings_needed">Required for Battery Saver actions. Grant with ADB or Shizuku.</string>

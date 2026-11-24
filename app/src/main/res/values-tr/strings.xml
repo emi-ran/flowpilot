@@ -743,6 +743,10 @@
     <string name="perms_hyperos_title">HyperOS Otomatik Başlatma</string>
     <string name="perms_hyperos_desc">HyperOS bu ayarı doğrudan okutmaz. FlowPilot\'ın açık olduğunu doğrulamak için listeyi açın ve pil tasarrufunu \'Kısıtlama yok\' yapın.</string>
     <string name="perms_hyperos_pill">HyperOS\'ta kontrol et</string>
+    <string name="perms_miui_autostart_title">Otomatik başlatma engelli olabilir</string>
+    <string name="perms_miui_autostart_desc">Bildirim erişimi verilmiş ancak dinleyici bağlı değil. Xiaomi, Redmi ve POCO cihazlarda bu genellikle FlowPilot için Otomatik başlatmanın kapalı olduğu anlamına gelir. Otomatik başlatma ayarlarını açıp FlowPilot\'ı etkinleştirin.</string>
+    <string name="perms_miui_autostart_pill">Dinleyici engelli</string>
+    <string name="perms_miui_autostart_action">Otomatik başlatmayı aç</string>
     <string name="perms_secure_settings_title">Güvenli sistem ayarları</string>
     <string name="perms_secure_settings_ready">Pil Tasarrufu eylemleri Shizuku üzerinden çalışabilir. ADB yetkisi doğrudan erişim sağlar.</string>
     <string name="perms_secure_settings_needed">Pil Tasarrufu eylemleri için gereklidir. ADB veya Shizuku ile yetki verin.</string>
