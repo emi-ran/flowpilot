@@ -12,6 +12,7 @@ All notable FlowPilot changes are documented here.
 ### Added
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 ### Fixed
+- Prevent JSON injection through template variables: values substituted into JSON commands and JSON webhook bodies (notification text, SMS body, etc.) are now JSON-escaped, so quotes, backslashes and control characters can no longer break out of strings or add keys.
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.
 - Back up the original rules JSON before duplicate-ID rules are dropped on the next write.
 - Fail encrypted export and rule duplication when a stored secret cannot be decrypted (for example after losing the Keystore key), and keep the encrypted value on save instead of replacing it with an empty secret.
