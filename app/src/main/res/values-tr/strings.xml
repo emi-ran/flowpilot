@@ -1174,4 +1174,16 @@
     <string name="backup_export_failed">Dışa aktarma başarısız</string>
     <string name="backup_import_invalid_format">Geçersiz biçim</string>
     <string name="backup_import_failed">İçe aktarma başarısız. Dosyanın geçerli bir FlowPilot yedeği olduğunu kontrol edin.</string>
+    <string name="nfc_tag_scanned_toast">NFC etiketi okundu</string>
+    <string name="shizuku_permission_granted">Shizuku izni verildi</string>
+    <string name="shizuku_permission_denied">Shizuku izni reddedildi</string>
+    <string name="notif_channel_automation_alerts">Otomasyon uyarıları</string>
+    <string name="notif_default_body">Otomasyon çalıştı</string>
+    <string name="bt_picker_device_unpaired">Seçilen cihaz artık eşleşmiş değil. Eşleşmiş bir cihaz seçene kadar bu kural eşleşmeyecek.</string>
+    <string name="loading_applications">Uygulamalar yükleniyor...</string>
+    <string name="battery_notice_text">⚠️ Pil uyarısı: Arka plan sensör dinleme, pil tüketimini azaltmak için SENSOR_DELAY_NORMAL (~5Hz) kullanır. HyperOS üzerinde güvenilir çalışma için FlowPilot\'u pil optimizasyonundan muaf tutun.</string>
+    <string name="phone_call_action_warning">⚠️ Gerçek bir telefon görüşmesini otomatik başlatır. Telefon görüşmesi yapma izni gerektirir.</string>
+    <string name="wifi_selected_cd">Seçili</string>
+    <string name="sms_recipient_placeholder">Örn. +90555... veya ${sms.sender}</string>
+    <string name="sms_message_placeholder">Örn. Alınan kod: ${sms.otp}</string>
 </resources>

@@ -11,6 +11,8 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+### Changed
+- Move remaining hardcoded English and Turkish UI, notification and accessibility text into localized string resources (EN/TR).
 ### Fixed
 - Prevent JSON injection through template variables: values substituted into JSON commands and JSON webhook bodies (notification text, SMS body, etc.) are now JSON-escaped, so quotes, backslashes and control characters can no longer break out of strings or add keys.
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.
