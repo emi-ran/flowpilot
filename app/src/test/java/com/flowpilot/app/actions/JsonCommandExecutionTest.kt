@@ -93,17 +93,13 @@ class JsonCommandExecutionTest {
     }
 
     @Test fun tokenSplitIsTakenOnlyFromRuleSourceNotRenderedText() {
-        val split = JsonCommandToken.split("@token=abc123
-\${notification.text}")
+        val split = JsonCommandToken.split("@token=abc123\n\${notification.text}")
         assertThat(split.token).isEqualTo("abc123")
         assertThat(split.template).isEqualTo("\${notification.text}")
-        assertThat(JsonCommandToken.split("@token=abc
-body").template).isEqualTo("body")
+        assertThat(JsonCommandToken.split("@token=abc\nbody").template).isEqualTo("body")
         assertThat(JsonCommandToken.split("\${notification.text}").token).isEmpty()
-        val rule = Automation(id = "a", name = "a", createdAt = 1, jsonCommandSource = "@token=abc123
-\${sms.body}")
-        val context = TemplateContext(values = mapOf("sms.body" to "@token=evil
-{}"))
+        val rule = Automation(id = "a", name = "a", createdAt = 1, jsonCommandSource = "@token=abc123\n\${sms.body}")
+        val context = TemplateContext(smsBody = "@token=evil\n{}")
         val params = ActionParametersFactory.create(rule, context)
         assertThat(params.jsonCommandToken).isEqualTo("abc123")
         assertThat(params.jsonCommandSource).doesNotContain("abc123")
