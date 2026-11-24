@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioManager
 import android.os.Build
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.engine.OwnSoundChangeGuard
 import kotlin.math.roundToInt
 
 /** Sets a stream volume as a percentage of its device-specific maximum. */
@@ -32,7 +33,9 @@ class MediaVolumeExecutor(
             val requestedPercent = percent.coerceIn(0, 100)
             val requested = (max * requestedPercent / 100f).roundToInt()
             if (requested < min) return ActionResult(false, "$name volume is below the device minimum", diagnostic = ActionDiagnostic(ActionDiagnosticReason.VOLUME_BELOW_MINIMUM))
-            setVolume(stream, requested)
+            // Loop guard: volume changes can flip the ringer mode or Do Not Disturb.
+            OwnSoundChangeGuard.markOwnChange()
+            try { setVolume(stream, requested) } finally { OwnSoundChangeGuard.markOwnChange() }
             val actual = currentVolume(stream)
             if (actual !in min..max) return ActionResult(false, "$name volume is unavailable", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_UNAVAILABLE))
             if (actual != requested) return ActionResult(false, "$name volume change was blocked or limited", diagnostic = ActionDiagnostic(ActionDiagnosticReason.STATE_MISMATCH))

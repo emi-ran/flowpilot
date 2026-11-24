@@ -60,6 +60,7 @@ Last updated: 2026-11-15
 - First-run spotlight tutorial on Xiaomi 2506BPN68G with the debug APK: each of the six steps highlighted its anchor, "Show presets" closed the tour and opened the preset sheet, "Finish" and Skip closed it, a relaunch did not reopen it, and Settings → "Replay tutorial" started it again from Home.
 - Safe rule duplication, pre-save/pre-enable conflict warnings, background NFC confirmation, and app language switching.
 - Time schedules, charger, battery threshold, screen, Wi-Fi, and notification triggers.
+- Ringer-mode (normal/vibrate/silent) and Do Not Disturb (on/off) triggers with a 2 s own-change loop guard; JVM-tested, not device-verified.
 - Notifications, app launch, URL opening, alarm, timer, offline TTS, media volume, vibration, Play sound, webhook base action, NFC, Battery Saver, Auto-rotate, Do Not Disturb, and Dark theme actions.
 - Alarm creation requests UI skipping, supports repeat weekdays and templated labels; scheduling, presentation and deletion remain controlled by the Clock app.
 - Calendar events are inserted directly into a selected writable calendar, optionally recurring daily, weekly, monthly or yearly with a preset or custom reminder up to four weeks before; each trigger creates a new event or series. Reminder delivery and synchronization depend on the provider.

@@ -40,6 +40,11 @@ val TriggerEvent.labelRes: Int
         TriggerEvent.MEDIA_PLAYING -> R.string.trigger_media_playing
         TriggerEvent.MEDIA_PAUSED -> R.string.trigger_media_paused
         TriggerEvent.MEDIA_TRACK_CHANGED -> R.string.trigger_media_track_changed
+        TriggerEvent.RINGER_NORMAL -> R.string.trigger_ringer_normal
+        TriggerEvent.RINGER_VIBRATE -> R.string.trigger_ringer_vibrate
+        TriggerEvent.RINGER_SILENT -> R.string.trigger_ringer_silent
+        TriggerEvent.DND_ENABLED -> R.string.trigger_dnd_enabled
+        TriggerEvent.DND_DISABLED -> R.string.trigger_dnd_disabled
     }
 
 @get:StringRes
@@ -137,6 +142,7 @@ val TriggerCategory.labelRes: Int
         TriggerCategory.MOTION -> R.string.cat_motion
         TriggerCategory.LOCATION -> R.string.cat_location
         TriggerCategory.MEDIA -> R.string.cat_media
+        TriggerCategory.SOUND -> R.string.cat_sound
     }
 
 @get:StringRes
@@ -228,6 +234,11 @@ val TriggerEvent.descriptionRes: Int
         TriggerEvent.MEDIA_PLAYING -> R.string.trigger_media_playing_desc
         TriggerEvent.MEDIA_PAUSED -> R.string.trigger_media_paused_desc
         TriggerEvent.MEDIA_TRACK_CHANGED -> R.string.trigger_media_track_changed_desc
+        TriggerEvent.RINGER_NORMAL -> R.string.trigger_ringer_normal_desc
+        TriggerEvent.RINGER_VIBRATE -> R.string.trigger_ringer_vibrate_desc
+        TriggerEvent.RINGER_SILENT -> R.string.trigger_ringer_silent_desc
+        TriggerEvent.DND_ENABLED -> R.string.trigger_dnd_enabled_desc
+        TriggerEvent.DND_DISABLED -> R.string.trigger_dnd_disabled_desc
     }
 
 @get:StringRes

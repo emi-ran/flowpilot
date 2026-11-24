@@ -147,6 +147,7 @@ enum class TriggerCategory(val label: String) {
     MOTION("Motion"),
     LOCATION("Location"),
     MEDIA("Media"),
+    SOUND("Sound"),
 }
 
 @Serializable
@@ -273,7 +274,12 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     GEOFENCE_EXIT("Exited location area", TriggerCategory.LOCATION),
     MEDIA_PLAYING("Media started playing", TriggerCategory.MEDIA),
     MEDIA_PAUSED("Media paused", TriggerCategory.MEDIA),
-    MEDIA_TRACK_CHANGED("Media track changed", TriggerCategory.MEDIA);
+    MEDIA_TRACK_CHANGED("Media track changed", TriggerCategory.MEDIA),
+    RINGER_NORMAL("Ringer set to normal", TriggerCategory.SOUND),
+    RINGER_VIBRATE("Ringer set to vibrate", TriggerCategory.SOUND),
+    RINGER_SILENT("Ringer set to silent", TriggerCategory.SOUND),
+    DND_ENABLED("Do Not Disturb turned on", TriggerCategory.SOUND),
+    DND_DISABLED("Do Not Disturb turned off", TriggerCategory.SOUND);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }

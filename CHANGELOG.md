@@ -5,6 +5,7 @@ All notable FlowPilot changes are documented here.
 ## [Unreleased]
 
 ### Added
+- Add ringer-mode (normal, vibrate, silent) and Do Not Disturb (on, off) triggers. Receivers register only while an enabled rule needs them; initial, sticky and repeated values never fire, and changes made by FlowPilot's own sound, volume and Do Not Disturb actions within 2 seconds are ignored to prevent self-triggering loops. Not verified on a physical device.
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 ### Fixed
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.

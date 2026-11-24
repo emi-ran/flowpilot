@@ -165,6 +165,7 @@ Bir kural en fazla beş bağımsız tetikleyiciyi VEYA mantığıyla birleştire
 
 - 📱 **Uygulama Döngüsü:** Seçilen uygulamanın açılması veya kapanması (düşük maliyetli `UsageStatsManager` geçişleri).
 - 🔌 **Güç & Pil:** Şarja takılma / çıkarılma, pil seviyesinin belirlenen yüzdenin üstüne çıkması veya altına inmesi.
+- 🔔 **Ses:** Zil modunun normal, titreşim veya sessize alınması; Rahatsız Etme'nin açılması / kapanması (FlowPilot'un kendi eylemlerinin yaptığı değişiklikler döngüyü önlemek için yok sayılır).
 - 💡 **Ekran & Durum:** Ekranın açılması / kapanması, kilit ekranının açılması.
 - ⏰ **Zaman & Takvim:** Günlük, hafta içi, hafta sonu veya özel seçili gün ve saatlerde zamanlanmış tetikleme.
 - 📶 **Bağlantılar:** Wi-Fi ağına bağlanma / ayrılma (tüm ağlar veya belirli SSID), Bluetooth cihazına bağlanma / ayrılma.
