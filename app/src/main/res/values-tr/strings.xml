@@ -1118,7 +1118,7 @@
     <string name="action_execute_json_command">JSON komutunu çalıştır</string>
     <string name="action_execute_json_command_desc">JSON nesnesinden desteklenen bir eylemi çalıştır</string>
     <string name="json_command_source">JSON kaynak şablonu</string>
-    <string name="json_command_warning">Eşleşen mesajlar bu cihazda eylem çalıştırabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler seçin. Kaynak şablonu kuralla birlikte şifreli saklanır.</string>
+    <string name="json_command_warning">Eşleşen mesajlar bu cihazda eylem çalıştırabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler seçin. Kaynak şablonu kuralla birlikte şifreli saklanır. Ortak sır istemek için şablonu @token=SIRRINIZ satırıyla başlatın ve her komutta aynı değeri \"token\" olarak gönderin.</string>
     <string name="variable_desc_command_success">Son JSON komutunun başarılı olup olmadığı</string>
     <string name="variable_desc_command_status">Son JSON komutunun durumu</string>
     <string name="variable_desc_command_message">Son JSON komutunun güvenli özeti</string>

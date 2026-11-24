@@ -77,4 +77,42 @@ class JsonCommandExecutionTest {
         assertThat(result.applyTo(TemplateContext()).values["command.success"]).isEmpty()
         assertThat(result.message).isEqualTo("Request sent; outcome not verified")
     }
+
+    @Test fun tokenGatesDispatchOnlyWhenConfigured() = runBlocking {
+        fun cmd(token: String?) = """{"version":1,"token":${if (token == null) "null" else "\"$token\""},"action":"TORCH_ON","params":{}}"""
+        var calls = 0
+        suspend fun run(input: String, expected: String) = JsonCommandExecution.execute(input, expected) { _, _ -> calls++; ActionResult(true, "ok") }
+        assertThat(run("""{"version":1,"action":"TORCH_ON","params":{}}""", "").status).isEqualTo("success")
+        assertThat(run(cmd("s3cretvalue"), "").status).isEqualTo("success")
+        assertThat(run(cmd("s3cretvalue"), "s3cretvalue").status).isEqualTo("success")
+        assertThat(calls).isEqualTo(3)
+        for (bad in listOf("""{"version":1,"action":"TORCH_ON","params":{}}""", cmd("wrong"), cmd("s3cretvalue "), cmd(""))) {
+            assertThat(run(bad, "s3cretvalue").status).isEqualTo("unauthorized")
+        }
+        assertThat(calls).isEqualTo(3)
+    }
+
+    @Test fun tokenSplitIsTakenOnlyFromRuleSourceNotRenderedText() {
+        val split = JsonCommandToken.split("@token=abc123
+\${notification.text}")
+        assertThat(split.token).isEqualTo("abc123")
+        assertThat(split.template).isEqualTo("\${notification.text}")
+        assertThat(JsonCommandToken.split("@token=abc
+body").template).isEqualTo("body")
+        assertThat(JsonCommandToken.split("\${notification.text}").token).isEmpty()
+        val rule = Automation(id = "a", name = "a", createdAt = 1, jsonCommandSource = "@token=abc123
+\${sms.body}")
+        val context = TemplateContext(values = mapOf("sms.body" to "@token=evil
+{}"))
+        val params = ActionParametersFactory.create(rule, context)
+        assertThat(params.jsonCommandToken).isEqualTo("abc123")
+        assertThat(params.jsonCommandSource).doesNotContain("abc123")
+    }
+
+    @Test fun tokenComparisonHandlesDifferentLengths() {
+        assertThat(JsonCommandToken.isAuthorized("", null)).isTrue()
+        assertThat(JsonCommandToken.isAuthorized("a", null)).isFalse()
+        assertThat(JsonCommandToken.isAuthorized("abc", "abcd")).isFalse()
+        assertThat(JsonCommandToken.isAuthorized("abc", "abc")).isTrue()
+    }
 }
