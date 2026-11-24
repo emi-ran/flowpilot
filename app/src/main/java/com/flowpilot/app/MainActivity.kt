@@ -139,7 +139,7 @@ class MainActivity : ComponentActivity() {
         // ReaderMode invokes this only for a tag discovered by Android's NFC stack. Intent extras are forgeable.
         if (nfcIntentSession.emitReaderModeTag(tag.id, NfcTagHandoff::emitTagScanned)) {
             runOnUiThread {
-                Toast.makeText(this, "NFC tag scanned", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.nfc_tag_scanned_toast), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -149,7 +149,7 @@ class MainActivity : ComponentActivity() {
             val granted = grantResult == PackageManager.PERMISSION_GRANTED
             Toast.makeText(
                 this,
-                if (granted) "Shizuku izni verildi" else "Shizuku izni reddedildi",
+                if (granted) getString(R.string.shizuku_permission_granted) else getString(R.string.shizuku_permission_denied),
                 Toast.LENGTH_SHORT,
             ).show()
             ShizukuPermissionBridge.onResult?.invoke(granted)

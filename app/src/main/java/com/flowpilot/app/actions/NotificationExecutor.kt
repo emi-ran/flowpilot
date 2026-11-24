@@ -33,13 +33,13 @@ class NotificationExecutor(
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 manager.createNotificationChannel(
-                    NotificationChannel(CHANNEL_ID, "Automation alerts", NotificationManager.IMPORTANCE_HIGH),
+                    NotificationChannel(CHANNEL_ID, context.getString(R.string.notif_channel_automation_alerts), NotificationManager.IMPORTANCE_HIGH),
                 )
             }
             val notification = Notification.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(parameters.notificationTitle.ifBlank { "FlowPilot" })
-                .setContentText(parameters.notificationBody.ifBlank { "Automation ran" })
+                .setContentTitle(parameters.notificationTitle.ifBlank { context.getString(R.string.app_name) })
+                .setContentText(parameters.notificationBody.ifBlank { context.getString(R.string.notif_default_body) })
                 .setAutoCancel(true)
                 .build()
             poster(nextId.incrementAndGet(), notification)

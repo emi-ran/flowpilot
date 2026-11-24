@@ -1073,7 +1073,7 @@ class AutomationEngine(
                                             if (action != com.flowpilot.app.data.model.ActionType.EXECUTE_JSON_COMMAND) {
                                                 return dispatcher.executeAsync(action, parameters)
                                             }
-                                            val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(parameters.jsonCommandSource) { nestedAction, nestedParameters ->
+                                            val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(parameters.jsonCommandSource, parameters.jsonCommandToken) { nestedAction, nestedParameters ->
                                                 dispatcher.executeAsync(nestedAction, nestedParameters)
                                             }
                                             templateContext = outcome.applyTo(templateContext)
