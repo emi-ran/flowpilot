@@ -76,7 +76,7 @@ fun BluetoothDevicePickerField(
         )
     } else if (selectedDeviceStillBonded == false) {
         Text(
-            "Selected device is no longer paired. This rule will not match until you choose a bonded device.",
+            stringResource(R.string.bt_picker_device_unpaired),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(top = 6.dp),

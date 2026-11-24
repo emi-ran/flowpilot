@@ -1293,7 +1293,7 @@ fun DeviceFlipTriggerSettings(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        "⚠️ Battery Notice: Background sensor listening uses SENSOR_DELAY_NORMAL (~5Hz) to minimize drain. For reliable execution on HyperOS, ensure FlowPilot is exempted from battery optimization.",
+                        stringResource(R.string.battery_notice_text),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.padding(10.dp),
@@ -1324,7 +1324,7 @@ fun PhoneActionSettings(
         ) {
             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "⚠️ Starts a real phone call automatically. Requires Make phone calls permission.",
+                    stringResource(R.string.phone_call_action_warning),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                 )
