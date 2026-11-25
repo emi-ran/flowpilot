@@ -153,6 +153,8 @@ Start automating instantly with built-in recipes designed for everyday life:
 | 🚗 **Leaving Home Mode** | Disconnected from Home Wi-Fi | Enables Mobile Data (Shizuku), sets Normal ringer, raises volume to 80% |
 | 🏠 **Welcome Home Mode** | Connected to Home Wi-Fi | Disables Mobile Data (Shizuku) and sets brightness to 50% |
 | 📍 **SMS Emergency Responder** | Incoming SMS with secret phrase | Enables location and replies with a location link if a fix is available; a fix is not guaranteed |
+| 🎧 **Headset Music Start** | Headset connected (wired, USB or Bluetooth) | Starts media playback |
+| ⏸️ **Headset Music Pause** | Last headset disconnected | Pauses media playback |
 
 ---
 
@@ -165,9 +167,11 @@ A rule can combine up to five independently configured triggers with OR semantic
 
 - 📱 **App Lifecycle:** App launched or closed (lightweight `UsageStatsManager` transitions).
 - 🔌 **Power & Battery:** Charger plugged in / unplugged, battery level rises above or drops below custom percentage.
+- 🔔 **Sound:** Ringer set to normal, vibrate or silent; Do Not Disturb turned on or off (changes made by FlowPilot's own actions are ignored to prevent loops).
 - 💡 **Screen & State:** Screen turned on/off, device unlocked.
 - ⏰ **Schedule & Time:** Daily, weekdays, weekends, or specific days and exact times.
 - 📶 **Connectivity:** Wi-Fi connected/disconnected (any or target SSID), Bluetooth device connected/disconnected.
+- 🎧 **Headset:** Headset connected/disconnected for wired, USB and Bluetooth audio outputs. Fires when the first headset output appears and when the last one is removed (extra devices and the built-in speaker are ignored); no permission needed and nothing is replayed at startup.
 - 🔄 **Sensors & Motion:**
   - **Device Flip:** Face-down on table or turned face-up (Proximity + Gravity Z-axis with 500ms debounce).
   - **Shake:** Shake detection with a per-rule strength slider (6–32 m/s²) under the trigger settings; one shake produces one trigger.
@@ -213,7 +217,8 @@ When a rule is incomplete, Save points to the invalid trigger or action and expl
 - 🚀 **Apps & Web:** Launch installed app or open web URL.
 - 💬 **Phone & SMS:** Open dialer, place direct phone call, send automated background SMS, or prepare SMS draft.
 - 🔗 **HTTPS Webhook:** Send outbound HTTP requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, JSON body, AES-256-GCM Keystore encrypted secrets, and dynamic template variables.
-- 🧾 **JSON commands:** Run a bounded, versioned command from a notification, SMS, or another template source. All normal actions are supported; nested `EXECUTE_JSON_COMMAND` is rejected. Existing action permissions and capability checks still apply, but the receiver does not authenticate senders: matching content can trigger SMS or calls (potentially incurring charges), network changes, or device locking. Use trusted sources and restrictive filters. Subsequent webhook or SMS actions can report the result; notification title and message filters are independent. See the [command contract](skills/flowpilot-json-command/references/json-commands.md) and [installable agent skill](skills/flowpilot-json-command/SKILL.md) for the detailed schema and safety guidance. This expansion is unreleased; device verification is pending.
+- 📋 **Copy to clipboard:** Copy rendered text, such as an SMS OTP via `${sms.otp}`, to the clipboard. Copied text is never logged or stored in history, and Android 13+ hides it in clipboard previews.
+- 🧾 **JSON commands:** Run a bounded, versioned command from a notification, SMS, or another template source. All normal actions are supported; nested `EXECUTE_JSON_COMMAND` is rejected. Existing action permissions and capability checks still apply, but by default the receiver does not authenticate senders; to require a shared secret, start the source template with a line `@token=YOUR_SECRET` and include `"token":"YOUR_SECRET"` in each command (opt-in; existing rules are unchanged). Without it, matching content can trigger SMS or calls (potentially incurring charges), network changes, or device locking. Use trusted sources and restrictive filters. Subsequent webhook or SMS actions can report the result; notification title and message filters are independent. See the [command contract](skills/flowpilot-json-command/references/json-commands.md) and [installable agent skill](skills/flowpilot-json-command/SKILL.md) for the detailed schema and safety guidance. This expansion is unreleased; device verification is pending.
 - 🧩 **Template Variables:** Use `${...}` in speech, notification, webhook, SMS, phone, URL, alarm, and timer text. Every template-capable action field opens the same trigger-aware picker with filters (`trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape`). Global values include `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, and `${rule.name}`.
 
 ---
@@ -257,7 +262,7 @@ FlowPilot is engineered with an uncompromised commitment to user privacy:
 - 🔄 **Optional Update Checks:** Release builds automatically check the public GitHub Releases API by default, at most once a day, without sending an account or device identifier. Disable automatic checks in Settings; manual checks remain available. Debug builds do not check.
 - 📵 **No Cloud Synchronization:** FlowPilot does not automatically synchronize rules, logs, or secrets to a cloud account. User-configured actions can send selected data to external recipients.
 - 🛡️ **Android Keystore Protection:** Webhook secrets, tokens, and sensitive headers are encrypted with AES-256-GCM using Android Keystore keys, hardware-backed when supported by the device.
-- 🙈 **Log & Diagnostic Sanitization:** Execution history and logs mask or exclude sensitive content; persistent diagnostics store non-content enums and bounded numeric metadata. Configured values, including phone numbers and webhook fields, can remain visible in the editor.
+- 🙈 **Log & Diagnostic Sanitization:** Execution history and logs mask or exclude sensitive content; persistent diagnostics store non-content enums and bounded numeric metadata. Configured values, including phone numbers and webhook fields, can remain visible in the editor; standard (non-encrypted) exports redact phone numbers and webhook fields.
 
 ### Transparent Permission Disclosures
 FlowPilot declares sensitive permissions solely to power explicit automation features:

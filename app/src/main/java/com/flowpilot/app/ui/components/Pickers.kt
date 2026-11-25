@@ -181,6 +181,54 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                 ),
             ),
             PickerCategoryGroup(
+                id = TriggerCategory.SOUND.name,
+                label = TriggerCategory.SOUND.label,
+                icon = Icons.Default.NotificationsActive,
+                iconTint = Color(0xFF9FA8DA),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.RINGER_NORMAL,
+                        title = TriggerEvent.RINGER_NORMAL.label,
+                        subtitle = context.getString(TriggerEvent.RINGER_NORMAL.descriptionRes),
+                        icon = Icons.Default.NotificationsActive,
+                        iconTint = Color(0xFF81C784),
+                        keywords = listOf("sound", "ringer", "ring", "normal", "volume", "profile", "audio"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.RINGER_VIBRATE,
+                        title = TriggerEvent.RINGER_VIBRATE.label,
+                        subtitle = context.getString(TriggerEvent.RINGER_VIBRATE.descriptionRes),
+                        icon = Icons.Default.Vibration,
+                        iconTint = Color(0xFFFFB74D),
+                        keywords = listOf("sound", "ringer", "vibrate", "vibration", "profile", "audio"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.RINGER_SILENT,
+                        title = TriggerEvent.RINGER_SILENT.label,
+                        subtitle = context.getString(TriggerEvent.RINGER_SILENT.descriptionRes),
+                        icon = Icons.Default.NotificationsOff,
+                        iconTint = Color(0xFFE57373),
+                        keywords = listOf("sound", "ringer", "silent", "mute", "quiet", "profile", "audio"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.DND_ENABLED,
+                        title = TriggerEvent.DND_ENABLED.label,
+                        subtitle = context.getString(TriggerEvent.DND_ENABLED.descriptionRes),
+                        icon = Icons.Default.DoNotDisturb,
+                        iconTint = Color(0xFF9FA8DA),
+                        keywords = listOf("dnd", "do not disturb", "focus", "interruption", "on", "enabled", "priority"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.DND_DISABLED,
+                        title = TriggerEvent.DND_DISABLED.label,
+                        subtitle = context.getString(TriggerEvent.DND_DISABLED.descriptionRes),
+                        icon = Icons.Default.DoNotDisturbOff,
+                        iconTint = Color(0xFF90CAF9),
+                        keywords = listOf("dnd", "do not disturb", "focus", "interruption", "off", "disabled"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
                 id = TriggerCategory.PHONE.name,
                 label = TriggerCategory.PHONE.label,
                 icon = Icons.Default.PhoneInTalk,
@@ -281,6 +329,30 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                         icon = Icons.Default.BluetoothDisabled,
                         iconTint = Color(0xFFB2DFDB),
                         keywords = listOf("bluetooth", "bt", "device", "disconnect", "unpair", "leave", "off"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
+                id = TriggerCategory.AUDIO.name,
+                label = TriggerCategory.AUDIO.label,
+                icon = Icons.Default.Headphones,
+                iconTint = Color(0xFF9FA8DA),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.HEADSET_CONNECTED,
+                        title = TriggerEvent.HEADSET_CONNECTED.label,
+                        subtitle = context.getString(TriggerEvent.HEADSET_CONNECTED.descriptionRes),
+                        icon = Icons.Default.Headphones,
+                        iconTint = Color(0xFF9FA8DA),
+                        keywords = listOf("headset", "headphones", "earphones", "earbuds", "audio", "wired", "usb", "bluetooth", "plug", "connected"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.HEADSET_DISCONNECTED,
+                        title = TriggerEvent.HEADSET_DISCONNECTED.label,
+                        subtitle = context.getString(TriggerEvent.HEADSET_DISCONNECTED.descriptionRes),
+                        icon = Icons.Default.HeadsetOff,
+                        iconTint = Color(0xFFC5CAE9),
+                        keywords = listOf("headset", "headphones", "earphones", "earbuds", "audio", "unplug", "disconnected", "removed"),
                     ),
                 ),
             ),
@@ -771,6 +843,14 @@ fun ActionPicker(
                         icon = Icons.Default.Language,
                         iconTint = Color(0xFF4DB6AC),
                         keywords = listOf("url", "link", "web", "browser", "http", "https", "site", "open"),
+                    ),
+                    PickerItem(
+                        value = ActionType.COPY_TO_CLIPBOARD,
+                        title = ActionType.COPY_TO_CLIPBOARD.label,
+                        subtitle = context.getString(ActionType.COPY_TO_CLIPBOARD.descriptionRes),
+                        icon = Icons.Default.ContentCopy,
+                        iconTint = Color(0xFF4DB6AC),
+                        keywords = listOf("copy", "clipboard", "paste", "text", "otp", "code", "panel", "pano", "kopyala"),
                     ),
                     PickerItem(
                         value = ActionType.HTTP_WEBHOOK,
@@ -1635,7 +1715,7 @@ fun AppPicker(
                             )
                             Spacer(Modifier.height(16.dp))
                             Text(
-                                "Loading applications...",
+                                stringResource(R.string.loading_applications),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyMedium,
                             )

@@ -218,6 +218,14 @@ internal object EventTemplateContext {
             .copy(isCharging = event == ChargerEvent.CONNECTED)
     }
 
+    fun headset(event: HeadsetEvent, liveState: LiveSystemState): TemplateContext {
+        val trigger = when (event) {
+            HeadsetEvent.CONNECTED -> TriggerEvent.HEADSET_CONNECTED
+            HeadsetEvent.DISCONNECTED -> TriggerEvent.HEADSET_DISCONNECTED
+        }
+        return base(trigger.name, System.currentTimeMillis(), liveState)
+    }
+
     /** Events without event-specific values; the trigger itself comes from [forRule]. */
     fun live(
         liveState: LiveSystemState,
@@ -351,11 +359,14 @@ class AutomationEngine(
     private val screenTracker: ScreenStateTracker = ScreenStateTracker(context.applicationContext),
     private val wifiTracker: WifiStateTracker = WifiStateTracker(context.applicationContext),
     private val bluetoothTracker: BluetoothDeviceTracker = BluetoothDeviceTracker(context.applicationContext),
+    private val headsetTracker: HeadsetDeviceTracker = HeadsetDeviceTracker(context.applicationContext),
     private val callTracker: CallStateTracker = CallStateTracker(context.applicationContext),
     private val flipTracker: DeviceFlipTracker = DeviceFlipTracker(context.applicationContext),
     private val shakeTracker: DeviceShakeTracker = DeviceShakeTracker(context.applicationContext),
     private val lightTracker: LightSensorTracker = LightSensorTracker(context.applicationContext),
     private val geofenceTracker: GeofenceTracker = GeofenceTracker(context.applicationContext),
+    private val ringerTracker: RingerModeTracker = RingerModeTracker(context.applicationContext),
+    private val dndTracker: DndStateTracker = DndStateTracker(context.applicationContext),
     private val onRunningChanged: (Boolean) -> Unit = {},
     private val onFailure: () -> Unit = {},
 ) {
@@ -447,12 +458,15 @@ class AutomationEngine(
                         polls = listOf(
                             pollStep("foreground") { poll(liveState) },
                             pollStep("charger") { pollChargerEvents(liveState) },
+                            pollStep("ringer") { pollRingerEvents(liveState) },
+                            pollStep("dnd") { pollDndEvents(liveState) },
                             pollStep("battery") { pollBatteryTransitions(liveState) },
                             pollStep("screen") { pollScreenEvents(liveState) },
                             pollStep("shake") { pollShakeEvents(liveState) },
                             pollStep("light") { pollLightTransitions(liveState) },
                             pollStep("wifi") { pollWifiTransitions(liveState) },
                             pollStep("bluetooth") { pollBluetoothTransitions(liveState) },
+                            pollStep("headset") { pollHeadsetEvents(liveState) },
                             pollStep("call") { pollCallTransitions(liveState) },
                             pollStep("media") { pollMediaEvents(liveState) },
                             pollStep("flip") { pollDeviceFlipEvents(liveState) },
@@ -490,9 +504,9 @@ class AutomationEngine(
     private fun stopTrackers(teardownGeofences: Boolean = false) {
         listOf<() -> Unit>(
             chargerTracker::stop, batteryTracker::stop, screenTracker::stop,
-            wifiTracker::stop, bluetoothTracker::stop, callTracker::stop,
+            wifiTracker::stop, bluetoothTracker::stop, headsetTracker::stop, callTracker::stop,
             flipTracker::stop, shakeTracker::stop, lightTracker::stop,
-            mediaTracker::stop,
+            mediaTracker::stop, ringerTracker::stop, dndTracker::stop,
         ).forEach { stop ->
             try { stop() } catch (e: Exception) {
                 Log.w(TAG, "Tracker cleanup failed (${e.javaClass.simpleName})")
@@ -511,10 +525,13 @@ class AutomationEngine(
         val demand = TriggerListenerDemand.from(rules)
         if (demand.needsBattery) batteryTracker.start() else batteryTracker.stop()
         if (demand.needsCharger) chargerTracker.start() else chargerTracker.stop()
+        if (demand.needsRinger) ringerTracker.start() else ringerTracker.stop()
+        if (demand.needsDnd) dndTracker.start() else dndTracker.stop()
         if (demand.needsScreen) screenTracker.start() else screenTracker.stop()
         if (demand.needsWifi) wifiTracker.start() else wifiTracker.stop()
         conditionDemand = ConditionStateDemand.from(rules)
         if (demand.needs(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED) || demand.needsBluetoothCondition) bluetoothTracker.start() else bluetoothTracker.stop()
+        if (demand.needsHeadset) headsetTracker.start() else headsetTracker.stop()
         if (demand.needs(TriggerEvent.CALL_RINGING, TriggerEvent.CALL_ANSWERED, TriggerEvent.CALL_OUTGOING, TriggerEvent.CALL_ENDED)) callTracker.start() else callTracker.stop()
         if (demand.needsMedia) {
             if (!mediaTracker.start()) clearMediaEvents()
@@ -653,6 +670,32 @@ class AutomationEngine(
         }
     }
 
+    private suspend fun pollRingerEvents(liveState: LiveSystemState) {
+        val events = ringerTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (state in events) {
+            val matches = RuleEvaluator.evaluateRinger(rules, state, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing ringer $state rules (${matches.size} rule(s))")
+                executeAll(matches, liveState = liveState, eventContext = EventTemplateContext.live(liveState))
+            }
+        }
+    }
+
+    private suspend fun pollDndEvents(liveState: LiveSystemState) {
+        val events = dndTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (state in events) {
+            val matches = RuleEvaluator.evaluateDnd(rules, state, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing DND $state rules (${matches.size} rule(s))")
+                executeAll(matches, liveState = liveState, eventContext = EventTemplateContext.live(liveState))
+            }
+        }
+    }
+
     private suspend fun pollBatteryTransitions(liveState: LiveSystemState) {
         val transitions = batteryTracker.drainTransitions()
         if (transitions.isEmpty()) return
@@ -666,6 +709,23 @@ class AutomationEngine(
                     matches,
                     liveState = effectiveState,
                     eventContext = EventTemplateContext.live(effectiveState),
+                )
+            }
+        }
+    }
+
+    private suspend fun pollHeadsetEvents(liveState: LiveSystemState) {
+        val events = headsetTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (event in events) {
+            val matches = RuleEvaluator.evaluateHeadset(rules, event, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing $event headset rules (${matches.size} rule(s))")
+                executeAll(
+                    matches,
+                    liveState = liveState,
+                    eventContext = EventTemplateContext.headset(event, liveState),
                 )
             }
         }
@@ -1081,7 +1141,7 @@ class AutomationEngine(
                                             if (action != com.flowpilot.app.data.model.ActionType.EXECUTE_JSON_COMMAND) {
                                                 return dispatcher.executeAsync(action, parameters)
                                             }
-                                            val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(parameters.jsonCommandSource) { nestedAction, nestedParameters ->
+                                            val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(parameters.jsonCommandSource, parameters.jsonCommandToken) { nestedAction, nestedParameters ->
                                                 dispatcher.executeAsync(nestedAction, nestedParameters)
                                             }
                                             templateContext = outcome.applyTo(templateContext)

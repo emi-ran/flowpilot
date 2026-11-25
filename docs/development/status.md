@@ -60,6 +60,7 @@ Last updated: 2026-11-15
 - First-run spotlight tutorial on Xiaomi 2506BPN68G with the debug APK: each of the six steps highlighted its anchor, "Show presets" closed the tour and opened the preset sheet, "Finish" and Skip closed it, a relaunch did not reopen it, and Settings → "Replay tutorial" started it again from Home.
 - Safe rule duplication, pre-save/pre-enable conflict warnings, background NFC confirmation, and app language switching.
 - Time schedules, charger, battery threshold, screen, Wi-Fi, and notification triggers.
+- Ringer-mode (normal/vibrate/silent) and Do Not Disturb (on/off) triggers with a 2 s own-change loop guard; JVM-tested, not device-verified.
 - Notifications, app launch, URL opening, alarm, timer, offline TTS, media volume, vibration, Play sound, webhook base action, NFC, Battery Saver, Auto-rotate, Do Not Disturb, and Dark theme actions.
 - Alarm creation requests UI skipping, supports repeat weekdays and templated labels; scheduling, presentation and deletion remain controlled by the Clock app.
 - Calendar events are inserted directly into a selected writable calendar, optionally recurring daily, weekly, monthly or yearly with a preset or custom reminder up to four weeks before; each trigger creates a new event or series. Reminder delivery and synchronization depend on the provider.
@@ -67,6 +68,7 @@ Last updated: 2026-11-15
 - Manual in-progress test run from both Create and Edit automation screens, including confirmation, direct-call warnings, immediate execution with on-screen unsaved edits, result feedback, and unchanged rule/store state.
 - Persistent run history for engine and manual executions: action-level outcomes, 100-entry newest-first retention, and redacted diagnostics.
 - Bluetooth bonded-device connected/disconnected triggers and Bluetooth on/off Shizuku actions, including delayed adapter-state readback.
+- Headset connected/disconnected triggers (`HEADSET_CONNECTED`, `HEADSET_DISCONNECTED`) via `AudioManager.registerAudioDeviceCallback` for wired, USB and Bluetooth audio outputs (BLE headset on Android 12+). The callback is registered only while an enabled rule needs it; a pure reducer reports connect on the first headset output and disconnect on the last, ignoring repeats, inputs and the built-in speaker, with no startup replay and no device names or addresses stored or logged. Covered by JVM tests only; not verified on a physical device.
 - Per-rule cooldown: matching trigger runs once, suppresses repeated matching event during cooldown, and runs again after expiry.
 - Create/Edit keyboard behavior: keyboard opens only for focused fields, form scroll remains available, and a focused field returns above the IME when typing after manual scrolling.
 - Device motion / flip triggers (`DEVICE_FLIPPED_DOWN`, `DEVICE_FLIPPED_UP`):

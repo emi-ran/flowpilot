@@ -33,6 +33,7 @@ Use `{}` for each of these actions (no parameters):
 | `START_TIMER` | integer `durationSeconds` 1–86400 | string `message` |
 | `LAUNCH_APP`, `FORCE_STOP_APP` | nonblank string `package` | none |
 | `OPEN_URL` | nonblank `url`: HTTP or HTTPS URI with host | none |
+| `COPY_TO_CLIPBOARD` | nonblank `text`, at most 4000 characters | none |
 | `HTTP_WEBHOOK` | `url`: HTTPS URI with host | strings `method` (default `POST`), `headers`, `body`; integer `timeoutSeconds` 1–60 (10). Method, header and body must also satisfy webhook validation. |
 | `DIAL_NUMBER`, `CALL_NUMBER` | nonblank string `number` | none |
 | `SEND_SMS` | nonblank strings `recipient`, `message` | none |

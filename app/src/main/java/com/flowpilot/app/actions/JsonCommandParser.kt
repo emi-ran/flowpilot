@@ -16,7 +16,7 @@ object JsonCommandParser {
     enum class ErrorReason { INVALID_JSON, INPUT_TOO_LARGE, INVALID_SCHEMA, UNSUPPORTED_VERSION, UNSUPPORTED_ACTION, INVALID_PARAMETERS }
 
     sealed class Result {
-        data class Success(val action: ActionType, val parameters: ActionParameters, val id: String?) : Result()
+        data class Success(val action: ActionType, val parameters: ActionParameters, val id: String?, val token: String? = null) : Result()
         data class Error(val reason: ErrorReason) : Result()
     }
 
@@ -25,12 +25,14 @@ object JsonCommandParser {
         val root = try { Reader(input.trim()).read() } catch (_: InvalidJson) {
             return Result.Error(ErrorReason.INVALID_JSON)
         }
-        if (root.keys.any { it !in setOf("version", "id", "action", "params") }) return error(ErrorReason.INVALID_SCHEMA)
+        if (root.keys.any { it !in setOf("version", "id", "action", "params", "token") }) return error(ErrorReason.INVALID_SCHEMA)
         val version = (root["version"] as? Value.Number)?.text
             ?: return error(ErrorReason.INVALID_SCHEMA)
         if (version != "1") return error(ErrorReason.UNSUPPORTED_VERSION)
         val id = if (root.containsKey("id")) root.string("id") ?: return error(ErrorReason.INVALID_SCHEMA) else null
         if (id != null && (id.isBlank() || id.length > MAX_ID_LENGTH)) return error(ErrorReason.INVALID_SCHEMA)
+        val token = if (root.containsKey("token")) root.string("token") ?: return error(ErrorReason.INVALID_SCHEMA) else null
+        if (token != null && token.length > JsonCommandToken.MAX_LENGTH) return error(ErrorReason.INVALID_SCHEMA)
         val actionName = root.string("action") ?: return error(ErrorReason.INVALID_SCHEMA)
         val params = (root["params"] as? Value.Object)?.fields ?: return error(ErrorReason.INVALID_SCHEMA)
         if (params.values.any { it is Value.Text && it.text.length > MAX_FIELD_LENGTH }) return error(ErrorReason.INVALID_PARAMETERS)
@@ -62,7 +64,7 @@ object JsonCommandParser {
             ActionType.CREATE_CALENDAR_EVENT -> calendar(params) ?: return error(ErrorReason.INVALID_PARAMETERS)
             else -> additionalParameters(action, params) ?: return error(ErrorReason.INVALID_PARAMETERS)
         }
-        return Result.Success(action, parameters, id)
+        return Result.Success(action, parameters, id, token)
     }
 
     private fun calendar(params: Map<String, Value>): ActionParameters? {
@@ -175,6 +177,12 @@ object JsonCommandParser {
                 val message = text("message") ?: return null
                 if (action == ActionType.SEND_SMS && (recipient.isBlank() || message.isBlank()) || recipient.isBlank() && message.isBlank()) return null
                 ActionParameters(smsRecipient = recipient, smsMessage = message)
+            }
+            ActionType.COPY_TO_CLIPBOARD -> {
+                if (!fields(setOf("text"))) return null
+                val value = p.string("text") ?: return null
+                if (ClipboardExecutor.validationReason(value) != null) return null
+                ActionParameters(clipboardText = value)
             }
             ActionType.EXECUTE_JSON_COMMAND, ActionType.TORCH_ON, ActionType.TORCH_OFF, ActionType.MUSIC_SEARCH,
             ActionType.MUSIC_PLAY_LINK, ActionType.CREATE_CALENDAR_EVENT, ActionType.SHOW_NOTIFICATION -> null
