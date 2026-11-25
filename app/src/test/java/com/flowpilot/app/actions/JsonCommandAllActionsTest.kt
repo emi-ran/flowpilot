@@ -37,6 +37,7 @@ class JsonCommandAllActionsTest {
             ActionType.LAUNCH_APP, ActionType.OPEN_URL, ActionType.HTTP_WEBHOOK, ActionType.COPY_TO_CLIPBOARD,
             ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER, ActionType.SEND_SMS,
             ActionType.DRAFT_SMS, ActionType.SET_SCREEN_BRIGHTNESS, ActionType.FORCE_STOP_APP,
+            ActionType.DISMISS_NOTIFICATION,
         )
         assertThat(noParameters.intersect(parameterized)).isEmpty()
         assertThat(noParameters + parameterized + ActionType.EXECUTE_JSON_COMMAND)
@@ -83,6 +84,7 @@ class JsonCommandAllActionsTest {
             ActionType.START_TIMER to """{"durationSeconds":300,"message":1}""",
             ActionType.LAUNCH_APP to """{"package":123}""",
             ActionType.FORCE_STOP_APP to """{"package":123}""",
+            ActionType.DISMISS_NOTIFICATION to """{"scope":123}""",
             ActionType.OPEN_URL to """{"url":123}""",
             ActionType.HTTP_WEBHOOK to """{"url":"https://example.com","method":1}""",
             ActionType.HTTP_WEBHOOK to """{"url":"https://example.com","headers":1}""",
@@ -136,6 +138,8 @@ class JsonCommandAllActionsTest {
             Triple(ActionType.HTTP_WEBHOOK, """{"url":"https://example.com/hook","method":"POST","headers":"X-Test: value","body":"payload","timeoutSeconds":60}""", ActionParameters(webhookUrl = "https://example.com/hook", webhookMethod = "POST", webhookHeaders = "X-Test: value", webhookBody = "payload", webhookTimeoutSeconds = 60)),
             Triple(ActionType.LAUNCH_APP, """{"package":"com.example.app"}""", ActionParameters(launchPackage = "com.example.app")),
             Triple(ActionType.FORCE_STOP_APP, """{"package":"com.example.app"}""", ActionParameters(forceStopPackage = "com.example.app")),
+            Triple(ActionType.DISMISS_NOTIFICATION, """{"scope":"ALL_FROM_PACKAGE"}""", ActionParameters(dismissScope = com.flowpilot.app.data.model.NotificationDismissScope.ALL_FROM_PACKAGE)),
+            Triple(ActionType.DISMISS_NOTIFICATION, """{}""", ActionParameters()),
             Triple(ActionType.OPEN_URL, """{"url":"https://example.com/path"}""", ActionParameters(url = "https://example.com/path")),
             Triple(ActionType.DIAL_NUMBER, """{"number":"+15551234567"}""", ActionParameters(phoneNumber = "+15551234567")),
             Triple(ActionType.CALL_NUMBER, """{"number":"+15551234567"}""", ActionParameters(phoneNumber = "+15551234567")),
@@ -201,7 +205,7 @@ class JsonCommandAllActionsTest {
             ActionType.SEND_SMS to """{"recipient":"123","message":" "}""", ActionType.SEND_SMS to """{"recipient":" ","message":"hello"}""",
             ActionType.SEND_SMS to """{"recipient":"123"}""", ActionType.DRAFT_SMS to "{}",
             ActionType.OPEN_URL to """{"url":"file:///tmp/file"}""", ActionType.LAUNCH_APP to """{"package":" "}""",
-            ActionType.FORCE_STOP_APP to """{"package":""}""", ActionType.DIAL_NUMBER to """{"number":" "}""", ActionType.CALL_NUMBER to """{"number":""}""",
+            ActionType.FORCE_STOP_APP to """{"package":""}""", ActionType.DISMISS_NOTIFICATION to """{"scope":"EVERYTHING"}""",ActionType.DIAL_NUMBER to """{"number":" "}""", ActionType.CALL_NUMBER to """{"number":""}""",
         )
         for ((action, params) in cases) {
             assertThat(JsonCommandParser.parse(command(action, params)))

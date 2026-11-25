@@ -77,6 +77,7 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     AUTO_ROTATE_ON("Turn Auto-rotate on", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     AUTO_ROTATE_OFF("Turn Auto-rotate off", ActionCategory.DISPLAY, CapabilityRequirement.WRITE_SETTINGS),
     SHOW_NOTIFICATION("Show notification", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATIONS),
+    DISMISS_NOTIFICATION("Dismiss notification", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATION_LISTENER),
     DND_ON("Turn Do Not Disturb on", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATION_POLICY),
     DND_OFF("Turn Do Not Disturb off", ActionCategory.ALERTS, CapabilityRequirement.NOTIFICATION_POLICY),
     VIBRATE("Vibrate", ActionCategory.ALERTS, CapabilityRequirement.VIBRATION),
@@ -130,6 +131,16 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     companion object {
         fun fromId(id: String): ActionType? = entries.firstOrNull { it.name == id }
     }
+}
+
+/** Which notifications DISMISS_NOTIFICATION removes when a notification rule fires. */
+@Serializable
+enum class NotificationDismissScope {
+    /** Only the notification that triggered the rule. */
+    THIS,
+
+    /** Every active notification posted by the triggering app. */
+    ALL_FROM_PACKAGE,
 }
 
 /** Groups trigger choices in the picker. */
@@ -459,6 +470,8 @@ data class Automation(
     val forceStopPackage: String = "",
     /** Cached target app display name for FORCE_STOP_APP action. */
     val forceStopAppName: String = "",
+    /** Scope of the DISMISS_NOTIFICATION action (notification-triggered rules only). */
+    val dismissScope: NotificationDismissScope = NotificationDismissScope.THIS,
     /** User-defined label for GEOFENCE_ENTER / GEOFENCE_EXIT triggers (e.g. "Home", "Work"). */
     val geofenceName: String = "",
     /** Target latitude for GEOFENCE_ENTER / GEOFENCE_EXIT triggers. */

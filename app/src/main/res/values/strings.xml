@@ -1082,6 +1082,13 @@
     <string name="action_media_toggle_desc">Toggle media playback</string>
     <string name="action_media_next_desc">Skip to the next track</string>
     <string name="action_media_previous_desc">Return to the previous track</string>
+    <string name="action_dismiss_notification">Dismiss notification</string>
+    <string name="action_dismiss_notification_desc">Dismisses the notification that triggered this rule</string>
+    <string name="dismiss_scope_this">This notification</string>
+    <string name="dismiss_scope_all_from_package">All from this app</string>
+    <string name="dismiss_notification_hint">Needs notification access. Dismisses the notification that triggered the rule, or every active notification from the same app.</string>
+    <string name="dismiss_notification_requires_notification_trigger">Add a Notification received trigger to use this action.</string>
+    <string name="validation_action_dismiss_notification">Dismiss notification needs a Notification received trigger.</string>
     <string name="variable_group_media">Media</string>
     <string name="variable_desc_media_title">Current track title</string>
     <string name="variable_desc_media_artist">Current track artist</string>

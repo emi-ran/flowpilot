@@ -1082,6 +1082,13 @@
     <string name="action_media_toggle_desc">Medya oynatmayı başlatır veya duraklatır</string>
     <string name="action_media_next_desc">Sonraki parçaya geçer</string>
     <string name="action_media_previous_desc">Önceki parçaya döner</string>
+    <string name="action_dismiss_notification">Bildirimi kapat</string>
+    <string name="action_dismiss_notification_desc">Bu kuralı tetikleyen bildirimi kapatır</string>
+    <string name="dismiss_scope_this">Bu bildirim</string>
+    <string name="dismiss_scope_all_from_package">Bu uygulamanın tümü</string>
+    <string name="dismiss_notification_hint">Bildirim erişimi gerekir. Kuralı tetikleyen bildirimi veya aynı uygulamanın tüm etkin bildirimlerini kapatır.</string>
+    <string name="dismiss_notification_requires_notification_trigger">Bu eylem için Bildirim alındığında tetikleyicisi ekleyin.</string>
+    <string name="validation_action_dismiss_notification">Bildirimi kapat eylemi için Bildirim alındığında tetikleyicisi gerekir.</string>
     <string name="variable_group_media">Medya</string>
     <string name="variable_desc_media_title">Geçerli parçanın adı</string>
     <string name="variable_desc_media_artist">Geçerli parçanın sanatçısı</string>

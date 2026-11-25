@@ -113,6 +113,18 @@ internal object ImportValidator {
         }
     }
 
+    /**
+     * DISMISS_NOTIFICATION needs the triggering notification, so a rule using it must have at
+     * least one NOTIFICATION_RECEIVED trigger. Mixed-trigger rules stay valid; non-notification
+     * events fail the action at run time with a clear error.
+     */
+    private fun validateDismissNotification(rule: Automation) {
+        if (ActionType.DISMISS_NOTIFICATION !in rule.effectiveActions) return
+        require(rule.normalizedTriggers().any { it.event == TriggerEvent.NOTIFICATION_RECEIVED }) {
+            "Dismiss notification requires a notification trigger"
+        }
+    }
+
     /** Clipboard templates use the same variable-availability rule as TTS templates. */
     private fun validateClipboard(rule: Automation) {
         require(rule.clipboardText.length <= TemplateRenderer.MAX_TEMPLATE_LENGTH) { "Clipboard template too long" }
@@ -136,7 +148,10 @@ internal object ImportValidator {
         }
         rules.forEach { r ->
             checkStrings(json.encodeToJsonElement(Automation.serializer(), r))
-            if (validateTtsFields) validateTts(r)
+            if (validateTtsFields) {
+                validateTts(r)
+                validateDismissNotification(r)
+            }
             if (validateTtsFields) validateClipboard(r)
             r.triggerDefinitions?.let { definitions ->
                 require(definitions.version == 1) { "Unsupported trigger version" }

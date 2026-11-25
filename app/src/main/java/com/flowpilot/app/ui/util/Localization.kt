@@ -78,6 +78,7 @@ val ActionType.labelRes: Int
         ActionType.MEDIA_TOGGLE -> R.string.action_media_toggle
         ActionType.MEDIA_NEXT -> R.string.action_media_next
         ActionType.MEDIA_PREVIOUS -> R.string.action_media_previous
+        ActionType.DISMISS_NOTIFICATION -> R.string.action_dismiss_notification
         ActionType.MUSIC_SEARCH -> R.string.action_music_search
         ActionType.MUSIC_PLAY_LINK -> R.string.action_music_play_link
         ActionType.SPEAK_TEXT -> R.string.action_speak_text
@@ -281,6 +282,7 @@ val ActionType.descriptionRes: Int
         ActionType.MEDIA_TOGGLE -> R.string.action_media_toggle_desc
         ActionType.MEDIA_NEXT -> R.string.action_media_next_desc
         ActionType.MEDIA_PREVIOUS -> R.string.action_media_previous_desc
+        ActionType.DISMISS_NOTIFICATION -> R.string.action_dismiss_notification_desc
         ActionType.MUSIC_SEARCH -> R.string.action_music_search_desc
         ActionType.MUSIC_PLAY_LINK -> R.string.action_music_play_link_desc
         ActionType.SPEAK_TEXT -> R.string.action_speak_text_desc

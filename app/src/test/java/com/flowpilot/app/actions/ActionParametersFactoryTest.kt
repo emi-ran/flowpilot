@@ -71,6 +71,17 @@ class ActionParametersFactoryTest {
         assertThat(parameters.alarmVolumePercent).isEqualTo(85)
     }
 
+    @Test fun create_carriesDismissScopeAndTransientNotificationKey() {
+        val source = rule().copy(dismissScope = com.flowpilot.app.data.model.NotificationDismissScope.ALL_FROM_PACKAGE)
+        val parameters = ActionParametersFactory.create(source, context().copy(notificationKey = "0|pkg|1|null|10"))
+        assertThat(parameters.dismissScope).isEqualTo(com.flowpilot.app.data.model.NotificationDismissScope.ALL_FROM_PACKAGE)
+        assertThat(parameters.triggerNotificationKey).isEqualTo("0|pkg|1|null|10")
+        assertThat(parameters.triggerNotificationPackage).isEqualTo("com.example.app")
+        val none = ActionParametersFactory.create(source, context())
+        assertThat(none.triggerNotificationKey).isEmpty()
+        assertThat(none.triggerNotificationPackage).isEmpty()
+    }
+
     @Test
     fun create_preservesAlarmDays() {
         val parameters = ActionParametersFactory.create(rule().copy(alarmDays = listOf(1, 4, 7)), context())

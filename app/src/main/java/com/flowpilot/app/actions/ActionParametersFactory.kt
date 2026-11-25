@@ -82,6 +82,9 @@ object ActionParametersFactory {
             forceStopPackage = rule.forceStopPackage,
             smsRecipient = resolveSmsRecipient(rule, context),
             smsMessage = render(rule.smsMessage, context),
+            dismissScope = rule.dismissScope,
+            triggerNotificationKey = context.notificationKey.orEmpty(),
+            triggerNotificationPackage = if (context.notificationKey.isNullOrBlank()) "" else context.values["notification.package"].orEmpty(),
             clipboardText = render(rule.clipboardText, context),
         )
     }

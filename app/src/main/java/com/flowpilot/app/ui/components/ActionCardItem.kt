@@ -79,6 +79,7 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.MEDIA_TOGGLE -> Icons.Default.PlayCircle
     ActionType.MEDIA_NEXT -> Icons.Default.SkipNext
     ActionType.MEDIA_PREVIOUS -> Icons.Default.SkipPrevious
+    ActionType.DISMISS_NOTIFICATION -> Icons.Default.NotificationsOff
     ActionType.MUSIC_SEARCH -> Icons.Default.Search
     ActionType.MUSIC_PLAY_LINK -> Icons.Default.MusicNote
     ActionType.LAUNCH_APP -> Icons.Default.Apps
@@ -227,6 +228,9 @@ fun ActionCardItem(
     forceStopPackage: String = "",
     forceStopAppName: String = "",
     onOpenForceStopAppPicker: () -> Unit = {},
+    // Dismiss notification
+    dismissScope: com.flowpilot.app.data.model.NotificationDismissScope = com.flowpilot.app.data.model.NotificationDismissScope.THIS,
+    onDismissScopeChange: (com.flowpilot.app.data.model.NotificationDismissScope) -> Unit = {},
     // SMS
     smsRecipient: String = "",
     onSmsRecipientChange: (String) -> Unit = {},
@@ -1082,6 +1086,34 @@ fun ActionCardItem(
                                 label = { Text(label) },
                             )
                         }
+                    }
+                }
+                ActionType.DISMISS_NOTIFICATION -> {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.dismiss_notification_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
+                        FilterChip(
+                            selected = dismissScope == com.flowpilot.app.data.model.NotificationDismissScope.THIS,
+                            onClick = { onDismissScopeChange(com.flowpilot.app.data.model.NotificationDismissScope.THIS) },
+                            label = { Text(stringResource(R.string.dismiss_scope_this)) },
+                        )
+                        FilterChip(
+                            selected = dismissScope == com.flowpilot.app.data.model.NotificationDismissScope.ALL_FROM_PACKAGE,
+                            onClick = { onDismissScopeChange(com.flowpilot.app.data.model.NotificationDismissScope.ALL_FROM_PACKAGE) },
+                            label = { Text(stringResource(R.string.dismiss_scope_all_from_package)) },
+                        )
+                    }
+                    if (triggerEvents.none { it == TriggerEvent.NOTIFICATION_RECEIVED }) {
+                        Text(
+                            text = stringResource(R.string.dismiss_notification_requires_notification_trigger),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
                     }
                 }
                 ActionType.FORCE_STOP_APP -> {

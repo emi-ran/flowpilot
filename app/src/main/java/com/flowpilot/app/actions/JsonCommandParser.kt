@@ -1,6 +1,7 @@
 package com.flowpilot.app.actions
 
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.data.model.NotificationDismissScope
 import com.flowpilot.app.data.model.SoundPreset
 import com.flowpilot.app.data.model.VibrationPattern
 import java.net.URI
@@ -123,6 +124,12 @@ object JsonCommandParser {
                     ActionType.SET_ALARM_VOLUME -> ActionParameters(alarmVolumePercent = percent)
                     else -> ActionParameters(screenBrightnessPercent = percent)
                 }
+            }
+            ActionType.DISMISS_NOTIFICATION -> {
+                if (!fields(emptySet(), setOf("scope"))) return null
+                val scope = text("scope", NotificationDismissScope.THIS.name)
+                    ?.let { name -> NotificationDismissScope.entries.firstOrNull { it.name == name } } ?: return null
+                ActionParameters(dismissScope = scope)
             }
             ActionType.MEDIA_PLAY, ActionType.MEDIA_PAUSE, ActionType.MEDIA_TOGGLE, ActionType.MEDIA_NEXT, ActionType.MEDIA_PREVIOUS -> {
                 if (!fields(emptySet(), setOf("targetPackage"))) return null

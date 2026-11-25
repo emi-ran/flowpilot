@@ -1,6 +1,7 @@
 package com.flowpilot.app.actions
 
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.data.model.NotificationDismissScope
 import com.flowpilot.app.data.model.VibrationPattern
 import com.flowpilot.app.data.model.SoundPreset
 import kotlinx.serialization.Serializable
@@ -54,6 +55,8 @@ enum class ActionDiagnosticReason {
     PHONE_PERMISSION_REQUIRED,
     SMS_PERMISSION_REQUIRED,
     MEDIA_SESSION_UNAVAILABLE,
+    NOT_NOTIFICATION_TRIGGER,
+    NOTIFICATION_LISTENER_DISCONNECTED,
     NETWORK_TIMEOUT,
     NETWORK_FAILURE,
 }
@@ -129,6 +132,13 @@ data class ActionParameters(
     val forceStopPackage: String = "",
     val smsRecipient: String = "",
     val smsMessage: String = "",
+    val dismissScope: NotificationDismissScope = NotificationDismissScope.THIS,
+    /**
+     * Transient identity of the notification that triggered the rule. Set only by the engine for
+     * NOTIFICATION_RECEIVED events; never persisted, logged or shown in history.
+     */
+    val triggerNotificationKey: String = "",
+    val triggerNotificationPackage: String = "",
     /** Rendered clipboard text; transient and never logged or written to execution history. */
     val clipboardText: String = "",
 )

@@ -38,6 +38,15 @@ class ImportValidatorTest {
         }
     }
 
+    @Test fun dismissNotificationRequiresNotificationTrigger() {
+        val dismiss = listOf(ActionType.DISMISS_NOTIFICATION)
+        ImportValidator.validate(listOf(rule(actions = dismiss)))
+        ImportValidator.validate(
+            listOf(rule(actions = dismiss).copy(dismissScope = com.flowpilot.app.data.model.NotificationDismissScope.ALL_FROM_PACKAGE)),
+        )
+        assertRejected(rule(trigger = TriggerEvent.CHARGER_CONNECTED, actions = dismiss))
+    }
+
     @Test fun volumeFieldsAreValidatedIndependently() {
         val volumes = rule(actions = listOf(ActionType.SET_MEDIA_VOLUME, ActionType.SET_NOTIFICATION_VOLUME, ActionType.SET_ALARM_VOLUME))
             .copy(mediaVolumePercent = 20, notificationVolumePercent = 40, alarmVolumePercent = 80)

@@ -215,6 +215,7 @@ fun CreateScreen(
     var screenBrightnessPercent by remember { mutableIntStateOf(50) }
     var forceStopPackage by remember { mutableStateOf("") }
     var forceStopAppName by remember { mutableStateOf("") }
+    var dismissScope by remember { mutableStateOf(com.flowpilot.app.data.model.NotificationDismissScope.THIS) }
     var showForceStopApps by remember { mutableStateOf(false) }
     var smsSenderFilter by remember { mutableStateOf("") }
     var smsMatchMode by remember { mutableStateOf(com.flowpilot.app.data.model.SmsMatchMode.CONTAINS) }
@@ -271,6 +272,7 @@ fun CreateScreen(
                                     ActionType.CALL_NUMBER in actions && phoneNumber.trim().isEmpty() -> ActionType.CALL_NUMBER
                                     ActionType.SEND_SMS in actions && (smsRecipient.isBlank() || smsMessage.isBlank()) -> ActionType.SEND_SMS
                                     ActionType.DRAFT_SMS in actions && smsRecipient.isBlank() && smsMessage.isBlank() -> ActionType.DRAFT_SMS
+                                    ActionType.DISMISS_NOTIFICATION in actions && triggerItems.none { it.event == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED } -> ActionType.DISMISS_NOTIFICATION
                                     ActionType.COPY_TO_CLIPBOARD in actions && com.flowpilot.app.actions.ClipboardExecutor.validationReason(clipboardText) != null -> ActionType.COPY_TO_CLIPBOARD
                                     else -> null
                                 }
@@ -285,6 +287,7 @@ fun CreateScreen(
                                     ActionType.SPEAK_TEXT -> R.string.validation_action_speech
                                     ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> R.string.validation_action_phone
                                     ActionType.SEND_SMS, ActionType.DRAFT_SMS -> R.string.validation_action_sms
+                                    ActionType.DISMISS_NOTIFICATION -> R.string.validation_action_dismiss_notification
                                     ActionType.COPY_TO_CLIPBOARD -> R.string.validation_action_clipboard
                                     else -> R.string.validation_action_generic
                                 }
@@ -374,6 +377,7 @@ fun CreateScreen(
         screenBrightnessPercent = t.screenBrightnessPercent
         forceStopPackage = t.forceStopPackage
         forceStopAppName = t.forceStopAppName
+        dismissScope = t.dismissScope
 
         val localizedPresetTitle = context.getString(preset.titleRes)
         name = localizedPresetTitle
@@ -558,6 +562,7 @@ fun CreateScreen(
                         screenBrightnessPercent = screenBrightnessPercent,
                         forceStopPackage = forceStopPackage,
                         forceStopAppName = forceStopAppName,
+                        dismissScope = dismissScope,
                         geofenceName = geofenceName,
                         geofenceLatitude = geofenceLatitude,
                         geofenceLongitude = geofenceLongitude,
@@ -933,6 +938,8 @@ fun CreateScreen(
                             // Force stop app
                             forceStopAppName = forceStopAppName,
                             forceStopPackage = forceStopPackage,
+                            dismissScope = dismissScope,
+                            onDismissScopeChange = { dismissScope = it },
                             onOpenForceStopAppPicker = { showForceStopApps = true },
                             // SMS
                             smsRecipient = smsRecipient,
@@ -1059,6 +1066,7 @@ fun CreateScreen(
                             (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
                             (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
                             (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
+                            (ActionType.DISMISS_NOTIFICATION !in actions || triggerItems.any { it.event == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED }) &&
                             (ActionType.COPY_TO_CLIPBOARD !in actions || com.flowpilot.app.actions.ClipboardExecutor.validationReason(clipboardText) == null) &&
                             actions.isNotEmpty()
                         if (!valid) {
@@ -1206,6 +1214,7 @@ fun CreateScreen(
                                 screenBrightnessPercent = screenBrightnessPercent,
                                 forceStopPackage = forceStopPackage,
                                 forceStopAppName = forceStopAppName,
+                                dismissScope = dismissScope,
                                 geofenceName = geofenceName,
                                 geofenceLatitude = geofenceLatitude,
                                 geofenceLongitude = geofenceLongitude,

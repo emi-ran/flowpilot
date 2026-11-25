@@ -131,25 +131,59 @@ internal class NotificationListenerRebindGate(
  */
 internal class NotificationListenerConnectionTracker {
     private val activeTokens = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Any, Boolean>())
+    private var latest: Any? = null
 
     @Synchronized
     fun onConnected(token: Any): Boolean {
         activeTokens.add(token)
+        latest = token
         return true
     }
 
     @Synchronized
     fun onDisconnected(token: Any): Boolean {
         activeTokens.remove(token)
+        if (latest === token) latest = activeTokens.firstOrNull()
         return activeTokens.isNotEmpty()
     }
 
     @Synchronized
     fun isConnected(): Boolean = activeTokens.isNotEmpty()
 
+    /** The most recently connected live instance, or null when none is connected. */
+    @Synchronized
+    fun current(): Any? = latest
+
     @Synchronized
     fun clear() {
         activeTokens.clear()
+        latest = null
+    }
+}
+
+/** Minimal identity of an active notification: never carries title or text. */
+internal data class ActiveNotificationRef(val key: String, val packageName: String)
+
+/**
+ * Pure selection of which notification keys a dismiss action must cancel.
+ * THIS targets only the triggering key; ALL_FROM_PACKAGE targets every active notification of the
+ * triggering package plus the triggering key (cancelling an already-removed key is harmless).
+ */
+internal fun selectNotificationKeysToDismiss(
+    scope: com.flowpilot.app.data.model.NotificationDismissScope,
+    triggerKey: String,
+    triggerPackage: String,
+    active: List<ActiveNotificationRef>,
+): List<String> {
+    if (triggerKey.isBlank()) return emptyList()
+    return when (scope) {
+        com.flowpilot.app.data.model.NotificationDismissScope.THIS -> listOf(triggerKey)
+        com.flowpilot.app.data.model.NotificationDismissScope.ALL_FROM_PACKAGE ->
+            if (triggerPackage.isBlank()) {
+                listOf(triggerKey)
+            } else {
+                (listOf(triggerKey) + active.filter { it.packageName == triggerPackage }.map { it.key }).distinct()
+            }
     }
 }
 
@@ -299,6 +333,30 @@ class FlowPilotNotificationListener : NotificationListenerService() {
             val stillConnected = connectionTracker.onDisconnected(instance)
             isConnected = stillConnected
             return stillConnected
+        }
+
+        /** Active notification identities (key + package only), or null when no listener is connected. */
+        internal fun activeNotificationRefs(): List<ActiveNotificationRef>? {
+            val listener = connectionTracker.current() as? FlowPilotNotificationListener ?: return null
+            return try {
+                listener.activeNotifications?.mapNotNull { sbn ->
+                    val key = sbn.key ?: return@mapNotNull null
+                    ActiveNotificationRef(key, sbn.packageName.orEmpty())
+                }.orEmpty()
+            } catch (_: SecurityException) {
+                null
+            }
+        }
+
+        /**
+         * Cancels the given notification keys through the connected listener.
+         * Returns false when no listener is connected. Keys are never logged.
+         */
+        internal fun cancelNotificationKeys(keys: List<String>): Boolean {
+            val listener = connectionTracker.current() as? FlowPilotNotificationListener ?: return false
+            if (keys.isEmpty()) return true
+            if (keys.size == 1) listener.cancelNotification(keys.first()) else listener.cancelNotifications(keys.toTypedArray())
+            return true
         }
 
         /**

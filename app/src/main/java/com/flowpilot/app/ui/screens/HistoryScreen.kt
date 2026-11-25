@@ -521,6 +521,8 @@ private fun ActionDiagnosticReason.labelRes(): Int = when (this) {
     ActionDiagnosticReason.MEDIA_SESSION_UNAVAILABLE -> R.string.history_diagnostic_media_session_unavailable
     ActionDiagnosticReason.NETWORK_TIMEOUT -> R.string.history_diagnostic_network_timeout
     ActionDiagnosticReason.NETWORK_FAILURE -> R.string.history_diagnostic_network_failure
+    ActionDiagnosticReason.NOT_NOTIFICATION_TRIGGER -> R.string.history_diagnostic_not_notification_trigger
+    ActionDiagnosticReason.NOTIFICATION_LISTENER_DISCONNECTED -> R.string.history_diagnostic_listener_disconnected
 }
 
 @Composable

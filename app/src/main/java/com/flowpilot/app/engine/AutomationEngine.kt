@@ -59,7 +59,7 @@ internal object EventTemplateContext {
                 "notification.package" to event.packageName,
                 "notification.app" to event.appLabel.ifBlank { event.packageName },
             ),
-        )
+        ).copy(notificationKey = event.key)
 
     fun sms(event: SmsReceivedEvent, liveState: LiveSystemState): TemplateContext {
         val otp = TemplateRenderer.extractOtp(event.body)
@@ -1142,7 +1142,13 @@ class AutomationEngine(
                                                 return dispatcher.executeAsync(action, parameters)
                                             }
                                             val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(parameters.jsonCommandSource, parameters.jsonCommandToken) { nestedAction, nestedParameters ->
-                                                dispatcher.executeAsync(nestedAction, nestedParameters)
+                                                dispatcher.executeAsync(
+                                                    nestedAction,
+                                                    nestedParameters.copy(
+                                                        triggerNotificationKey = parameters.triggerNotificationKey,
+                                                        triggerNotificationPackage = parameters.triggerNotificationPackage,
+                                                    ),
+                                                )
                                             }
                                             templateContext = outcome.applyTo(templateContext)
                                             return com.flowpilot.app.actions.ActionResult(outcome.success, outcome.message, if (outcome.status == "unverified") com.flowpilot.app.actions.ActionResultCode.REQUEST_UNVERIFIED else if (outcome.success) com.flowpilot.app.actions.ActionResultCode.JSON_CONFIRMED else null)
