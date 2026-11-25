@@ -1595,7 +1595,7 @@ fun AppPicker(
                             )
                             Spacer(Modifier.height(16.dp))
                             Text(
-                                "Loading applications...",
+                                stringResource(R.string.loading_applications),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyMedium,
                             )

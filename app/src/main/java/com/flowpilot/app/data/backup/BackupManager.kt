@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.flowpilot.app.BuildConfig
 import com.flowpilot.app.data.model.Automation
+import com.flowpilot.app.data.model.TriggerDefinition
 import com.flowpilot.app.data.model.normalizeTriggerStorage
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -51,10 +52,13 @@ data class FlowPilotEncryptedBackup(
 ) {
     companion object {
         const val ENCRYPTED_BACKUP_FORMAT = "flowpilot_encrypted_backup"
-        const val ENCRYPTED_BACKUP_VERSION = 1
-        const val DEFAULT_PBKDF2_ITERATIONS = 100_000
+        const val LEGACY_ENCRYPTED_BACKUP_VERSION = 1
+        const val ENCRYPTED_BACKUP_VERSION = 2
+        const val LEGACY_PBKDF2_ITERATIONS = 100_000
+        const val LEGACY_MAX_PBKDF2_ITERATIONS = 500_000
+        const val DEFAULT_PBKDF2_ITERATIONS = 600_000
         const val MIN_PBKDF2_ITERATIONS = 10_000
-        const val MAX_PBKDF2_ITERATIONS = 500_000
+        const val MAX_PBKDF2_ITERATIONS = 1_000_000
     }
 }
 
@@ -87,7 +91,11 @@ object BackupManager {
         require(content.length <= MAX_DOCUMENT_BYTES && content.toByteArray(Charsets.UTF_8).size <= MAX_DOCUMENT_BYTES) { "Backup document too large" }
     }
 
-    const val MIN_PASSWORD_LENGTH = 6
+    const val MIN_PASSWORD_LENGTH = 8
+    /** Minimum password length accepted when decrypting legacy (version 1) backups. */
+    const val LEGACY_MIN_PASSWORD_LENGTH = 6
+    const val LEGACY_ENCRYPTED_BACKUP_VERSION = FlowPilotEncryptedBackup.LEGACY_ENCRYPTED_BACKUP_VERSION
+    const val LEGACY_MAX_PBKDF2_ITERATIONS = FlowPilotEncryptedBackup.LEGACY_MAX_PBKDF2_ITERATIONS
     const val ENCRYPTED_BACKUP_FORMAT = FlowPilotEncryptedBackup.ENCRYPTED_BACKUP_FORMAT
     const val ENCRYPTED_BACKUP_VERSION = FlowPilotEncryptedBackup.ENCRYPTED_BACKUP_VERSION
     const val DEFAULT_PBKDF2_ITERATIONS = FlowPilotEncryptedBackup.DEFAULT_PBKDF2_ITERATIONS
@@ -118,8 +126,38 @@ object BackupManager {
         encodeDefaults = true
     }
 
+    /** Marker that keeps imports valid (non-blank) but is not a dialable number or a usable sender match. */
+    internal const val REDACTED_PLACEHOLDER = "[REDACTED]"
+    private val templateOnlyValue = Regex("""^\$\{[A-Za-z0-9_.]+}$""")
+
+    private fun redactPhoneValue(value: String): String =
+        if (value.isBlank() || templateOnlyValue.matches(value.trim())) value else REDACTED_PLACEHOLDER
+
+    /** Removes webhook/JSON secrets, calendar account identity and phone numbers from a plain export. */
+    internal fun sanitizeForPlainExport(rule: Automation): Automation = rule.copy(
+        webhookUrl = "",
+        webhookHeaders = "",
+        webhookBody = "",
+        jsonCommandSource = "",
+        calendarAccountName = "",
+        calendarAccountType = "",
+        calendarName = "",
+        phoneNumber = redactPhoneValue(rule.phoneNumber),
+        smsRecipient = redactPhoneValue(rule.smsRecipient),
+        smsSenderFilter = redactPhoneValue(rule.smsSenderFilter),
+        triggerDefinitions = rule.triggerDefinitions?.let { defs ->
+            defs.copy(items = defs.items.map { trigger ->
+                if (trigger is TriggerDefinition.Sms) {
+                    trigger.copy(smsSenderFilter = redactPhoneValue(trigger.smsSenderFilter))
+                } else {
+                    trigger
+                }
+            })
+        },
+    )
+
     fun exportToString(automations: List<Automation>): String {
-        val safeRules = automations.map { it.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "", jsonCommandSource = "", calendarAccountName = "", calendarAccountType = "", calendarName = "") }
+        val safeRules = automations.map(::sanitizeForPlainExport)
         val backup = FlowPilotBackup(
             version = FlowPilotBackup.BACKUP_VERSION,
             exportedAt = System.currentTimeMillis(),
@@ -129,7 +167,7 @@ object BackupManager {
     }
 
     fun exportSingleToString(rule: Automation): String {
-        val safeRule = rule.copy(webhookUrl = "", webhookHeaders = "", webhookBody = "", jsonCommandSource = "", calendarAccountName = "", calendarAccountType = "", calendarName = "")
+        val safeRule = sanitizeForPlainExport(rule)
         return prettyJson.encodeToString(Automation.serializer(), safeRule)
     }
 
@@ -245,8 +283,10 @@ object BackupManager {
         jsonContent: String,
         password: CharArray,
     ): Result<List<Automation>> {
-        if (!isValidPassword(password)) {
-            return Result.failure(IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters"))
+        // Cheap pre-check at the legacy minimum; the version-specific minimum is enforced
+        // in decryptPayload once the envelope version is known (still before key derivation).
+        if (password.size < LEGACY_MIN_PASSWORD_LENGTH) {
+            return Result.failure(IllegalArgumentException("Password must be at least $LEGACY_MIN_PASSWORD_LENGTH characters"))
         }
         return runCatching { validateDocument(jsonContent); decryptPayload(jsonContent, password).getOrThrow() }
     }
@@ -282,11 +322,17 @@ object BackupManager {
             return Result.failure(IllegalArgumentException("Unsupported backup format: ${envelope.format}"))
         }
 
-        if (envelope.version != ENCRYPTED_BACKUP_VERSION) {
+        val isLegacy = envelope.version == LEGACY_ENCRYPTED_BACKUP_VERSION
+        if (!isLegacy && envelope.version != ENCRYPTED_BACKUP_VERSION) {
             return Result.failure(IllegalArgumentException("Unsupported backup version: ${envelope.version}"))
         }
 
-        if (envelope.iterations !in MIN_PBKDF2_ITERATIONS..MAX_PBKDF2_ITERATIONS) {
+        if (!isLegacy && password.size < MIN_PASSWORD_LENGTH) {
+            return Result.failure(IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters"))
+        }
+
+        val maxIterations = if (isLegacy) LEGACY_MAX_PBKDF2_ITERATIONS else MAX_PBKDF2_ITERATIONS
+        if (envelope.iterations !in MIN_PBKDF2_ITERATIONS..maxIterations) {
             return Result.failure(IllegalArgumentException("Iteration count out of allowed range: ${envelope.iterations}"))
         }
 
