@@ -1,5 +1,6 @@
 package com.flowpilot.app.data.model
 
+import com.flowpilot.app.data.backup.ImportValidator
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -8,7 +9,7 @@ class AutomationPresetsTest {
     @Test
     fun `all presets have unique ids and valid templates`() {
         val presets = AutomationPresets.all
-        assertEquals(14, presets.size)
+        assertEquals(16, presets.size)
 
         val uniqueIds = presets.map { it.id }.toSet()
         assertEquals(presets.size, uniqueIds.size)
@@ -41,6 +42,23 @@ class AutomationPresetsTest {
                 template.normalizedTriggers().size in 1..TriggerDefinitions.MAX_TRIGGERS,
             )
         }
+    }
+
+    @Test
+    fun `headset presets map connect and disconnect to media actions`() {
+        val music = AutomationPresets.all.first { it.id == "preset_headset_music" }.template
+        assertEquals(TriggerEvent.HEADSET_CONNECTED, music.triggerEvent)
+        assertEquals(listOf(ActionType.MEDIA_PLAY), music.effectiveActions)
+
+        val pause = AutomationPresets.all.first { it.id == "preset_headset_pause" }.template
+        assertEquals(TriggerEvent.HEADSET_DISCONNECTED, pause.triggerEvent)
+        assertEquals(listOf(ActionType.MEDIA_PAUSE), pause.effectiveActions)
+    }
+
+    @Test
+    fun `every preset passes import validation`() {
+        // Presets feed the same validator as imported backups, so a template it rejects would fail on import.
+        ImportValidator.validate(AutomationPresets.all.map { it.template })
     }
 
     @Test

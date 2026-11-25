@@ -153,6 +153,8 @@ Start automating instantly with built-in recipes designed for everyday life:
 | 🚗 **Leaving Home Mode** | Disconnected from Home Wi-Fi | Enables Mobile Data (Shizuku), sets Normal ringer, raises volume to 80% |
 | 🏠 **Welcome Home Mode** | Connected to Home Wi-Fi | Disables Mobile Data (Shizuku) and sets brightness to 50% |
 | 📍 **SMS Emergency Responder** | Incoming SMS with secret phrase | Enables location and replies with a location link if a fix is available; a fix is not guaranteed |
+| 🎧 **Headset Music Start** | Headset connected (wired, USB or Bluetooth) | Starts media playback |
+| ⏸️ **Headset Music Pause** | Last headset disconnected | Pauses media playback |
 
 ---
 

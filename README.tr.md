@@ -153,6 +153,8 @@ Günlük yaşamınızı anında kolaylaştıracak yerleşik şablonlarla hemen b
 | 🚗 **Evden Çıkış Modu** | Ev Wi-Fi bağlantısı koptuğunda | Mobil Veriyi açar (Shizuku), Normal zil sesine geçer, medya sesini %80 yapar |
 | 🏠 **Eve Giriş Modu** | Ev Wi-Fi ağına bağlanıldığında | Mobil Veriyi kapatır (Shizuku) ve ekran parlaklığını %50 yapar |
 | 📍 **SMS Acil Konum Yanıtlayıcı** | Gizli kelimeli SMS geldiğinde | Konumu açar ve konum alınabilirse bağlantıyı SMS ile yanıtlar; konum alınması garanti değildir |
+| 🎧 **Kulaklık Müzik Başlatma** | Kulaklık bağlandığında (kablolu, USB veya Bluetooth) | Medya oynatmayı başlatır |
+| ⏸️ **Kulaklık Müzik Duraklatma** | Son kulaklık çıkarıldığında | Medya oynatmayı duraklatır |
 
 ---
 
