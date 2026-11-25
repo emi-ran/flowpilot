@@ -165,6 +165,7 @@ A rule can combine up to five independently configured triggers with OR semantic
 
 - 📱 **App Lifecycle:** App launched or closed (lightweight `UsageStatsManager` transitions).
 - 🔌 **Power & Battery:** Charger plugged in / unplugged, battery level rises above or drops below custom percentage.
+- 🔔 **Sound:** Ringer set to normal, vibrate or silent; Do Not Disturb turned on or off (changes made by FlowPilot's own actions are ignored to prevent loops).
 - 💡 **Screen & State:** Screen turned on/off, device unlocked.
 - ⏰ **Schedule & Time:** Daily, weekdays, weekends, or specific days and exact times.
 - 📶 **Connectivity:** Wi-Fi connected/disconnected (any or target SSID), Bluetooth device connected/disconnected.

@@ -162,6 +162,31 @@ sealed interface TriggerDefinition {
         override val event: TriggerEvent get() = TriggerEvent.SMS_RECEIVED
     }
     @Serializable
+    @SerialName("RINGER_NORMAL")
+    data object RingerNormal : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.RINGER_NORMAL
+    }
+    @Serializable
+    @SerialName("RINGER_VIBRATE")
+    data object RingerVibrate : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.RINGER_VIBRATE
+    }
+    @Serializable
+    @SerialName("RINGER_SILENT")
+    data object RingerSilent : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.RINGER_SILENT
+    }
+    @Serializable
+    @SerialName("DND_ENABLED")
+    data object DndEnabled : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.DND_ENABLED
+    }
+    @Serializable
+    @SerialName("DND_DISABLED")
+    data object DndDisabled : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.DND_DISABLED
+    }
+    @Serializable
     @SerialName("GEOFENCE_ENTER")
     data class GeofenceEnter(val geofenceName: String = "", val geofenceLatitude: Double = 0.0, val geofenceLongitude: Double = 0.0, val geofenceRadiusMeters: Int = 150) : TriggerDefinition {
         override val event: TriggerEvent get() = TriggerEvent.GEOFENCE_ENTER
@@ -218,6 +243,11 @@ fun Automation.legacyTriggerDefinition(): TriggerDefinition = when (triggerEvent
     TriggerEvent.SMS_RECEIVED -> TriggerDefinition.Sms(smsSenderFilter, smsMatchMode, smsKeyword)
     TriggerEvent.GEOFENCE_ENTER -> TriggerDefinition.GeofenceEnter(geofenceName, geofenceLatitude, geofenceLongitude, geofenceRadiusMeters)
     TriggerEvent.GEOFENCE_EXIT -> TriggerDefinition.GeofenceExit(geofenceName, geofenceLatitude, geofenceLongitude, geofenceRadiusMeters)
+    TriggerEvent.RINGER_NORMAL -> TriggerDefinition.RingerNormal
+    TriggerEvent.RINGER_VIBRATE -> TriggerDefinition.RingerVibrate
+    TriggerEvent.RINGER_SILENT -> TriggerDefinition.RingerSilent
+    TriggerEvent.DND_ENABLED -> TriggerDefinition.DndEnabled
+    TriggerEvent.DND_DISABLED -> TriggerDefinition.DndDisabled
     TriggerEvent.HEADSET_CONNECTED -> TriggerDefinition.HeadsetConnected
     TriggerEvent.HEADSET_DISCONNECTED -> TriggerDefinition.HeadsetDisconnected
 }
@@ -255,6 +285,11 @@ fun Automation.withTrigger(definition: TriggerDefinition): Automation = when (de
     is TriggerDefinition.Sms -> copy(triggerEvent = definition.event, triggerDefinitions = null, smsSenderFilter = definition.smsSenderFilter, smsMatchMode = definition.smsMatchMode, smsKeyword = definition.smsKeyword)
     is TriggerDefinition.GeofenceEnter -> copy(triggerEvent = definition.event, triggerDefinitions = null, geofenceName = definition.geofenceName, geofenceLatitude = definition.geofenceLatitude, geofenceLongitude = definition.geofenceLongitude, geofenceRadiusMeters = definition.geofenceRadiusMeters)
     is TriggerDefinition.GeofenceExit -> copy(triggerEvent = definition.event, triggerDefinitions = null, geofenceName = definition.geofenceName, geofenceLatitude = definition.geofenceLatitude, geofenceLongitude = definition.geofenceLongitude, geofenceRadiusMeters = definition.geofenceRadiusMeters)
+    TriggerDefinition.RingerNormal -> copy(triggerEvent = definition.event, triggerDefinitions = null)
+    TriggerDefinition.RingerVibrate -> copy(triggerEvent = definition.event, triggerDefinitions = null)
+    TriggerDefinition.RingerSilent -> copy(triggerEvent = definition.event, triggerDefinitions = null)
+    TriggerDefinition.DndEnabled -> copy(triggerEvent = definition.event, triggerDefinitions = null)
+    TriggerDefinition.DndDisabled -> copy(triggerEvent = definition.event, triggerDefinitions = null)
     TriggerDefinition.HeadsetConnected -> copy(triggerEvent = definition.event, triggerDefinitions = null)
     TriggerDefinition.HeadsetDisconnected -> copy(triggerEvent = definition.event, triggerDefinitions = null)
 }

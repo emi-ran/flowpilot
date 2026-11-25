@@ -170,6 +170,30 @@ object RuleEvaluator {
         }
     }
 
+    fun evaluateRinger(
+        rules: List<Automation>,
+        state: RingerState,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> = rules.matchingTriggerViews {
+        it.enabled &&
+            it.triggerEvent == state.triggerEvent &&
+            !it.isCoolingDown(nowMs) &&
+            matchesRuleConditions(it, liveState, nowMs)
+    }
+
+    fun evaluateDnd(
+        rules: List<Automation>,
+        state: DndState,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> = rules.matchingTriggerViews {
+        it.enabled &&
+            it.triggerEvent == state.triggerEvent &&
+            !it.isCoolingDown(nowMs) &&
+            matchesRuleConditions(it, liveState, nowMs)
+    }
+
     fun evaluateHeadset(
         rules: List<Automation>,
         event: HeadsetEvent,

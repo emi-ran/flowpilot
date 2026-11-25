@@ -365,6 +365,8 @@ class AutomationEngine(
     private val shakeTracker: DeviceShakeTracker = DeviceShakeTracker(context.applicationContext),
     private val lightTracker: LightSensorTracker = LightSensorTracker(context.applicationContext),
     private val geofenceTracker: GeofenceTracker = GeofenceTracker(context.applicationContext),
+    private val ringerTracker: RingerModeTracker = RingerModeTracker(context.applicationContext),
+    private val dndTracker: DndStateTracker = DndStateTracker(context.applicationContext),
     private val onRunningChanged: (Boolean) -> Unit = {},
     private val onFailure: () -> Unit = {},
 ) {
@@ -454,6 +456,8 @@ class AutomationEngine(
                         polls = listOf(
                             pollStep("foreground") { poll(liveState) },
                             pollStep("charger") { pollChargerEvents(liveState) },
+                            pollStep("ringer") { pollRingerEvents(liveState) },
+                            pollStep("dnd") { pollDndEvents(liveState) },
                             pollStep("battery") { pollBatteryTransitions(liveState) },
                             pollStep("screen") { pollScreenEvents(liveState) },
                             pollStep("shake") { pollShakeEvents(liveState) },
@@ -500,7 +504,7 @@ class AutomationEngine(
             chargerTracker::stop, batteryTracker::stop, screenTracker::stop,
             wifiTracker::stop, bluetoothTracker::stop, headsetTracker::stop, callTracker::stop,
             flipTracker::stop, shakeTracker::stop, lightTracker::stop,
-            mediaTracker::stop,
+            mediaTracker::stop, ringerTracker::stop, dndTracker::stop,
         ).forEach { stop ->
             try { stop() } catch (e: Exception) {
                 Log.w(TAG, "Tracker cleanup failed (${e.javaClass.simpleName})")
@@ -519,6 +523,8 @@ class AutomationEngine(
         val demand = TriggerListenerDemand.from(rules)
         if (demand.needsBattery) batteryTracker.start() else batteryTracker.stop()
         if (demand.needsCharger) chargerTracker.start() else chargerTracker.stop()
+        if (demand.needsRinger) ringerTracker.start() else ringerTracker.stop()
+        if (demand.needsDnd) dndTracker.start() else dndTracker.stop()
         if (demand.needsScreen) screenTracker.start() else screenTracker.stop()
         if (demand.needsWifi) wifiTracker.start() else wifiTracker.stop()
         if (demand.needs(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED)) bluetoothTracker.start() else bluetoothTracker.stop()
@@ -652,6 +658,32 @@ class AutomationEngine(
                     liveState = effectiveState,
                     eventContext = EventTemplateContext.charger(event, effectiveState),
                 )
+            }
+        }
+    }
+
+    private suspend fun pollRingerEvents(liveState: LiveSystemState) {
+        val events = ringerTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (state in events) {
+            val matches = RuleEvaluator.evaluateRinger(rules, state, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing ringer $state rules (${matches.size} rule(s))")
+                executeAll(matches, liveState = liveState, eventContext = EventTemplateContext.live(liveState))
+            }
+        }
+    }
+
+    private suspend fun pollDndEvents(liveState: LiveSystemState) {
+        val events = dndTracker.drainEvents()
+        if (events.isEmpty()) return
+        val rules = repository.automations.first()
+        for (state in events) {
+            val matches = RuleEvaluator.evaluateDnd(rules, state, liveState)
+            if (matches.isNotEmpty()) {
+                Log.i(TAG, "Executing DND $state rules (${matches.size} rule(s))")
+                executeAll(matches, liveState = liveState, eventContext = EventTemplateContext.live(liveState))
             }
         }
     }
