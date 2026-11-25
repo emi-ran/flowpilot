@@ -73,6 +73,8 @@ enum class ReasonCode(val description: String) {
             ActionDiagnosticReason.MEDIA_SESSION_UNAVAILABLE -> MEDIA_SESSION_UNAVAILABLE
             ActionDiagnosticReason.NETWORK_TIMEOUT -> NETWORK_TIMEOUT
             ActionDiagnosticReason.NETWORK_FAILURE -> NETWORK_FAILURE
+            ActionDiagnosticReason.NOT_NOTIFICATION_TRIGGER -> INVALID_INPUT
+            ActionDiagnosticReason.NOTIFICATION_LISTENER_DISCONNECTED -> PERMISSION_MISSING
         }
 
         /** Derives a code from legacy-compatible result metadata; null for plain success. */
