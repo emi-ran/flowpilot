@@ -12,6 +12,8 @@ data class TriggerListenerDemand(
     val needsCharger: Boolean,
     val needsScreen: Boolean,
     val needsWifi: Boolean,
+    /** A Bluetooth-device condition needs the ACL receiver even without Bluetooth triggers. */
+    val needsBluetoothCondition: Boolean = false,
     val needsRinger: Boolean = false,
     val needsDnd: Boolean = false,
 ) {
@@ -35,6 +37,7 @@ data class TriggerListenerDemand(
                 needsCharger = events.any { it in setOf(TriggerEvent.CHARGER_CONNECTED, TriggerEvent.CHARGER_DISCONNECTED) },
                 needsScreen = events.any { it in setOf(TriggerEvent.SCREEN_ON, TriggerEvent.SCREEN_OFF, TriggerEvent.DEVICE_UNLOCKED) } || conditions.any { it in setOf(ConditionType.SCREEN_ON, ConditionType.SCREEN_OFF) },
                 needsWifi = events.any { it in setOf(TriggerEvent.WIFI_CONNECTED, TriggerEvent.WIFI_DISCONNECTED) } || conditions.any { it in setOf(ConditionType.WIFI_CONNECTED, ConditionType.WIFI_DISCONNECTED) },
+                needsBluetoothCondition = ConditionType.BLUETOOTH_DEVICE_CONNECTED in conditions,
                 needsRinger = events.any { it in setOf(TriggerEvent.RINGER_NORMAL, TriggerEvent.RINGER_VIBRATE, TriggerEvent.RINGER_SILENT) },
                 needsDnd = events.any { it in setOf(TriggerEvent.DND_ENABLED, TriggerEvent.DND_DISABLED) },
             )

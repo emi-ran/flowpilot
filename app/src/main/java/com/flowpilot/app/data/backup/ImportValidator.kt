@@ -53,6 +53,10 @@ internal object ImportValidator {
                 require(condition.startMinute in 0..1439 && condition.endMinute in 0..1439) { "Invalid time condition" }
             com.flowpilot.app.data.model.ConditionType.DAYS_OF_WEEK ->
                 require(condition.days.all { it in 1..7 }) { "Invalid days condition" }
+            com.flowpilot.app.data.model.ConditionType.BLUETOOTH_DEVICE_CONNECTED ->
+                require(condition.bluetoothDeviceAddress.isEmpty() || bluetoothAddress.matches(condition.bluetoothDeviceAddress)) {
+                    "Invalid Bluetooth condition"
+                }
             else -> Unit
         }
     }

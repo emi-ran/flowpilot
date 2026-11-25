@@ -377,6 +377,8 @@ class AutomationEngine(
     private val mediaEvents = Channel<MediaSessionEvent>(capacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private val mediaTracker = MediaSessionTracker(appContext) { mediaEvents.trySend(it) }
     private var mediaEventSequence = 0L
+    private val conditionStateReader = ConditionStateReader(appContext)
+    @Volatile private var conditionDemand = ConditionStateDemand()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     @Volatile private var job: Job? = null
@@ -527,7 +529,8 @@ class AutomationEngine(
         if (demand.needsDnd) dndTracker.start() else dndTracker.stop()
         if (demand.needsScreen) screenTracker.start() else screenTracker.stop()
         if (demand.needsWifi) wifiTracker.start() else wifiTracker.stop()
-        if (demand.needs(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED)) bluetoothTracker.start() else bluetoothTracker.stop()
+        conditionDemand = ConditionStateDemand.from(rules)
+        if (demand.needs(TriggerEvent.BLUETOOTH_CONNECTED, TriggerEvent.BLUETOOTH_DISCONNECTED) || demand.needsBluetoothCondition) bluetoothTracker.start() else bluetoothTracker.stop()
         if (demand.needsHeadset) headsetTracker.start() else headsetTracker.stop()
         if (demand.needs(TriggerEvent.CALL_RINGING, TriggerEvent.CALL_ANSWERED, TriggerEvent.CALL_OUTGOING, TriggerEvent.CALL_ENDED)) callTracker.start() else callTracker.stop()
         if (demand.needsMedia) {
@@ -550,11 +553,16 @@ class AutomationEngine(
 
         val connectedWifi = wifiTracker.getCurrentConnectedSsid()
 
-        return LiveSystemState(
+        val base = LiveSystemState(
             batteryPercent = batteryPercent,
             isChargerConnected = isChargerConnected,
             isScreenOn = isScreenOn,
             connectedWifiSsid = connectedWifi,
+        )
+        // Lazy: only fields used by an enabled rule's conditions are read.
+        val demand = conditionDemand
+        return if (demand == ConditionStateDemand()) base else conditionStateReader.read(
+            demand, base, bluetoothTracker.connectedAddresses,
         )
     }
 

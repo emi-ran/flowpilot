@@ -331,6 +331,21 @@
     <string name="cond_wifi_disconnected">Disconnected from Wi-Fi</string>
     <string name="cond_time_between">Time is between</string>
     <string name="cond_days_of_week">Days of week</string>
+    <string name="cond_bluetooth_device_connected">Bluetooth device connected</string>
+    <string name="cond_headset_connected">Headset connected</string>
+    <string name="cond_dnd_on">Do Not Disturb is on</string>
+    <string name="cond_ringer_mode">Ringer mode is</string>
+    <string name="cond_airplane_mode_on">Airplane mode is on</string>
+    <string name="cond_bluetooth_device_connected_desc">Run only while a paired Bluetooth device (or any device) is connected</string>
+    <string name="cond_headset_connected_desc">Run only while wired, USB or Bluetooth headphones are connected</string>
+    <string name="cond_dnd_on_desc">Run only while Do Not Disturb is active</string>
+    <string name="cond_ringer_mode_desc">Run only when the ringer mode is normal, vibrate or silent</string>
+    <string name="cond_airplane_mode_on_desc">Run only while Airplane mode is on</string>
+    <string name="cond_ringer_normal">Normal</string>
+    <string name="cond_ringer_vibrate">Vibrate</string>
+    <string name="cond_ringer_silent">Silent</string>
+    <string name="cond_bluetooth_any_device">Any Bluetooth device</string>
+    <string name="picker_group_system_state">System state</string>
 
     <!-- Categories -->
     <string name="cat_app">App</string>

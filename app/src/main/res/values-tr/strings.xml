@@ -331,6 +331,21 @@
     <string name="cond_wifi_disconnected">Wi-Fi ağına bağlı değil</string>
     <string name="cond_time_between">Saat aralığında</string>
     <string name="cond_days_of_week">Haftanın günleri</string>
+    <string name="cond_bluetooth_device_connected">Bluetooth cihazı bağlı</string>
+    <string name="cond_headset_connected">Kulaklık bağlı</string>
+    <string name="cond_dnd_on">Rahatsız Etmeyin açık</string>
+    <string name="cond_ringer_mode">Zil modu şu</string>
+    <string name="cond_airplane_mode_on">Uçak modu açık</string>
+    <string name="cond_bluetooth_device_connected_desc">Yalnızca eşleşmiş bir Bluetooth cihazı (veya herhangi bir cihaz) bağlıyken çalışır</string>
+    <string name="cond_headset_connected_desc">Yalnızca kablolu, USB veya Bluetooth kulaklık bağlıyken çalışır</string>
+    <string name="cond_dnd_on_desc">Yalnızca Rahatsız Etmeyin etkinken çalışır</string>
+    <string name="cond_ringer_mode_desc">Yalnızca zil modu normal, titreşim veya sessiz olduğunda çalışır</string>
+    <string name="cond_airplane_mode_on_desc">Yalnızca Uçak modu açıkken çalışır</string>
+    <string name="cond_ringer_normal">Normal</string>
+    <string name="cond_ringer_vibrate">Titreşim</string>
+    <string name="cond_ringer_silent">Sessiz</string>
+    <string name="cond_bluetooth_any_device">Herhangi bir Bluetooth cihazı</string>
+    <string name="picker_group_system_state">Sistem durumu</string>
 
     <!-- Categories -->
     <string name="cat_app">Uygulama</string>

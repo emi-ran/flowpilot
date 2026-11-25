@@ -10,6 +10,7 @@ All notable FlowPilot changes are documented here.
 - Strengthen encrypted backups: new exports use PBKDF2-HMAC-SHA256 with 600,000 iterations (backup format version 2) and require a password of at least 8 characters. Existing version 1 backups (100,000 iterations, 6+ character passwords) still restore; password length and iteration limits are checked before key derivation and before any rules are changed.
 
 ### Added
+- Add rule conditions for a connected Bluetooth device (selectable), headset connected, Do Not Disturb on, ringer mode (normal, vibrate, silent) and Airplane mode on. They work in AND/OR/NOT trees and backups, and their state is read only when an enabled rule uses it.
 - Add two headset presets: Start Music When Headset Connects (Media play) and Pause Music When Headset Disconnects (Media pause). Both are unverified on a physical device.
 - Add ringer-mode (normal, vibrate, silent) and Do Not Disturb (on, off) triggers. Receivers register only while an enabled rule needs them; initial, sticky and repeated values never fire, and changes made by FlowPilot's own sound, volume and Do Not Disturb actions within 2 seconds are ignored to prevent self-triggering loops. Not verified on a physical device.
 - Add a Copy to clipboard action (Apps & Links) that copies rendered text, such as `${sms.otp}`, to the clipboard. The clip is marked sensitive on Android 13+, and copied text is never logged or stored in history. Also available as a JSON command (`text` parameter).

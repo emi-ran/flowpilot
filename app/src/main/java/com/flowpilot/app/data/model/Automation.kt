@@ -164,7 +164,16 @@ enum class ConditionType(val label: String) {
     WIFI_DISCONNECTED("Disconnected from Wi-Fi"),
     TIME_BETWEEN("Time is between"),
     DAYS_OF_WEEK("Days of week"),
+    BLUETOOTH_DEVICE_CONNECTED("Bluetooth device connected"),
+    HEADSET_CONNECTED("Headset connected"),
+    DND_ON("Do Not Disturb is on"),
+    RINGER_MODE("Ringer mode is"),
+    AIRPLANE_MODE_ON("Airplane mode is on"),
 }
+
+/** Ringer mode a [ConditionType.RINGER_MODE] condition compares against. */
+@Serializable
+enum class RingerModeCondition { NORMAL, VIBRATE, SILENT }
 
 @Serializable
 data class RuleCondition(
@@ -174,6 +183,12 @@ data class RuleCondition(
     val startMinute: Int = 23 * 60,
     val endMinute: Int = 7 * 60,
     val days: Set<Int> = emptySet(),
+    /** Bonded device address for [ConditionType.BLUETOOTH_DEVICE_CONNECTED]; blank matches any device. */
+    val bluetoothDeviceAddress: String = "",
+    /** Cached device name for readable UI; the address remains the matcher. */
+    val bluetoothDeviceName: String = "",
+    /** Expected ringer mode for [ConditionType.RINGER_MODE]. */
+    val ringerMode: RingerModeCondition = RingerModeCondition.NORMAL,
 )
 
 @Serializable

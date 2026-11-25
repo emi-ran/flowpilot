@@ -1,6 +1,7 @@
 package com.flowpilot.app.ui
 
 import com.flowpilot.app.data.model.hasTrigger
+import com.flowpilot.app.data.model.flattenConditions
 
 import android.Manifest
 import android.app.Application
@@ -314,7 +315,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     com.flowpilot.app.data.model.TriggerEvent.MEDIA_PAUSED,
                     com.flowpilot.app.data.model.TriggerEvent.MEDIA_TRACK_CHANGED,
                 )
-                val hasBluetoothTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED, com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED)
+                val hasBluetoothTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED, com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED) ||
+                    (rule.conditionTree?.flattenConditions() ?: rule.conditions).any { it.type == com.flowpilot.app.data.model.ConditionType.BLUETOOTH_DEVICE_CONNECTED }
                 val hasNfcTagTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.NFC_TAG_SCANNED)
                 val hasCallTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.CALL_RINGING, com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED, com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING, com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED)
                 val hasFlipTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_DOWN, com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_UP)
