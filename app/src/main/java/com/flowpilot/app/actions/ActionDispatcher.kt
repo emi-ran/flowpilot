@@ -50,13 +50,17 @@ class ActionDispatcher private constructor(
     }
 
     fun execute(action: ActionType, parameters: ActionParameters = ActionParameters()): ActionResult {
-        val executor = map[action] ?: return ActionResult(false, "No executor for ${action.label}")
+        val executor = map[action] ?: return ActionResult(false, "No executor for ${action.label}", reasonCode = com.flowpilot.app.diagnostics.ReasonCode.NO_EXECUTOR)
         return try {
             executor.execute(action, parameters)
         } catch (ce: java.util.concurrent.CancellationException) {
             throw ce
-        } catch (_: Throwable) {
-            ActionResult(false, "Execution failed")
+        } catch (t: Throwable) {
+            ActionResult(
+                false, "Execution failed",
+                reasonCode = com.flowpilot.app.diagnostics.ReasonCode.UNEXPECTED_EXCEPTION,
+                detail = "exception=" + t.javaClass.simpleName,
+            )
         }
     }
 
@@ -64,13 +68,17 @@ class ActionDispatcher private constructor(
         action: ActionType,
         parameters: ActionParameters = ActionParameters(),
     ): ActionResult {
-        val executor = map[action] ?: return ActionResult(false, "No executor for ${action.label}")
+        val executor = map[action] ?: return ActionResult(false, "No executor for ${action.label}", reasonCode = com.flowpilot.app.diagnostics.ReasonCode.NO_EXECUTOR)
         return try {
             executor.executeAsync(action, parameters)
         } catch (ce: java.util.concurrent.CancellationException) {
             throw ce
-        } catch (_: Throwable) {
-            ActionResult(false, "Execution failed")
+        } catch (t: Throwable) {
+            ActionResult(
+                false, "Execution failed",
+                reasonCode = com.flowpilot.app.diagnostics.ReasonCode.UNEXPECTED_EXCEPTION,
+                detail = "exception=" + t.javaClass.simpleName,
+            )
         }
     }
 
