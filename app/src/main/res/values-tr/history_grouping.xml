@@ -27,6 +27,7 @@
     <string name="history_template_field_phone_number">Telefon numarası</string>
     <string name="history_template_field_sms_recipient">SMS alıcısı</string>
     <string name="history_template_field_sms_message">SMS mesajı</string>
+    <string name="history_template_field_clipboard_text">Pano metni</string>
     <string name="history_diagnostic_shizuku_not_running">Shizuku çalışmıyor. Shizuku’yu başlatıp tekrar deneyin.</string>
     <string name="history_diagnostic_shizuku_permission_required">Bu eylem için FlowPilot’a Shizuku izni verilmelidir.</string>
     <string name="history_diagnostic_bluetooth_permission_required">Bu eylem için Bluetooth izni gereklidir.</string>
@@ -44,4 +45,6 @@
     <string name="history_diagnostic_media_session_unavailable">Uygun bir etkin medya oturumu bulunamadı.</string>
     <string name="history_diagnostic_network_timeout">Ağ isteğinin süresi doldu.</string>
     <string name="history_diagnostic_network_failure">Ağ isteği başarısız oldu.</string>
+    <string name="history_diagnostic_not_notification_trigger">Bu eylem yalnızca alınan bildirimle tetiklenen kurallarda çalışır.</string>
+    <string name="history_diagnostic_listener_disconnected">Bildirim erişimi bağlı değil. Bildirim erişimini yeniden etkinleştirin.</string>
 </resources>

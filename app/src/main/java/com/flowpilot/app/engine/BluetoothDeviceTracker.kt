@@ -105,6 +105,10 @@ class BluetoothDeviceTracker(private val context: Context) {
         Log.i(TAG, "Registered ACL receiver")
     }
 
+    /** Addresses reported connected by ACL broadcasts since start; no replay of earlier connections. */
+    val connectedAddresses: Set<String>
+        get() = synchronized(this) { state.connectedAddresses }
+
     fun drainTransitions(): List<BluetoothDeviceTransition> = buildList {
         while (true) add(transitions.poll() ?: break)
     }.also { Log.i(TAG, "Drained transitions=${it.size}") }

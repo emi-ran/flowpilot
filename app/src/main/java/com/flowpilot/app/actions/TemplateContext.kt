@@ -36,4 +36,9 @@ data class TemplateContext(
     val locationLng: Double? = null,
     val triggerSourceIndex: Int? = null,
     val values: Map<String, String> = emptyMap(),
+    /**
+     * Key of the notification that triggered the rule, or null for other events. Used only to
+     * dismiss that notification; transient and never rendered, logged or stored.
+     */
+    val notificationKey: String? = null,
 )

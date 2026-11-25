@@ -27,6 +27,7 @@
     <string name="history_template_field_phone_number">Phone number</string>
     <string name="history_template_field_sms_recipient">SMS recipient</string>
     <string name="history_template_field_sms_message">SMS message</string>
+    <string name="history_template_field_clipboard_text">Clipboard text</string>
     <string name="history_diagnostic_shizuku_not_running">Shizuku is not running. Start Shizuku and try again.</string>
     <string name="history_diagnostic_shizuku_permission_required">FlowPilot needs Shizuku permission for this action.</string>
     <string name="history_diagnostic_bluetooth_permission_required">Bluetooth permission is required for this action.</string>
@@ -44,4 +45,6 @@
     <string name="history_diagnostic_media_session_unavailable">No suitable active media session is available.</string>
     <string name="history_diagnostic_network_timeout">The network request timed out.</string>
     <string name="history_diagnostic_network_failure">The network request failed.</string>
+    <string name="history_diagnostic_not_notification_trigger">This action only works for rules triggered by a received notification.</string>
+    <string name="history_diagnostic_listener_disconnected">Notification access is not connected. Re-enable notification access.</string>
 </resources>

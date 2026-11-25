@@ -59,6 +59,13 @@ fun triggerIcon(event: TriggerEvent): ImageVector = when (event) {
     TriggerEvent.MEDIA_PAUSED -> Icons.Default.Pause
     TriggerEvent.MEDIA_TRACK_CHANGED -> Icons.Default.MusicNote
     TriggerEvent.GEOFENCE_EXIT -> Icons.Default.LocationOff
+    TriggerEvent.RINGER_NORMAL -> Icons.Default.NotificationsActive
+    TriggerEvent.RINGER_VIBRATE -> Icons.Default.Vibration
+    TriggerEvent.RINGER_SILENT -> Icons.Default.NotificationsOff
+    TriggerEvent.DND_ENABLED -> Icons.Default.DoNotDisturb
+    TriggerEvent.DND_DISABLED -> Icons.Default.DoNotDisturbOff
+    TriggerEvent.HEADSET_CONNECTED -> Icons.Default.Headphones
+    TriggerEvent.HEADSET_DISCONNECTED -> Icons.Default.HeadsetOff
 }
 
 /**
@@ -95,6 +102,13 @@ fun triggerAccent(event: TriggerEvent): Color = when (event) {
     TriggerEvent.GEOFENCE_ENTER -> Color(0xFF26A69A)
     TriggerEvent.MEDIA_PLAYING, TriggerEvent.MEDIA_PAUSED, TriggerEvent.MEDIA_TRACK_CHANGED -> Color(0xFFCE93D8)
     TriggerEvent.GEOFENCE_EXIT -> Color(0xFFEF5350)
+    TriggerEvent.RINGER_NORMAL -> Color(0xFF81C784)
+    TriggerEvent.RINGER_VIBRATE -> Color(0xFFFFB74D)
+    TriggerEvent.RINGER_SILENT -> Color(0xFFE57373)
+    TriggerEvent.DND_ENABLED -> Color(0xFF9FA8DA)
+    TriggerEvent.DND_DISABLED -> Color(0xFF90CAF9)
+    TriggerEvent.HEADSET_CONNECTED -> Color(0xFF9FA8DA)
+    TriggerEvent.HEADSET_DISCONNECTED -> Color(0xFFC5CAE9)
 }
 
 @Composable
@@ -251,6 +265,8 @@ fun TriggerCardItem(
                         TriggerEvent.BATTERY_BELOW, TriggerEvent.BATTERY_ABOVE -> stringResource(R.string.detail_threshold_battery, batteryLevel)
                         TriggerEvent.CHARGER_CONNECTED -> stringResource(R.string.trigger_charger_connected_desc)
                         TriggerEvent.CHARGER_DISCONNECTED -> stringResource(R.string.trigger_charger_disconnected_desc)
+                        TriggerEvent.HEADSET_CONNECTED -> stringResource(R.string.trigger_headset_connected_desc)
+                        TriggerEvent.HEADSET_DISCONNECTED -> stringResource(R.string.trigger_headset_disconnected_desc)
                         TriggerEvent.SCREEN_ON -> stringResource(R.string.trigger_screen_on_desc)
                         TriggerEvent.SCREEN_OFF -> stringResource(R.string.trigger_screen_off_desc)
                         TriggerEvent.DEVICE_FLIPPED_DOWN -> stringResource(R.string.trigger_device_flipped_down_desc)
@@ -265,6 +281,11 @@ fun TriggerCardItem(
                         TriggerEvent.DEVICE_SHAKE -> stringResource(R.string.trigger_device_shake_desc) + " · " + shakeStrengthLabel(shakeThreshold)
                         TriggerEvent.DEVICE_UNLOCKED -> stringResource(R.string.trigger_device_unlocked_desc)
                         TriggerEvent.LIGHT_BELOW, TriggerEvent.LIGHT_ABOVE -> stringResource(R.string.detail_threshold_light, lightLux)
+                        TriggerEvent.RINGER_NORMAL -> stringResource(R.string.trigger_ringer_normal_desc)
+                        TriggerEvent.RINGER_VIBRATE -> stringResource(R.string.trigger_ringer_vibrate_desc)
+                        TriggerEvent.RINGER_SILENT -> stringResource(R.string.trigger_ringer_silent_desc)
+                        TriggerEvent.DND_ENABLED -> stringResource(R.string.trigger_dnd_enabled_desc)
+                        TriggerEvent.DND_DISABLED -> stringResource(R.string.trigger_dnd_disabled_desc)
                         TriggerEvent.SMS_RECEIVED -> {
                             val filterDesc = when (smsMatchMode) {
                                 SmsMatchMode.ANY -> stringResource(R.string.sms_any_sms)
@@ -919,6 +940,18 @@ fun TriggerCardItem(
                             }
                         }
                     }
+                }
+                TriggerEvent.RINGER_NORMAL,
+                TriggerEvent.RINGER_VIBRATE,
+                TriggerEvent.RINGER_SILENT,
+                TriggerEvent.DND_ENABLED,
+                TriggerEvent.DND_DISABLED -> {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.sound_trigger_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 else -> {
                     // Triggers with no extra configuration

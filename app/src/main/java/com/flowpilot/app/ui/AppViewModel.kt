@@ -1,6 +1,7 @@
 package com.flowpilot.app.ui
 
 import com.flowpilot.app.data.model.hasTrigger
+import com.flowpilot.app.data.model.flattenConditions
 
 import android.Manifest
 import android.app.Application
@@ -314,7 +315,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     com.flowpilot.app.data.model.TriggerEvent.MEDIA_PAUSED,
                     com.flowpilot.app.data.model.TriggerEvent.MEDIA_TRACK_CHANGED,
                 )
-                val hasBluetoothTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED, com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED)
+                val hasBluetoothTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_CONNECTED, com.flowpilot.app.data.model.TriggerEvent.BLUETOOTH_DISCONNECTED) ||
+                    (rule.conditionTree?.flattenConditions() ?: rule.conditions).any { it.type == com.flowpilot.app.data.model.ConditionType.BLUETOOTH_DEVICE_CONNECTED }
                 val hasNfcTagTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.NFC_TAG_SCANNED)
                 val hasCallTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.CALL_RINGING, com.flowpilot.app.data.model.TriggerEvent.CALL_ANSWERED, com.flowpilot.app.data.model.TriggerEvent.CALL_OUTGOING, com.flowpilot.app.data.model.TriggerEvent.CALL_ENDED)
                 val hasFlipTrigger = rule.hasTrigger(com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_DOWN, com.flowpilot.app.data.model.TriggerEvent.DEVICE_FLIPPED_UP)
@@ -479,11 +481,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         screenBrightnessPercent: Int = 50,
         forceStopPackage: String = "",
         forceStopAppName: String = "",
+        dismissScope: com.flowpilot.app.data.model.NotificationDismissScope = com.flowpilot.app.data.model.NotificationDismissScope.THIS,
         smsSenderFilter: String = "",
         smsMatchMode: com.flowpilot.app.data.model.SmsMatchMode = com.flowpilot.app.data.model.SmsMatchMode.CONTAINS,
         smsKeyword: String = "",
         smsRecipient: String = "",
         smsMessage: String = "",
+        clipboardText: String = "",
         geofenceName: String = "",
         geofenceLatitude: Double = 0.0,
         geofenceLongitude: Double = 0.0,
@@ -565,11 +569,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 smsKeyword = smsKeyword,
                 smsRecipient = smsRecipient,
                 smsMessage = smsMessage,
+                clipboardText = clipboardText,
                 lightLux = lightLux,
                 shakeThreshold = shakeThreshold,
                 screenBrightnessPercent = screenBrightnessPercent,
                 forceStopPackage = forceStopPackage,
                 forceStopAppName = forceStopAppName,
+                dismissScope = dismissScope,
                 geofenceName = geofenceName,
                 geofenceLatitude = geofenceLatitude,
                 geofenceLongitude = geofenceLongitude,

@@ -101,7 +101,7 @@ class ManualRuleRunner(
 
                 val actionParameters = ActionParametersFactory.create(rule, templateContext)
                 suspend fun dispatch() = if (action == com.flowpilot.app.data.model.ActionType.EXECUTE_JSON_COMMAND) {
-                    val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(actionParameters.jsonCommandSource) { nestedAction, nestedParameters ->
+                    val outcome = com.flowpilot.app.actions.JsonCommandExecution.execute(actionParameters.jsonCommandSource, actionParameters.jsonCommandToken) { nestedAction, nestedParameters ->
                         dispatcher.executeAsync(nestedAction, nestedParameters)
                     }
                     templateContext = outcome.applyTo(templateContext)

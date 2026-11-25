@@ -153,6 +153,8 @@ Start automating instantly with built-in recipes designed for everyday life:
 | 🚗 **Leaving Home Mode** | Disconnected from Home Wi-Fi | Enables Mobile Data (Shizuku), sets Normal ringer, raises volume to 80% |
 | 🏠 **Welcome Home Mode** | Connected to Home Wi-Fi | Disables Mobile Data (Shizuku) and sets brightness to 50% |
 | 📍 **SMS Emergency Responder** | Incoming SMS with secret phrase | Enables location and replies with a location link if a fix is available; a fix is not guaranteed |
+| 🎧 **Headset Music Start** | Headset connected (wired, USB or Bluetooth) | Starts media playback |
+| ⏸️ **Headset Music Pause** | Last headset disconnected | Pauses media playback |
 
 ---
 
@@ -165,9 +167,11 @@ A rule can combine up to five independently configured triggers with OR semantic
 
 - 📱 **App Lifecycle:** App launched or closed (lightweight `UsageStatsManager` transitions).
 - 🔌 **Power & Battery:** Charger plugged in / unplugged, battery level rises above or drops below custom percentage.
+- 🔔 **Sound:** Ringer set to normal, vibrate or silent; Do Not Disturb turned on or off (changes made by FlowPilot's own actions are ignored to prevent loops).
 - 💡 **Screen & State:** Screen turned on/off, device unlocked.
 - ⏰ **Schedule & Time:** Daily, weekdays, weekends, or specific days and exact times.
 - 📶 **Connectivity:** Wi-Fi connected/disconnected (any or target SSID), Bluetooth device connected/disconnected.
+- 🎧 **Headset:** Headset connected/disconnected for wired, USB and Bluetooth audio outputs. Fires when the first headset output appears and when the last one is removed (extra devices and the built-in speaker are ignored); no permission needed and nothing is replayed at startup.
 - 🔄 **Sensors & Motion:**
   - **Device Flip:** Face-down on table or turned face-up (Proximity + Gravity Z-axis with 500ms debounce).
   - **Shake:** Shake detection with a per-rule strength slider (6–32 m/s²) under the trigger settings; one shake produces one trigger.
@@ -190,6 +194,8 @@ Rules execute only when their conditions pass. Combine them with AND or OR, nest
 - ⚡ **Charging State:** Require device to be currently charging or discharging.
 - 📲 **Screen State:** Require screen to be on or off.
 - 📶 **Wi-Fi Network:** Require connection to a specific Wi-Fi network (SSID).
+- 🎧 **Bluetooth Device / Headset:** Require a chosen (or any) Bluetooth device, or wired/USB/Bluetooth headphones, to be connected.
+- 🔕 **Do Not Disturb, Ringer Mode, Airplane Mode:** Require DND to be on, the ringer to be normal/vibrate/silent, or Airplane mode to be on.
 - 🧩 **Nested Logic:** Group conditions with per-group AND/OR, negate a group, and nest up to four levels.
 
 ---
@@ -203,6 +209,7 @@ When a rule is incomplete, Save points to the invalid trigger or action and expl
 - 🖥️ **Display & Device:** Toggle Flashlight (Torch), Dark Theme (Shizuku), Auto-rotate, Brightness level, Lock Screen (Shizuku), and Force Stop App (Shizuku).
 - 🔊 **Sound & Alerts:** Do Not Disturb (DND) toggle, Sound Profiles (Normal / Vibrate / Silent), Media, Notification and Alarm Volume (0–100%), Custom Audio playback (1–60s duration), Haptic Patterns (Pulse, Double Tap, Alert, Heartbeat, Triple Tap, SOS), and Rich Notifications. Each volume action has its own saved percentage per rule. The device's minimum and discrete volume steps limit achievable levels; a request below the minimum or a failed system readback is reported as a failure. Notification and ringtone volumes may be linked by the device.
 - 🎵 **Media Controls:** Play, pause, play/pause toggle, next track, or previous track, optionally targeting a selected media app. Notification access is required to access media sessions; availability depends on the player.
+- 🔔 **Dismiss Notification:** For rules triggered by a received notification, dismiss that notification or every active notification from the same app. Needs notification access and a connected listener; the notification key is a transient event value that is never stored or logged, and removal is requested but not verified. Rules using it must have a Notification received trigger.
 - 🎵 **Find or open a song:** Search Spotify or YouTube Music by title, or open a supported song link in the selected app. Both fields support trigger variables such as `${notification.text}`; a resolved link must match the selected service. YouTube Music links are trimmed at both ends before validation. Automatic playback is not guaranteed and depends on the player, account and Android background-launch restrictions.
   The editor marks missing or disabled music apps; saving and manual execution require the selected app to be installed and enabled.
 - 🗣️ **Offline Speech (TTS):** Speak custom messages using Android's on-device TTS engine with speech rate control. The voice picker includes **System default** (the phone's offline TTS voice, or the best offline fallback) and previews sample text in the selected voice's language. Templates can include trigger data such as `${notification.text|stripPrefix:"tts"|trim}`, `${sms.otp}`, `${call.state}`, and `${batteryPercent}`; audio is synthesized on demand and cached.
@@ -211,7 +218,8 @@ When a rule is incomplete, Save points to the invalid trigger or action and expl
 - 🚀 **Apps & Web:** Launch installed app or open web URL.
 - 💬 **Phone & SMS:** Open dialer, place direct phone call, send automated background SMS, or prepare SMS draft.
 - 🔗 **HTTPS Webhook:** Send outbound HTTP requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) with custom headers, JSON body, AES-256-GCM Keystore encrypted secrets, and dynamic template variables.
-- 🧾 **JSON commands:** Run a bounded, versioned command from a notification, SMS, or another template source. All normal actions are supported; nested `EXECUTE_JSON_COMMAND` is rejected. Existing action permissions and capability checks still apply, but the receiver does not authenticate senders: matching content can trigger SMS or calls (potentially incurring charges), network changes, or device locking. Use trusted sources and restrictive filters. Subsequent webhook or SMS actions can report the result; notification title and message filters are independent. See the [command contract](skills/flowpilot-json-command/references/json-commands.md) and [installable agent skill](skills/flowpilot-json-command/SKILL.md) for the detailed schema and safety guidance. This expansion is unreleased; device verification is pending.
+- 📋 **Copy to clipboard:** Copy rendered text, such as an SMS OTP via `${sms.otp}`, to the clipboard. Copied text is never logged or stored in history, and Android 13+ hides it in clipboard previews.
+- 🧾 **JSON commands:** Run a bounded, versioned command from a notification, SMS, or another template source. All normal actions are supported; nested `EXECUTE_JSON_COMMAND` is rejected. Existing action permissions and capability checks still apply, but by default the receiver does not authenticate senders; to require a shared secret, start the source template with a line `@token=YOUR_SECRET` and include `"token":"YOUR_SECRET"` in each command (opt-in; existing rules are unchanged). Without it, matching content can trigger SMS or calls (potentially incurring charges), network changes, or device locking. Use trusted sources and restrictive filters. Subsequent webhook or SMS actions can report the result; notification title and message filters are independent. See the [command contract](skills/flowpilot-json-command/references/json-commands.md) and [installable agent skill](skills/flowpilot-json-command/SKILL.md) for the detailed schema and safety guidance. This expansion is unreleased; device verification is pending.
 - 🧩 **Template Variables:** Use `${...}` in speech, notification, webhook, SMS, phone, URL, alarm, and timer text. Every template-capable action field opens the same trigger-aware picker with filters (`trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape`). Global values include `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}`, and `${rule.name}`.
 
 ---
@@ -256,7 +264,7 @@ FlowPilot is engineered with an uncompromised commitment to user privacy:
 - 🔄 **Optional Update Checks:** Release builds automatically check the public GitHub Releases API by default, at most once a day, without sending an account or device identifier. Disable automatic checks in Settings; manual checks remain available. Debug builds do not check.
 - 📵 **No Cloud Synchronization:** FlowPilot does not automatically synchronize rules, logs, or secrets to a cloud account. User-configured actions can send selected data to external recipients.
 - 🛡️ **Android Keystore Protection:** Webhook secrets, tokens, and sensitive headers are encrypted with AES-256-GCM using Android Keystore keys, hardware-backed when supported by the device.
-- 🙈 **Log & Diagnostic Sanitization:** Execution history and logs mask or exclude sensitive content; persistent diagnostics store non-content enums and bounded numeric metadata. Configured values, including phone numbers and webhook fields, can remain visible in the editor.
+- 🙈 **Log & Diagnostic Sanitization:** Execution history and logs mask or exclude sensitive content; persistent diagnostics store non-content enums and bounded numeric metadata. Configured values, including phone numbers and webhook fields, can remain visible in the editor; standard (non-encrypted) exports redact phone numbers and webhook fields.
 
 ### Transparent Permission Disclosures
 FlowPilot declares sensitive permissions solely to power explicit automation features:

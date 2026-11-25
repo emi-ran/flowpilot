@@ -16,6 +16,7 @@
     <string name="validation_action_speech">Konuşma metnini, sesi, hızı ve şablon değişkenlerini kontrol edin.</string>
     <string name="validation_action_phone">Bir telefon numarası girin.</string>
     <string name="validation_action_sms">Gerekli SMS alıcısını ve mesajı girin.</string>
+    <string name="validation_action_clipboard">Kopyalanacak metni girin (en fazla 4000 karakter).</string>
     <string name="triggers_any_summary">HERHANGİ bir tetikleyici eşleşsin · ortak bekleme süresi</string>
     <string name="trigger_add">Tetikleyici ekle (en fazla 5)</string>
     <string name="trigger_remove">Tetikleyiciyi kaldır</string>
@@ -228,6 +229,10 @@
 
     <string name="preset_night_dim_title">Gece Ekran Kısma</string>
     <string name="preset_night_dim_desc" formatted="false">00:00-06:00 arasında ekranı açınca ve pil %60\'ın altındaysa parlaklığı %10\'a düşürür ve koyu temayı açar.</string>
+    <string name="preset_headset_music_title">Kulaklık Takınca Müziği Başlat</string>
+    <string name="preset_headset_music_desc">Kablolu, USB veya Bluetooth kulaklık bağlandığında medya oynatmayı başlatır.</string>
+    <string name="preset_headset_pause_title">Kulaklık Çıkınca Müziği Duraklat</string>
+    <string name="preset_headset_pause_desc">Son kablolu, USB veya Bluetooth kulaklık çıkarıldığında medya oynatmayı duraklatır.</string>
 
     <string name="preset_more_triggers">+%1$d</string>
     <string name="preset_logic_and_or">VE/VEYA</string>
@@ -289,6 +294,7 @@
     <string name="action_start_timer">Zamanlayıcı başlat</string>
     <string name="action_launch_app">Uygulama başlat</string>
     <string name="action_open_url">URL aç</string>
+    <string name="action_copy_to_clipboard">Panoya kopyala</string>
     <string name="action_http_webhook">HTTPS Webhook gönder</string>
     <string name="action_open_dialer">Arama ekranını aç</string>
     <string name="action_dial_number">Numarayı tuşla</string>
@@ -325,6 +331,21 @@
     <string name="cond_wifi_disconnected">Wi-Fi ağına bağlı değil</string>
     <string name="cond_time_between">Saat aralığında</string>
     <string name="cond_days_of_week">Haftanın günleri</string>
+    <string name="cond_bluetooth_device_connected">Bluetooth cihazı bağlı</string>
+    <string name="cond_headset_connected">Kulaklık bağlı</string>
+    <string name="cond_dnd_on">Rahatsız Etmeyin açık</string>
+    <string name="cond_ringer_mode">Zil modu şu</string>
+    <string name="cond_airplane_mode_on">Uçak modu açık</string>
+    <string name="cond_bluetooth_device_connected_desc">Yalnızca eşleşmiş bir Bluetooth cihazı (veya herhangi bir cihaz) bağlıyken çalışır</string>
+    <string name="cond_headset_connected_desc">Yalnızca kablolu, USB veya Bluetooth kulaklık bağlıyken çalışır</string>
+    <string name="cond_dnd_on_desc">Yalnızca Rahatsız Etmeyin etkinken çalışır</string>
+    <string name="cond_ringer_mode_desc">Yalnızca zil modu normal, titreşim veya sessiz olduğunda çalışır</string>
+    <string name="cond_airplane_mode_on_desc">Yalnızca Uçak modu açıkken çalışır</string>
+    <string name="cond_ringer_normal">Normal</string>
+    <string name="cond_ringer_vibrate">Titreşim</string>
+    <string name="cond_ringer_silent">Sessiz</string>
+    <string name="cond_bluetooth_any_device">Herhangi bir Bluetooth cihazı</string>
+    <string name="picker_group_system_state">Sistem durumu</string>
 
     <!-- Categories -->
     <string name="cat_app">Uygulama</string>
@@ -489,6 +510,7 @@
     <string name="action_speak_text_desc">Metni sesli okuma (TTS) ile seslendirir</string>
     <string name="action_launch_app_desc">Yüklü bir uygulamayı ön planda açar</string>
     <string name="action_open_url_desc">Web sitesini veya bağlantıyı tarayıcıda açar</string>
+    <string name="action_copy_to_clipboard_desc">Metni panoya kopyalar. OTP kodu gibi değişkenler kopyalamadan önce doldurulur</string>
     <string name="action_http_webhook_desc">HTTPS isteği gönderir (Home Assistant, Discord, ntfy vb.)</string>
     <string name="action_force_stop_app_desc">Çalışan bir uygulamayı zorla durdurur (Shizuku gerekir)</string>
     <string name="action_dark_theme_on_desc">Sistem genelinde koyu temayı açar (Shizuku gerekir)</string>
@@ -646,6 +668,9 @@
     <string name="phone_direct_call_warning">⚠️ Doğrudan arama: Tetiklendiğinde derhal gerçek bir telefon araması başlatır.</string>
     <string name="sms_recipient_label">Alıcı telefon numarası</string>
     <string name="sms_message_text_label">SMS mesaj metni</string>
+    <string name="clipboard_text_label">Kopyalanacak metin</string>
+    <string name="clipboard_text_placeholder">örn. Kod: ${sms.otp}</string>
+    <string name="clipboard_copy_hint">Kopyalanan metin günlüklere ve geçmişe yazılmaz. Android 13 ve sonrası pano önizlemesinde gizler.</string>
     <string name="sms_direct_send_warning">⚠️ Doğrudan SMS: Arka planda derhal SMS gönderir. Operatör tarifesi geçerli olabilir.</string>
     <string name="action_force_stop_prompt">Zorla durdurulacak uygulamayı seçin</string>
     <string name="time_start">Başlangıç saati</string>
@@ -743,6 +768,10 @@
     <string name="perms_hyperos_title">HyperOS Otomatik Başlatma</string>
     <string name="perms_hyperos_desc">HyperOS bu ayarı doğrudan okutmaz. FlowPilot\'ın açık olduğunu doğrulamak için listeyi açın ve pil tasarrufunu \'Kısıtlama yok\' yapın.</string>
     <string name="perms_hyperos_pill">HyperOS\'ta kontrol et</string>
+    <string name="perms_miui_autostart_title">Otomatik başlatma engelli olabilir</string>
+    <string name="perms_miui_autostart_desc">Bildirim erişimi verilmiş ancak dinleyici bağlı değil. Xiaomi, Redmi ve POCO cihazlarda bu genellikle FlowPilot için Otomatik başlatmanın kapalı olduğu anlamına gelir. Otomatik başlatma ayarlarını açıp FlowPilot\'ı etkinleştirin.</string>
+    <string name="perms_miui_autostart_pill">Dinleyici engelli</string>
+    <string name="perms_miui_autostart_action">Otomatik başlatmayı aç</string>
     <string name="perms_secure_settings_title">Güvenli sistem ayarları</string>
     <string name="perms_secure_settings_ready">Pil Tasarrufu eylemleri Shizuku üzerinden çalışabilir. ADB yetkisi doğrudan erişim sağlar.</string>
     <string name="perms_secure_settings_needed">Pil Tasarrufu eylemleri için gereklidir. ADB veya Shizuku ile yetki verin.</string>
@@ -860,7 +889,7 @@
     <string name="backup_encrypted_warning">Şifreli tam yedek webhook ve kişisel verileri içerir. Parolayı unutursanız geri yükleyemezsiniz.</string>
     <string name="backup_password_label">Şifre</string>
     <string name="backup_confirm_password_label">Şifreyi onayla</string>
-    <string name="backup_password_too_short">Şifre en az 6 karakter olmalıdır</string>
+    <string name="backup_password_too_short">Şifre en az 8 karakter olmalıdır</string>
     <string name="backup_password_mismatch">Şifreler eşleşmiyor</string>
     <string name="backup_decrypt_dialog_title">Şifreli Yedekleme</string>
     <string name="backup_decrypt_dialog_desc">Bu yedekleme şifre korumalıdır. Otomasyonların şifresini çözüp geri yüklemek için şifreyi girin.</string>
@@ -1019,6 +1048,7 @@
     <string name="about_btn_github">GitHub Deposu</string>
     <string name="about_btn_issues">Sorun Bildir / Geri Bildirim</string>
     <string name="engine_not_running">Motor çalışmıyor</string>
+    <string name="home_sibling_build_warning">FlowPilot\u0027ın başka bir sürümü (release veya debug) de yüklü. Onun motoru da açıksa aynı kural iki kez çalışabilir. Motoru birinde kapatın.</string>
     <string name="cat_media">Medya</string>
     <string name="trigger_media_playing">Medya oynatılmaya başladı</string>
     <string name="trigger_media_paused">Medya duraklatıldı</string>
@@ -1026,6 +1056,22 @@
     <string name="trigger_media_playing_desc">Medya oynatılmaya başladığında</string>
     <string name="trigger_media_paused_desc">Medya duraklatıldığında</string>
     <string name="trigger_media_track_changed_desc">Geçerli medya parçası değiştiğinde</string>
+    <string name="cat_sound">Ses</string>
+    <string name="trigger_ringer_normal">Zil normale alındı</string>
+    <string name="trigger_ringer_vibrate">Zil titreşime alındı</string>
+    <string name="trigger_ringer_silent">Zil sessize alındı</string>
+    <string name="trigger_dnd_enabled">Rahatsız Etme açıldı</string>
+    <string name="trigger_dnd_disabled">Rahatsız Etme kapandı</string>
+    <string name="trigger_ringer_normal_desc">Zil normale (sesli) geçtiğinde</string>
+    <string name="trigger_ringer_vibrate_desc">Zil titreşime geçtiğinde</string>
+    <string name="trigger_ringer_silent_desc">Zil sessize geçtiğinde</string>
+    <string name="trigger_dnd_enabled_desc">Rahatsız Etme açıldığında (herhangi bir mod)</string>
+    <string name="trigger_dnd_disabled_desc">Rahatsız Etme kapandığında</string>
+    <string name="sound_trigger_hint">Yalnızca durum gerçekten değiştiğinde çalışır. FlowPilot\'un kendi ses veya Rahatsız Etme eylemlerinin yaptığı değişiklikler, kuralların döngüye girmemesi için birkaç saniye yok sayılır.</string>
+    <string name="trigger_headset_connected">Kulaklık bağlandı</string>
+    <string name="trigger_headset_disconnected">Kulaklık çıkarıldı</string>
+    <string name="trigger_headset_connected_desc">Kablolu, USB veya Bluetooth ses çıkışı kullanılabilir olduğunda (her ek cihaz için değil)</string>
+    <string name="trigger_headset_disconnected_desc">Son kablolu, USB veya Bluetooth ses çıkışı kaldırıldığında</string>
     <string name="action_media_play">Medyayı oynat</string>
     <string name="action_media_pause">Medyayı duraklat</string>
     <string name="action_media_toggle">Medya oynatmayı değiştir</string>
@@ -1036,6 +1082,13 @@
     <string name="action_media_toggle_desc">Medya oynatmayı başlatır veya duraklatır</string>
     <string name="action_media_next_desc">Sonraki parçaya geçer</string>
     <string name="action_media_previous_desc">Önceki parçaya döner</string>
+    <string name="action_dismiss_notification">Bildirimi kapat</string>
+    <string name="action_dismiss_notification_desc">Bu kuralı tetikleyen bildirimi kapatır</string>
+    <string name="dismiss_scope_this">Bu bildirim</string>
+    <string name="dismiss_scope_all_from_package">Bu uygulamanın tümü</string>
+    <string name="dismiss_notification_hint">Bildirim erişimi gerekir. Kuralı tetikleyen bildirimi veya aynı uygulamanın tüm etkin bildirimlerini kapatır.</string>
+    <string name="dismiss_notification_requires_notification_trigger">Bu eylem için Bildirim alındığında tetikleyicisi ekleyin.</string>
+    <string name="validation_action_dismiss_notification">Bildirimi kapat eylemi için Bildirim alındığında tetikleyicisi gerekir.</string>
     <string name="variable_group_media">Medya</string>
     <string name="variable_desc_media_title">Geçerli parçanın adı</string>
     <string name="variable_desc_media_artist">Geçerli parçanın sanatçısı</string>
@@ -1118,7 +1171,7 @@
     <string name="action_execute_json_command">JSON komutunu çalıştır</string>
     <string name="action_execute_json_command_desc">JSON nesnesinden desteklenen bir eylemi çalıştır</string>
     <string name="json_command_source">JSON kaynak şablonu</string>
-    <string name="json_command_warning">Eşleşen mesajlar bu cihazda eylem çalıştırabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler seçin. Kaynak şablonu kuralla birlikte şifreli saklanır.</string>
+    <string name="json_command_warning">Eşleşen mesajlar bu cihazda eylem çalıştırabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler seçin. Kaynak şablonu kuralla birlikte şifreli saklanır. Ortak sır istemek için şablonu @token=SIRRINIZ satırıyla başlatın ve her komutta aynı değeri \"token\" olarak gönderin.</string>
     <string name="variable_desc_command_success">Son JSON komutunun başarılı olup olmadığı</string>
     <string name="variable_desc_command_status">Son JSON komutunun durumu</string>
     <string name="variable_desc_command_message">Son JSON komutunun güvenli özeti</string>
@@ -1261,4 +1314,16 @@
     <string name="history_fix_request_unverified">Sonucu cihazda kontrol edin. Bu bir hata değildir.</string>
     <string name="history_reason_unknown">Eylem neden bildirmeden başarısız oldu.</string>
     <string name="history_fix_unknown">Raporu kopyalayıp paylaşın.</string>
+    <string name="nfc_tag_scanned_toast">NFC etiketi okundu</string>
+    <string name="shizuku_permission_granted">Shizuku izni verildi</string>
+    <string name="shizuku_permission_denied">Shizuku izni reddedildi</string>
+    <string name="notif_channel_automation_alerts">Otomasyon uyarıları</string>
+    <string name="notif_default_body">Otomasyon çalıştı</string>
+    <string name="bt_picker_device_unpaired">Seçilen cihaz artık eşleşmiş değil. Eşleşmiş bir cihaz seçene kadar bu kural eşleşmeyecek.</string>
+    <string name="loading_applications">Uygulamalar yükleniyor...</string>
+    <string name="battery_notice_text">⚠️ Pil uyarısı: Arka plan sensör dinleme, pil tüketimini azaltmak için SENSOR_DELAY_NORMAL (~5Hz) kullanır. HyperOS üzerinde güvenilir çalışma için FlowPilot\'u pil optimizasyonundan muaf tutun.</string>
+    <string name="phone_call_action_warning">⚠️ Gerçek bir telefon görüşmesini otomatik başlatır. Telefon görüşmesi yapma izni gerektirir.</string>
+    <string name="wifi_selected_cd">Seçili</string>
+    <string name="sms_recipient_placeholder">Örn. +90555... veya ${sms.sender}</string>
+    <string name="sms_message_placeholder">Örn. Alınan kod: ${sms.otp}</string>
 </resources>

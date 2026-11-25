@@ -37,6 +37,7 @@ internal data class CommandOutcome(
 internal object JsonCommandExecution {
     suspend fun execute(
         input: String,
+        expectedToken: String = "",
         dispatch: suspend (ActionType, ActionParameters) -> ActionResult,
     ): CommandOutcome = when (val parsed = JsonCommandParser.parse(input)) {
         is JsonCommandParser.Result.Error -> CommandOutcome(
@@ -51,7 +52,9 @@ internal object JsonCommandExecution {
             },
             detail = "parser=" + parsed.reason.name,
         )
-        is JsonCommandParser.Result.Success -> {
+        is JsonCommandParser.Result.Success -> if (!JsonCommandToken.isAuthorized(expectedToken, parsed.token)) {
+            CommandOutcome(false, "unauthorized", "Command not authorized", parsed.id.orEmpty())
+        } else {
             val result = dispatch(parsed.action, parsed.parameters)
             val status = when {
                 result.success && result.resultCode == ActionResultCode.REQUEST_UNVERIFIED -> "unverified"

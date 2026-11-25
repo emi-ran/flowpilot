@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.engine.OwnSoundChangeGuard
 
 /**
  * Executes Do Not Disturb actions (DND_ON, DND_OFF).
@@ -50,7 +51,9 @@ class DndExecutor(
         }
 
         return try {
-            interruptionFilterWriter(context, targetFilter)
+            // Loop guard: sound-state triggers ignore the broadcasts this write causes.
+            OwnSoundChangeGuard.markOwnChange()
+            try { interruptionFilterWriter(context, targetFilter) } finally { OwnSoundChangeGuard.markOwnChange() }
             val readBack = interruptionFilterReader(context)
             if (readBack != targetFilter) {
                 return ActionResult(

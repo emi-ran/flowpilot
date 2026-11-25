@@ -79,10 +79,12 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.MEDIA_TOGGLE -> Icons.Default.PlayCircle
     ActionType.MEDIA_NEXT -> Icons.Default.SkipNext
     ActionType.MEDIA_PREVIOUS -> Icons.Default.SkipPrevious
+    ActionType.DISMISS_NOTIFICATION -> Icons.Default.NotificationsOff
     ActionType.MUSIC_SEARCH -> Icons.Default.Search
     ActionType.MUSIC_PLAY_LINK -> Icons.Default.MusicNote
     ActionType.LAUNCH_APP -> Icons.Default.Apps
     ActionType.OPEN_URL -> Icons.AutoMirrored.Filled.OpenInNew
+    ActionType.COPY_TO_CLIPBOARD -> Icons.Default.ContentCopy
     ActionType.CREATE_ALARM -> Icons.Default.Alarm
     ActionType.CREATE_CALENDAR_EVENT -> Icons.Default.Event
     ActionType.START_TIMER -> Icons.Default.HourglassEmpty
@@ -226,11 +228,17 @@ fun ActionCardItem(
     forceStopPackage: String = "",
     forceStopAppName: String = "",
     onOpenForceStopAppPicker: () -> Unit = {},
+    // Dismiss notification
+    dismissScope: com.flowpilot.app.data.model.NotificationDismissScope = com.flowpilot.app.data.model.NotificationDismissScope.THIS,
+    onDismissScopeChange: (com.flowpilot.app.data.model.NotificationDismissScope) -> Unit = {},
     // SMS
     smsRecipient: String = "",
     onSmsRecipientChange: (String) -> Unit = {},
     smsMessage: String = "",
     onSmsMessageChange: (String) -> Unit = {},
+    // Clipboard
+    clipboardText: String = "",
+    onClipboardTextChange: (String) -> Unit = {},
     // Reorder modifiers & callbacks
     cardModifier: Modifier = Modifier,
     dragModifier: Modifier = Modifier,
@@ -702,6 +710,26 @@ fun ActionCardItem(
                         singleLine = true,
                     )
                 }
+                ActionType.COPY_TO_CLIPBOARD -> {
+                    Spacer(Modifier.height(8.dp))
+                    TemplateTextField(
+                        value = clipboardText,
+                        onValueChange = onClipboardTextChange,
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.clipboard_text_label)) },
+                        placeholder = { Text(stringResource(R.string.clipboard_text_placeholder)) },
+                        shape = RoundedCornerShape(12.dp),
+                        minLines = 2,
+                        maxLines = 4,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        stringResource(R.string.clipboard_copy_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 ActionType.CREATE_CALENDAR_EVENT -> {
                     Spacer(Modifier.height(8.dp))
                     CalendarSelectionEditor(calendarSelection, calendarAccountName, calendarAccountType, calendarName, onCalendarSelect)
@@ -994,7 +1022,7 @@ fun ActionCardItem(
                         triggers = triggerEvents,
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.sms_recipient_label)) },
-                        placeholder = { Text("e.g. +90555... or \${sms.sender}") },
+                        placeholder = { Text(stringResource(R.string.sms_recipient_placeholder)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         leadingIcon = { Icon(Icons.Default.Phone, null) },
@@ -1007,7 +1035,7 @@ fun ActionCardItem(
                         triggers = triggerEvents,
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.sms_message_text_label)) },
-                        placeholder = { Text("e.g. Received code: \${sms.otp}") },
+                        placeholder = { Text(stringResource(R.string.sms_message_placeholder)) },
                         shape = RoundedCornerShape(12.dp),
                         minLines = 2,
                         maxLines = 4,
@@ -1058,6 +1086,34 @@ fun ActionCardItem(
                                 label = { Text(label) },
                             )
                         }
+                    }
+                }
+                ActionType.DISMISS_NOTIFICATION -> {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.dismiss_notification_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
+                        FilterChip(
+                            selected = dismissScope == com.flowpilot.app.data.model.NotificationDismissScope.THIS,
+                            onClick = { onDismissScopeChange(com.flowpilot.app.data.model.NotificationDismissScope.THIS) },
+                            label = { Text(stringResource(R.string.dismiss_scope_this)) },
+                        )
+                        FilterChip(
+                            selected = dismissScope == com.flowpilot.app.data.model.NotificationDismissScope.ALL_FROM_PACKAGE,
+                            onClick = { onDismissScopeChange(com.flowpilot.app.data.model.NotificationDismissScope.ALL_FROM_PACKAGE) },
+                            label = { Text(stringResource(R.string.dismiss_scope_all_from_package)) },
+                        )
+                    }
+                    if (triggerEvents.none { it == TriggerEvent.NOTIFICATION_RECEIVED }) {
+                        Text(
+                            text = stringResource(R.string.dismiss_notification_requires_notification_trigger),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
                     }
                 }
                 ActionType.FORCE_STOP_APP -> {
