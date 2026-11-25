@@ -170,6 +170,24 @@ object RuleEvaluator {
         }
     }
 
+    fun evaluateHeadset(
+        rules: List<Automation>,
+        event: HeadsetEvent,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> {
+        val triggerEvent = when (event) {
+            HeadsetEvent.CONNECTED -> TriggerEvent.HEADSET_CONNECTED
+            HeadsetEvent.DISCONNECTED -> TriggerEvent.HEADSET_DISCONNECTED
+        }
+        return rules.matchingTriggerViews {
+            it.enabled &&
+                it.triggerEvent == triggerEvent &&
+                !it.isCoolingDown(nowMs) &&
+                matchesRuleConditions(it, liveState, nowMs)
+        }
+    }
+
     fun evaluateBattery(
         rules: List<Automation>,
         transition: BatteryLevelTransition,

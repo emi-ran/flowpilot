@@ -11,6 +11,7 @@ All notable FlowPilot changes are documented here.
 
 ### Added
 - Add a Copy to clipboard action (Apps & Links) that copies rendered text, such as `${sms.otp}`, to the clipboard. The clip is marked sensitive on Android 13+, and copied text is never logged or stored in history. Also available as a JSON command (`text` parameter).
+- Add headset connected/disconnected triggers for wired, USB and Bluetooth audio outputs using the audio device callback, registered only while an enabled rule needs it. They fire when the first headset output appears and when the last is removed, ignore repeated callbacks, the built-in speaker and startup state, and need no permission. Device names and addresses are never stored or logged. Not yet verified on a physical device.
 - Show Autostart guidance on Xiaomi, Redmi and POCO (MIUI/HyperOS) devices when notification access is granted but the listener is disconnected, with a button that opens the MIUI Autostart settings (falls back to app details).
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
 - Warn on the home screen when both the release and debug FlowPilot builds are installed and the engine is on, since each build runs its own engine and the same rule can fire twice. Detection is install-only; builds do not communicate.

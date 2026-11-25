@@ -40,6 +40,8 @@ val TriggerEvent.labelRes: Int
         TriggerEvent.MEDIA_PLAYING -> R.string.trigger_media_playing
         TriggerEvent.MEDIA_PAUSED -> R.string.trigger_media_paused
         TriggerEvent.MEDIA_TRACK_CHANGED -> R.string.trigger_media_track_changed
+        TriggerEvent.HEADSET_CONNECTED -> R.string.trigger_headset_connected
+        TriggerEvent.HEADSET_DISCONNECTED -> R.string.trigger_headset_disconnected
     }
 
 @get:StringRes
@@ -138,6 +140,7 @@ val TriggerCategory.labelRes: Int
         TriggerCategory.MOTION -> R.string.cat_motion
         TriggerCategory.LOCATION -> R.string.cat_location
         TriggerCategory.MEDIA -> R.string.cat_media
+        TriggerCategory.AUDIO -> R.string.cat_audio
     }
 
 @get:StringRes
@@ -229,6 +232,8 @@ val TriggerEvent.descriptionRes: Int
         TriggerEvent.MEDIA_PLAYING -> R.string.trigger_media_playing_desc
         TriggerEvent.MEDIA_PAUSED -> R.string.trigger_media_paused_desc
         TriggerEvent.MEDIA_TRACK_CHANGED -> R.string.trigger_media_track_changed_desc
+        TriggerEvent.HEADSET_CONNECTED -> R.string.trigger_headset_connected_desc
+        TriggerEvent.HEADSET_DISCONNECTED -> R.string.trigger_headset_disconnected_desc
     }
 
 @get:StringRes
