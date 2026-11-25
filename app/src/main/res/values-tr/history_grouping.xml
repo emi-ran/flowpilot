@@ -27,6 +27,7 @@
     <string name="history_template_field_phone_number">Telefon numarası</string>
     <string name="history_template_field_sms_recipient">SMS alıcısı</string>
     <string name="history_template_field_sms_message">SMS mesajı</string>
+    <string name="history_template_field_clipboard_text">Pano metni</string>
     <string name="history_diagnostic_shizuku_not_running">Shizuku çalışmıyor. Shizuku’yu başlatıp tekrar deneyin.</string>
     <string name="history_diagnostic_shizuku_permission_required">Bu eylem için FlowPilot’a Shizuku izni verilmelidir.</string>
     <string name="history_diagnostic_bluetooth_permission_required">Bu eylem için Bluetooth izni gereklidir.</string>

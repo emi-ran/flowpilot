@@ -210,6 +210,7 @@ fun DetailScreen(
     var smsKeyword by remember(initialRule.id) { mutableStateOf(initialRule.smsKeyword) }
     var smsRecipient by remember(initialRule.id) { mutableStateOf(initialRule.smsRecipient) }
     var smsMessage by remember(initialRule.id) { mutableStateOf(initialRule.smsMessage) }
+    var clipboardText by remember(initialRule.id) { mutableStateOf(initialRule.clipboardText) }
     var geofenceName by remember(initialRule.id) { mutableStateOf(initialRule.geofenceName) }
     var geofenceLatitude by remember(initialRule.id) { mutableStateOf(initialRule.geofenceLatitude) }
     var geofenceLongitude by remember(initialRule.id) { mutableStateOf(initialRule.geofenceLongitude) }
@@ -270,6 +271,7 @@ fun DetailScreen(
                                     ActionType.SEND_SMS in actions && (smsRecipient.isBlank() || smsMessage.isBlank()) -> ActionType.SEND_SMS
                                     ActionType.DRAFT_SMS in actions && smsRecipient.isBlank() && smsMessage.isBlank() -> ActionType.DRAFT_SMS
                                     ActionType.DISMISS_NOTIFICATION in actions && triggerItems.none { it.event == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED } -> ActionType.DISMISS_NOTIFICATION
+                                    ActionType.COPY_TO_CLIPBOARD in actions && com.flowpilot.app.actions.ClipboardExecutor.validationReason(clipboardText) != null -> ActionType.COPY_TO_CLIPBOARD
                                     else -> null
                                 }
     val actionValidationMessage = when (invalidAction) {
@@ -284,6 +286,7 @@ fun DetailScreen(
                                     ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> R.string.validation_action_phone
                                     ActionType.SEND_SMS, ActionType.DRAFT_SMS -> R.string.validation_action_sms
                                     ActionType.DISMISS_NOTIFICATION -> R.string.validation_action_dismiss_notification
+                                    ActionType.COPY_TO_CLIPBOARD -> R.string.validation_action_clipboard
                                     else -> R.string.validation_action_generic
                                 }
 
@@ -362,6 +365,7 @@ fun DetailScreen(
         smsKeyword = smsKeyword.trim(),
         smsRecipient = smsRecipient.trim(),
         smsMessage = smsMessage,
+        clipboardText = clipboardText,
         lightLux = lightLux,
         shakeThreshold = shakeThreshold,
         screenBrightnessPercent = screenBrightnessPercent,
@@ -849,6 +853,8 @@ fun DetailScreen(
                             onSmsRecipientChange = { smsRecipient = it },
                             smsMessage = smsMessage,
                             onSmsMessageChange = { smsMessage = it },
+                            clipboardText = clipboardText,
+                            onClipboardTextChange = { clipboardText = it },
                         )
                     }
                 }
@@ -1019,6 +1025,7 @@ fun DetailScreen(
                             (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
                             (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
                             (ActionType.DISMISS_NOTIFICATION !in actions || triggerItems.any { it.event == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED }) &&
+                            (ActionType.COPY_TO_CLIPBOARD !in actions || com.flowpilot.app.actions.ClipboardExecutor.validationReason(clipboardText) == null) &&
                             actions.isNotEmpty()
                         if (!valid) {
                             if (triggerItems.any { !it.isValidTriggerDefinition() }) {

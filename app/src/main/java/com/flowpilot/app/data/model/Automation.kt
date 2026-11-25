@@ -101,6 +101,7 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     CREATE_CALENDAR_EVENT("Create calendar event", ActionCategory.CLOCK, CapabilityRequirement.CALENDAR),
     LAUNCH_APP("Launch app", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_URL("Open URL", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
+    COPY_TO_CLIPBOARD("Copy to clipboard", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     HTTP_WEBHOOK("Send HTTP webhook", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     EXECUTE_JSON_COMMAND("Execute JSON command", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_DIALER("Open dialer", ActionCategory.PHONE, CapabilityRequirement.NONE),
@@ -158,6 +159,8 @@ enum class TriggerCategory(val label: String) {
     MOTION("Motion"),
     LOCATION("Location"),
     MEDIA("Media"),
+    SOUND("Sound"),
+    AUDIO("Audio"),
 }
 
 @Serializable
@@ -172,7 +175,16 @@ enum class ConditionType(val label: String) {
     WIFI_DISCONNECTED("Disconnected from Wi-Fi"),
     TIME_BETWEEN("Time is between"),
     DAYS_OF_WEEK("Days of week"),
+    BLUETOOTH_DEVICE_CONNECTED("Bluetooth device connected"),
+    HEADSET_CONNECTED("Headset connected"),
+    DND_ON("Do Not Disturb is on"),
+    RINGER_MODE("Ringer mode is"),
+    AIRPLANE_MODE_ON("Airplane mode is on"),
 }
+
+/** Ringer mode a [ConditionType.RINGER_MODE] condition compares against. */
+@Serializable
+enum class RingerModeCondition { NORMAL, VIBRATE, SILENT }
 
 @Serializable
 data class RuleCondition(
@@ -182,6 +194,12 @@ data class RuleCondition(
     val startMinute: Int = 23 * 60,
     val endMinute: Int = 7 * 60,
     val days: Set<Int> = emptySet(),
+    /** Bonded device address for [ConditionType.BLUETOOTH_DEVICE_CONNECTED]; blank matches any device. */
+    val bluetoothDeviceAddress: String = "",
+    /** Cached device name for readable UI; the address remains the matcher. */
+    val bluetoothDeviceName: String = "",
+    /** Expected ringer mode for [ConditionType.RINGER_MODE]. */
+    val ringerMode: RingerModeCondition = RingerModeCondition.NORMAL,
 )
 
 @Serializable
@@ -284,7 +302,14 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     GEOFENCE_EXIT("Exited location area", TriggerCategory.LOCATION),
     MEDIA_PLAYING("Media started playing", TriggerCategory.MEDIA),
     MEDIA_PAUSED("Media paused", TriggerCategory.MEDIA),
-    MEDIA_TRACK_CHANGED("Media track changed", TriggerCategory.MEDIA);
+    MEDIA_TRACK_CHANGED("Media track changed", TriggerCategory.MEDIA),
+    RINGER_NORMAL("Ringer set to normal", TriggerCategory.SOUND),
+    RINGER_VIBRATE("Ringer set to vibrate", TriggerCategory.SOUND),
+    RINGER_SILENT("Ringer set to silent", TriggerCategory.SOUND),
+    DND_ENABLED("Do Not Disturb turned on", TriggerCategory.SOUND),
+    DND_DISABLED("Do Not Disturb turned off", TriggerCategory.SOUND),
+    HEADSET_CONNECTED("Headset connected", TriggerCategory.AUDIO),
+    HEADSET_DISCONNECTED("Headset disconnected", TriggerCategory.AUDIO);
 
     companion object {
         fun fromId(id: String): TriggerEvent? = entries.firstOrNull { it.name == id }
@@ -417,6 +442,8 @@ data class Automation(
     val smsRecipient: String = "",
     /** Message text template for SEND_SMS / DRAFT_SMS actions. */
     val smsMessage: String = "",
+    /** Text template copied to the clipboard by COPY_TO_CLIPBOARD; the rendered value is never logged or stored in history. */
+    val clipboardText: String = "",
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     /** Per-action optional delay in seconds (0..300), sequential with matching index in actions. */

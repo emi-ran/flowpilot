@@ -4,14 +4,30 @@ All notable FlowPilot changes are documented here.
 
 ## [Unreleased]
 
+### Security
+- Standard (non-encrypted) rule export now redacts phone numbers (dial/call numbers, SMS recipients and SMS sender filters, including multi-trigger SMS definitions) in addition to webhook URL/headers/body and JSON command source. Redacted values import as `[REDACTED]` and must be re-entered; template variables such as `${sms.sender}` are kept. Encrypted export and restore validation are unchanged.
+- Add an optional shared-secret check for JSON commands. Start the rule's source template with a line `@token=YOUR_SECRET` (kept in the encrypted source and removed before rendering) and include the same value as the root `"token"` string of each command; commands with a missing or different token are rejected with an `unauthorized` outcome, compared in constant time. Existing rules without the line behave exactly as before (opt-in, no migration needed); the envelope now also accepts an optional `token` string that is ignored when no token is configured. There is no broadcast or Android permission to harden: the action runs only from the rule's own notification or SMS trigger.
+- Strengthen encrypted backups: new exports use PBKDF2-HMAC-SHA256 with 600,000 iterations (backup format version 2) and require a password of at least 8 characters. Existing version 1 backups (100,000 iterations, 6+ character passwords) still restore; password length and iteration limits are checked before key derivation and before any rules are changed.
+
 ### Added
 - Add a Dismiss notification action for notification-triggered rules: dismiss the triggering notification or all active notifications from its app through the notification listener. Requires notification access and a Notification received trigger; the notification key is transient and never stored or logged.
+- Add rule conditions for a connected Bluetooth device (selectable), headset connected, Do Not Disturb on, ringer mode (normal, vibrate, silent) and Airplane mode on. They work in AND/OR/NOT trees and backups, and their state is read only when an enabled rule uses it.
+- Add two headset presets: Start Music When Headset Connects (Media play) and Pause Music When Headset Disconnects (Media pause). Both are unverified on a physical device.
+- Add ringer-mode (normal, vibrate, silent) and Do Not Disturb (on, off) triggers. Receivers register only while an enabled rule needs them; initial, sticky and repeated values never fire, and changes made by FlowPilot's own sound, volume and Do Not Disturb actions within 2 seconds are ignored to prevent self-triggering loops. Not verified on a physical device.
+- Add a Copy to clipboard action (Apps & Links) that copies rendered text, such as `${sms.otp}`, to the clipboard. The clip is marked sensitive on Android 13+, and copied text is never logged or stored in history. Also available as a JSON command (`text` parameter).
+- Add headset connected/disconnected triggers for wired, USB and Bluetooth audio outputs using the audio device callback, registered only while an enabled rule needs it. They fire when the first headset output appears and when the last is removed, ignore repeated callbacks, the built-in speaker and startup state, and need no permission. Device names and addresses are never stored or logged. Not yet verified on a physical device.
+- Show Autostart guidance on Xiaomi, Redmi and POCO (MIUI/HyperOS) devices when notification access is granted but the listener is disconnected, with a button that opens the MIUI Autostart settings (falls back to app details).
 - Add notification and alarm volume actions with independent per-rule percentages and system readback. Requests below the device-specific minimum and readback mismatches are reported as failures; notification and ring volume may be linked on some devices.
+- Warn on the home screen when both the release and debug FlowPilot builds are installed and the engine is on, since each build runs its own engine and the same rule can fire twice. Detection is install-only; builds do not communicate.
+### Changed
+- Move remaining hardcoded English and Turkish UI, notification and accessibility text into localized string resources (EN/TR).
 ### Fixed
+- Prevent JSON injection through template variables: values substituted into JSON commands and JSON webhook bodies (notification text, SMS body, etc.) are now JSON-escaped, so quotes, backslashes and control characters can no longer break out of strings or add keys.
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.
 - Back up the original rules JSON before duplicate-ID rules are dropped on the next write.
 - Fail encrypted export and rule duplication when a stored secret cannot be decrypted (for example after losing the Keystore key), and keep the encrypted value on save instead of replacing it with an empty secret.
 - Store plaintext that happens to start with `enc:v1:` correctly instead of treating it as ciphertext.
+- Bound SMS regex trigger matching: a catastrophic user pattern is aborted after a 100 ms budget and treated as no match, and SMS bodies are capped at 4096 characters before matching, so a crafted pattern can no longer stall the engine.
 
 ### Fixed
 - Run rule actions outside the engine poll loop so a delayed action no longer stalls other triggers or lets queued notification and SMS events expire unseen; runs of the same rule stay sequential.

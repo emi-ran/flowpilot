@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.media.AudioManager
 import com.flowpilot.app.data.model.ActionType
+import com.flowpilot.app.engine.OwnSoundChangeGuard
 
 /**
  * Executes Sound Profile actions (Normal, Vibrate, Silent) via AudioManager.ringerMode.
@@ -56,7 +57,9 @@ class SoundProfileExecutor(
         }
 
         return try {
-            ringerModeWriter(context, targetMode)
+            // Loop guard: sound-state triggers ignore the broadcasts this write causes.
+            OwnSoundChangeGuard.markOwnChange()
+            try { ringerModeWriter(context, targetMode) } finally { OwnSoundChangeGuard.markOwnChange() }
             val readBack = ringerModeReader(context)
             if (readBack != targetMode) {
                 return ActionResult(

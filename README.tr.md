@@ -153,6 +153,8 @@ Günlük yaşamınızı anında kolaylaştıracak yerleşik şablonlarla hemen b
 | 🚗 **Evden Çıkış Modu** | Ev Wi-Fi bağlantısı koptuğunda | Mobil Veriyi açar (Shizuku), Normal zil sesine geçer, medya sesini %80 yapar |
 | 🏠 **Eve Giriş Modu** | Ev Wi-Fi ağına bağlanıldığında | Mobil Veriyi kapatır (Shizuku) ve ekran parlaklığını %50 yapar |
 | 📍 **SMS Acil Konum Yanıtlayıcı** | Gizli kelimeli SMS geldiğinde | Konumu açar ve konum alınabilirse bağlantıyı SMS ile yanıtlar; konum alınması garanti değildir |
+| 🎧 **Kulaklık Müzik Başlatma** | Kulaklık bağlandığında (kablolu, USB veya Bluetooth) | Medya oynatmayı başlatır |
+| ⏸️ **Kulaklık Müzik Duraklatma** | Son kulaklık çıkarıldığında | Medya oynatmayı duraklatır |
 
 ---
 
@@ -165,9 +167,11 @@ Bir kural en fazla beş bağımsız tetikleyiciyi VEYA mantığıyla birleştire
 
 - 📱 **Uygulama Döngüsü:** Seçilen uygulamanın açılması veya kapanması (düşük maliyetli `UsageStatsManager` geçişleri).
 - 🔌 **Güç & Pil:** Şarja takılma / çıkarılma, pil seviyesinin belirlenen yüzdenin üstüne çıkması veya altına inmesi.
+- 🔔 **Ses:** Zil modunun normal, titreşim veya sessize alınması; Rahatsız Etme'nin açılması / kapanması (FlowPilot'un kendi eylemlerinin yaptığı değişiklikler döngüyü önlemek için yok sayılır).
 - 💡 **Ekran & Durum:** Ekranın açılması / kapanması, kilit ekranının açılması.
 - ⏰ **Zaman & Takvim:** Günlük, hafta içi, hafta sonu veya özel seçili gün ve saatlerde zamanlanmış tetikleme.
 - 📶 **Bağlantılar:** Wi-Fi ağına bağlanma / ayrılma (tüm ağlar veya belirli SSID), Bluetooth cihazına bağlanma / ayrılma.
+- 🎧 **Kulaklık:** Kablolu, USB ve Bluetooth ses çıkışları için kulaklık bağlandı / çıkarıldı. İlk kulaklık çıkışı göründüğünde ve sonuncusu kaldırıldığında tetiklenir (ek cihazlar ve dahili hoparlör yok sayılır); izin gerekmez ve açılışta eski durum tekrar işlenmez.
 - 🔄 **Sensörler & Hareket:**
   - **Cihazı Çevirme:** Yüzüstü masaya konma veya tekrar çevrilme (Yakınlık + Yerçekimi Z-ekseni, 500ms kararlılık filtresi).
   - **Sallama:** Tetik ayarlarındaki kural bazlı güç kaydırıcısı (6–32 m/s²); tek sallama tek tetik üretir.
@@ -190,6 +194,8 @@ Kurallar yalnızca koşulları sağlandığında çalışır. Koşulları VE vey
 - ⚡ **Şarj Durumu:** Cihazın şarjda veya pilde olması koşulu.
 - 📲 **Ekran Durumu:** Ekranın açık veya kilitli olması koşulu.
 - 📶 **Wi-Fi Ağı:** Yalnızca belirli bir Wi-Fi ağına (SSID) bağlıyken çalış.
+- 🎧 **Bluetooth Cihazı / Kulaklık:** Seçili (veya herhangi bir) Bluetooth cihazının ya da kablolu/USB/Bluetooth kulaklığın bağlı olması.
+- 🔕 **Rahatsız Etmeyin, Zil Modu, Uçak Modu:** DND'nin açık olması, zil modunun normal/titreşim/sessiz olması veya Uçak modunun açık olması.
 - 🧩 **İç İçe Mantık:** Koşulları grup başına VE/VEYA ile birleştir, bir grubu tersine çevir ve dört seviyeye kadar iç içe kur.
 
 ---
@@ -212,7 +218,8 @@ Kural eksikse Kaydet, geçersiz tetikleyici veya eylemi işaretleyip neyin düze
 - 🚀 **Uygulama & Web:** Cihazdaki bir uygulamayı açma veya web bağlantısına yönlendirme.
 - 💬 **Telefon & SMS:** Arama ekranını açma, doğrudan telefon araması başlatma, doğrudan arka planda SMS gönderme veya SMS taslağı hazırlama.
 - 🔗 **HTTPS Webhook:** Canlı şablon değişkenleriyle dış sunuculara güvenli HTTP istekleri (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`) gönderin; başlıklar ve anahtarlar AES-256-GCM Keystore ile cihazda şifrelenir.
-- 🧾 **JSON komutları:** Bildirim, SMS veya başka bir şablon kaynağından sınırlı, sürümlü komut çalıştırın. Tüm normal eylemler desteklenir; iç içe `EXECUTE_JSON_COMMAND` reddedilir. Mevcut eylem izinleri ve yetenek kontrolleri geçerlidir, ancak alıcı gönderenin kimliğini doğrulamaz: eşleşen içerik ücret doğurabilecek SMS veya arama, ağ değişikliği ya da cihaz kilitleme başlatabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler kullanın. Sonraki webhook veya SMS eylemi sonucu iletebilir; bildirim başlığı ve mesajı bağımsız filtrelenebilir. Ayrıntılı şema ve güvenlik bilgileri [komut sözleşmesinde](skills/flowpilot-json-command/references/json-commands.md) ve [kurulabilir ajan skill'inde](skills/flowpilot-json-command/SKILL.md) yer alır. Bu genişletme yayımlanmadı; cihaz doğrulaması bekliyor.
+- 📋 **Panoya kopyala:** Çıktı metnini, örneğin `${sms.otp}` ile SMS kodunu, panoya kopyalayın. Kopyalanan metin günlüklere veya geçmişe yazılmaz; Android 13 ve sonrası pano önizlemesinde gizler.
+- 🧾 **JSON komutları:** Bildirim, SMS veya başka bir şablon kaynağından sınırlı, sürümlü komut çalıştırın. Tüm normal eylemler desteklenir; iç içe `EXECUTE_JSON_COMMAND` reddedilir. Mevcut eylem izinleri ve yetenek kontrolleri geçerlidir, ancak alıcı varsayılan olarak gönderenin kimliğini doğrulamaz; ortak sır istemek için kaynak şablonu `@token=SIRRINIZ` satırıyla başlatın ve her komuta `"token":"SIRRINIZ"` ekleyin (isteğe bağlı; mevcut kurallar değişmez). Bu olmadan eşleşen içerik ücret doğurabilecek SMS veya arama, ağ değişikliği ya da cihaz kilitleme başlatabilir. Güvenilir kaynaklar ve kısıtlayıcı filtreler kullanın. Sonraki webhook veya SMS eylemi sonucu iletebilir; bildirim başlığı ve mesajı bağımsız filtrelenebilir. Ayrıntılı şema ve güvenlik bilgileri [komut sözleşmesinde](skills/flowpilot-json-command/references/json-commands.md) ve [kurulabilir ajan skill'inde](skills/flowpilot-json-command/SKILL.md) yer alır. Bu genişletme yayımlanmadı; cihaz doğrulaması bekliyor.
 - 🧩 **Şablon Değişkenleri:** Seslendirme, bildirim, webhook, SMS, telefon, URL, alarm ve zamanlayıcı metinlerinde `${...}` kullanın. Şablon destekleyen her eylem alanı, kuralın tetikleyicilerine göre filtrelenmiş aynı aranabilir seçiciyi ve `trim`, `stripPrefix`, `drop`, `truncate`, `lower`, `upper`, `default`, `urlencode`, `jsonescape` filtrelerini sunar. Global değerler: `${trigger}`, `${trigger.index}`, `${batteryPercent}`, `${isCharging}`, `${wifiSsid}`, `${time}`, `${timestamp}` ve `${rule.name}`.
 
 ---

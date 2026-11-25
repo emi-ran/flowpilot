@@ -560,6 +560,7 @@ private fun ActionTemplateField.labelRes(): Int = when (this) {
     ActionTemplateField.PHONE_NUMBER -> R.string.history_template_field_phone_number
     ActionTemplateField.SMS_RECIPIENT -> R.string.history_template_field_sms_recipient
     ActionTemplateField.SMS_MESSAGE -> R.string.history_template_field_sms_message
+    ActionTemplateField.CLIPBOARD_TEXT -> R.string.history_template_field_clipboard_text
 }
 
 /** Filter trigger that reads as a dropdown (chevron + selected state) instead of a plain button. */

@@ -16,6 +16,7 @@ import com.flowpilot.app.data.security.SecretCipher
 import com.flowpilot.app.actions.VariableCatalog
 import com.flowpilot.app.actions.MusicLinkValidator
 import com.flowpilot.app.actions.CalendarExecutor
+import com.flowpilot.app.actions.ClipboardExecutor
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -52,6 +53,10 @@ internal object ImportValidator {
                 require(condition.startMinute in 0..1439 && condition.endMinute in 0..1439) { "Invalid time condition" }
             com.flowpilot.app.data.model.ConditionType.DAYS_OF_WEEK ->
                 require(condition.days.all { it in 1..7 }) { "Invalid days condition" }
+            com.flowpilot.app.data.model.ConditionType.BLUETOOTH_DEVICE_CONNECTED ->
+                require(condition.bluetoothDeviceAddress.isEmpty() || bluetoothAddress.matches(condition.bluetoothDeviceAddress)) {
+                    "Invalid Bluetooth condition"
+                }
             else -> Unit
         }
     }
@@ -120,6 +125,15 @@ internal object ImportValidator {
         }
     }
 
+    /** Clipboard templates use the same variable-availability rule as TTS templates. */
+    private fun validateClipboard(rule: Automation) {
+        require(rule.clipboardText.length <= TemplateRenderer.MAX_TEMPLATE_LENGTH) { "Clipboard template too long" }
+        if (rule.clipboardText.isNotBlank()) {
+            val triggers = rule.normalizedTriggers().map { it.event }
+            require(VariableCatalog.isTemplateValid(rule.clipboardText, triggers)) { "Invalid clipboard template" }
+        }
+    }
+
     fun validate(rules: List<Automation>, validateTtsFields: Boolean = true) {
         require(rules.size <= MAX_RULES) { "Too many rules" }
         require(rules.all { it.id.isNotBlank() } && rules.map { it.id }.toSet().size == rules.size) {
@@ -138,6 +152,7 @@ internal object ImportValidator {
                 validateTts(r)
                 validateDismissNotification(r)
             }
+            if (validateTtsFields) validateClipboard(r)
             r.triggerDefinitions?.let { definitions ->
                 require(definitions.version == 1) { "Unsupported trigger version" }
                 require(definitions.items.size in 1..TriggerDefinitions.MAX_TRIGGERS) { "Invalid trigger count" }
@@ -198,6 +213,7 @@ internal object ImportValidator {
             if (ActionType.DIAL_NUMBER in actions || ActionType.CALL_NUMBER in actions) require(r.phoneNumber.isNotBlank()) { "Missing phone number" }
             if (ActionType.SEND_SMS in actions) require(r.smsRecipient.isNotBlank() && r.smsMessage.isNotBlank()) { "Missing SMS fields" }
             if (ActionType.DRAFT_SMS in actions) require(r.smsRecipient.isNotBlank() || r.smsMessage.isNotBlank()) { "Missing SMS fields" }
+            if (ActionType.COPY_TO_CLIPBOARD in actions) require(ClipboardExecutor.validationReason(r.clipboardText) == null) { "Invalid clipboard text" }
             if (ActionType.PLAY_SOUND in actions && r.soundPreset == SoundPreset.CUSTOM && r.soundUri.isNotEmpty()) {
                 val uri = try { java.net.URI(r.soundUri) } catch (_: Exception) { null }
                 require(uri != null && uri.scheme in setOf("content", "android.resource") && !uri.authority.isNullOrBlank()) { "Unsafe sound reference" }

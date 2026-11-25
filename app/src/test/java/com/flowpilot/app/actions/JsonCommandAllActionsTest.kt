@@ -34,7 +34,7 @@ class JsonCommandAllActionsTest {
             ActionType.MEDIA_TOGGLE, ActionType.MEDIA_NEXT, ActionType.MEDIA_PREVIOUS,
             ActionType.MUSIC_SEARCH, ActionType.MUSIC_PLAY_LINK, ActionType.SPEAK_TEXT,
             ActionType.CREATE_ALARM, ActionType.START_TIMER, ActionType.CREATE_CALENDAR_EVENT,
-            ActionType.LAUNCH_APP, ActionType.OPEN_URL, ActionType.HTTP_WEBHOOK,
+            ActionType.LAUNCH_APP, ActionType.OPEN_URL, ActionType.HTTP_WEBHOOK, ActionType.COPY_TO_CLIPBOARD,
             ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER, ActionType.SEND_SMS,
             ActionType.DRAFT_SMS, ActionType.SET_SCREEN_BRIGHTNESS, ActionType.FORCE_STOP_APP,
             ActionType.DISMISS_NOTIFICATION,

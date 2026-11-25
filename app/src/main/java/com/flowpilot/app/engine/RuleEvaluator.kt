@@ -4,6 +4,7 @@ import com.flowpilot.app.data.model.Automation
 import com.flowpilot.app.data.model.ConditionCombinator
 import com.flowpilot.app.data.model.ConditionNode
 import com.flowpilot.app.data.model.ConditionType
+import com.flowpilot.app.data.model.RingerModeCondition
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.TriggerEvent
 import com.flowpilot.app.data.model.triggerViews
@@ -18,6 +19,16 @@ data class LiveSystemState(
     val isChargerConnected: Boolean? = null,
     val isScreenOn: Boolean? = null,
     val connectedWifiSsid: String? = null,
+    /** Normalized (upper-case) addresses of connected Bluetooth devices; null when not read. */
+    val connectedBluetoothAddresses: Set<String>? = null,
+    /** Wired, USB or Bluetooth audio output present; null when not read. */
+    val isHeadsetConnected: Boolean? = null,
+    /** Do Not Disturb active; null when not read. */
+    val isDndOn: Boolean? = null,
+    /** Current ringer mode; null when not read. */
+    val ringerMode: RingerModeCondition? = null,
+    /** Airplane mode active; null when not read. */
+    val isAirplaneModeOn: Boolean? = null,
 )
 
 /** A foreground-app transition event fed into the engine. */
@@ -102,6 +113,18 @@ object RuleEvaluator {
             else if (condition.wifiSsid.isBlank()) false
             else !state.connectedWifiSsid.trim().equals(condition.wifiSsid.trim(), ignoreCase = true)
         }
+        ConditionType.BLUETOOTH_DEVICE_CONNECTED -> {
+            val connected = state.connectedBluetoothAddresses
+            if (connected == null) false
+            else if (condition.bluetoothDeviceAddress.isBlank()) connected.isNotEmpty()
+            else connected.any {
+                TriggerTargetMatcher.bluetoothTargetsMatch(condition.bluetoothDeviceAddress, it)
+            }
+        }
+        ConditionType.HEADSET_CONNECTED -> state.isHeadsetConnected == true
+        ConditionType.DND_ON -> state.isDndOn == true
+        ConditionType.RINGER_MODE -> state.ringerMode != null && state.ringerMode == condition.ringerMode
+        ConditionType.AIRPLANE_MODE_ON -> state.isAirplaneModeOn == true
         ConditionType.TIME_BETWEEN -> {
             val zdt = java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId)
             val currentMinute = zdt.hour * 60 + zdt.minute
@@ -167,6 +190,48 @@ object RuleEvaluator {
                 it.triggerEvent == triggerEvent &&
                 !it.isCoolingDown(nowMs) &&
                 matchesRuleConditions(it, effectiveState, nowMs)
+        }
+    }
+
+    fun evaluateRinger(
+        rules: List<Automation>,
+        state: RingerState,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> = rules.matchingTriggerViews {
+        it.enabled &&
+            it.triggerEvent == state.triggerEvent &&
+            !it.isCoolingDown(nowMs) &&
+            matchesRuleConditions(it, liveState, nowMs)
+    }
+
+    fun evaluateDnd(
+        rules: List<Automation>,
+        state: DndState,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> = rules.matchingTriggerViews {
+        it.enabled &&
+            it.triggerEvent == state.triggerEvent &&
+            !it.isCoolingDown(nowMs) &&
+            matchesRuleConditions(it, liveState, nowMs)
+    }
+
+    fun evaluateHeadset(
+        rules: List<Automation>,
+        event: HeadsetEvent,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> {
+        val triggerEvent = when (event) {
+            HeadsetEvent.CONNECTED -> TriggerEvent.HEADSET_CONNECTED
+            HeadsetEvent.DISCONNECTED -> TriggerEvent.HEADSET_DISCONNECTED
+        }
+        return rules.matchingTriggerViews {
+            it.enabled &&
+                it.triggerEvent == triggerEvent &&
+                !it.isCoolingDown(nowMs) &&
+                matchesRuleConditions(it, liveState, nowMs)
         }
     }
 
@@ -377,11 +442,7 @@ object RuleEvaluator {
                 }
                 com.flowpilot.app.data.model.SmsMatchMode.REGEX -> {
                     if (keyword.isBlank()) true
-                    else try {
-                        Regex(keyword, RegexOption.IGNORE_CASE).containsMatchIn(event.body)
-                    } catch (_: Exception) {
-                        false
-                    }
+                    else SafeRegex.containsMatch(keyword, event.body)
                 }
             }
             if (!contentMatches) return@matchingTriggerViews false

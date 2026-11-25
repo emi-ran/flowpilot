@@ -30,6 +30,7 @@ import com.flowpilot.app.actions.ShizukuPermissionBridge
 import com.flowpilot.app.permission.CapabilityManager
 import com.flowpilot.app.permission.ShizukuState
 import com.flowpilot.app.permission.CapabilityStatus
+import com.flowpilot.app.permission.shouldShowMiuiAutostartHint
 import com.flowpilot.app.ui.AppViewModel
 import com.flowpilot.app.ui.components.CapabilityPill
 import androidx.lifecycle.Lifecycle
@@ -151,6 +152,17 @@ fun PermissionsScreen(vm: AppViewModel, back: () -> Unit) {
                     else stringResource(R.string.perms_btn_setup),
             ) {
                 CapabilityManager(context).openNotificationListenerSettings()
+            }
+            if (notifListener && shouldShowMiuiAutostartHint(Build.MANUFACTURER, listenerStatus)) {
+                PermissionCard(
+                    stringResource(R.string.perms_miui_autostart_title),
+                    stringResource(R.string.perms_miui_autostart_desc),
+                    false,
+                    pillText = stringResource(R.string.perms_miui_autostart_pill),
+                    actionText = stringResource(R.string.perms_miui_autostart_action),
+                ) {
+                    CapabilityManager(context).openMiuiAutostartSettings()
+                }
             }
             PermissionCard(
                 stringResource(R.string.perms_bluetooth_title),

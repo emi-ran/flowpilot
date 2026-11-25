@@ -16,6 +16,7 @@
     <string name="validation_action_speech">Check the speech text, voice, rate and template variables.</string>
     <string name="validation_action_phone">Enter a phone number.</string>
     <string name="validation_action_sms">Enter the required SMS recipient and message.</string>
+    <string name="validation_action_clipboard">Enter the text to copy (up to 4000 characters).</string>
     <string name="triggers_any_summary">Match ANY trigger · one shared cooldown</string>
     <string name="trigger_add">Add trigger (up to 5)</string>
     <string name="trigger_remove">Remove trigger</string>
@@ -228,6 +229,10 @@
 
     <string name="preset_night_dim_title">Night Screen Dimming</string>
     <string name="preset_night_dim_desc" formatted="false">When the screen turns on between 00:00 and 06:00 and the battery is below 60%, lowers brightness to 10% and enables dark theme.</string>
+    <string name="preset_headset_music_title">Start Music When Headset Connects</string>
+    <string name="preset_headset_music_desc">When a wired, USB or Bluetooth headset connects, starts media playback.</string>
+    <string name="preset_headset_pause_title">Pause Music When Headset Disconnects</string>
+    <string name="preset_headset_pause_desc">When the last wired, USB or Bluetooth headset is removed, pauses media playback.</string>
 
     <string name="preset_more_triggers">+%1$d</string>
     <string name="preset_logic_and_or">AND/OR</string>
@@ -289,6 +294,7 @@
     <string name="action_start_timer">Start timer</string>
     <string name="action_launch_app">Launch app</string>
     <string name="action_open_url">Open URL</string>
+    <string name="action_copy_to_clipboard">Copy to clipboard</string>
     <string name="action_http_webhook">Send HTTPS webhook</string>
     <string name="action_open_dialer">Open dialer</string>
     <string name="action_dial_number">Dial phone number</string>
@@ -325,6 +331,21 @@
     <string name="cond_wifi_disconnected">Disconnected from Wi-Fi</string>
     <string name="cond_time_between">Time is between</string>
     <string name="cond_days_of_week">Days of week</string>
+    <string name="cond_bluetooth_device_connected">Bluetooth device connected</string>
+    <string name="cond_headset_connected">Headset connected</string>
+    <string name="cond_dnd_on">Do Not Disturb is on</string>
+    <string name="cond_ringer_mode">Ringer mode is</string>
+    <string name="cond_airplane_mode_on">Airplane mode is on</string>
+    <string name="cond_bluetooth_device_connected_desc">Run only while a paired Bluetooth device (or any device) is connected</string>
+    <string name="cond_headset_connected_desc">Run only while wired, USB or Bluetooth headphones are connected</string>
+    <string name="cond_dnd_on_desc">Run only while Do Not Disturb is active</string>
+    <string name="cond_ringer_mode_desc">Run only when the ringer mode is normal, vibrate or silent</string>
+    <string name="cond_airplane_mode_on_desc">Run only while Airplane mode is on</string>
+    <string name="cond_ringer_normal">Normal</string>
+    <string name="cond_ringer_vibrate">Vibrate</string>
+    <string name="cond_ringer_silent">Silent</string>
+    <string name="cond_bluetooth_any_device">Any Bluetooth device</string>
+    <string name="picker_group_system_state">System state</string>
 
     <!-- Categories -->
     <string name="cat_app">App</string>
@@ -489,6 +510,7 @@
     <string name="action_speak_text_desc">Synthesize and speak voice text with TTS</string>
     <string name="action_launch_app_desc">Start an installed app into the foreground</string>
     <string name="action_open_url_desc">Open website or deep link in default browser</string>
+    <string name="action_copy_to_clipboard_desc">Copies text to the clipboard. Variables such as OTP codes are filled in first</string>
     <string name="action_http_webhook_desc">Send HTTPS request (Home Assistant, Discord, ntfy)</string>
     <string name="action_force_stop_app_desc">Force terminate a running application (requires Shizuku)</string>
     <string name="action_dark_theme_on_desc">Enable system-wide dark theme (requires Shizuku)</string>
@@ -646,6 +668,9 @@
     <string name="phone_direct_call_warning">⚠️ Direct call: Places a real phone call immediately when triggered.</string>
     <string name="sms_recipient_label">Recipient phone number</string>
     <string name="sms_message_text_label">SMS message text</string>
+    <string name="clipboard_text_label">Text to copy</string>
+    <string name="clipboard_text_placeholder">e.g. Code: ${sms.otp}</string>
+    <string name="clipboard_copy_hint">Copied text is never written to logs or history. Android 13 and later hide it in clipboard previews.</string>
     <string name="sms_direct_send_warning">⚠️ Direct SMS: Sends a background text message immediately. Standard carrier rates may apply.</string>
     <string name="action_force_stop_prompt">Tap to choose app to force stop</string>
     <string name="time_start">Start time</string>
@@ -743,6 +768,10 @@
     <string name="perms_hyperos_title">HyperOS Autostart</string>
     <string name="perms_hyperos_desc">HyperOS does not expose this setting for apps to read. Open list to verify FlowPilot is enabled, then set Battery saver to No restrictions.</string>
     <string name="perms_hyperos_pill">Check in HyperOS</string>
+    <string name="perms_miui_autostart_title">Autostart may be blocked</string>
+    <string name="perms_miui_autostart_desc">Notification access is granted but the listener is not connected. On Xiaomi, Redmi and POCO devices this usually means Autostart is turned off for FlowPilot. Open Autostart settings and enable FlowPilot.</string>
+    <string name="perms_miui_autostart_pill">Listener blocked</string>
+    <string name="perms_miui_autostart_action">Open Autostart</string>
     <string name="perms_secure_settings_title">Secure settings</string>
     <string name="perms_secure_settings_ready">Battery Saver actions can run through Shizuku. ADB grant is optional direct access.</string>
     <string name="perms_secure_settings_needed">Required for Battery Saver actions. Grant with ADB or Shizuku.</string>
@@ -860,7 +889,7 @@
     <string name="backup_encrypted_warning">Encrypted full backup includes webhook and personal data. Lost password means no recovery.</string>
     <string name="backup_password_label">Password</string>
     <string name="backup_confirm_password_label">Confirm password</string>
-    <string name="backup_password_too_short">Password must be at least 6 characters</string>
+    <string name="backup_password_too_short">Password must be at least 8 characters</string>
     <string name="backup_password_mismatch">Passwords do not match</string>
     <string name="backup_decrypt_dialog_title">Encrypted Backup</string>
     <string name="backup_decrypt_dialog_desc">This backup is password-protected. Enter the password to decrypt and restore automations.</string>
@@ -1019,6 +1048,7 @@
     <string name="about_btn_github">GitHub Repository</string>
     <string name="about_btn_issues">Report Issue / Feedback</string>
     <string name="engine_not_running">Engine is not running</string>
+    <string name="home_sibling_build_warning">Another FlowPilot build (release or debug) is installed. If its engine is also on, the same rule can run twice. Turn the engine off in one of them.</string>
     <string name="cat_media">Media</string>
     <string name="trigger_media_playing">Media started playing</string>
     <string name="trigger_media_paused">Media paused</string>
@@ -1026,6 +1056,22 @@
     <string name="trigger_media_playing_desc">When media starts playing</string>
     <string name="trigger_media_paused_desc">When media is paused</string>
     <string name="trigger_media_track_changed_desc">When the current media track changes</string>
+    <string name="cat_sound">Sound</string>
+    <string name="trigger_ringer_normal">Ringer set to normal</string>
+    <string name="trigger_ringer_vibrate">Ringer set to vibrate</string>
+    <string name="trigger_ringer_silent">Ringer set to silent</string>
+    <string name="trigger_dnd_enabled">Do Not Disturb turned on</string>
+    <string name="trigger_dnd_disabled">Do Not Disturb turned off</string>
+    <string name="trigger_ringer_normal_desc">When the ringer changes to normal (sound on)</string>
+    <string name="trigger_ringer_vibrate_desc">When the ringer changes to vibrate</string>
+    <string name="trigger_ringer_silent_desc">When the ringer changes to silent</string>
+    <string name="trigger_dnd_enabled_desc">When Do Not Disturb is turned on (any mode)</string>
+    <string name="trigger_dnd_disabled_desc">When Do Not Disturb is turned off</string>
+    <string name="sound_trigger_hint">Fires only when the state really changes. Changes made by FlowPilot\'s own sound or Do Not Disturb actions are ignored for a few seconds so rules cannot loop.</string>
+    <string name="trigger_headset_connected">Headset connected</string>
+    <string name="trigger_headset_disconnected">Headset disconnected</string>
+    <string name="trigger_headset_connected_desc">When a wired, USB or Bluetooth audio output becomes available (not for each extra device)</string>
+    <string name="trigger_headset_disconnected_desc">When the last wired, USB or Bluetooth audio output is removed</string>
     <string name="action_media_play">Play media</string>
     <string name="action_media_pause">Pause media</string>
     <string name="action_media_toggle">Toggle media playback</string>
@@ -1125,7 +1171,7 @@
     <string name="action_execute_json_command">Execute JSON command</string>
     <string name="action_execute_json_command_desc">Run a supported action from a JSON object</string>
     <string name="json_command_source">JSON source template</string>
-    <string name="json_command_warning">Matching messages can run actions on this device. Choose trusted sources and restrictive filters. The source template is stored encrypted with the rule.</string>
+    <string name="json_command_warning">Matching messages can run actions on this device. Choose trusted sources and restrictive filters. The source template is stored encrypted with the rule. To require a shared secret, start the template with a line @token=YOUR_SECRET and send the same value as \"token\" in each command.</string>
     <string name="variable_desc_command_success">Whether the latest JSON command succeeded</string>
     <string name="variable_desc_command_status">Latest JSON command status</string>
     <string name="variable_desc_command_message">Safe summary of the latest JSON command</string>
@@ -1181,4 +1227,16 @@
     <string name="backup_export_failed">Export failed</string>
     <string name="backup_import_invalid_format">Invalid format</string>
     <string name="backup_import_failed">Import failed. Check that the file is a valid FlowPilot backup.</string>
+    <string name="nfc_tag_scanned_toast">NFC tag scanned</string>
+    <string name="shizuku_permission_granted">Shizuku permission granted</string>
+    <string name="shizuku_permission_denied">Shizuku permission denied</string>
+    <string name="notif_channel_automation_alerts">Automation alerts</string>
+    <string name="notif_default_body">Automation ran</string>
+    <string name="bt_picker_device_unpaired">The selected device is no longer paired. This rule will not match until you choose a bonded device.</string>
+    <string name="loading_applications">Loading applications...</string>
+    <string name="battery_notice_text">⚠️ Battery notice: background sensor listening uses SENSOR_DELAY_NORMAL (~5Hz) to minimize drain. For reliable execution on HyperOS, exempt FlowPilot from battery optimization.</string>
+    <string name="phone_call_action_warning">⚠️ Starts a real phone call automatically. Requires the Make phone calls permission.</string>
+    <string name="wifi_selected_cd">Selected</string>
+    <string name="sms_recipient_placeholder">e.g. +90555... or ${sms.sender}</string>
+    <string name="sms_message_placeholder">e.g. Received code: ${sms.otp}</string>
 </resources>

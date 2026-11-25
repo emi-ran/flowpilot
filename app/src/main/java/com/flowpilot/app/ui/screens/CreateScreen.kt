@@ -65,6 +65,7 @@ import com.flowpilot.app.data.model.AutomationPreset
 import com.flowpilot.app.data.model.ConditionCombinator
 import com.flowpilot.app.data.model.ConditionNode
 import com.flowpilot.app.data.model.ConditionType
+import com.flowpilot.app.data.model.RingerModeCondition
 import com.flowpilot.app.data.model.RuleCondition
 import com.flowpilot.app.data.model.flattenConditions
 import com.flowpilot.app.data.model.ActionType
@@ -221,6 +222,7 @@ fun CreateScreen(
     var smsKeyword by remember { mutableStateOf("") }
     var smsRecipient by remember { mutableStateOf("") }
     var smsMessage by remember { mutableStateOf("") }
+    var clipboardText by remember { mutableStateOf("") }
     var geofenceName by remember { mutableStateOf("") }
     var geofenceLatitude by remember { mutableStateOf(0.0) }
     var geofenceLongitude by remember { mutableStateOf(0.0) }
@@ -271,6 +273,7 @@ fun CreateScreen(
                                     ActionType.SEND_SMS in actions && (smsRecipient.isBlank() || smsMessage.isBlank()) -> ActionType.SEND_SMS
                                     ActionType.DRAFT_SMS in actions && smsRecipient.isBlank() && smsMessage.isBlank() -> ActionType.DRAFT_SMS
                                     ActionType.DISMISS_NOTIFICATION in actions && triggerItems.none { it.event == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED } -> ActionType.DISMISS_NOTIFICATION
+                                    ActionType.COPY_TO_CLIPBOARD in actions && com.flowpilot.app.actions.ClipboardExecutor.validationReason(clipboardText) != null -> ActionType.COPY_TO_CLIPBOARD
                                     else -> null
                                 }
     val actionValidationMessage = when (invalidAction) {
@@ -285,6 +288,7 @@ fun CreateScreen(
                                     ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> R.string.validation_action_phone
                                     ActionType.SEND_SMS, ActionType.DRAFT_SMS -> R.string.validation_action_sms
                                     ActionType.DISMISS_NOTIFICATION -> R.string.validation_action_dismiss_notification
+                                    ActionType.COPY_TO_CLIPBOARD -> R.string.validation_action_clipboard
                                     else -> R.string.validation_action_generic
                                 }
 
@@ -319,6 +323,7 @@ fun CreateScreen(
         smsKeyword = t.smsKeyword
         smsRecipient = t.smsRecipient
         smsMessage = t.smsMessage
+        clipboardText = t.clipboardText
         geofenceName = t.geofenceName
         geofenceLatitude = t.geofenceLatitude
         geofenceLongitude = t.geofenceLongitude
@@ -551,6 +556,7 @@ fun CreateScreen(
                         smsKeyword = smsKeyword.trim(),
                         smsRecipient = smsRecipient.trim(),
                         smsMessage = smsMessage,
+                        clipboardText = clipboardText,
                         lightLux = lightLux,
                         shakeThreshold = shakeThreshold,
                         screenBrightnessPercent = screenBrightnessPercent,
@@ -940,6 +946,8 @@ fun CreateScreen(
                             onSmsRecipientChange = { smsRecipient = it },
                             smsMessage = smsMessage,
                             onSmsMessageChange = { smsMessage = it },
+                            clipboardText = clipboardText,
+                            onClipboardTextChange = { clipboardText = it },
                         )
                     }
                 }
@@ -1059,6 +1067,7 @@ fun CreateScreen(
                             (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
                             (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
                             (ActionType.DISMISS_NOTIFICATION !in actions || triggerItems.any { it.event == com.flowpilot.app.data.model.TriggerEvent.NOTIFICATION_RECEIVED }) &&
+                            (ActionType.COPY_TO_CLIPBOARD !in actions || com.flowpilot.app.actions.ClipboardExecutor.validationReason(clipboardText) == null) &&
                             actions.isNotEmpty()
                         if (!valid) {
                             if (triggerItems.any { !it.isValidTriggerDefinition() }) {
@@ -1199,6 +1208,7 @@ fun CreateScreen(
                                 smsKeyword = smsKeyword.trim(),
                                 smsRecipient = smsRecipient.trim(),
                                 smsMessage = smsMessage,
+                                clipboardText = clipboardText,
                                 lightLux = lightLux,
                                 shakeThreshold = shakeThreshold,
                                 screenBrightnessPercent = screenBrightnessPercent,
@@ -1302,7 +1312,7 @@ fun DeviceFlipTriggerSettings(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        "⚠️ Battery Notice: Background sensor listening uses SENSOR_DELAY_NORMAL (~5Hz) to minimize drain. For reliable execution on HyperOS, ensure FlowPilot is exempted from battery optimization.",
+                        stringResource(R.string.battery_notice_text),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.padding(10.dp),
@@ -1333,7 +1343,7 @@ fun PhoneActionSettings(
         ) {
             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "⚠️ Starts a real phone call automatically. Requires Make phone calls permission.",
+                    stringResource(R.string.phone_call_action_warning),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                 )
@@ -1653,6 +1663,37 @@ private fun ConditionEditorCard(
                             onSsidChange = { onUpdate(cond.copy(wifiSsid = it)) },
                             label = stringResource(R.string.wifi_ssid_label),
                         )
+                    } else if (cond.type == ConditionType.BLUETOOTH_DEVICE_CONNECTED) {
+                        Column(Modifier.padding(top = 4.dp)) {
+                            BluetoothDevicePickerField(
+                                address = cond.bluetoothDeviceAddress,
+                                name = cond.bluetoothDeviceName.ifBlank {
+                                    if (cond.bluetoothDeviceAddress.isBlank()) stringResource(R.string.cond_bluetooth_any_device) else ""
+                                },
+                                onDeviceSelected = { address, name ->
+                                    onUpdate(cond.copy(bluetoothDeviceAddress = address, bluetoothDeviceName = name))
+                                },
+                            )
+                            if (cond.bluetoothDeviceAddress.isNotBlank()) {
+                                TextButton({ onUpdate(cond.copy(bluetoothDeviceAddress = "", bluetoothDeviceName = "")) }) {
+                                    Text(stringResource(R.string.cond_bluetooth_any_device))
+                                }
+                            }
+                        }
+                    } else if (cond.type == ConditionType.RINGER_MODE) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                            listOf(
+                                RingerModeCondition.NORMAL to R.string.cond_ringer_normal,
+                                RingerModeCondition.VIBRATE to R.string.cond_ringer_vibrate,
+                                RingerModeCondition.SILENT to R.string.cond_ringer_silent,
+                            ).forEach { (mode, labelRes) ->
+                                FilterChip(
+                                    selected = cond.ringerMode == mode,
+                                    onClick = { onUpdate(cond.copy(ringerMode = mode)) },
+                                    label = { Text(stringResource(labelRes)) },
+                                )
+                            }
+                        }
                     } else if (cond.type == ConditionType.TIME_BETWEEN) {
                         val startH = cond.startMinute / 60
                         val startM = cond.startMinute % 60
