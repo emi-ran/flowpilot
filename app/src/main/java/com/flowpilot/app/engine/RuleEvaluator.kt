@@ -192,6 +192,8 @@ object RuleEvaluator {
             it.triggerEvent == state.triggerEvent &&
             !it.isCoolingDown(nowMs) &&
             matchesRuleConditions(it, liveState, nowMs)
+    }
+
     fun evaluateHeadset(
         rules: List<Automation>,
         event: HeadsetEvent,
