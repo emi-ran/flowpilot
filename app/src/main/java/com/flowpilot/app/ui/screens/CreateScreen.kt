@@ -220,6 +220,7 @@ fun CreateScreen(
     var smsKeyword by remember { mutableStateOf("") }
     var smsRecipient by remember { mutableStateOf("") }
     var smsMessage by remember { mutableStateOf("") }
+    var clipboardText by remember { mutableStateOf("") }
     var geofenceName by remember { mutableStateOf("") }
     var geofenceLatitude by remember { mutableStateOf(0.0) }
     var geofenceLongitude by remember { mutableStateOf(0.0) }
@@ -269,6 +270,7 @@ fun CreateScreen(
                                     ActionType.CALL_NUMBER in actions && phoneNumber.trim().isEmpty() -> ActionType.CALL_NUMBER
                                     ActionType.SEND_SMS in actions && (smsRecipient.isBlank() || smsMessage.isBlank()) -> ActionType.SEND_SMS
                                     ActionType.DRAFT_SMS in actions && smsRecipient.isBlank() && smsMessage.isBlank() -> ActionType.DRAFT_SMS
+                                    ActionType.COPY_TO_CLIPBOARD in actions && com.flowpilot.app.actions.ClipboardExecutor.validationReason(clipboardText) != null -> ActionType.COPY_TO_CLIPBOARD
                                     else -> null
                                 }
     val actionValidationMessage = when (invalidAction) {
@@ -282,6 +284,7 @@ fun CreateScreen(
                                     ActionType.SPEAK_TEXT -> R.string.validation_action_speech
                                     ActionType.DIAL_NUMBER, ActionType.CALL_NUMBER -> R.string.validation_action_phone
                                     ActionType.SEND_SMS, ActionType.DRAFT_SMS -> R.string.validation_action_sms
+                                    ActionType.COPY_TO_CLIPBOARD -> R.string.validation_action_clipboard
                                     else -> R.string.validation_action_generic
                                 }
 
@@ -316,6 +319,7 @@ fun CreateScreen(
         smsKeyword = t.smsKeyword
         smsRecipient = t.smsRecipient
         smsMessage = t.smsMessage
+        clipboardText = t.clipboardText
         geofenceName = t.geofenceName
         geofenceLatitude = t.geofenceLatitude
         geofenceLongitude = t.geofenceLongitude
@@ -547,6 +551,7 @@ fun CreateScreen(
                         smsKeyword = smsKeyword.trim(),
                         smsRecipient = smsRecipient.trim(),
                         smsMessage = smsMessage,
+                        clipboardText = clipboardText,
                         lightLux = lightLux,
                         shakeThreshold = shakeThreshold,
                         screenBrightnessPercent = screenBrightnessPercent,
@@ -933,6 +938,8 @@ fun CreateScreen(
                             onSmsRecipientChange = { smsRecipient = it },
                             smsMessage = smsMessage,
                             onSmsMessageChange = { smsMessage = it },
+                            clipboardText = clipboardText,
+                            onClipboardTextChange = { clipboardText = it },
                         )
                     }
                 }
@@ -1051,6 +1058,7 @@ fun CreateScreen(
                             (ActionType.DIAL_NUMBER !in actions && ActionType.CALL_NUMBER !in actions || phoneNumber.trim().isNotEmpty()) &&
                             (ActionType.SEND_SMS !in actions || (smsRecipient.trim().isNotEmpty() && smsMessage.trim().isNotEmpty())) &&
                             (ActionType.DRAFT_SMS !in actions || (smsRecipient.trim().isNotEmpty() || smsMessage.trim().isNotEmpty())) &&
+                            (ActionType.COPY_TO_CLIPBOARD !in actions || com.flowpilot.app.actions.ClipboardExecutor.validationReason(clipboardText) == null) &&
                             actions.isNotEmpty()
                         if (!valid) {
                             if (triggerItems.any { !it.isValidTriggerDefinition() }) {
@@ -1191,6 +1199,7 @@ fun CreateScreen(
                                 smsKeyword = smsKeyword.trim(),
                                 smsRecipient = smsRecipient.trim(),
                                 smsMessage = smsMessage,
+                                clipboardText = clipboardText,
                                 lightLux = lightLux,
                                 shakeThreshold = shakeThreshold,
                                 screenBrightnessPercent = screenBrightnessPercent,

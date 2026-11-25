@@ -83,6 +83,7 @@ fun actionIcon(action: ActionType): ImageVector = when (action) {
     ActionType.MUSIC_PLAY_LINK -> Icons.Default.MusicNote
     ActionType.LAUNCH_APP -> Icons.Default.Apps
     ActionType.OPEN_URL -> Icons.AutoMirrored.Filled.OpenInNew
+    ActionType.COPY_TO_CLIPBOARD -> Icons.Default.ContentCopy
     ActionType.CREATE_ALARM -> Icons.Default.Alarm
     ActionType.CREATE_CALENDAR_EVENT -> Icons.Default.Event
     ActionType.START_TIMER -> Icons.Default.HourglassEmpty
@@ -231,6 +232,9 @@ fun ActionCardItem(
     onSmsRecipientChange: (String) -> Unit = {},
     smsMessage: String = "",
     onSmsMessageChange: (String) -> Unit = {},
+    // Clipboard
+    clipboardText: String = "",
+    onClipboardTextChange: (String) -> Unit = {},
     // Reorder modifiers & callbacks
     cardModifier: Modifier = Modifier,
     dragModifier: Modifier = Modifier,
@@ -700,6 +704,26 @@ fun ActionCardItem(
                         label = { Text(stringResource(R.string.action_url_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
+                    )
+                }
+                ActionType.COPY_TO_CLIPBOARD -> {
+                    Spacer(Modifier.height(8.dp))
+                    TemplateTextField(
+                        value = clipboardText,
+                        onValueChange = onClipboardTextChange,
+                        triggers = triggerEvents,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.clipboard_text_label)) },
+                        placeholder = { Text(stringResource(R.string.clipboard_text_placeholder)) },
+                        shape = RoundedCornerShape(12.dp),
+                        minLines = 2,
+                        maxLines = 4,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        stringResource(R.string.clipboard_copy_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 ActionType.CREATE_CALENDAR_EVENT -> {

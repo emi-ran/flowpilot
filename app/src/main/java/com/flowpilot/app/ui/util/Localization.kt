@@ -81,6 +81,7 @@ val ActionType.labelRes: Int
         ActionType.START_TIMER -> R.string.action_start_timer
         ActionType.LAUNCH_APP -> R.string.action_launch_app
         ActionType.OPEN_URL -> R.string.action_open_url
+        ActionType.COPY_TO_CLIPBOARD -> R.string.action_copy_to_clipboard
         ActionType.HTTP_WEBHOOK -> R.string.action_http_webhook
         ActionType.EXECUTE_JSON_COMMAND -> R.string.action_execute_json_command
         ActionType.OPEN_DIALER -> R.string.action_open_dialer
@@ -272,6 +273,7 @@ val ActionType.descriptionRes: Int
         ActionType.START_TIMER -> R.string.action_start_timer_desc
         ActionType.LAUNCH_APP -> R.string.action_launch_app_desc
         ActionType.OPEN_URL -> R.string.action_open_url_desc
+        ActionType.COPY_TO_CLIPBOARD -> R.string.action_copy_to_clipboard_desc
         ActionType.HTTP_WEBHOOK -> R.string.action_http_webhook_desc
         ActionType.EXECUTE_JSON_COMMAND -> R.string.action_execute_json_command_desc
         ActionType.OPEN_DIALER -> R.string.action_open_dialer_desc

@@ -100,6 +100,7 @@ enum class ActionType(val label: String, val category: ActionCategory, val requi
     CREATE_CALENDAR_EVENT("Create calendar event", ActionCategory.CLOCK, CapabilityRequirement.CALENDAR),
     LAUNCH_APP("Launch app", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_URL("Open URL", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
+    COPY_TO_CLIPBOARD("Copy to clipboard", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     HTTP_WEBHOOK("Send HTTP webhook", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     EXECUTE_JSON_COMMAND("Execute JSON command", ActionCategory.APPS_LINKS, CapabilityRequirement.NONE),
     OPEN_DIALER("Open dialer", ActionCategory.PHONE, CapabilityRequirement.NONE),
@@ -409,6 +410,8 @@ data class Automation(
     val smsRecipient: String = "",
     /** Message text template for SEND_SMS / DRAFT_SMS actions. */
     val smsMessage: String = "",
+    /** Text template copied to the clipboard by COPY_TO_CLIPBOARD; the rendered value is never logged or stored in history. */
+    val clipboardText: String = "",
     val action: ActionType = ActionType.NFC_ON,
     val actions: List<ActionType> = emptyList(),
     /** Per-action optional delay in seconds (0..300), sequential with matching index in actions. */

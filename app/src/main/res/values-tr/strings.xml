@@ -16,6 +16,7 @@
     <string name="validation_action_speech">Konuşma metnini, sesi, hızı ve şablon değişkenlerini kontrol edin.</string>
     <string name="validation_action_phone">Bir telefon numarası girin.</string>
     <string name="validation_action_sms">Gerekli SMS alıcısını ve mesajı girin.</string>
+    <string name="validation_action_clipboard">Kopyalanacak metni girin (en fazla 4000 karakter).</string>
     <string name="triggers_any_summary">HERHANGİ bir tetikleyici eşleşsin · ortak bekleme süresi</string>
     <string name="trigger_add">Tetikleyici ekle (en fazla 5)</string>
     <string name="trigger_remove">Tetikleyiciyi kaldır</string>
@@ -289,6 +290,7 @@
     <string name="action_start_timer">Zamanlayıcı başlat</string>
     <string name="action_launch_app">Uygulama başlat</string>
     <string name="action_open_url">URL aç</string>
+    <string name="action_copy_to_clipboard">Panoya kopyala</string>
     <string name="action_http_webhook">HTTPS Webhook gönder</string>
     <string name="action_open_dialer">Arama ekranını aç</string>
     <string name="action_dial_number">Numarayı tuşla</string>
@@ -489,6 +491,7 @@
     <string name="action_speak_text_desc">Metni sesli okuma (TTS) ile seslendirir</string>
     <string name="action_launch_app_desc">Yüklü bir uygulamayı ön planda açar</string>
     <string name="action_open_url_desc">Web sitesini veya bağlantıyı tarayıcıda açar</string>
+    <string name="action_copy_to_clipboard_desc">Metni panoya kopyalar. OTP kodu gibi değişkenler kopyalamadan önce doldurulur</string>
     <string name="action_http_webhook_desc">HTTPS isteği gönderir (Home Assistant, Discord, ntfy vb.)</string>
     <string name="action_force_stop_app_desc">Çalışan bir uygulamayı zorla durdurur (Shizuku gerekir)</string>
     <string name="action_dark_theme_on_desc">Sistem genelinde koyu temayı açar (Shizuku gerekir)</string>
@@ -646,6 +649,9 @@
     <string name="phone_direct_call_warning">⚠️ Doğrudan arama: Tetiklendiğinde derhal gerçek bir telefon araması başlatır.</string>
     <string name="sms_recipient_label">Alıcı telefon numarası</string>
     <string name="sms_message_text_label">SMS mesaj metni</string>
+    <string name="clipboard_text_label">Kopyalanacak metin</string>
+    <string name="clipboard_text_placeholder">örn. Kod: ${sms.otp}</string>
+    <string name="clipboard_copy_hint">Kopyalanan metin günlüklere ve geçmişe yazılmaz. Android 13 ve sonrası pano önizlemesinde gizler.</string>
     <string name="sms_direct_send_warning">⚠️ Doğrudan SMS: Arka planda derhal SMS gönderir. Operatör tarifesi geçerli olabilir.</string>
     <string name="action_force_stop_prompt">Zorla durdurulacak uygulamayı seçin</string>
     <string name="time_start">Başlangıç saati</string>

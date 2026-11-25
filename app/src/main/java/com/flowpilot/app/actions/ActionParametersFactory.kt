@@ -82,6 +82,7 @@ object ActionParametersFactory {
             forceStopPackage = rule.forceStopPackage,
             smsRecipient = resolveSmsRecipient(rule, context),
             smsMessage = render(rule.smsMessage, context),
+            clipboardText = render(rule.clipboardText, context),
         )
     }
 

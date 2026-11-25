@@ -129,6 +129,8 @@ data class ActionParameters(
     val forceStopPackage: String = "",
     val smsRecipient: String = "",
     val smsMessage: String = "",
+    /** Rendered clipboard text; transient and never logged or written to execution history. */
+    val clipboardText: String = "",
 )
 
 /** A capability-aware executor for one family of system actions. */
