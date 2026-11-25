@@ -1031,6 +1031,10 @@
     <string name="trigger_media_playing_desc">When media starts playing</string>
     <string name="trigger_media_paused_desc">When media is paused</string>
     <string name="trigger_media_track_changed_desc">When the current media track changes</string>
+    <string name="trigger_headset_connected">Headset connected</string>
+    <string name="trigger_headset_disconnected">Headset disconnected</string>
+    <string name="trigger_headset_connected_desc">When a wired, USB or Bluetooth audio output becomes available (not for each extra device)</string>
+    <string name="trigger_headset_disconnected_desc">When the last wired, USB or Bluetooth audio output is removed</string>
     <string name="action_media_play">Play media</string>
     <string name="action_media_pause">Pause media</string>
     <string name="action_media_toggle">Toggle media playback</string>

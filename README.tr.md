@@ -168,6 +168,7 @@ Bir kural en fazla beş bağımsız tetikleyiciyi VEYA mantığıyla birleştire
 - 💡 **Ekran & Durum:** Ekranın açılması / kapanması, kilit ekranının açılması.
 - ⏰ **Zaman & Takvim:** Günlük, hafta içi, hafta sonu veya özel seçili gün ve saatlerde zamanlanmış tetikleme.
 - 📶 **Bağlantılar:** Wi-Fi ağına bağlanma / ayrılma (tüm ağlar veya belirli SSID), Bluetooth cihazına bağlanma / ayrılma.
+- 🎧 **Kulaklık:** Kablolu, USB ve Bluetooth ses çıkışları için kulaklık bağlandı / çıkarıldı. İlk kulaklık çıkışı göründüğünde ve sonuncusu kaldırıldığında tetiklenir (ek cihazlar ve dahili hoparlör yok sayılır); izin gerekmez ve açılışta eski durum tekrar işlenmez.
 - 🔄 **Sensörler & Hareket:**
   - **Cihazı Çevirme:** Yüzüstü masaya konma veya tekrar çevrilme (Yakınlık + Yerçekimi Z-ekseni, 500ms kararlılık filtresi).
   - **Sallama:** Tetik ayarlarındaki kural bazlı güç kaydırıcısı (6–32 m/s²); tek sallama tek tetik üretir.

@@ -171,6 +171,16 @@ sealed interface TriggerDefinition {
     data class GeofenceExit(val geofenceName: String = "", val geofenceLatitude: Double = 0.0, val geofenceLongitude: Double = 0.0, val geofenceRadiusMeters: Int = 150) : TriggerDefinition {
         override val event: TriggerEvent get() = TriggerEvent.GEOFENCE_EXIT
     }
+    @Serializable
+    @SerialName("HEADSET_CONNECTED")
+    data object HeadsetConnected : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.HEADSET_CONNECTED
+    }
+    @Serializable
+    @SerialName("HEADSET_DISCONNECTED")
+    data object HeadsetDisconnected : TriggerDefinition {
+        override val event: TriggerEvent get() = TriggerEvent.HEADSET_DISCONNECTED
+    }
 }
 
 /** Migrates legacy fields in memory without changing single-trigger exports. */
@@ -208,6 +218,8 @@ fun Automation.legacyTriggerDefinition(): TriggerDefinition = when (triggerEvent
     TriggerEvent.SMS_RECEIVED -> TriggerDefinition.Sms(smsSenderFilter, smsMatchMode, smsKeyword)
     TriggerEvent.GEOFENCE_ENTER -> TriggerDefinition.GeofenceEnter(geofenceName, geofenceLatitude, geofenceLongitude, geofenceRadiusMeters)
     TriggerEvent.GEOFENCE_EXIT -> TriggerDefinition.GeofenceExit(geofenceName, geofenceLatitude, geofenceLongitude, geofenceRadiusMeters)
+    TriggerEvent.HEADSET_CONNECTED -> TriggerDefinition.HeadsetConnected
+    TriggerEvent.HEADSET_DISCONNECTED -> TriggerDefinition.HeadsetDisconnected
 }
 
 /** A transient view used by existing per-type matchers and pickers; never persisted as a rule. */
@@ -243,6 +255,8 @@ fun Automation.withTrigger(definition: TriggerDefinition): Automation = when (de
     is TriggerDefinition.Sms -> copy(triggerEvent = definition.event, triggerDefinitions = null, smsSenderFilter = definition.smsSenderFilter, smsMatchMode = definition.smsMatchMode, smsKeyword = definition.smsKeyword)
     is TriggerDefinition.GeofenceEnter -> copy(triggerEvent = definition.event, triggerDefinitions = null, geofenceName = definition.geofenceName, geofenceLatitude = definition.geofenceLatitude, geofenceLongitude = definition.geofenceLongitude, geofenceRadiusMeters = definition.geofenceRadiusMeters)
     is TriggerDefinition.GeofenceExit -> copy(triggerEvent = definition.event, triggerDefinitions = null, geofenceName = definition.geofenceName, geofenceLatitude = definition.geofenceLatitude, geofenceLongitude = definition.geofenceLongitude, geofenceRadiusMeters = definition.geofenceRadiusMeters)
+    TriggerDefinition.HeadsetConnected -> copy(triggerEvent = definition.event, triggerDefinitions = null)
+    TriggerDefinition.HeadsetDisconnected -> copy(triggerEvent = definition.event, triggerDefinitions = null)
 }
 
 /** Ordered views retain the matching source, while callers deduplicate by the parent rule ID. */

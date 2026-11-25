@@ -1031,6 +1031,10 @@
     <string name="trigger_media_playing_desc">Medya oynatılmaya başladığında</string>
     <string name="trigger_media_paused_desc">Medya duraklatıldığında</string>
     <string name="trigger_media_track_changed_desc">Geçerli medya parçası değiştiğinde</string>
+    <string name="trigger_headset_connected">Kulaklık bağlandı</string>
+    <string name="trigger_headset_disconnected">Kulaklık çıkarıldı</string>
+    <string name="trigger_headset_connected_desc">Kablolu, USB veya Bluetooth ses çıkışı kullanılabilir olduğunda (her ek cihaz için değil)</string>
+    <string name="trigger_headset_disconnected_desc">Son kablolu, USB veya Bluetooth ses çıkışı kaldırıldığında</string>
     <string name="action_media_play">Medyayı oynat</string>
     <string name="action_media_pause">Medyayı duraklat</string>
     <string name="action_media_toggle">Medya oynatmayı değiştir</string>

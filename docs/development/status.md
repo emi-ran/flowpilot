@@ -67,6 +67,7 @@ Last updated: 2026-11-15
 - Manual in-progress test run from both Create and Edit automation screens, including confirmation, direct-call warnings, immediate execution with on-screen unsaved edits, result feedback, and unchanged rule/store state.
 - Persistent run history for engine and manual executions: action-level outcomes, 100-entry newest-first retention, and redacted diagnostics.
 - Bluetooth bonded-device connected/disconnected triggers and Bluetooth on/off Shizuku actions, including delayed adapter-state readback.
+- Headset connected/disconnected triggers (`HEADSET_CONNECTED`, `HEADSET_DISCONNECTED`) via `AudioManager.registerAudioDeviceCallback` for wired, USB and Bluetooth audio outputs (BLE headset on Android 12+). The callback is registered only while an enabled rule needs it; a pure reducer reports connect on the first headset output and disconnect on the last, ignoring repeats, inputs and the built-in speaker, with no startup replay and no device names or addresses stored or logged. Covered by JVM tests only; not verified on a physical device.
 - Per-rule cooldown: matching trigger runs once, suppresses repeated matching event during cooldown, and runs again after expiry.
 - Create/Edit keyboard behavior: keyboard opens only for focused fields, form scroll remains available, and a focused field returns above the IME when typing after manual scrolling.
 - Device motion / flip triggers (`DEVICE_FLIPPED_DOWN`, `DEVICE_FLIPPED_UP`):
