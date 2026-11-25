@@ -333,6 +333,30 @@ fun TriggerPicker(selected: TriggerEvent, select: (TriggerEvent) -> Unit, onDism
                 ),
             ),
             PickerCategoryGroup(
+                id = TriggerCategory.AUDIO.name,
+                label = TriggerCategory.AUDIO.label,
+                icon = Icons.Default.Headphones,
+                iconTint = Color(0xFF9FA8DA),
+                items = listOf(
+                    PickerItem(
+                        value = TriggerEvent.HEADSET_CONNECTED,
+                        title = TriggerEvent.HEADSET_CONNECTED.label,
+                        subtitle = context.getString(TriggerEvent.HEADSET_CONNECTED.descriptionRes),
+                        icon = Icons.Default.Headphones,
+                        iconTint = Color(0xFF9FA8DA),
+                        keywords = listOf("headset", "headphones", "earphones", "earbuds", "audio", "wired", "usb", "bluetooth", "plug", "connected"),
+                    ),
+                    PickerItem(
+                        value = TriggerEvent.HEADSET_DISCONNECTED,
+                        title = TriggerEvent.HEADSET_DISCONNECTED.label,
+                        subtitle = context.getString(TriggerEvent.HEADSET_DISCONNECTED.descriptionRes),
+                        icon = Icons.Default.HeadsetOff,
+                        iconTint = Color(0xFFC5CAE9),
+                        keywords = listOf("headset", "headphones", "earphones", "earbuds", "audio", "unplug", "disconnected", "removed"),
+                    ),
+                ),
+            ),
+            PickerCategoryGroup(
                 id = TriggerCategory.NFC_TAG.name,
                 label = TriggerCategory.NFC_TAG.label,
                 icon = Icons.Default.Nfc,
@@ -819,6 +843,14 @@ fun ActionPicker(
                         icon = Icons.Default.Language,
                         iconTint = Color(0xFF4DB6AC),
                         keywords = listOf("url", "link", "web", "browser", "http", "https", "site", "open"),
+                    ),
+                    PickerItem(
+                        value = ActionType.COPY_TO_CLIPBOARD,
+                        title = ActionType.COPY_TO_CLIPBOARD.label,
+                        subtitle = context.getString(ActionType.COPY_TO_CLIPBOARD.descriptionRes),
+                        icon = Icons.Default.ContentCopy,
+                        iconTint = Color(0xFF4DB6AC),
+                        keywords = listOf("copy", "clipboard", "paste", "text", "otp", "code", "panel", "pano", "kopyala"),
                     ),
                     PickerItem(
                         value = ActionType.HTTP_WEBHOOK,
@@ -1635,7 +1667,7 @@ fun AppPicker(
                             )
                             Spacer(Modifier.height(16.dp))
                             Text(
-                                "Loading applications...",
+                                stringResource(R.string.loading_applications),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyMedium,
                             )

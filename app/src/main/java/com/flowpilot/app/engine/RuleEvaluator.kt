@@ -192,6 +192,22 @@ object RuleEvaluator {
             it.triggerEvent == state.triggerEvent &&
             !it.isCoolingDown(nowMs) &&
             matchesRuleConditions(it, liveState, nowMs)
+    fun evaluateHeadset(
+        rules: List<Automation>,
+        event: HeadsetEvent,
+        liveState: LiveSystemState = LiveSystemState(),
+        nowMs: Long = System.currentTimeMillis(),
+    ): List<Automation> {
+        val triggerEvent = when (event) {
+            HeadsetEvent.CONNECTED -> TriggerEvent.HEADSET_CONNECTED
+            HeadsetEvent.DISCONNECTED -> TriggerEvent.HEADSET_DISCONNECTED
+        }
+        return rules.matchingTriggerViews {
+            it.enabled &&
+                it.triggerEvent == triggerEvent &&
+                !it.isCoolingDown(nowMs) &&
+                matchesRuleConditions(it, liveState, nowMs)
+        }
     }
 
     fun evaluateBattery(
@@ -401,11 +417,7 @@ object RuleEvaluator {
                 }
                 com.flowpilot.app.data.model.SmsMatchMode.REGEX -> {
                     if (keyword.isBlank()) true
-                    else try {
-                        Regex(keyword, RegexOption.IGNORE_CASE).containsMatchIn(event.body)
-                    } catch (_: Exception) {
-                        false
-                    }
+                    else SafeRegex.containsMatch(keyword, event.body)
                 }
             }
             if (!contentMatches) return@matchingTriggerViews false

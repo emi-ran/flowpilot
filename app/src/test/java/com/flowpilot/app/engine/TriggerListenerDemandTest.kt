@@ -27,6 +27,34 @@ class TriggerListenerDemandTest {
         assertThat(TriggerListenerDemand.from(unrelated + media.copy(enabled = false)).needsMedia).isFalse()
     }
 
+    @Test fun headsetDemand_requiresAnEnabledHeadsetTrigger() {
+        assertThat(TriggerListenerDemand.from(emptyList()).needsHeadset).isFalse()
+        for (event in listOf(TriggerEvent.HEADSET_CONNECTED, TriggerEvent.HEADSET_DISCONNECTED)) {
+            val headset = rule(event)
+            assertThat(TriggerListenerDemand.from(listOf(headset)).needsHeadset).isTrue()
+            assertThat(TriggerListenerDemand.from(listOf(headset.copy(enabled = false))).needsHeadset).isFalse()
+        }
+        val unrelated = listOf(rule(TriggerEvent.BLUETOOTH_CONNECTED), rule(TriggerEvent.CHARGER_CONNECTED), rule(TriggerEvent.MEDIA_PLAYING))
+        assertThat(TriggerListenerDemand.from(unrelated).needsHeadset).isFalse()
+        val headset = rule(TriggerEvent.HEADSET_CONNECTED)
+        assertThat(TriggerListenerDemand.from(unrelated + headset).needsHeadset).isTrue()
+        assertThat(TriggerListenerDemand.from(unrelated + headset.copy(enabled = false)).needsHeadset).isFalse()
+    }
+
+    @Test fun headsetDemand_followsEnabledMultiTriggerSourcesAndStopsWhenRemoved() {
+        val multi = rule(TriggerEvent.SCREEN_ON).copy(triggerDefinitions = TriggerDefinitions(items = listOf(
+            TriggerDefinition.ScreenOn, TriggerDefinition.HeadsetDisconnected,
+        )))
+        val demand = TriggerListenerDemand.from(listOf(multi))
+        assertThat(demand.needsHeadset).isTrue()
+        assertThat(demand.needs(TriggerEvent.HEADSET_DISCONNECTED)).isTrue()
+        assertThat(demand.needs(TriggerEvent.HEADSET_CONNECTED)).isFalse()
+        // Editing the rule so no headset source remains drops the demand (listener is unregistered).
+        val edited = multi.copy(triggerDefinitions = TriggerDefinitions(items = listOf(TriggerDefinition.ScreenOn)))
+        assertThat(TriggerListenerDemand.from(listOf(edited)).needsHeadset).isFalse()
+        assertThat(TriggerListenerDemand.from(listOf(multi.copy(enabled = false))).needsHeadset).isFalse()
+    }
+
     @Test fun mediaDemand_includesEnabledMultipleTriggerSourcesOnly() {
         val multi = rule(TriggerEvent.SCREEN_ON).copy(triggerDefinitions = TriggerDefinitions(items = listOf(
             TriggerDefinition.AppOpened("music.player"),

@@ -45,6 +45,8 @@ val TriggerEvent.labelRes: Int
         TriggerEvent.RINGER_SILENT -> R.string.trigger_ringer_silent
         TriggerEvent.DND_ENABLED -> R.string.trigger_dnd_enabled
         TriggerEvent.DND_DISABLED -> R.string.trigger_dnd_disabled
+        TriggerEvent.HEADSET_CONNECTED -> R.string.trigger_headset_connected
+        TriggerEvent.HEADSET_DISCONNECTED -> R.string.trigger_headset_disconnected
     }
 
 @get:StringRes
@@ -84,6 +86,7 @@ val ActionType.labelRes: Int
         ActionType.START_TIMER -> R.string.action_start_timer
         ActionType.LAUNCH_APP -> R.string.action_launch_app
         ActionType.OPEN_URL -> R.string.action_open_url
+        ActionType.COPY_TO_CLIPBOARD -> R.string.action_copy_to_clipboard
         ActionType.HTTP_WEBHOOK -> R.string.action_http_webhook
         ActionType.EXECUTE_JSON_COMMAND -> R.string.action_execute_json_command
         ActionType.OPEN_DIALER -> R.string.action_open_dialer
@@ -143,6 +146,7 @@ val TriggerCategory.labelRes: Int
         TriggerCategory.LOCATION -> R.string.cat_location
         TriggerCategory.MEDIA -> R.string.cat_media
         TriggerCategory.SOUND -> R.string.cat_sound
+        TriggerCategory.AUDIO -> R.string.cat_audio
     }
 
 @get:StringRes
@@ -239,6 +243,8 @@ val TriggerEvent.descriptionRes: Int
         TriggerEvent.RINGER_SILENT -> R.string.trigger_ringer_silent_desc
         TriggerEvent.DND_ENABLED -> R.string.trigger_dnd_enabled_desc
         TriggerEvent.DND_DISABLED -> R.string.trigger_dnd_disabled_desc
+        TriggerEvent.HEADSET_CONNECTED -> R.string.trigger_headset_connected_desc
+        TriggerEvent.HEADSET_DISCONNECTED -> R.string.trigger_headset_disconnected_desc
     }
 
 @get:StringRes
@@ -278,6 +284,7 @@ val ActionType.descriptionRes: Int
         ActionType.START_TIMER -> R.string.action_start_timer_desc
         ActionType.LAUNCH_APP -> R.string.action_launch_app_desc
         ActionType.OPEN_URL -> R.string.action_open_url_desc
+        ActionType.COPY_TO_CLIPBOARD -> R.string.action_copy_to_clipboard_desc
         ActionType.HTTP_WEBHOOK -> R.string.action_http_webhook_desc
         ActionType.EXECUTE_JSON_COMMAND -> R.string.action_execute_json_command_desc
         ActionType.OPEN_DIALER -> R.string.action_open_dialer_desc

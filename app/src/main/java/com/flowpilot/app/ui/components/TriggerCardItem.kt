@@ -64,6 +64,8 @@ fun triggerIcon(event: TriggerEvent): ImageVector = when (event) {
     TriggerEvent.RINGER_SILENT -> Icons.Default.NotificationsOff
     TriggerEvent.DND_ENABLED -> Icons.Default.DoNotDisturb
     TriggerEvent.DND_DISABLED -> Icons.Default.DoNotDisturbOff
+    TriggerEvent.HEADSET_CONNECTED -> Icons.Default.Headphones
+    TriggerEvent.HEADSET_DISCONNECTED -> Icons.Default.HeadsetOff
 }
 
 /**
@@ -105,6 +107,8 @@ fun triggerAccent(event: TriggerEvent): Color = when (event) {
     TriggerEvent.RINGER_SILENT -> Color(0xFFE57373)
     TriggerEvent.DND_ENABLED -> Color(0xFF9FA8DA)
     TriggerEvent.DND_DISABLED -> Color(0xFF90CAF9)
+    TriggerEvent.HEADSET_CONNECTED -> Color(0xFF9FA8DA)
+    TriggerEvent.HEADSET_DISCONNECTED -> Color(0xFFC5CAE9)
 }
 
 @Composable
@@ -261,6 +265,8 @@ fun TriggerCardItem(
                         TriggerEvent.BATTERY_BELOW, TriggerEvent.BATTERY_ABOVE -> stringResource(R.string.detail_threshold_battery, batteryLevel)
                         TriggerEvent.CHARGER_CONNECTED -> stringResource(R.string.trigger_charger_connected_desc)
                         TriggerEvent.CHARGER_DISCONNECTED -> stringResource(R.string.trigger_charger_disconnected_desc)
+                        TriggerEvent.HEADSET_CONNECTED -> stringResource(R.string.trigger_headset_connected_desc)
+                        TriggerEvent.HEADSET_DISCONNECTED -> stringResource(R.string.trigger_headset_disconnected_desc)
                         TriggerEvent.SCREEN_ON -> stringResource(R.string.trigger_screen_on_desc)
                         TriggerEvent.SCREEN_OFF -> stringResource(R.string.trigger_screen_off_desc)
                         TriggerEvent.DEVICE_FLIPPED_DOWN -> stringResource(R.string.trigger_device_flipped_down_desc)

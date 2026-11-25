@@ -318,6 +318,29 @@ class CapabilityManager(private val context: Context) {
         }
     }
 
+    /** Open MIUI/HyperOS autostart management, falling back to this app's details settings. */
+    fun openMiuiAutostartSettings() {
+        val miuiIntent = Intent().apply {
+            component = ComponentName(
+                "com.miui.securitycenter",
+                "com.miui.permcenter.autostart.AutoStartManagementActivity",
+            )
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val detailsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val candidates = listOf(miuiIntent, detailsIntent)
+        for (intent in candidates) {
+            try {
+                if (intent.resolveActivity(context.packageManager) == null) continue
+                context.startActivity(intent)
+                return
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     /** open system Settings for this app's battery optimization allowlist */
     fun openBatteryOptimizationSettings() {
         val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
