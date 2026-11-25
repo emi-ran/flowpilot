@@ -22,6 +22,7 @@ All notable FlowPilot changes are documented here.
 - Warn on the home screen when both the release and debug FlowPilot builds are installed and the engine is on, since each build runs its own engine and the same rule can fire twice. Detection is install-only; builds do not communicate.
 ### Changed
 - Move remaining hardcoded English and Turkish UI, notification and accessibility text into localized string resources (EN/TR).
+- Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
 ### Fixed
 - Prevent JSON injection through template variables: values substituted into JSON commands and JSON webhook bodies (notification text, SMS body, etc.) are now JSON-escaped, so quotes, backslashes and control characters can no longer break out of strings or add keys.
 - Refuse rule writes when stored rules are unreadable instead of overwriting them with an empty list; the raw data is backed up and the rules screen no longer crashes. Orphan TTS audio cleanup is skipped while rules are unreadable.
@@ -30,14 +31,12 @@ All notable FlowPilot changes are documented here.
 - Store plaintext that happens to start with `enc:v1:` correctly instead of treating it as ciphertext.
 - Bound SMS regex trigger matching: a catastrophic user pattern is aborted after a 100 ms budget and treated as no match, and SMS bodies are capped at 4096 characters before matching, so a crafted pattern can no longer stall the engine.
 
-### Fixed
 - Run rule actions outside the engine poll loop so a delayed action no longer stalls other triggers or lets queued notification and SMS events expire unseen; runs of the same rule stay sequential.
 - Isolate engine poll steps so one failing step no longer skips the rest, and report repeated failures once.
 - Tear down geofences when the engine is disabled even if the engine job was cancelled.
 - Stamp incoming SMS with the receive time and give each SMS a unique execution ID so a skewed carrier timestamp or two messages in the same second no longer drop a trigger.
 - Log how many stale notification or SMS events were discarded (counts only).
 
-### Fixed
 - Localize remaining hardcoded English text in the rule editor and pickers (Turkish users saw English trigger, action and webhook descriptions); trigger pickers now search the localized descriptions.
 - Stop showing raw exception messages in backup export and import errors; show localized messages instead.
 - Add Back and Close accessibility labels to the editor, detail, history and picker dialogs.
@@ -46,10 +45,6 @@ All notable FlowPilot changes are documented here.
 - Report Mobile Data toggles as failed when the resulting state cannot be read, matching Wi-Fi and Location.
 - Report sent SMS as an unverified request, since Android only confirms that the request was accepted.
 
-### Changed
-- Update the website's v2.3.0 feature, privacy, backup and Shizuku guidance, and organize release notes, plans and reviews into dedicated documentation directories.
-
-### Fixed
 - Prevent overlapping `FlowPilotNotificationListener` teardown (`onDestroy`) or `intakeScope` cancellation from clearing the live connection state of a replacement instance or cancelling delayed post-disconnect rebinds; back off repeated `NotificationListenerService.requestRebind()` attempts (30s up to 5m), attempt rebind for active media rules, and deep-link to FlowPilot's Notification Access detail screen on Android 11+ with an immediate rebind attempt on resume.
 
 ## [2.3.0] - 2026-11-15

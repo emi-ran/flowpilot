@@ -155,6 +155,7 @@ app/src/main/java/com/flowpilot/app/
     ScreenStateTracker.kt            screen on/off broadcasts
     WifiStateTracker.kt              Wi-Fi NetworkCallback state + SSID transition reducer
     BluetoothDeviceTracker.kt        bonded-device ACL broadcasts + per-device transition reducer
+    HeadsetDeviceTracker.kt          AudioDeviceCallback output-device tracking (wired, USB, Bluetooth); transition reducer, registered only while headset rules need it
     DeviceFlipState.kt               pure flip orientation models and debounce state reducer
     DeviceFlipTracker.kt             motion sensor listener with dynamic lifecycle and battery-saving unregistering
     ShakeReducer.kt                  pure threshold + hysteresis shake detector
@@ -186,6 +187,8 @@ app/src/main/java/com/flowpilot/app/
     AutoRotateExecutor.kt            WRITE_SETTINGS direct write to Settings.System.ACCELEROMETER_ROTATION
     DndExecutor.kt                   NotificationManager.setInterruptionFilter (Notification Policy Access)
     SoundProfileExecutor.kt          AudioManager.ringerMode (Notification Policy Access)
+    ClipboardExecutor.kt             ClipboardManager.setPrimaryClip for COPY_TO_CLIPBOARD; marks clip EXTRA_IS_SENSITIVE; text never logged or stored
+    DismissNotificationExecutor.kt   FlowPilotNotificationListener.cancelNotification(s) for THIS or ALL_FROM_PACKAGE scope; removal is requested, not verified
     ClockExecutor.kt                 AlarmClock.ACTION_SET_ALARM and ACTION_SET_TIMER intent dispatch
     NotificationExecutor.kt           visible user-configured automation alerts
     VibrationExecutor.kt              configurable waveform vibration

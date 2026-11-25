@@ -42,9 +42,9 @@ Do not bundle unrelated features. One feature family at a time.
    - Screen on
    - Screen off
    - Dynamic broadcasts while the engine runs and enabled rules need screen events; duplicate events deduped and no registration replay
-5. **Headset state** (deferred; do not prioritize unless explicitly requested)
-   - Wired headset connected/disconnected
-   - Bluetooth audio device connected/disconnected
+5. **Headset state** (implemented; `HEADSET_CONNECTED`/`HEADSET_DISCONNECTED` triggers and `HEADSET_CONNECTED` condition; JVM-tested, device validation pending)
+   - Wired, USB and Bluetooth audio output connected/disconnected, via `AudioDeviceCallback` registered only while enabled rules need it
+   - Bluetooth audio device connected/disconnected is covered by the Bluetooth device state item below
 
 ### Phase 2 — Network/device context
 
