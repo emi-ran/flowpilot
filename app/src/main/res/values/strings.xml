@@ -229,6 +229,10 @@
 
     <string name="preset_night_dim_title">Night Screen Dimming</string>
     <string name="preset_night_dim_desc" formatted="false">When the screen turns on between 00:00 and 06:00 and the battery is below 60%, lowers brightness to 10% and enables dark theme.</string>
+    <string name="preset_headset_music_title">Start Music When Headset Connects</string>
+    <string name="preset_headset_music_desc">When a wired, USB or Bluetooth headset connects, starts media playback.</string>
+    <string name="preset_headset_pause_title">Pause Music When Headset Disconnects</string>
+    <string name="preset_headset_pause_desc">When the last wired, USB or Bluetooth headset is removed, pauses media playback.</string>
 
     <string name="preset_more_triggers">+%1$d</string>
     <string name="preset_logic_and_or">AND/OR</string>
