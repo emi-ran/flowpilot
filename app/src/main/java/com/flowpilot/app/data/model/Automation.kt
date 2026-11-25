@@ -281,7 +281,7 @@ enum class TriggerEvent(val label: String, val category: TriggerCategory) {
     RINGER_VIBRATE("Ringer set to vibrate", TriggerCategory.SOUND),
     RINGER_SILENT("Ringer set to silent", TriggerCategory.SOUND),
     DND_ENABLED("Do Not Disturb turned on", TriggerCategory.SOUND),
-    DND_DISABLED("Do Not Disturb turned off", TriggerCategory.SOUND);
+    DND_DISABLED("Do Not Disturb turned off", TriggerCategory.SOUND),
     HEADSET_CONNECTED("Headset connected", TriggerCategory.AUDIO),
     HEADSET_DISCONNECTED("Headset disconnected", TriggerCategory.AUDIO);
 
